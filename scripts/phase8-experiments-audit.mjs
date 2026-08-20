@@ -1,0 +1,33 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import { chooseWeightedVariant, stableExperimentHash, twoProportionConfidence, experimentVariantStats, EXPERIMENT_GOAL_TYPES, EXPERIMENT_TARGET_TYPES } from '../app/builder/experimentSystem.js';
+import { applyExperimentVariant, parseExperimentCartAttribute } from '../app/services/experiment-engine.server.js';
+
+const read=(p)=>fs.readFileSync(p,'utf8'); let checks=0; const ok=(cond,msg)=>{assert.ok(cond,msg);checks++;};
+ok(EXPERIMENT_TARGET_TYPES.join(',')==='page,section,component','Page/section/component targets required');
+for(const goal of ['purchase','revenue','aov','add_to_cart','checkout','form_submit','click','custom']) ok(EXPERIMENT_GOAL_TYPES.includes(goal),`Missing goal ${goal}`);
+ok(stableExperimentHash('same-seed')===stableExperimentHash('same-seed'),'Bucketing hash must be deterministic');
+const variants=[{id:'a',key:'A',weight:50,isControl:true},{id:'b',key:'B',weight:50,isControl:false}];
+ok(chooseWeightedVariant(variants,'visitor-1')?.id===chooseWeightedVariant(variants,'visitor-1')?.id,'Weighted assignment must be stable');
+ok(twoProportionConfidence({controlSessions:1000,controlConversions:100,variantSessions:1000,variantConversions:150})>0.9,'Confidence estimator should detect material uplift');
+const stats=experimentVariantStats({experiment:{goalType:'purchase',minimumSessions:100,confidenceThreshold:.9},variants,assignments:[...Array(100)].map((_,i)=>({variantId:i<50?'a':'b',visitorId:`u${i}`})),events:[...Array(5)].map((_,i)=>({variantId:'a',visitorId:`a${i}`,eventType:'purchase',value:50})).concat([...Array(12)].map((_,i)=>({variantId:'b',visitorId:`b${i}`,eventType:'purchase',value:55})))});
+ok(stats.rows.find(r=>r.id==='b')?.revenue===660,'Revenue aggregation');
+ok(stats.rows.find(r=>r.id==='b')?.conversions===12,'Unique conversion aggregation');
+const applied=applyExperimentVariant([{id:'section-a',type:'section',props:{},children:[]}],{targetType:'section',targetNodeId:'section-a'},{key:'B',isControl:false,snapshotJson:JSON.stringify({id:'source',type:'section',props:{title:'B'},children:[]})});
+ok(applied.changed && applied.elements[0].id==='section-a' && applied.elements[0].props.title==='B','Section variant replacement');
+ok(parseExperimentCartAttribute('[{"e":"exp","v":"var","u":"visitor"}]').length===1,'Cart attribution parser');
+
+const schema=read('prisma/schema.prisma'); for(const model of ['BuilderExperiment','BuilderExperimentVariant','BuilderExperimentAssignment','BuilderExperimentEvent']) ok(schema.includes(`model ${model} {`),`Missing Prisma model ${model}`);
+ok(fs.existsSync('prisma/migrations/20260806190000_phase8_cro_experiments/migration.sql'),'Phase 8 migration missing');
+const route=read('app/routes/app.experiments.jsx'); for(const token of ['Create A/B experiment','add-variant','publish-winner','winnerCandidate','Preview {variant.key}','minimumSessions','confidenceThreshold']) ok(route.includes(token),`Experiments dashboard missing ${token}`);
+const service=read('app/services/experiment-engine.server.js'); for(const token of ['assignExperimentVisitor','stableExperimentHash','applyExperimentVariant','recordExperimentEvent','recordPaidOrderAttribution','forcedVariantKey']) ok(service.includes(token),`Experiment service missing ${token}`);
+const proxy=read('app/routes/builder-proxy.$.jsx'); for(const token of ['resolveExperimentRender','_vsnAction','experiment-event','data-vsn-experiment-id','data-vsn-experiment-runtime-css','vsnExpPreview']) ok(proxy.includes(token),`Storefront experiment bridge missing ${token}`);
+const renderer=read('extensions/vsn-page-builder-theme/assets/vsn-page-renderer.js'); for(const token of ['vsnVisitorId','vsnSessionId','ensureExperimentRuntime','window.VSNAnalytics?.track?.("add_to_cart"','window.VSNAnalytics?.track?.("form_submit"']) ok(renderer.includes(token),`Core renderer missing ${token}`);
+const runtime=read('extensions/vsn-page-builder-theme/assets/vsn-experiments.js'); for(const token of ['VSNAnalytics','vsn_experiment_assignments_v1','vsn_experiments','impression','/checkout','vsn:experiment-track']) ok(runtime.includes(token),`Experiment runtime missing ${token}`);
+ok(fs.statSync('extensions/vsn-page-builder-theme/assets/vsn-experiments.js').size < 15000,'Experiment SDK must stay under 15 KB source budget');
+const liquid=read('extensions/vsn-page-builder-theme/blocks/vsn-page-renderer.liquid'); ok(liquid.includes("experiments: {{ 'vsn-experiments.js' | asset_url | json }}"),'Conditional experiment runtime URL missing');
+const webhook=read('app/routes/webhooks.orders.paid.jsx'); ok(webhook.includes('recordPaidOrderAttribution'),'Paid order webhook attribution missing');
+const toml=read('shopify.app.toml'); ok(toml.includes('read_orders'),'read_orders scope missing'); ok(toml.includes('topics = [ "orders/paid" ]'),'orders/paid webhook missing');
+const nav=read('app/routes/app.jsx'); const builderSidebar=read('app/components/AppSidebar.jsx'); ok(nav.includes('/app/experiments') || builderSidebar.includes('id: "experiments"'),'Experiments navigation missing');
+ok(!runtime.toLowerCase().includes('heatmap') && !runtime.toLowerCase().includes('session replay'),'Heatmaps/session replay should remain out of Phase 8 core');
+console.log(`VSN Phase 8 CRO experiment audit: PASS (${checks}/${checks})`);

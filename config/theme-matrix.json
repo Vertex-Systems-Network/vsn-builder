@@ -1,0 +1,9 @@
+{
+  "targets": [
+    {"name":"Dawn","kind":"Shopify reference"},
+    {"name":"Horizon","kind":"Shopify modern"},
+    {"name":"Prestige","kind":"popular premium"},
+    {"name":"Impulse","kind":"popular premium"},
+    {"name":"Custom","kind":"merchant customized"}
+  ]
+}

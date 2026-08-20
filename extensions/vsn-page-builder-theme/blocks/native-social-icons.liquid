@@ -1,0 +1,58 @@
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><div class="vsn-native-social">{% if block.settings.instagram != blank %}<a href="{{ block.settings.instagram }}">Instagram</a>{% endif %}{% if block.settings.facebook != blank %}<a href="{{ block.settings.facebook }}">Facebook</a>{% endif %}{% if block.settings.tiktok != blank %}<a href="{{ block.settings.tiktok }}">TikTok</a>{% endif %}</div></div>
+
+{% schema %}
+{
+  "name": "Social links",
+  "target": "section",
+  "stylesheet": "native-blocks.css",
+  "available_if": "{{ app.metafields.vsn_page_builder.social_icons_enabled }}",
+  "settings": [
+    {
+      "type": "url",
+      "id": "instagram",
+      "label": "Instagram"
+    },
+    {
+      "type": "url",
+      "id": "facebook",
+      "label": "Facebook"
+    },
+    {
+      "type": "url",
+      "id": "tiktok",
+      "label": "TikTok"
+    },
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Text color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color_background",
+      "id": "background",
+      "label": "Background"
+    },
+    {
+      "type": "range",
+      "id": "padding_y",
+      "label": "Vertical padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_x",
+      "label": "Horizontal padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ]
+}
+{% endschema %}

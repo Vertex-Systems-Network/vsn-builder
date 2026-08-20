@@ -1,0 +1,622 @@
+{
+  "generatedAt": "2026-08-10T13:49:48.177Z",
+  "version": "2.5.107",
+  "milestone": "Q.6.4",
+  "baselineName": "Hydration, UI Theme, Maps & Form Security — Q.6.4",
+  "schema": {
+    "document": 3,
+    "widgets": 2,
+    "styles": 6,
+    "interactions": 4,
+    "queries": 2,
+    "components": 1,
+    "responsive": 2,
+    "localization": 1,
+    "forms": 3,
+    "managedAssets": 1,
+    "marketplace": 1,
+    "brandKits": 1,
+    "developerSdk": 2,
+    "pluginManifest": 1,
+    "enterpriseHardening": 1,
+    "healthAudit": 2,
+    "commercialization": 1,
+    "workspaceUx": 1,
+    "engineeringStandard": 1,
+    "resourcePackages": 1,
+    "templateSources": 2,
+    "appShell": 2,
+    "dashboardWorkspace": 1,
+    "motionLibrary": 3,
+    "appSettings": 1,
+    "widgetPlatform": 2,
+    "widgetTemplates": 1,
+    "customWidgets": 2,
+    "rolePermissions": 3,
+    "themeEmbedStatus": 2,
+    "developerStudio": 1,
+    "globalCode": 1,
+    "sessionRuntime": 1,
+    "wishlist": 2,
+    "emailBuilder": 6,
+    "emailDocument": 4,
+    "emailRenderer": 6,
+    "documentation": 1,
+    "ecosystemQa": 1,
+    "platformIntelligence": 2,
+    "designTokens": 2,
+    "commandPalette": 1,
+    "dataBindingInspector": 1,
+    "conditionBuilder": 2,
+    "visualRegression": 1,
+    "extensionSandbox": 1,
+    "commandArchitecture": 1,
+    "performanceBudget": 1,
+    "migrationSimulator": 1,
+    "databaseReadiness": 1,
+    "runtimeAudit": 1,
+    "securityHardening": 2,
+    "shopifyProductionIntegration": 1,
+    "shopifyAppPricing": 3,
+    "shopifySubscriptionSync": 2,
+    "entitlementEngine": 2,
+    "billingLifecycle": 2,
+    "billingProductionQa": 1,
+    "templatesManagement": 1,
+    "reusableDataView": 1,
+    "sharedSettingsPopover": 1,
+    "appShellActions": 1,
+    "stockImageHub": 4,
+    "stockVideoHub": 2,
+    "stockAudioHub": 2,
+    "stockMediaUploads": 1,
+    "stockApiUsage": 2,
+    "stockSearchHistory": 1,
+    "premiumStockSearch": 1,
+    "stockRouteBoundary": 1,
+    "stockProviderIntegrations": 2,
+    "persistentViewSettings": 1,
+    "hydrationHardening": 1,
+    "uiColorSchemes": 1,
+    "googleMapsPlatform": 1,
+    "googleRecaptcha": 1,
+    "secretVault": 1,
+    "prismaCliResolution": 1,
+    "databaseConvergence": 2,
+    "runtimeCompatibility": 1,
+    "migrationHistorySerialization": 1,
+    "embeddedMutationTrust": 1,
+    "emailStudio": 3,
+    "emailAssetManager": 1,
+    "emailRichText": 1,
+    "emailLogic": 1,
+    "emailResponsiveColumns": 1,
+    "emailReusableSymbols": 1,
+    "emailSavedBlocks": 1,
+    "emailCommerceBrowser": 1,
+    "emailResponsiveVisibility": 1,
+    "emailVersionHistory": 1,
+    "emailTemplateMarketplace": 1,
+    "emailAiFoundation": 1,
+    "privacyLifecycle": 2
+  },
+  "counts": {
+    "widgets": 117,
+    "motionBuiltins": 1347,
+    "motionReferenceLibraries": 12,
+    "motionReferenceCandidates": 306,
+    "motionReferencePresets": 286,
+    "motionDuplicatesRemoved": 20,
+    "animateCssPresets": 97,
+    "generatedVsnPresets": 960,
+    "emailBlocks": 19,
+    "customWidgetFieldTypes": 21,
+    "systems": 35,
+    "permissionResources": 10,
+    "permissionActions": 41,
+    "migrations": 34,
+    "routeModules": 51,
+    "userDocs": 25,
+    "developerDocs": 28,
+    "engineeringDocs": 16
+  },
+  "migrations": {
+    "latest": "20260810114500_milestone_q633_stock_usage_history",
+    "all": [
+      "20240530213853_create_session_table",
+      "20260728222821_add_builder_pages",
+      "20260728230136_add_page_template_views",
+      "20260729214020_add_shopify_page_sync",
+      "20260729224844_add_builder_template_targets",
+      "20260729235126_add_collection_targeting",
+      "20260803233000_phase10_form_submissions",
+      "20260803_phase7_release_control",
+      "20260803_phase8_operational_readiness",
+      "20260804003000_phase11_platform",
+      "20260804123000_phase12_release_product",
+      "20260804153000_phase13_role_manager",
+      "20260804190000_library_soft_delete",
+      "20260805010000_dashboard_systems",
+      "20260805030000_batch3_font_registry",
+      "20260806090000_page_template_trash_assets",
+      "20260806143000_library_template_metadata",
+      "20260806190000_phase8_cro_experiments",
+      "20260806193000_phase9_ai_builder",
+      "20260806203000_phase10_collaboration_review",
+      "20260806214500_phase11_localization_markets",
+      "20260807013000_phase12_forms_assets_systems",
+      "20260807030000_phase13_marketplace_brand_kits",
+      "20260807043000_phase15_enterprise_hardening",
+      "20260808200000_dashboard_workspace",
+      "20260808213000_milestone_i_motion_engine",
+      "20260808230000_milestone_j_widget_platform",
+      "20260808234500_milestone_k_developer_studio",
+      "20260808234530_milestone_m2_wishlist",
+      "20260808234540_milestone_n1_email_builder",
+      "20260809030000_milestone_q52_subscription_sync",
+      "20260810013000_templates_management_final_qa",
+      "20260810093000_milestone_q63_stock_image_hub",
+      "20260810114500_milestone_q633_stock_usage_history"
+    ]
+  },
+  "documentation": {
+    "user": [
+      "docs/user/ai-editable-output.md",
+      "docs/user/backup-import-export.md",
+      "docs/user/campaigns-cro-floating.md",
+      "docs/user/email-builder.md",
+      "docs/user/fonts-svg.md",
+      "docs/user/forms-automation.md",
+      "docs/user/getting-started.md",
+      "docs/user/global-code.md",
+      "docs/user/localization-markets.md",
+      "docs/user/marketplace-library.md",
+      "docs/user/motion-library.md",
+      "docs/user/native-shopify.md",
+      "docs/user/pages-and-templates.md",
+      "docs/user/performance-workspace.md",
+      "docs/user/platform-intelligence.md",
+      "docs/user/platform-quality.md",
+      "docs/user/production-shopify.md",
+      "docs/user/roles-permissions.md",
+      "docs/user/runtime-recovery.md",
+      "docs/user/shopify-media.md",
+      "docs/user/stock-image-hub.md",
+      "docs/user/stock-media-hub.md",
+      "docs/user/system-health.md",
+      "docs/user/templates-management.md",
+      "docs/user/wishlist.md"
+    ],
+    "developer": [
+      "docs/developer/architecture.md",
+      "docs/developer/billing-lifecycle.md",
+      "docs/developer/billing-production-qa.md",
+      "docs/developer/data-providers.md",
+      "docs/developer/email-renderer.md",
+      "docs/developer/entitlement-engine.md",
+      "docs/developer/field-types.md",
+      "docs/developer/google-platform-integrations.md",
+      "docs/developer/graphql-studio.md",
+      "docs/developer/migrations.md",
+      "docs/developer/performance-hardening.md",
+      "docs/developer/permissions.md",
+      "docs/developer/platform-intelligence.md",
+      "docs/developer/platform-p2.md",
+      "docs/developer/plugin-manifest.md",
+      "docs/developer/renderer.md",
+      "docs/developer/reusable-data-view-kit.md",
+      "docs/developer/runtime-security.md",
+      "docs/developer/sdk.md",
+      "docs/developer/security.md",
+      "docs/developer/shopify-app-pricing.md",
+      "docs/developer/shopify-production-integration.md",
+      "docs/developer/shopify-subscription-sync.md",
+      "docs/developer/stock-image-provider-contracts.md",
+      "docs/developer/stock-media-provider-contracts.md",
+      "docs/developer/testing.md",
+      "docs/developer/widget-registration.md",
+      "docs/developer/wishlist-runtime.md"
+    ],
+    "engineering": [
+      "docs/engineering/README.md",
+      "docs/engineering/architecture.md",
+      "docs/engineering/developer-studio.md",
+      "docs/engineering/email-renderer.md",
+      "docs/engineering/error-handling.md",
+      "docs/engineering/migrations.md",
+      "docs/engineering/module-map.md",
+      "docs/engineering/motion-catalog.md",
+      "docs/engineering/motion-engine.md",
+      "docs/engineering/performance.md",
+      "docs/engineering/permissions.md",
+      "docs/engineering/resource-packages.md",
+      "docs/engineering/security.md",
+      "docs/engineering/testing.md",
+      "docs/engineering/ui-standards.md",
+      "docs/engineering/widget-platform.md"
+    ]
+  },
+  "systems": [
+    {
+      "key": "dashboard",
+      "label": "Dashboard",
+      "group": "Overview",
+      "ownerOnly": false
+    },
+    {
+      "key": "pages",
+      "label": "Pages & visual editor",
+      "group": "Build",
+      "ownerOnly": false
+    },
+    {
+      "key": "library",
+      "label": "Saved Library",
+      "group": "Build",
+      "ownerOnly": false
+    },
+    {
+      "key": "marketplace",
+      "label": "Marketplace",
+      "group": "Build",
+      "ownerOnly": false
+    },
+    {
+      "key": "brandKits",
+      "label": "Brand Kits",
+      "group": "Build",
+      "ownerOnly": false
+    },
+    {
+      "key": "widgets",
+      "label": "Widgets",
+      "group": "Build",
+      "ownerOnly": false
+    },
+    {
+      "key": "widgetStudio",
+      "label": "Widget Studio",
+      "group": "Build",
+      "ownerOnly": false
+    },
+    {
+      "key": "campaigns",
+      "label": "Campaigns",
+      "group": "Growth",
+      "ownerOnly": false
+    },
+    {
+      "key": "emailBuilder",
+      "label": "Email Builder",
+      "group": "Growth",
+      "ownerOnly": false
+    },
+    {
+      "key": "experiments",
+      "label": "CRO Experiments",
+      "group": "Growth",
+      "ownerOnly": false
+    },
+    {
+      "key": "floatingElements",
+      "label": "Floating Elements",
+      "group": "Growth",
+      "ownerOnly": false
+    },
+    {
+      "key": "fonts",
+      "label": "Custom Fonts",
+      "group": "Assets",
+      "ownerOnly": false
+    },
+    {
+      "key": "svgAssets",
+      "label": "SVG Library",
+      "group": "Assets",
+      "ownerOnly": false
+    },
+    {
+      "key": "animations",
+      "label": "Motion Library",
+      "group": "Assets",
+      "ownerOnly": false
+    },
+    {
+      "key": "stockImages",
+      "label": "Stock Images",
+      "group": "Assets",
+      "ownerOnly": false
+    },
+    {
+      "key": "stockVideos",
+      "label": "Stock Videos",
+      "group": "Assets",
+      "ownerOnly": false
+    },
+    {
+      "key": "stockAudio",
+      "label": "Stock Audio",
+      "group": "Assets",
+      "ownerOnly": false
+    },
+    {
+      "key": "submissions",
+      "label": "Form Submissions",
+      "group": "Data & Forms",
+      "ownerOnly": false
+    },
+    {
+      "key": "formSettings",
+      "label": "Form Settings",
+      "group": "Data & Forms",
+      "ownerOnly": false
+    },
+    {
+      "key": "localization",
+      "label": "Languages & Markets",
+      "group": "Localization",
+      "ownerOnly": false
+    },
+    {
+      "key": "developerStudio",
+      "label": "Developer Studio",
+      "group": "Developer",
+      "ownerOnly": false
+    },
+    {
+      "key": "developerSdk",
+      "label": "Plugin SDK",
+      "group": "Developer",
+      "ownerOnly": false
+    },
+    {
+      "key": "platformIntelligence",
+      "label": "Platform Intelligence",
+      "group": "Developer",
+      "ownerOnly": false
+    },
+    {
+      "key": "onboarding",
+      "label": "Setup",
+      "group": "System",
+      "ownerOnly": false
+    },
+    {
+      "key": "backups",
+      "label": "Backups",
+      "group": "System",
+      "ownerOnly": false
+    },
+    {
+      "key": "controlCenter",
+      "label": "System Health",
+      "group": "System",
+      "ownerOnly": false
+    },
+    {
+      "key": "roleManager",
+      "label": "Roles & Permissions",
+      "group": "System",
+      "ownerOnly": true
+    },
+    {
+      "key": "documentation",
+      "label": "Documentation",
+      "group": "Manage",
+      "ownerOnly": false
+    },
+    {
+      "key": "plans",
+      "label": "Plans & License",
+      "group": "Manage",
+      "ownerOnly": false
+    },
+    {
+      "key": "settings",
+      "label": "Settings",
+      "group": "Manage",
+      "ownerOnly": false
+    },
+    {
+      "key": "support",
+      "label": "Support",
+      "group": "Manage",
+      "ownerOnly": false
+    },
+    {
+      "key": "changelog",
+      "label": "Changelog",
+      "group": "Manage",
+      "ownerOnly": false
+    },
+    {
+      "key": "notifications",
+      "label": "Notifications",
+      "group": "Manage",
+      "ownerOnly": false
+    },
+    {
+      "key": "about",
+      "label": "About",
+      "group": "Manage",
+      "ownerOnly": false
+    },
+    {
+      "key": "profile",
+      "label": "Profile",
+      "group": "Account",
+      "ownerOnly": false
+    }
+  ],
+  "permissions": [
+    {
+      "key": "pages",
+      "label": "Pages",
+      "group": "Build",
+      "actions": [
+        "view",
+        "create",
+        "edit",
+        "publish",
+        "delete",
+        "restore",
+        "import"
+      ]
+    },
+    {
+      "key": "marketplace",
+      "label": "Marketplace",
+      "group": "Build",
+      "actions": [
+        "browse",
+        "favorite",
+        "install",
+        "rollback"
+      ]
+    },
+    {
+      "key": "stockImages",
+      "label": "Stock Images",
+      "group": "Assets",
+      "actions": [
+        "view",
+        "favorite",
+        "import",
+        "delete"
+      ]
+    },
+    {
+      "key": "stockVideos",
+      "label": "Stock Videos",
+      "group": "Assets",
+      "actions": [
+        "view",
+        "favorite",
+        "import",
+        "delete"
+      ]
+    },
+    {
+      "key": "stockAudio",
+      "label": "Stock Audio",
+      "group": "Assets",
+      "actions": [
+        "view",
+        "favorite",
+        "import",
+        "delete"
+      ]
+    },
+    {
+      "key": "graphql",
+      "label": "GraphQL Studio",
+      "group": "Developer",
+      "actions": [
+        "read_queries",
+        "run_queries",
+        "save_queries",
+        "run_mutations"
+      ]
+    },
+    {
+      "key": "globalCode",
+      "label": "Global CSS / JS",
+      "group": "Developer",
+      "actions": [
+        "view",
+        "edit",
+        "publish",
+        "delete"
+      ]
+    },
+    {
+      "key": "plugins",
+      "label": "Plugin SDK",
+      "group": "Developer",
+      "actions": [
+        "view",
+        "configure",
+        "install"
+      ]
+    },
+    {
+      "key": "platform",
+      "label": "Platform Intelligence",
+      "group": "Developer",
+      "actions": [
+        "view",
+        "manage_tokens",
+        "run_qa",
+        "manage_extensions",
+        "simulate_migrations"
+      ]
+    },
+    {
+      "key": "billing",
+      "label": "Billing",
+      "group": "Manage",
+      "actions": [
+        "view",
+        "manage"
+      ]
+    }
+  ],
+  "emailBlocks": [
+    "logo",
+    "header",
+    "navbar",
+    "hero",
+    "section",
+    "columns",
+    "text",
+    "image",
+    "image-text",
+    "button",
+    "testimonial",
+    "product",
+    "product-grid",
+    "order-summary",
+    "coupon",
+    "social",
+    "divider",
+    "spacer",
+    "footer"
+  ],
+  "customWidgetFieldTypes": [
+    "text",
+    "textarea",
+    "number",
+    "toggle",
+    "select",
+    "multi-select",
+    "radio",
+    "button-set",
+    "url",
+    "color",
+    "color-gradient",
+    "range",
+    "css-length",
+    "date",
+    "datetime",
+    "time",
+    "dimensions",
+    "border-radius",
+    "typography",
+    "media",
+    "icon"
+  ],
+  "motionReferenceSources": [
+    "hovercss",
+    "all-animation",
+    "magic",
+    "tuesday",
+    "reboundgen",
+    "csshake",
+    "wickedcss",
+    "woah",
+    "obnoxious",
+    "infinite",
+    "micron",
+    "mimic"
+  ]
+}

@@ -1,0 +1,136 @@
+{{ 'vsn-page-renderer.css' | asset_url | stylesheet_tag }}
+{{ 'vsn-campaigns.css' | asset_url | stylesheet_tag }}
+{{ 'vsn-wishlist.css' | asset_url | stylesheet_tag }}
+
+<script>
+  window.__VSN_RUNTIME_ASSETS__ = {
+    interactions: {{ 'vsn-interactions.js' | asset_url | json }},
+    experiments: {{ 'vsn-experiments.js' | asset_url | json }}
+  };
+</script>
+
+{% assign vsn_asset_ready = app.metafields.vsn_page_builder.asset_pipeline_ready.value %}
+{% assign vsn_asset_manifest = app.metafields.vsn_page_builder.asset_manifest.value %}
+{% if vsn_asset_ready == true and vsn_asset_manifest != blank %}
+  <script>
+    window.VSN_ASSET_PIPELINE_READY = true;
+    window.__VSN_ASSET_MANIFEST__ = {
+      architecture: {{ vsn_asset_manifest.architecture | json }},
+      schemaVersion: {{ vsn_asset_manifest.schemaVersion | json }},
+      generatedAt: {{ vsn_asset_manifest.generatedAt | json }},
+      templates: {
+        {% for entry in vsn_asset_manifest.entries %}
+          {{ entry.id | json }}: {
+            id: {{ entry.id | json }},
+            title: {{ entry.title | json }},
+            handle: {{ entry.handle | json }},
+            template: {{ entry.template | json }},
+            publishedVersion: {{ entry.publishedVersion | json }},
+            cssUrl: {{ entry.css | asset_url | json }},
+            jsUrl: {% if entry.js != blank %}{{ entry.js | asset_url | json }}{% else %}null{% endif %},
+            dependencies: {{ entry.dependencies | json }},
+            composition: {{ entry.composition | json }},
+            criticalCss: {{ entry.criticalCss | json }},
+            criticalCssBytes: {{ entry.criticalCssBytes | json }},
+            fontPreloads: {{ entry.fontPreloads | json }},
+            cssBytes: {{ entry.cssBytes | json }},
+            jsBytes: {{ entry.jsBytes | json }}
+          }{% unless forloop.last %},{% endunless %}
+        {% endfor %}
+      }
+    };
+  </script>
+{% else %}
+  <script>window.VSN_ASSET_PIPELINE_READY = false;</script>
+{% endif %}
+
+<script>
+  window.VSN_PAGE_CONTEXT = {
+    template: {{ template.name | json }},
+    suffix: {{ template.suffix | json }},
+    path: {{ request.path | json }},
+    pageType: {{ request.page_type | json }},
+
+    resourceId:
+      {% if collection %}
+        {{ collection.id | json }}
+      {% elsif product %}
+        {{ product.id | json }}
+      {% elsif blog %}
+        {{ blog.id | json }}
+      {% elsif article %}
+        {{ article.id | json }}
+      {% else %}
+        null
+      {% endif %},
+
+    resourceHandle:
+      {% if collection %}
+        {{ collection.handle | json }}
+      {% elsif product %}
+        {{ product.handle | json }}
+      {% elsif article %}
+        {{ blog.handle | append: '/' | append: article.handle | json }}
+      {% elsif blog %}
+        {{ blog.handle | json }}
+      {% else %}
+        null
+      {% endif %},
+
+    resourceTitle:
+      {% if collection %}
+        {{ collection.title | json }}
+      {% elsif product %}
+        {{ product.title | json }}
+      {% elsif article %}
+        {{ article.title | json }}
+      {% elsif blog %}
+        {{ blog.title | json }}
+      {% else %}
+        null
+      {% endif %},
+
+    searchQuery: {% if search %}{{ search.terms | json }}{% else %}null{% endif %},
+    blogHandle: {% if blog %}{{ blog.handle | json }}{% elsif article %}{{ blog.handle | json }}{% else %}null{% endif %},
+    articleHandle: {% if article %}{{ article.handle | json }}{% else %}null{% endif %},
+    customerLoggedIn: {% if customer %}true{% else %}false{% endif %},
+    customerId: {% if customer %}{{ customer.id | json }}{% else %}null{% endif %},
+    customerName: {% if customer %}{{ customer.name | json }}{% else %}null{% endif %},
+    customerEmail: {% if customer %}{{ customer.email | json }}{% else %}null{% endif %},
+    language: {{ localization.language.iso_code | json }},
+    country: {{ localization.country.iso_code | json }},
+    market: {{ localization.market.handle | json }},
+    currency: {{ cart.currency.iso_code | default: localization.country.currency.iso_code | json }},
+    cartItemCount: {{ cart.item_count | default: 0 | json }},
+    productInventory: {% if product %}{{ product.selected_or_first_available_variant.inventory_quantity | default: 0 | json }}{% else %}0{% endif %}
+  };
+</script>
+
+<script>
+  window.__VSN_GLOBAL_CODE_RUNTIME__ = {
+    endpoint: "/apps/vsn-builder/runtime",
+    context: {
+      template: {{ template.name | json }},
+      visitorPath: {{ request.path | json }},
+      language: {{ localization.language.iso_code | json }},
+      country: {{ localization.country.iso_code | json }},
+      market: {{ localization.market.handle | json }}
+    }
+  };
+</script>
+<script src="{{ 'vsn-global-code-loader.js' | asset_url }}" defer></script>
+
+<script src="{{ 'vsn-campaigns.js' | asset_url }}" defer></script>
+<script
+  src="{{ 'vsn-page-renderer.js' | asset_url }}"
+  defer
+></script>
+<script src="{{ 'vsn-wishlist.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "VSN Page Renderer",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}

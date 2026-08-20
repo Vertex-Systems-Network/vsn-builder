@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { VSN_BASELINE } from '../app/config/baseline.js';
+import { widgetRegistry } from '../app/builder/widgetRegistry.js';
+import { createComponentDefinition, resolveComponentInstance, resetComponentInstance, addComponentVariant, updateComponentMasterDefaults, componentDependencies } from '../app/builder/componentSystem.js';
+
+const checks=[]; const check=(name,fn)=>{try{fn();checks.push([name,true]);}catch(e){checks.push([name,false,e.message]);}};
+const master={id:'root',type:'container',label:'Card',props:{},children:[{id:'title',type:'heading',label:'Title',props:{text:'Hello'},children:[]},{id:'btn',type:'button',label:'CTA',props:{text:'Buy',url:'/x'},children:[]}]};
+const def=createComponentDefinition(master,{name:'Product Card'});
+const lib={id:'cmp-1',kind:'component',content:def};
+const instance={id:'inst-1',type:'component-instance',props:{componentId:'cmp-1',variantId:'default',propValues:{'title_text':'Changed'},overrides:{},activeSlot:'content'},children:[]};
+
+check('Phase 4 baseline remains compatible',()=>assert.ok(VSN_BASELINE.phase>=4&&VSN_BASELINE.schema.components===1));
+check('Component Instance registered',()=>assert.ok(widgetRegistry['component-instance']?.acceptsChildren===true));
+check('Component definition separate schema',()=>assert.ok(def.root&&def.version===1&&def.schemaVersion===1));
+check('Named props discovered',()=>assert.ok(def.props.some(p=>p.path==='props.text')));
+check('Named slots discovered',()=>assert.ok(def.slots.some(s=>s.targetNodeId==='root')));
+check('Instance resolves master',()=>assert.ok(resolveComponentInstance(instance,[lib])?.root));
+check('Instance IDs isolated',()=>assert.ok(resolveComponentInstance(instance,[lib]).root.id.startsWith('inst-1--')));
+check('Instance prop override applies',()=>{const r=resolveComponentInstance(instance,[lib]); const title=r.root.children.find(x=>x.id.includes('title')); assert.equal(title.props.text,'Changed');});
+check('Reset to Master clears overrides',()=>{const r=resetComponentInstance({...instance,props:{...instance.props,overrides:{styles:{x:1}}}});assert.deepEqual(r.props.propValues,{});assert.deepEqual(r.props.overrides,{});});
+check('Variants supported',()=>{const d=addComponentVariant(def,{name:'Dark',propValues:{title_text:'Dark'}});assert.ok(d.variants.length===2&&d.version===2);});
+check('Master defaults propagate',()=>{const d=updateComponentMasterDefaults(def,{title_text:'Master 2'});assert.ok(d.version===2&&d.props.find(p=>p.name==='title_text').default==='Master 2');});
+check('Dependency graph works',()=>{const hits=componentDependencies([{id:'p1',title:'A',content:[instance]}],'cmp-1');assert.equal(hits[0].count,1);});
+const library=fs.readFileSync('app/routes/app.library.jsx','utf8');
+check('Library supports component kind',()=>assert.match(library,/"component"/));
+const props=fs.readFileSync('app/components/editor/PropertiesPanel.jsx','utf8');
+check('Properties exposes Reset to Master',()=>assert.match(props,/Reset to Master/));
+check('Properties exposes Variant Canvas',()=>assert.match(props,/Variant Canvas/));
+check('Properties exposes named props',()=>assert.match(props,/Named Props|definition\.props/));
+const prod=fs.readFileSync('app/components/editor/EditorProductivityLayer.jsx','utf8');
+check('Context menu can create component',()=>assert.match(prod,/Create Component/));
+const page=fs.readFileSync('app/components/editor/PageEditor.jsx','utf8');
+check('PageEditor replaces source with instance',()=>assert.match(page,/component-instance/));
+const preview=fs.readFileSync('app/components/editor/PreviewRenderer.jsx','utf8');
+const canvas=fs.readFileSync('app/components/editor/Canvas.jsx','utf8');
+const storefront=fs.readFileSync('app/routes/builder-proxy.$.jsx','utf8');
+check('Canvas blocks component cycles',()=>assert.match(canvas,/Circular component dependency blocked/));
+check('Preview blocks component cycles',()=>assert.match(preview,/Circular component dependency blocked/));
+check('Storefront blocks component cycles',()=>assert.match(storefront,/stack\.has\(componentKey\)/));
+check('Component usage graph loader present',()=>assert.match(fs.readFileSync('app/routes/app.builder.$id.jsx','utf8'),/componentUsage/));
+
+for(const [n,ok,msg] of checks) console.log(`${ok?'PASS':'FAIL'} ${n}${msg?`: ${msg}`:''}`);
+const failed=checks.filter(x=>!x[1]);
+console.log(`Phase 4 Components audit: ${checks.length-failed.length}/${checks.length} PASS`);
+if(failed.length) process.exit(1);

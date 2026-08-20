@@ -1,0 +1,8 @@
+@import "./dashboard.css";
+@import "./builder.css";
+@import "./scrollbars.css";
+
+/* Q.1 runtime recovery */
+.vsn-runtime-recovery{min-height:100%;display:grid;place-items:center;padding:32px;background:var(--vsn-dashboard-bg,#f6f6f7);color:var(--vsn-dashboard-text,#202223)}
+.vsn-runtime-recovery-card{width:min(560px,100%);border:1px solid var(--vsn-dashboard-border,#e3e3e3);border-radius:16px;background:var(--vsn-dashboard-surface,#fff);padding:24px;box-shadow:0 12px 36px rgba(0,0,0,.08)}
+.vsn-runtime-recovery-eyebrow{display:block;margin-bottom:6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#b42318}.vsn-runtime-recovery h2{margin:0;font-size:20px}.vsn-runtime-recovery p{margin:8px 0 0;color:var(--vsn-dashboard-muted,#6d7175);font-size:13px;line-height:1.55}.vsn-runtime-recovery-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.vsn-runtime-recovery-actions button,.vsn-runtime-recovery-actions a{appearance:none;border:1px solid var(--vsn-dashboard-border,#d5d7da);border-radius:9px;background:transparent;color:inherit;padding:8px 12px;font:inherit;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}.vsn-runtime-recovery-actions .primary{background:#008060;border-color:#008060;color:#fff}

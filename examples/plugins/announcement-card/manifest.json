@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "acme.notice",
+  "name": "Acme Notice Widgets",
+  "version": "1.0.0",
+  "description": "Example bundled VSN widget plugin.",
+  "author": "Acme",
+  "compatibility": {
+    "min": "2.5.50",
+    "maxExclusive": "3.0.0"
+  },
+  "permissions": [
+    "editor:controls",
+    "editor:preview",
+    "storefront:render"
+  ],
+  "widgets": [
+    {
+      "id": "notice-card",
+      "label": "Notice Card",
+      "category": "Plugin",
+      "acceptsChildren": false,
+      "defaults": {
+        "props": {
+          "title": "Important notice",
+          "body": "Add your message."
+        },
+        "styles": {}
+      },
+      "controls": [
+        {
+          "key": "title",
+          "type": "text",
+          "label": "Title"
+        },
+        {
+          "key": "body",
+          "type": "textarea",
+          "label": "Message"
+        }
+      ]
+    }
+  ]
+}

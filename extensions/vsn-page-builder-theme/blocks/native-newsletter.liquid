@@ -1,0 +1,55 @@
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><form class="vsn-native-form" method="post" action="/contact#contact_form"><input type="hidden" name="form_type" value="customer"><input type="email" name="contact[email]" placeholder="{{ block.settings.placeholder }}" required><button type="submit">{{ block.settings.button }}</button></form></div>
+
+{% schema %}
+{
+  "name": "Newsletter",
+  "target": "section",
+  "stylesheet": "native-blocks.css",
+  "available_if": "{{ app.metafields.vsn_page_builder.newsletter_form_enabled }}",
+  "settings": [
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "Placeholder",
+      "default": "Email address"
+    },
+    {
+      "type": "text",
+      "id": "button",
+      "label": "Button",
+      "default": "Subscribe"
+    },
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Text color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color_background",
+      "id": "background",
+      "label": "Background"
+    },
+    {
+      "type": "range",
+      "id": "padding_y",
+      "label": "Vertical padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_x",
+      "label": "Horizontal padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ]
+}
+{% endschema %}

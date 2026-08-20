@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "acme.catalog",
+  "name": "Acme Catalog Provider",
+  "version": "1.0.0",
+  "description": "Example third-party API data provider.",
+  "compatibility": {
+    "min": "2.5.50",
+    "maxExclusive": "3.0.0"
+  },
+  "permissions": [
+    "network:external"
+  ],
+  "networkOrigins": [
+    "https://api.example.com/"
+  ],
+  "dataProviders": [
+    {
+      "id": "catalog:items",
+      "label": "Acme Catalog"
+    }
+  ]
+}

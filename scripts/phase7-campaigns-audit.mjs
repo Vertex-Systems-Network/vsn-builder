@@ -1,0 +1,40 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import { normalizeCampaignSettings, campaignScheduleState, campaignMatchesContext, CAMPAIGN_TEMPLATE_TYPES, OVERLAY_CAMPAIGN_TEMPLATE_TYPES } from '../app/builder/campaignSystem.js';
+
+const read=(p)=>fs.readFileSync(p,'utf8');
+let checks=0; const ok=(cond,msg)=>{assert.ok(cond,msg);checks++};
+
+ok(OVERLAY_CAMPAIGN_TEMPLATE_TYPES.length===5,'Five Phase 7 overlay campaign template types required');
+ok(CAMPAIGN_TEMPLATE_TYPES.length>=OVERLAY_CAMPAIGN_TEMPLATE_TYPES.length,'Later campaign extensions must preserve all Phase 7 campaign types');
+for (const type of ['popup','modal','drawer','flyout','announcement-overlay']) ok(OVERLAY_CAMPAIGN_TEMPLATE_TYPES.includes(type)&&CAMPAIGN_TEMPLATE_TYPES.includes(type),`Missing ${type}`);
+const base=normalizeCampaignSettings({},'popup');
+ok(base.campaignTrigger==='delay','Default trigger');
+ok(base.campaignFrequency==='session','Default frequency');
+ok(campaignScheduleState({...base,campaignStart:'2999-01-01T00:00:00Z'})==='scheduled','Future schedule');
+ok(campaignScheduleState({...base,campaignEnd:'2000-01-01T00:00:00Z'})==='expired','Expired schedule');
+ok(campaignMatchesContext({...base,campaignIncludePath:'/products/'},{path:'/products/test',template:'product'}),'Include path match');
+ok(!campaignMatchesContext({...base,campaignIncludePath:'/products/'},{path:'/collections/test',template:'collection'}),'Include path reject');
+ok(campaignMatchesContext({...base,campaignLanguages:'en,tr'},{path:'/',language:'tr'}),'Language match');
+ok(!campaignMatchesContext({...base,campaignCountries:'US,TR'},{path:'/',country:'PK'}),'Country reject');
+
+const modal=read('app/components/editor/PageSettingsPanel.jsx');
+for(const token of ['campaignStart','campaignEnd','campaignTrigger','campaignFrequency','campaignIncludePath','campaignCustomerState','campaignUtmCampaign']) ok(modal.includes(token),`Campaign editor missing ${token}`);
+const create=read('app/components/CreatePageModal.jsx'); for(const type of OVERLAY_CAMPAIGN_TEMPLATE_TYPES) ok(!create.includes(`"${type}"`),`Templates create modal must not expose campaign type ${type}`);
+const campaignRoute=read('app/routes/app.campaigns.jsx'); ok(campaignRoute.includes('OVERLAY_CAMPAIGN_TEMPLATE_TYPES.includes'),'Dedicated Campaigns route must validate campaign template types'); ok(campaignRoute.includes('template,isDefault:false,status:"draft"'),'Dedicated Campaigns route must retain campaign creation');
+const proxy=read('app/routes/builder-proxy.$.jsx');
+ok(proxy.includes('campaignMode'),'Storefront campaign endpoint missing');
+ok(proxy.includes('campaignScheduleState(settings)'),'Server-side schedule gate missing');
+ok(proxy.includes('campaignMatchesContext(settings, campaignContext)'),'Server-side conditions missing');
+ok(proxy.includes('campaignFallbackPageId'),'Expired fallback support missing');
+const runtime=read('extensions/vsn-page-builder-theme/assets/vsn-campaigns.js');
+for(const token of ['exit-intent','campaignScrollPercent','campaignInactivityMs','click-selector','page-count','campaignFrequency','utm_campaign','vsn:campaign-open']) ok(runtime.includes(token),`Campaign runtime missing ${token}`);
+const liquid=read('extensions/vsn-page-builder-theme/blocks/vsn-page-renderer.liquid');
+ok(liquid.includes("'vsn-campaigns.css' | asset_url"),'Campaign CSS not loaded');
+ok(liquid.includes("'vsn-campaigns.js' | asset_url"),'Campaign JS not loaded');
+ok(liquid.includes('localization.language.iso_code'),'Locale context missing');
+ok(liquid.includes('cart.item_count'),'Cart context missing');
+ok(fs.existsSync('app/routes/app.campaigns.jsx'),'Campaign Calendar route missing');
+const library=read('app/services/library-presets.server.js'); for(const type of OVERLAY_CAMPAIGN_TEMPLATE_TYPES) ok(library.includes(`templateType: "${type}"`),`Default campaign template missing ${type}`);
+const preview=read('app/components/editor/LibraryDesignPreview.jsx'); ok(preview.includes('normalizePreviewIds'),'Library preview duplicate-key normalization missing'); ok(preview.includes('preview-${key}'),'Preview keys are not deterministic');
+console.log(`VSN Phase 7 campaign audit: PASS (${checks}/${checks})`);

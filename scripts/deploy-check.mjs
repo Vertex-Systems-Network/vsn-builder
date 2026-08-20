@@ -1,0 +1,1 @@
+const required=["SHOPIFY_API_KEY","SHOPIFY_API_SECRET"];let bad=false;for(const key of required){const ok=Boolean(process.env[key]);console.log(`${ok?"PASS":"WARN"} ${key}`);if(process.env.NODE_ENV==="production"&&!ok)bad=true}console.log("Deployment config check complete.");if(bad)process.exit(1);

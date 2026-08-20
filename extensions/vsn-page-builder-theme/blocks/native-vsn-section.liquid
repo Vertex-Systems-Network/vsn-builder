@@ -1,0 +1,56 @@
+<div id="vsn-native-section-{{ block.id }}" class="vsn-builder-block vsn-native-section-shell" data-page-handle="{{ block.settings.section_handle | escape }}" data-proxy-path="/apps/vsn-builder" style="--vsn-native-max:{% if block.settings.full_width %}100%{% else %}{{ block.settings.max_width }}px{% endif %};padding:{{ block.settings.padding_y }}px {{ block.settings.padding_x }}px">
+{% if block.settings.section_handle == blank %}<div class="vsn-builder-message">Enter a published VSN Section handle.</div>{% else %}<div class="vsn-builder-loading">Loading VSN section…</div>{% endif %}</div>
+
+{% schema %}
+{
+  "name": "VSN section",
+  "target": "section",
+  "stylesheet": "page-builder.css",
+  "available_if": "{{ app.metafields.vsn_page_builder.section_enabled }}",
+  "settings": [
+    {
+      "type": "text",
+      "id": "section_handle",
+      "label": "VSN section handle",
+      "info": "Publish a VSN template with type Section, then enter its handle."
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "Full width",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "max_width",
+      "label": "Max width",
+      "min": 320,
+      "max": 1800,
+      "step": 20,
+      "unit": "px",
+      "default": 1200
+    },
+    {
+      "type": "range",
+      "id": "padding_y",
+      "label": "Vertical padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_x",
+      "label": "Horizontal padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "javascript": "page-builder.js"
+}
+{% endschema %}

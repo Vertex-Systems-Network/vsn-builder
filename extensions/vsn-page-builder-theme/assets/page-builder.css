@@ -1,0 +1,32 @@
+.vsn-builder-block {
+	width: 100%;
+	min-height: 1px;
+}
+
+.vsn-builder-block,
+.vsn-builder-block *,
+.vsn-builder-block *::before,
+.vsn-builder-block *::after {
+	box-sizing: border-box;
+}
+
+.vsn-builder-loading,
+.vsn-builder-message {
+	width: 100%;
+	padding: 32px 20px;
+	text-align: center;
+	font-size: 14px;
+}
+
+.vsn-builder-loading {
+	color: rgba(var(--color-foreground, 18, 18, 18), 0.65);
+}
+
+.vsn-builder-message {
+	border: 1px solid rgba(var(--color-foreground, 18, 18, 18), 0.15);
+	border-radius: 8px;
+}
+
+.vsn-builder-error {
+	color: #b42318;
+}

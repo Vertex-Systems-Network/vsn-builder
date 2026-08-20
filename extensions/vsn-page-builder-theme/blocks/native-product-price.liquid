@@ -1,0 +1,54 @@
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><div class="vsn-native-price">{% if product.selected_or_first_available_variant %}{{ product.selected_or_first_available_variant.price | money }}{% else %}{{ block.settings.fallback }}{% endif %}</div></div>
+
+{% schema %}
+{
+  "name": "Product price",
+  "target": "section",
+  "stylesheet": "native-blocks.css",
+  "available_if": "{{ app.metafields.vsn_page_builder.product_price_enabled }}",
+  "settings": [
+    {
+      "type": "text",
+      "id": "fallback",
+      "label": "Fallback",
+      "default": "Price"
+    },
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Text color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color_background",
+      "id": "background",
+      "label": "Background"
+    },
+    {
+      "type": "range",
+      "id": "padding_y",
+      "label": "Vertical padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_x",
+      "label": "Horizontal padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "product"
+    ]
+  }
+}
+{% endschema %}

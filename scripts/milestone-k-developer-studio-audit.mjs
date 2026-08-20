@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { describeGraphqlOperation, parseGraphqlVariables } from '../app/services/developer-graphql.server.js';
+import { buildGlobalCssBundle, buildGlobalJsBundle, globalCodeMatches, inspectGlobalCode, normalizeGlobalCode } from '../app/services/global-code.server.js';
+
+const root=process.cwd();
+const source=(file)=>fs.readFileSync(path.join(root,file),'utf8');
+const exists=(file)=>fs.existsSync(path.join(root,file));
+const checks=[];
+function check(name,fn){try{fn();checks.push([name,true,'']);}catch(error){checks.push([name,false,error.message]);}}
+
+check('Milestone K contract is preserved in v2.5.67 or later',()=>{const [a,b,c]=JSON.parse(source('package.json')).version.split('.').map(Number);assert.ok(a>2||(a===2&&(b>5||(b===5&&c>=67))));});
+check('Developer Studio route is packaged',()=>assert.ok(exists('app/routes/app.developer-studio.jsx')));
+check('Developer Studio remains permission-gated',()=>{const perms=source('app/utils/builder-permissions.js');assert.match(perms,/key:"developerStudio"[\s\S]*?(ownerOnly:true|defaultEnabled:false)/);assert.match(perms,/"developer-studio":"developerStudio"/);});
+check('Unified shell navigates to Developer Studio',()=>{assert.match(source('app/routes/app.jsx'),/"developer-studio": "\/app\/developer-studio"/);assert.match(source('app/components/dashboard/Sidebar.jsx'),/Developer Studio/);});
+check('GraphQL persistence models exist',()=>{const schema=source('prisma/schema.prisma');assert.match(schema,/model BuilderGraphqlSavedQuery/);assert.match(schema,/model BuilderGraphqlHistory/);});
+check('Global Code persistence and revision models exist',()=>{const schema=source('prisma/schema.prisma');assert.match(schema,/model BuilderGlobalCode/);assert.match(schema,/model BuilderGlobalCodeRevision/);});
+check('Milestone K migration is packaged',()=>{const file='prisma/migrations/20260808234500_milestone_k_developer_studio/migration.sql';assert.ok(exists(file));const sql=source(file);for(const table of ['BuilderGraphqlSavedQuery','BuilderGraphqlHistory','BuilderGlobalCode','BuilderGlobalCodeRevision'])assert.match(sql,new RegExp(`CREATE TABLE "${table}"`));});
+check('GraphQL schema explorer reads actual app scopes',()=>{const service=source('app/services/developer-graphql.server.js');assert.match(service,/currentAppInstallation \{ accessScopes \{ handle \} \}/);assert.match(service,/__schema/);assert.match(service,/queryType/);assert.match(service,/mutationType/);});
+check('GraphQL queries execute through authenticated admin client',()=>assert.match(source('app/services/developer-graphql.server.js'),/admin\.graphql\(source, \{ variables \}\)/));
+check('GraphQL mutation default is locked',()=>{const service=source('app/services/developer-graphql.server.js');assert.match(service,/Mutations are disabled by default/);assert.match(service,/mutationConfirmation/);});
+check('GraphQL operation detector identifies queries and mutations',()=>{assert.equal(describeGraphqlOperation('{ shop { name } }').type,'query');assert.equal(describeGraphqlOperation('mutation UpdateThing { x }').type,'mutation');assert.equal(describeGraphqlOperation('subscription X { x }').type,'subscription');});
+check('Destructive GraphQL detection is conservative',()=>{assert.equal(describeGraphqlOperation('mutation ProductDelete { productDelete(input:{id:"x"}){deletedProductId} }').destructive,true);assert.equal(describeGraphqlOperation('mutation ProductUpdate { productUpdate(product:{id:"x"}){product{id}} }').destructive,false);});
+check('GraphQL variables must be JSON object',()=>{assert.deepEqual(parseGraphqlVariables('{"first":10}'),{first:10});assert.throws(()=>parseGraphqlVariables('[]'));});
+check('Mutation confirmation is server enforced',()=>{const service=source('app/services/developer-graphql.server.js');assert.match(service,/mutationConfirmation[\s\S]*!== "MUTATE"/);assert.match(service,/destructiveConfirmation[\s\S]*!== "DELETE"/);});
+check('GraphQL history excludes response payload storage',()=>{const schema=source('prisma/schema.prisma');const block=schema.match(/model BuilderGraphqlHistory \{[\s\S]*?\n\}/)?.[0]||'';assert.doesNotMatch(block,/response/i);assert.doesNotMatch(block,/variablesJson/i);});
+check('GraphQL history records Shopify cost metadata',()=>{const schema=source('prisma/schema.prisma');assert.match(schema,/requestedCost\s+Int\?/);assert.match(schema,/actualCost\s+Int\?/);assert.match(schema,/throttleJson\s+String\?/);});
+check('Global Code supports required scopes',()=>{const service=source('app/services/global-code.server.js');for(const scope of ['storefront','header','footer','product','collection','search','article','page','market','locale'])assert.ok(service.includes(`"${scope}"`),scope);});
+check('Global Code CSS is normalized to head',()=>assert.equal(normalizeGlobalCode({name:'x',kind:'css',scope:'storefront',location:'body-end',code:'body{}'}).location,'head'));
+check('Global Code exact page matching works',()=>{const row={enabled:true,deletedAt:null,scope:'page',target:'/pages/about'};assert.equal(globalCodeMatches(row,{path:'/pages/about'}),true);assert.equal(globalCodeMatches(row,{path:'/pages/contact'}),false);});
+check('Global Code market and locale matching works',()=>{assert.equal(globalCodeMatches({enabled:true,scope:'market',target:'us'},{market:'US'}),true);assert.equal(globalCodeMatches({enabled:true,scope:'locale',target:'tr'},{language:'tr'}),true);});
+check('Global CSS bundle preserves priority metadata',()=>assert.match(buildGlobalCssBundle([{name:'Base',scope:'storefront',priority:10,code:'body{}'}]),/priority 10/));
+check('Global JS isolates snippets and delays body-end',()=>{const out=buildGlobalJsBundle([{name:'A',scope:'storefront',priority:1,location:'body-end',code:'window.a=1;'}]);assert.match(out,/try \{/);assert.match(out,/DOMContentLoaded/);assert.match(out,/window\.a=1/);});
+check('Global Code diagnostics flag risky JS',()=>{const warnings=inspectGlobalCode('js','eval("x"); document.write("x")');assert.ok(warnings.length>=2);});
+check('Storefront app proxy delegates Global Code before visitor tracking',()=>{const proxy=source('app/routes/builder-proxy.$.jsx');const globalAt=proxy.indexOf('if (globalCodeMode)');const trackingAt=proxy.indexOf('await trackStorefrontVisitorRequest');assert.ok(globalAt>0&&trackingAt>globalAt);assert.match(proxy,/serveGlobalCodeRuntime/);assert.ok(exists('app/services/global-code-runtime.server.js'));});
+check('Global Code runtime respects Safe Mode',()=>{const runtime=source('app/services/global-code-runtime.server.js');assert.match(runtime,/parseEnterpriseSettings/);assert.match(runtime,/VSN Safe Mode: Global/);});
+check('Global Code runtime uses short cache',()=>{assert.match(source('app/services/global-code-runtime.server.js'),/public, max-age=15, stale-while-revalidate=30/);});
+check('Theme embed loads Global CSS and JS runtime through Shopify-hosted loader',()=>{const liquid=source('extensions/vsn-page-builder-theme/blocks/vsn-page-renderer.liquid');const loader=source('extensions/vsn-page-builder-theme/assets/vsn-global-code-loader.js');assert.match(liquid,/__VSN_GLOBAL_CODE_RUNTIME__/);assert.match(liquid,/vsn-global-code-loader\.js/);assert.match(liquid,/visitorPath:/);assert.match(liquid,/market:/);assert.match(loader,/globalCode/);assert.match(loader,/runtimeUrl\("css"\)/);assert.match(loader,/runtimeUrl\("js"\)/);});
+check('Global Code lifecycle supports revisions and rollback',()=>{const service=source('app/services/global-code.server.js');assert.match(service,/createRevision/);assert.match(service,/intent === "rollback"/);assert.match(service,/builderGlobalCodeRevision/);});
+check('Developer Studio uses centralized destructive confirmation',()=>{const route=source('app/routes/app.developer-studio.jsx');assert.match(route,/useVsnConfirm/);assert.match(route,/requireText:"MUTATE"/);assert.match(route,/requireText:"DELETE"/);});
+check('Backup v7+ includes Developer Studio resources but not history',()=>{const backup=source('app/routes/app.backups.jsx');assert.match(backup,/version: [7-9]/);assert.match(backup,/developerStudio/);assert.match(backup,/savedQueries/);assert.match(backup,/globalCodeRevisions/);assert.match(backup,/graphqlHistoryIncluded: false/);});
+check('Uninstall cleanup removes Milestone K data',()=>{const hook=(source('app/routes/webhooks.app.uninstalled.jsx')+source('app/services/shop-data-lifecycle.server.js'));for(const model of ['builderGraphqlSavedQuery','builderGraphqlHistory','builderGlobalCodeRevision','builderGlobalCode'])assert.match(hook,new RegExp(model));});
+check('Shared Code Editor supports GraphQL JSON and JavaScript',()=>{const toolkit=source('app/components/ui/VsnToolkit.jsx');assert.match(toolkit,/GRAPHQL_SUGGESTIONS/);assert.match(toolkit,/JSON_SUGGESTIONS/);assert.match(toolkit,/JS_SUGGESTIONS/);});
+check('Milestone K engineering docs packaged',()=>{assert.ok(exists('docs/engineering/developer-studio.md'));assert.ok(exists('MILESTONE_K_DEVELOPER_MODE.md'));assert.ok(exists('VSN_MILESTONE_K_DEVELOPER_STUDIO_REPORT_v2.5.64.md'));});
+
+for(const [name,ok,msg] of checks)console.log(`${ok?'PASS':'FAIL'} ${name}${msg?`: ${msg}`:''}`);
+const failed=checks.filter((row)=>!row[1]);
+console.log(`Milestone K Developer Studio audit: ${checks.length-failed.length}/${checks.length} PASS`);
+if(failed.length)process.exit(1);

@@ -1,0 +1,110 @@
+/* VSN application scrollbar system -------------------------------------------------
+ * Central source-of-truth for every scrollable surface in the embedded admin/editor.
+ * Keeps native scrolling semantics and accessibility while replacing browser-default
+ * chrome with a consistent thin VSN scrollbar in Chromium/WebKit and Firefox.
+ */
+:root {
+  --vsn-scrollbar-size: 8px;
+  --vsn-scrollbar-thumb: #c7cbd1;
+  --vsn-scrollbar-thumb-hover: #9ca3af;
+  --vsn-scrollbar-thumb-active: #7d8590;
+  --vsn-scrollbar-track: transparent;
+  --vsn-scrollbar-corner: transparent;
+  --vsn-scrollbar-radius: 999px;
+  --vsn-scrollbar-thumb-border: 2px;
+}
+
+/* Dark surfaces can override the tokens without creating a second scrollbar system. */
+.dashboard-root.dark,
+[data-vsn-theme="dark"],
+.vsn-theme-dark {
+  --vsn-scrollbar-thumb: rgba(255,255,255,.26);
+  --vsn-scrollbar-thumb-hover: rgba(255,255,255,.40);
+  --vsn-scrollbar-thumb-active: rgba(255,255,255,.55);
+  --vsn-scrollbar-track: transparent;
+}
+
+/* Firefox. Apply to the document and every scrollable descendant, including portal UI. */
+:where(html, body, body *) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vsn-scrollbar-thumb) var(--vsn-scrollbar-track);
+}
+
+/* Chromium / Edge / Safari. */
+:where(html, body, body *)::-webkit-scrollbar {
+  width: var(--vsn-scrollbar-size);
+  height: var(--vsn-scrollbar-size);
+}
+
+:where(html, body, body *)::-webkit-scrollbar-track,
+:where(html, body, body *)::-webkit-scrollbar-track-piece {
+  background: var(--vsn-scrollbar-track);
+}
+
+:where(html, body, body *)::-webkit-scrollbar-thumb {
+  min-width: 28px;
+  min-height: 28px;
+  border: var(--vsn-scrollbar-thumb-border) solid transparent;
+  border-radius: var(--vsn-scrollbar-radius);
+  background: var(--vsn-scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+:where(html, body, body *)::-webkit-scrollbar-thumb:hover {
+  background: var(--vsn-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+:where(html, body, body *)::-webkit-scrollbar-thumb:active {
+  background: var(--vsn-scrollbar-thumb-active);
+  background-clip: padding-box;
+}
+
+:where(html, body, body *)::-webkit-scrollbar-corner {
+  background: var(--vsn-scrollbar-corner);
+}
+
+:where(html, body, body *)::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Reserve width only on the high-frequency editor/workspace scrollers so opening a
+ * scrollbar does not nudge property controls or table columns sideways. */
+:where(
+  .vsn-editor-sidebar-scroll,
+  .vsn-properties-panel,
+  .vsn-builder-nav,
+  .vsn-workspace-page,
+  .vsn-pages-screen,
+  .vsn-pages-table-wrap,
+  [data-vsn-editor-root="true"] .overflow-auto,
+  [data-vsn-editor-root="true"] .overflow-y-auto
+) {
+  scrollbar-gutter: stable;
+}
+
+/* Optional compact variant for very dense lists; still visible and accessible. */
+.vsn-scrollbar-compact {
+  --vsn-scrollbar-size: 6px;
+  --vsn-scrollbar-thumb-border: 1px;
+}
+
+/* Backward-compatible explicit opt-out. It is intentionally NOT used by the app shell;
+ * keep it only for future carousel/gesture surfaces that deliberately hide scroll chrome. */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* In Windows forced-colors mode let the OS choose a visible, high-contrast scrollbar. */
+@media (forced-colors: active) {
+  :where(html, body, body *) {
+    scrollbar-color: auto;
+  }
+}

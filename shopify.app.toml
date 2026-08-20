@@ -1,0 +1,110 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "997eae5a9961f21d131e5f31bbbe31d3"
+name = "VSN Builder"
+application_url = "https://example.com"
+embedded = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_locales,read_markets,read_translations,write_translations,read_files,write_files,read_themes,write_themes,read_orders,read_online_store_pages,write_online_store_pages,read_products,write_products,write_app_proxy,write_metaobject_definitions,read_metaobject_definitions,write_metaobjects,read_metaobjects"
+
+[metaobjects.app.vsn_builder_page]
+name = "VSN Builder Page"
+description = "Published pages created with VSN Builder."
+display_name_field = "title"
+
+access.admin = "merchant_read_write"
+access.storefront = "public_read"
+
+capabilities.publishable = true
+
+[metaobjects.app.vsn_builder_page.fields.title]
+name = "Title"
+type = "single_line_text_field"
+required = true
+
+[metaobjects.app.vsn_builder_page.fields.page_handle]
+name = "Page handle"
+type = "single_line_text_field"
+required = true
+
+[metaobjects.app.vsn_builder_page.fields.builder_page_id]
+name = "Builder page ID"
+type = "single_line_text_field"
+required = true
+
+[metaobjects.app.vsn_form_submission]
+name = "VSN Form Submission"
+description = "Stores submissions created by VSN Builder forms."
+display_name_field = "email"
+access.admin = "merchant_read_write"
+access.storefront = "none"
+
+[metaobjects.app.vsn_form_submission.fields.form_type]
+name = "Form type"
+type = "single_line_text_field"
+required = true
+
+[metaobjects.app.vsn_form_submission.fields.name]
+name = "Name"
+type = "single_line_text_field"
+
+[metaobjects.app.vsn_form_submission.fields.email]
+name = "Email"
+type = "single_line_text_field"
+required = true
+
+[metaobjects.app.vsn_form_submission.fields.phone]
+name = "Phone"
+type = "single_line_text_field"
+
+[metaobjects.app.vsn_form_submission.fields.message]
+name = "Message"
+type = "multi_line_text_field"
+
+[metaobjects.app.vsn_form_submission.fields.page_url]
+name = "Page URL"
+type = "url"
+
+[metaobjects.app.vsn_form_submission.fields.product_handle]
+name = "Product handle"
+type = "single_line_text_field"
+
+[webhooks]
+api_version = "2026-07"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/orders/paid"
+  topics = [ "orders/paid" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/data_request"
+  compliance_topics = [ "customers/data_request" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/redact"
+  compliance_topics = [ "customers/redact" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/shop/redact"
+  compliance_topics = [ "shop/redact" ]
+
+[auth]
+redirect_urls = [ "https://example.com/api/auth" ]
+
+[build]
+automatically_update_urls_on_dev = true
+
+[app_proxy]
+url = "/builder-proxy"
+prefix = "apps"
+subpath = "vsn-builder"

@@ -1,0 +1,20 @@
+-- Milestone Q.5.2 — Verified Shopify Subscription Sync
+ALTER TABLE "BuilderSubscription" ADD COLUMN "provider" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "planHandle" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "billingPeriod" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "cancelAtEndOfCycle" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "cancelEffectiveOn" DATETIME;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "currentCycleStart" DATETIME;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "currentCycleEnd" DATETIME;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "pendingPlanKey" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "pendingPlanHandle" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "pendingBillingPeriod" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "shopifyAppId" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "shopifyShopId" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "legacySubscriptionId" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "verifiedAt" DATETIME;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "lastSyncAt" DATETIME;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "lastSyncError" TEXT;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "lastSyncErrorAt" DATETIME;
+ALTER TABLE "BuilderSubscription" ADD COLUMN "snapshotJson" TEXT;
+CREATE INDEX "BuilderSubscription_provider_status_verifiedAt_idx" ON "BuilderSubscription"("provider","status","verifiedAt");

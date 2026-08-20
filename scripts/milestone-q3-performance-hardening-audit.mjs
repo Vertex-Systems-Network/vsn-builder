@@ -1,0 +1,20 @@
+import fs from "node:fs";
+import { listMotionLibrary } from "../app/services/motion-library.server.js";
+const read=(file)=>fs.readFileSync(file,"utf8");let failed=0,total=0;const check=(name,ok,detail="")=>{total++;console.log(`${ok?"PASS":"FAIL"} ${name}${detail?` · ${detail}`:""}`);if(!ok)failed++;};
+const pkg=JSON.parse(read("package.json"));const baseline=JSON.parse(read("BASELINE.json"));const runtime=read("app/config/baseline.js");
+const semverAtLeast=(value,target)=>{const a=String(value||"0").split(".").map((part)=>Number(part)||0);const b=String(target||"0").split(".").map((part)=>Number(part)||0);for(let i=0;i<Math.max(a.length,b.length);i+=1){const av=a[i]||0;const bv=b[i]||0;if(av>bv)return true;if(av<bv)return false;}return true;};
+check("Q3 version sync",pkg.version===baseline.version&&runtime.includes(`version: "${pkg.version}"`)&&semverAtLeast(pkg.version,"2.5.82"));
+check("Q3 performance layer preserved on Q lineage",String(baseline.milestone||"").startsWith("Q.")&&runtime.includes(`milestone: "${baseline.milestone}"`));
+const dash=read("app/components/dashboard/DashboardApp.jsx");check("Dashboard secondary screens lazy loaded",(dash.includes("lazy(() => import('./pages/Widgets'))")||dash.includes("lazyWithRetry(() => import('./pages/Widgets'))"))&&dash.includes("<Suspense"));
+const host=read("app/components/BuilderPanelHost.jsx");check("Heavy Builder panels lazy loaded",host.includes("lazy(() => import(\"./builder-panel/MotionLibraryPanel.jsx\")")&&host.includes("LazyBuilderPanel"));
+const motion=read("app/components/builder-panel/MotionLibraryPanel.jsx");check("Motion search deferred",motion.includes("useDeferredValue")&&motion.includes("deferredQuery"));check("Motion cards browser-virtualized",read("app/styles/dashboard.css").includes("content-visibility:auto"));
+const motionService=read("app/services/motion-library.server.js");check("Built-in Motion catalog compacted",motionService.includes("compactBuiltin")&&motionService.includes("getBuiltinMotionPreset"));
+const fake={builderMotionPreset:{findMany:async()=>[]}};const data=await listMotionLibrary(fake,"audit.myshopify.com");const bytes=Buffer.byteLength(JSON.stringify(data.builtins));check("Motion initial built-in payload under 800KB",bytes<800*1024,`${(bytes/1024).toFixed(1)} KB`);
+const motionRoute=read("app/routes/app.motion-library.jsx");check("Full built-in timeline loads on demand",motionRoute.includes('searchParams.get("builtinId")')&&motion.includes("detailFetcher.load"));
+const advanced=read("app/components/builder-panel/MotionAdvancedEditor.jsx");for(const token of ["Live Preview","Playhead","Actions","Frames","Keyframes","Action type","Target","Reduced motion","Repeat","Yoyo"]){check(`Advanced Motion Editor ${token}`,advanced.includes(token));}
+const controls=read("app/components/editor/EditorControls.jsx");const suggestionMenu=read("app/components/editor/EditorSuggestionMenu.jsx");check("Editor suggestions use overlay portal",controls.includes("EditorSuggestionMenu")&&suggestionMenu.includes("vsn-editor-code-suggestions")&&suggestionMenu.includes("AnchoredOverlay"));const toolkit=read("app/components/ui/VsnToolkit.jsx");check("Code Workspace suggestions use document portal",toolkit.includes("VsnCodeSuggestionPortal")&&toolkit.includes("createPortal"));
+const css=read("app/styles/dashboard.css");check("Dashboard workspace width uses desktop space",css.includes("max-width:1560px")&&css.includes("max-width:1680px"));
+check("Q3 DB index audit packaged",fs.existsSync("scripts/q3-db-index-audit.mjs"));check("Q3 storefront budget audit packaged",fs.existsSync("scripts/q3-storefront-payload-budget.mjs"));
+const scripts=pkg.scripts||{};check("Q3 scripts wired",String(scripts["qa:milestone-q3"]||"").includes("milestone-q3-performance-hardening-audit.mjs")&&String(scripts["performance:q3"]||"").includes("q3-storefront-payload-budget.mjs"));
+check("Q3 documentation packaged",fs.existsSync("docs/user/performance-workspace.md")&&fs.existsSync("docs/developer/performance-hardening.md"));
+console.log(`\nMilestone Q.3 audit: ${total-failed}/${total} PASS`);if(failed)process.exit(1);

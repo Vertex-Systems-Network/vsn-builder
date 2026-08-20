@@ -1,0 +1,39 @@
+name: VSN Production Confidence
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_URL: file:./ci.sqlite
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma -- generate
+      - run: npm run prisma -- migrate deploy
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run qa:release
+      - run: npm run qa:phase1
+        env:
+          VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}
+          VSN_E2E_EDITOR_URL: ${{ secrets.VSN_E2E_EDITOR_URL }}
+          VSN_E2E_PAGE_ID: ${{ secrets.VSN_E2E_PAGE_ID }}
+          VSN_E2E_THEME_MATRIX: ${{ secrets.VSN_E2E_THEME_MATRIX }}
+      - run: npm run performance:large-pages
+      - run: npm install --no-save --package-lock=false @playwright/test@1.55.0
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run e2e:playwright
+        env:
+          VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}
+          VSN_E2E_EDITOR_URL: ${{ secrets.VSN_E2E_EDITOR_URL }}
+          VSN_E2E_PAGE_ID: ${{ secrets.VSN_E2E_PAGE_ID }}

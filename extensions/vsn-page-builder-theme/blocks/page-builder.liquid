@@ -1,0 +1,35 @@
+<div
+  id="vsn-builder-{{ block.id }}"
+  class="vsn-builder-block"
+  data-page-handle="{{ block.settings.page_handle | escape }}"
+  data-proxy-path="/apps/vsn-builder"
+>
+  {% if block.settings.page_handle == blank %}
+    <div class="vsn-builder-message">Enter a builder page handle in the app block settings.</div>
+  {% else %}
+    <div class="vsn-builder-loading">Loading page...</div>
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "name": "VSN Builder",
+  "target": "section",
+  "stylesheet": "page-builder.css",
+  "javascript": "page-builder.js",
+  "settings": [
+    {
+      "type": "text",
+      "id": "page_handle",
+      "label": "Builder page handle",
+      "info": "Example: demo-page"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "Full width",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

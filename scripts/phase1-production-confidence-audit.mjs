@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const read = p => fs.readFileSync(p,'utf8');
+const required = ['.github/workflows/ci.yml','playwright.config.mjs','tests/e2e/shopify-live.spec.mjs','tests/e2e/visual-regression.spec.mjs','scripts/large-page-performance.mjs','scripts/live-e2e-gate.mjs','scripts/theme-matrix.mjs','config/theme-matrix.json','app/routes/app.client-errors.jsx','app/components/editor/ClientErrorReporter.jsx'];
+for (const file of required) assert.ok(fs.existsSync(file), `Missing Phase 1 file: ${file}`);
+const ci=read('.github/workflows/ci.yml');
+for (const token of ['npm ci','npm run lint','npm run typecheck','npm run build','qa:release','playwright']) assert.ok(ci.includes(token), `CI missing ${token}`);
+assert.ok(ci.includes('prisma generate') || ci.includes('npm run prisma -- generate'), 'CI missing prisma generate');
+assert.ok(ci.includes('prisma migrate deploy') || ci.includes('npm run prisma -- migrate deploy'), 'CI missing prisma migrate deploy');
+const spec=read('tests/e2e/shopify-live.spec.mjs');
+for (const token of ['collections/all','search?q=shirt','Builder error 500','desktop/tablet/mobile','editor critical flow']) assert.ok(spec.includes(token), `Live E2E missing ${token}`);
+const pkg=JSON.parse(read('package.json'));
+for (const script of ['qa:phase1','e2e:playwright','performance:large-pages','e2e:live-gate','e2e:theme-matrix']) assert.ok(pkg.scripts?.[script], `Missing package script ${script}`);
+const reporter=read('app/components/editor/ClientErrorReporter.jsx');
+for (const token of ['unhandledrejection','error','release','pageId']) assert.ok(reporter.includes(token), `Reporter missing ${token}`);
+console.log(`Phase 1 Production Confidence audit PASS (${required.length} files)`);

@@ -1,0 +1,919 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model BuilderPage {
+  id              String    @id @default(cuid())
+  shop            String
+  title           String
+  handle          String
+  template        String    @default("Blank")
+
+  resourceId      String?
+  resourceHandle  String?
+  isDefault       Boolean   @default(false)
+
+  status          String    @default("draft")
+  contentJson     String?
+  publishedJson   String?
+  shopifyPageId   String?
+  shopifyPageUrl  String?
+  publishedAt     DateTime?
+  workflowStatus  String    @default("draft")
+  views           Int       @default(0)
+  templateImage   String?
+  seoScore        Int       @default(100)
+  pageCount       Int       @default(1)
+  createdBy       String    @default("Store owner")
+  scheduledAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  version         Int       @default(1)
+  publishedVersion Int      @default(0)
+  deletedAt       DateTime?
+  trashedAssetsJson String?
+
+  @@unique([shop, handle])
+  @@index([shop, deletedAt, updatedAt])
+  @@index([shop, deletedAt, status, updatedAt])
+  @@index([shop, deletedAt, template, createdAt])
+  @@index([shop, deletedAt, seoScore, createdBy])
+}
+
+model BuilderRevision {
+  id          String   @id @default(cuid())
+  shop        String
+  pageId      String
+  title       String
+  contentJson String
+  kind        String   @default("save")
+  label       String?
+  parentRevisionId String?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  @@index([shop, pageId, createdAt])
+}
+
+model BuilderAuditLog {
+  id        String   @id @default(cuid())
+  shop      String
+  pageId    String?
+  actor     String?
+  role      String?
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([shop, createdAt])
+}
+
+model BuilderShopSetting {
+  id              String   @id @default(cuid())
+  shop            String   @unique
+  designTokensJson String?
+  onboardingJson   String?
+  roleAccessJson    String?
+  collaborationRolesJson String?
+  enterpriseJson    String?
+  dashboardJson     String?
+  templatesViewJson String?
+  appSettingsJson   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+
+model BuilderMotionPreset {
+  id           String   @id @default(cuid())
+  shop         String
+  name         String
+  description  String?
+  category     String   @default("custom")
+  scope        String   @default("global")
+  timelineJson String
+  tokensJson   String?
+  isFavorite   Boolean  @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([shop, deletedAt, updatedAt])
+  @@index([shop, category])
+}
+
+model BuilderDiagnosticEvent {
+  id        String   @id @default(cuid())
+  shop      String
+  level     String   @default("info")
+  code      String
+  message   String
+  details   String?
+  pageId    String?
+  status    Int?
+  createdAt DateTime @default(now())
+
+  @@index([shop, createdAt])
+}
+
+
+
+model BuilderVisitorSession {
+  id         String   @id @default(cuid())
+  shop       String
+  visitorId  String
+  sessionId  String
+  country    String?
+  lastPath   String?
+  pageViews  Int      @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@unique([shop, sessionId])
+  @@index([shop, lastSeenAt])
+  @@index([shop, country, lastSeenAt])
+}
+
+model BuilderRequestLog {
+  id         String   @id @default(cuid())
+  shop       String
+  requestId  String   @unique
+  route      String
+  method     String
+  status     Int?
+  durationMs Int?
+  message    String?
+  createdAt  DateTime @default(now())
+
+  @@index([shop, createdAt])
+  @@index([route, createdAt])
+}
+
+model BuilderCleanupRun {
+  id        String   @id @default(cuid())
+  shop      String
+  status    String   @default("completed")
+  statsJson String?
+  createdAt DateTime @default(now())
+
+  @@index([shop, createdAt])
+}
+
+
+model BuilderFormSubmission {
+  id            String   @id @default(cuid())
+  shop          String
+  formKey       String   @default("contact")
+  pageUrl       String?
+  productHandle String?
+  customerEmail String?
+  fieldsJson    String
+  readAt        DateTime?
+  isSpam        Boolean  @default(false)
+  spamReason    String?
+  requesterHash String?
+  deliveryStatus String @default("pending")
+  retainedUntil DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([shop, createdAt])
+  @@index([shop, formKey, createdAt])
+  @@index([shop, isSpam, createdAt])
+  @@index([shop, requesterHash, createdAt])
+  @@index([shop, deliveryStatus, createdAt])
+}
+
+model BuilderLibraryItem {
+  id          String   @id @default(cuid())
+  shop        String
+  title       String
+  kind        String   @default("section")
+  category    String   @default("General")
+  syncMode    String   @default("local")
+  contentJson String
+  thumbnail   String?
+  templateType String?
+  isFavorite  Boolean  @default(false)
+  sourceKey   String?
+  sourceVersion Int    @default(1)
+  industry    String?
+  style       String?
+  planTier    String   @default("free")
+  colorTags   String?
+  layoutTags  String?
+  description String?
+  qualityScore Int?
+  compatibilityJson String?
+  screenshotJson String?
+  source      String   @default("local")
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  @@index([shop, kind, updatedAt])
+  @@index([shop, category, updatedAt])
+  @@index([shop, templateType, updatedAt])
+  @@index([shop, isFavorite, updatedAt])
+  @@index([shop, deletedAt, updatedAt])
+  @@index([shop, sourceKey])
+  @@index([shop, industry, style])
+  @@index([shop, planTier, updatedAt])
+}
+
+model BuilderTemplateRule {
+  id          String   @id @default(cuid())
+  shop        String
+  pageId      String
+  template    String
+  priority    Int      @default(100)
+  enabled     Boolean  @default(true)
+  conditionsJson String @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shop, template, enabled, priority])
+  @@index([shop, pageId])
+}
+
+
+model BuilderSubscription {
+  id                  String   @id @default(cuid())
+  shop                String   @unique
+  planKey             String   @default("free")
+  status              String   @default("active")
+  provider            String?
+  planHandle          String?
+  billingPeriod       String?
+  cancelAtEndOfCycle  Boolean  @default(false)
+  cancelEffectiveOn   DateTime?
+  currentCycleStart   DateTime?
+  currentCycleEnd     DateTime?
+  pendingPlanKey      String?
+  pendingPlanHandle   String?
+  pendingBillingPeriod String?
+  shopifyAppId        String?
+  shopifyShopId       String?
+  legacySubscriptionId String?
+  verifiedAt          DateTime?
+  lastSyncAt          DateTime?
+  lastSyncError       String?
+  lastSyncErrorAt     DateTime?
+  snapshotJson        String?
+  trialEndsAt         DateTime?
+  startedAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([provider, status, verifiedAt])
+}
+
+model BuilderWebhookEndpoint {
+  id        String   @id @default(cuid())
+  shop      String
+  formKey   String   @default("*")
+  url       String
+  enabled   Boolean  @default(true)
+  secret    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shop, enabled])
+}
+
+model BuilderBackup {
+  id        String   @id @default(cuid())
+  shop      String
+  label     String
+  statsJson String?
+  createdAt DateTime @default(now())
+
+  @@index([shop, createdAt])
+}
+
+model BuilderNotification {
+  id          String    @id @default(cuid())
+  shop        String
+  type        String    @default("system")
+  title       String
+  message     String
+  href        String?
+  sourceKey   String?
+  readAt      DateTime?
+  dismissedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([shop, sourceKey])
+  @@index([shop, dismissedAt, createdAt])
+  @@index([shop, readAt, createdAt])
+}
+
+model BuilderSupportTicket {
+  id          String    @id @default(cuid())
+  shop        String
+  ticketCode  String    @unique
+  subject     String
+  category    String    @default("general")
+  priority    String    @default("normal")
+  status      String    @default("open")
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  closedAt    DateTime?
+  messages    BuilderSupportMessage[]
+
+  @@index([shop, status, updatedAt])
+}
+
+model BuilderSupportMessage {
+  id          String   @id @default(cuid())
+  shop        String
+  ticketId    String
+  authorType  String   @default("merchant")
+  authorName  String?
+  body        String
+  createdAt   DateTime @default(now())
+  ticket      BuilderSupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@index([shop, createdAt])
+}
+
+model BuilderCustomFont {
+  id        String   @id @default(cuid())
+  shop      String
+  family    String
+  weight    Int      @default(400)
+  style     String   @default("normal")
+  fileName  String
+  mimeType  String
+  fileData  Bytes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  @@unique([shop, family, weight, style])
+  @@index([shop, deletedAt, family])
+  @@index([shop, family])
+}
+
+model BuilderExperiment {
+  id                  String   @id @default(cuid())
+  shop                String
+  name                String
+  status              String   @default("draft")
+  targetType          String   @default("page")
+  pageId              String
+  targetNodeId        String?
+  goalType            String   @default("purchase")
+  goalValue           String?
+  trafficPercent      Int      @default(100)
+  minimumSessions     Int      @default(200)
+  confidenceThreshold Float    @default(0.95)
+  winnerVariantId     String?
+  startedAt           DateTime?
+  endedAt             DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  variants            BuilderExperimentVariant[]
+
+  @@index([shop, status, updatedAt])
+  @@index([shop, pageId, status])
+}
+
+model BuilderExperimentVariant {
+  id           String   @id @default(cuid())
+  experimentId String
+  key          String
+  name         String
+  weight       Int      @default(50)
+  isControl    Boolean  @default(false)
+  sourcePageId String?
+  sourceNodeId String?
+  snapshotJson String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  experiment   BuilderExperiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  @@unique([experimentId, key])
+  @@index([experimentId, createdAt])
+}
+
+model BuilderExperimentAssignment {
+  id           String   @id @default(cuid())
+  shop         String
+  experimentId String
+  variantId    String
+  visitorId    String
+  sessionId    String?
+  firstSeenAt  DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+
+  @@unique([experimentId, visitorId])
+  @@index([shop, experimentId, variantId])
+  @@index([shop, lastSeenAt])
+}
+
+model BuilderExperimentEvent {
+  id           String   @id @default(cuid())
+  shop         String
+  experimentId String
+  variantId    String
+  visitorId    String
+  sessionId    String?
+  eventType    String
+  eventName    String?
+  value        Float?
+  currency     String?
+  metadataJson String?
+  dedupeKey    String?
+  createdAt    DateTime @default(now())
+
+  @@unique([shop, dedupeKey])
+  @@index([shop, experimentId, variantId, createdAt])
+  @@index([shop, eventType, createdAt])
+}
+
+
+model BuilderAiUsage {
+  id           String   @id @default(cuid())
+  shop         String
+  pageId       String?
+  operation    String
+  model        String?
+  status       String   @default("started")
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  responseId   String?
+  durationMs   Int?
+  error        String?
+  createdAt    DateTime @default(now())
+
+  @@index([shop, createdAt])
+  @@index([shop, status, createdAt])
+}
+
+
+model BuilderPresence {
+  id                String   @id @default(cuid())
+  shop              String
+  pageId            String
+  actorKey          String
+  actorName         String
+  collaborationRole String   @default("designer")
+  selectedElementId String?
+  lastSeenAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  @@unique([shop, pageId, actorKey])
+  @@index([shop, pageId, lastSeenAt])
+}
+
+model BuilderComment {
+  id           String    @id @default(cuid())
+  shop         String
+  pageId       String
+  elementId    String?
+  authorKey    String?
+  authorName   String
+  authorRole   String    @default("commenter")
+  body         String
+  mentionsJson String?
+  resolvedAt   DateTime?
+  resolvedBy   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([shop, pageId, resolvedAt, createdAt])
+  @@index([shop, elementId, createdAt])
+}
+
+model BuilderReviewLink {
+  id         String    @id @default(cuid())
+  shop       String
+  pageId     String
+  token      String    @unique
+  label      String?
+  createdBy  String?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([shop, pageId, revokedAt, createdAt])
+}
+
+model BuilderPageLock {
+  id        String   @id @default(cuid())
+  shop      String
+  pageId    String
+  ownerKey  String
+  ownerName String
+  ownerRole String
+  lockToken String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shop, pageId])
+  @@index([shop, expiresAt])
+}
+
+model BuilderBranch {
+  id             String   @id @default(cuid())
+  shop           String
+  pageId         String
+  name           String
+  contentJson    String
+  baseRevisionId String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([shop, pageId, name])
+  @@index([shop, pageId, updatedAt])
+}
+
+model BuilderLocalizationConfig {
+  id                 String   @id @default(cuid())
+  shop               String   @unique
+  baseLocale         String   @default("en")
+  localesJson        String   @default("[]")
+  marketsJson        String   @default("[]")
+  rtlLocalesJson     String   @default("[]")
+  shopifySyncEnabled Boolean  @default(false)
+  lastCatalogSyncAt  DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model BuilderPageTranslation {
+  id             String   @id @default(cuid())
+  shop           String
+  pageId         String
+  locale         String
+  marketKey      String   @default("*")
+  overridesJson  String   @default("{}")
+  seoJson        String   @default("{}")
+  status         String   @default("draft")
+  sourceVersion  Int      @default(1)
+  nativeSyncedAt DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([shop, pageId, locale, marketKey])
+  @@index([shop, locale, marketKey, updatedAt])
+  @@index([shop, pageId, updatedAt])
+}
+
+model BuilderFormConfig {
+  id             String   @id @default(cuid())
+  shop           String
+  formKey        String
+  settingsJson   String   @default("{}")
+  retentionDays  Int      @default(90)
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([shop, formKey])
+  @@index([shop, enabled, updatedAt])
+}
+
+model BuilderFormUpload {
+  id           String   @id @default(cuid())
+  shop         String
+  submissionId String
+  fieldName    String
+  fileName     String
+  mimeType     String
+  size         Int
+  fileData     Bytes
+  scanStatus   String   @default("pending")
+  scanMessage  String?
+  createdAt    DateTime @default(now())
+
+  @@index([shop, submissionId, createdAt])
+  @@index([shop, scanStatus, createdAt])
+}
+
+model BuilderStockSearchCache {
+  id           String   @id @default(cuid())
+  shop         String
+  provider     String
+  cacheKey     String
+  responseJson String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([shop, provider, cacheKey])
+  @@index([shop, expiresAt])
+}
+
+model BuilderStockApiUsage {
+  id              String   @id @default(cuid())
+  shop            String
+  provider        String
+  mediaKind       String
+  requestCount    Int      @default(0)
+  successCount    Int      @default(0)
+  errorCount      Int      @default(0)
+  lastStatus      Int?
+  providerLimit   String?
+  providerRemaining String?
+  providerReset   String?
+  lastEndpoint    String?
+  lastUsedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([shop, provider, mediaKind])
+  @@index([shop, updatedAt])
+}
+
+model BuilderStockSearchHistory {
+  id          String   @id @default(cuid())
+  shop        String
+  mediaKind   String
+  fingerprint String
+  queryText   String
+  paramsJson  String
+  useCount    Int      @default(1)
+  lastUsedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([shop, mediaKind, fingerprint])
+  @@index([shop, mediaKind, lastUsedAt])
+}
+
+model BuilderIntegration {
+  id         String   @id @default(cuid())
+  shop       String
+  provider   String
+  name       String
+  formKey    String   @default("*")
+  enabled    Boolean  @default(true)
+  configJson String   @default("{}")
+  secretJson String   @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([shop, provider, enabled])
+  @@index([shop, formKey, enabled])
+}
+
+model BuilderAutomationLog {
+  id             String    @id @default(cuid())
+  shop           String
+  submissionId   String?
+  formKey        String
+  provider       String
+  target         String?
+  status         String    @default("pending")
+  attempt        Int       @default(0)
+  responseStatus Int?
+  error          String?
+  nextRetryAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([shop, createdAt])
+  @@index([shop, status, nextRetryAt])
+  @@index([submissionId, provider])
+}
+
+model BuilderSvgAsset {
+  id         String    @id @default(cuid())
+  shop       String
+  name       String
+  fileName   String
+  svgText    String
+  tags       String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  @@index([shop, deletedAt, updatedAt])
+  @@index([shop, name])
+}
+
+
+
+model BuilderBrandKit {
+  id             String   @id @default(cuid())
+  shop           String
+  name           String
+  logoUrl        String?
+  colorsJson     String   @default("{}")
+  typographyJson String   @default("{}")
+  spacingJson    String   @default("{}")
+  radiusJson     String   @default("{}")
+  shadowsJson    String   @default("{}")
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  @@index([shop, deletedAt, updatedAt])
+  @@index([shop, isDefault])
+}
+
+model BuilderMarketplaceFavorite {
+  id        String   @id @default(cuid())
+  shop      String
+  catalogId String
+  createdAt DateTime @default(now())
+
+  @@unique([shop, catalogId])
+  @@index([shop, createdAt])
+}
+
+model BuilderMarketplaceInstall {
+  id                String   @id @default(cuid())
+  shop              String
+  catalogId         String
+  catalogVersion    Int      @default(1)
+  libraryItemId     String
+  source            String   @default("builtin")
+  rollbackJson      String?
+  assetManifestJson String   @default("[]")
+  contentHash       String?
+  installedAt       DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([shop, catalogId])
+  @@index([shop, installedAt])
+  @@index([shop, libraryItemId])
+}
+
+model BuilderWidgetTemplate {
+  id         String   @id @default(cuid())
+  shop       String
+  widgetType String
+  html       String
+  css        String   @default("")
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([shop, widgetType])
+  @@index([shop, enabled, updatedAt])
+}
+
+model BuilderCustomWidget {
+  id               String    @id @default(cuid())
+  shop             String
+  widgetKey        String
+  name             String
+  category         String    @default("Custom")
+  icon             String    @default("widgets")
+  description      String?
+  fieldsJson       String    @default("[]")
+  templateHtml     String
+  templateCss      String    @default("")
+  capabilitiesJson String    @default("{}")
+  enabled          Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  @@unique([shop, widgetKey])
+  @@index([shop, deletedAt, enabled, updatedAt])
+  @@index([shop, category])
+}
+
+model BuilderGraphqlSavedQuery {
+  id            String    @id @default(cuid())
+  shop          String
+  name          String
+  operationType String    @default("query")
+  query         String
+  variablesJson String    @default("{}")
+  isFavorite    Boolean   @default(false)
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([shop, deletedAt, updatedAt])
+  @@index([shop, isFavorite, updatedAt])
+}
+
+model BuilderGraphqlHistory {
+  id            String   @id @default(cuid())
+  shop          String
+  actor         String?
+  operationType String   @default("query")
+  operationName String?
+  query         String
+  success       Boolean  @default(false)
+  durationMs    Int      @default(0)
+  requestedCost Int?
+  actualCost    Int?
+  throttleJson  String?
+  errorsJson    String?
+  createdAt     DateTime @default(now())
+
+  @@index([shop, createdAt])
+  @@index([shop, success, createdAt])
+}
+
+model BuilderGlobalCode {
+  id             String    @id @default(cuid())
+  shop           String
+  name           String
+  kind           String    @default("css")
+  scope          String    @default("storefront")
+  target         String?
+  location       String    @default("head")
+  priority       Int       @default(100)
+  enabled        Boolean   @default(true)
+  code           String
+  conditionsJson String    @default("{}")
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([shop, deletedAt, enabled, priority])
+  @@index([shop, kind, scope])
+}
+
+model BuilderGlobalCodeRevision {
+  id             String   @id @default(cuid())
+  shop           String
+  globalCodeId   String
+  name           String
+  kind           String
+  scope          String
+  target         String?
+  location       String
+  priority       Int
+  enabled        Boolean
+  code           String
+  conditionsJson String   @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@index([shop, globalCodeId, createdAt])
+}
+
+model BuilderWishlist {
+  id         String   @id @default(cuid())
+  shop       String
+  customerId String
+  itemsJson  String   @default("[]")
+  itemCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([shop, customerId])
+  @@index([shop, updatedAt])
+}
+
+model BuilderEmailTemplate {
+  id           String    @id @default(cuid())
+  shop         String
+  name         String
+  category     String    @default("Custom")
+  subject      String
+  preheader    String?
+  documentJson String
+  compiledHtml String
+  plainText    String    @default("")
+  status       String    @default("draft")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@index([shop, deletedAt, updatedAt])
+  @@index([shop, category, status])
+}

@@ -1,0 +1,1 @@
+import fs from "node:fs";const p="extensions/vsn-page-builder-theme/assets/vsn-page-renderer.js";const bytes=fs.statSync(p).size;console.log(`Storefront renderer: ${(bytes/1024).toFixed(1)} KB`);if(bytes>180*1024){console.error("FAIL renderer exceeds 180 KB budget");process.exit(1)}console.log("PASS renderer JS budget");

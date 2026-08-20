@@ -1,0 +1,13 @@
+import fs from "node:fs";
+const read=(f)=>fs.readFileSync(f,"utf8");const semverAtLeast=(value,target)=>{const a=String(value||"0").split(".").map(Number),b=target;return (a[0]||0)>b[0]||((a[0]||0)===b[0]&&((a[1]||0)>b[1]||((a[1]||0)===b[1]&&(a[2]||0)>=b[2])));};
+let pass=0,fail=0;const check=(n,o)=>{if(o){pass++;console.log(`PASS  ${n}`)}else{fail++;console.error(`FAIL  ${n}`)}};
+const pkg=JSON.parse(read("package.json")),base=JSON.parse(read("BASELINE.json"));const app=read("app/routes/app.jsx"),side=read("app/components/dashboard/Sidebar.jsx"),dash=read("app/components/dashboard/DashboardApp.jsx"),pages=read("app/routes/app.pages.jsx"),home=read("app/components/dashboard/pages/Home.jsx"),shop=read("shopify.app.toml");
+check("H.1 or later release",semverAtLeast(pkg.version,[2,5,58])&&semverAtLeast(base.version,[2,5,58])&&base.phase===16);
+check("VSN Builder naming remains active",shop.includes('name = "VSN Builder"')&&side.includes("VSN Builder"));
+check("Canonical overview remains on the home route",dash.includes("case 'home'")&&home.includes("Continue Editing")&&home.includes("Dashboard"));
+check("Unified app navigation remains present",app.includes("NAV_TARGETS")&&side.includes("Templates")&&side.includes("Marketplace")&&side.includes("Campaigns"));
+check("Builder panel URLs remain refresh-safe",pages.includes('params.set("panel", next)')&&pages.includes('params.delete("panel")'));
+check("Editor app-window flow remains present",pages.includes("s-app-window")&&pages.includes("setEditorWindowSrc"));
+check("Legacy direct resource routes remain packaged",["app/routes/app.library.jsx","app/routes/app.marketplace.jsx","app/routes/app.campaigns.jsx","app/routes/app.experiments.jsx"].every(fs.existsSync));
+check("Historical H.1 report remains packaged",fs.existsSync("VSN_MILESTONE_H1_UNIFIED_APP_SHELL_REPORT_v2.5.58.md"));
+console.log(`\nMilestone H.1 compatibility audit: ${pass} passed, ${fail} failed`);if(fail)process.exit(1);

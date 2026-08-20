@@ -1,0 +1,10 @@
+{
+  "version": "2.5.107",
+  "milestone": "Q.6.4",
+  "phase": 16,
+  "name": "Milestone Q.6.4 — Hydration, UI Theme, Maps & Form Security",
+  "basedOn": "v2.5.106",
+  "date": "2026-08-10",
+  "label": "Milestone Q.6.4 — Hydration, UI Theme, Maps & Form Security (Developer Mode)",
+  "status": "complete"
+}

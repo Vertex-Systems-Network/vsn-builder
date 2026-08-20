@@ -1,0 +1,12 @@
+import fs from "node:fs";
+import path from "node:path";
+const dir="extensions/vsn-page-builder-theme/assets";
+const files=fs.readdirSync(dir).map((name)=>({name,path:path.join(dir,name)})).filter((row)=>fs.statSync(row.path).isFile());
+const js=files.filter((row)=>row.name.endsWith(".js"));const css=files.filter((row)=>row.name.endsWith(".css"));
+const sum=(rows)=>rows.reduce((total,row)=>total+fs.statSync(row.path).size,0);
+const jsBytes=sum(js), cssBytes=sum(css), renderer=fs.statSync(path.join(dir,"vsn-page-renderer.js")).size;
+const limits={js:180*1024,css:20*1024,renderer:120*1024};
+console.log(`Storefront JS total: ${(jsBytes/1024).toFixed(1)} KB / 180 KB`);
+console.log(`Storefront CSS total: ${(cssBytes/1024).toFixed(1)} KB / 20 KB`);
+console.log(`Renderer JS: ${(renderer/1024).toFixed(1)} KB / 120 KB`);
+let failed=0;if(jsBytes>limits.js){console.error("FAIL storefront JS budget");failed++;}if(cssBytes>limits.css){console.error("FAIL storefront CSS budget");failed++;}if(renderer>limits.renderer){console.error("FAIL renderer JS budget");failed++;}if(failed)process.exit(1);console.log("PASS storefront payload budgets");

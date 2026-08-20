@@ -1,0 +1,73 @@
+import fs from "node:fs";
+import { BUILTIN_MARKETPLACE_CATALOG, MARKETPLACE_COUNTS } from "../app/data/marketplaceCatalog.js";
+
+const read=(file)=>fs.readFileSync(file,"utf8");
+const exists=(file)=>fs.existsSync(file);
+let pass=0,fail=0;
+const check=(name,ok)=>{if(ok){pass++;console.log(`PASS  ${name}`)}else{fail++;console.error(`FAIL  ${name}`)}};
+const pkg=JSON.parse(read("package.json"));
+const baseline=JSON.parse(read("BASELINE.json"));
+const lock=JSON.parse(read("package-lock.json"));
+const host=read("app/components/BuilderPanelHost.jsx");
+const panels=read("app/services/builder-panels.server.js");
+const resource=read("app/routes/app.builder-panel.$panel.jsx");
+const pages=read("app/routes/app.pages.jsx");
+const marketplace=read("app/routes/app.marketplace.jsx");
+const fonts=read("app/routes/app.fonts.jsx");
+const svgs=read("app/routes/app.svg-assets.jsx");
+const campaigns=read("app/routes/app.campaigns.jsx");
+const experiments=read("app/routes/app.experiments.jsx");
+const floating=read("app/routes/app.floating-elements.jsx");
+const health=read("app/routes/app.control-center.jsx");
+const media=read("app/routes/app.editor-media.jsx");
+const controls=read("app/components/editor/EditorControls.jsx");
+const fontContext=read("app/components/editor/fonts/FontRegistryContext.jsx");
+const toml=read("shopify.app.toml");
+
+check("Data-runtime hotfix is preserved on v2.5.52 or later",Number(pkg.version.split(".")[2]||0)>=52&&pkg.version===baseline.version&&Number(baseline.phase)>=14);
+check("package-lock stays on the same release version",lock.version===pkg.version&&lock.packages?.[""]?.version===pkg.version);
+check("Builder panel resource route exists with literal dynamic filename",exists("app/routes/app.builder-panel.$panel.jsx")&&!exists("app/routes/app.builder-panel..jsx"));
+check("Panel service exposes one loader gateway",panels.includes("export async function loadBuilderPanel")&&panels.includes("unwrapPanelResult"));
+check("Panel resource route delegates loaders through gateway",resource.includes("loadBuilderPanel(panel,request)"));
+check("Panel resource route delegates actions through gateway",resource.includes("dispatchBuilderPanelAction(panel,request)"));
+check("Panel resource converts expected errors to panel data",resource.includes("humanPanelError")&&resource.includes("status:status>=400?status:500"));
+check("Panel errors are mapped to human-readable runtime/permission guidance",resource.includes("Shopify Admin API rejected")&&resource.includes("cannot reach its database")&&resource.includes("internal runtime error"));
+check("Lazy panel UI uses React Router resource fetcher",host.includes("panelLoader.load(`/app/builder-panel/${encodeURIComponent(activeView)}?refresh=${refreshGeneration}`)"));
+check("Lazy actions use same Builder panel resource route",host.includes("LAZY_PANEL_ROUTES[activeView] ? `/app/builder-panel/${encodeURIComponent(activeView)}`"));
+check("Pages route avoids workspace reload for resource actions",pages.includes('path.startsWith("/app/builder-panel/")'));
+check("Panel response settlement is generation-scoped",host.includes("panelLoadSettledRef")&&host.includes("loadedPanelGeneration.current[panel]=generation"));
+check("Action completion stays transition-scoped",host.includes('if(previous==="idle"||action.state!=="idle")return'));
+
+check("Built-in Marketplace still has 440 templates",MARKETPLACE_COUNTS.pages===120&&MARKETPLACE_COUNTS.sections===320&&MARKETPLACE_COUNTS.total===440&&BUILTIN_MARKETPLACE_CATALOG.length===440);
+check("Marketplace loader still merges built-in catalog",marketplace.includes("getMarketplaceCatalog")&&marketplace.includes("CURRENT_VERSION=VSN_BASELINE.version"));
+check("Fonts loader reads active and Trash rows",fonts.includes("serializedRows(session.shop,null)")&&fonts.includes("serializedRows(session.shop,{not:null})"));
+check("Fonts upload persists binary data",fonts.includes("fileData:new Uint8Array")||fonts.includes("fileData:bytes"));
+check("SVG loader reads active and Trash rows",svgs.includes("const active=await list(session.shop,null)")&&svgs.includes("const trash=await list(session.shop,{not:null})"));
+check("SVG upload persists sanitized markup",svgs.includes("sanitizeSvg")&&svgs.includes("builderSvgAsset.create"));
+check("Editor font registry uses the JSON panel resource route",fontContext.includes("/app/builder-panel/fonts?mode=catalog")&&fontContext.includes("/app/builder-panel/fonts")&&!fontContext.includes('fetch("/app/fonts'));
+check("Editor SVG library uses the JSON panel resource route",controls.includes("/app/builder-panel/svg-assets?mode=picker")&&controls.includes("/app/builder-panel/svg-assets")&&!controls.includes('fetch("/app/svg-assets'));
+check("SVG dialog keeps managed VSN assets when Shopify Files fails",controls.includes("Promise.allSettled")&&controls.includes("managed VSN SVGs are still available"));
+check("Campaign loader remains wired",campaigns.includes("export const loader")&&campaigns.includes("db.builderPage"));
+check("CRO loader remains wired",experiments.includes("export async function loader")&&experiments.includes("builderExperiment"));
+check("Floating loader remains wired",floating.includes("export async function loader")&&floating.includes("floating-element"));
+
+check("System Health performs live Shopify Files API test",health.includes("checkShopifyFilesAccess")&&health.includes("VsnFilesHealthCheck"));
+check("System Health reports current/configured/missing scopes",health.includes("currentScopes")&&health.includes("configuredScopes")&&health.includes("missingConfiguredScopes"));
+check("System Health checks Builder data stores",health.includes('key:"builderData"')&&health.includes("dataStoreHealthy"));
+check("System Health recognizes every Shopify Files read capability",["read_files","read_themes","read_images"].every((scope)=>health.includes(scope)));
+check("Diagnostics exposes human Files-scope remediation",health.includes("SCOPE_FILES_READ")&&/re-run shopify app dev/i.test(health));
+
+check("Editor media is a resource route, not a blank UI route",!media.includes("export default function"));
+check("Media resolver accepts read_files/read_themes/read_images",["read_files","read_themes","read_images"].every((scope)=>media.includes(scope))&&media.includes("hasFilesReadCapability"));
+check("Media resolver uses canonical GraphQL nodes first",media.includes("resolveByNodes")&&media.includes("nodes(ids: $ids)"));
+check("Media resolver has targeted files ID query fallback",media.includes("resolveByFilesQuery")&&media.includes("id:${id}")&&media.includes("sortKey: ID"));
+check("Media resolver retains paginated fallback",media.includes("scanFilesForIds")&&media.includes("pageInfo { hasNextPage endCursor }"));
+check("Media resolver surfaces file status/errors",media.includes("fileErrors { code message details }")&&media.includes("unresolvedDetails")&&media.includes("Status:"));
+check("Media picker handles non-JSON resolver responses",controls.includes("media resolver did not return JSON"));
+check("Media picker no longer claims read_files is the only permission",!controls.includes("Make sure the app has read_files access")&&controls.includes("read_files, read_themes, or read_images"));
+check("Media picker points merchant to System Health",controls.includes("System Health → Shopify & Permissions"));
+check("Shopify app requests read_files and read_themes",toml.includes("read_files")&&toml.includes("read_themes"));
+check("Shopify scopes are not duplicated in access_scopes line",(()=>{const line=toml.split("\n").find((x)=>x.trim().startsWith("scopes = "))||"";const raw=line.match(/"([^"]+)"/)?.[1]||"";const scopes=raw.split(",").filter(Boolean);return scopes.length===new Set(scopes).size})());
+
+console.log(`\nPhase 14 data/runtime audit: ${pass} PASS / ${fail} FAIL`);
+if(fail)process.exit(1);
