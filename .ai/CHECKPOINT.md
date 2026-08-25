@@ -28,6 +28,12 @@ Repository runtime policy and `package.json` engine/preinstall path require Node
 
 Because installation runs the runtime compatibility guard, these release paths are inconsistent by construction. Fix and execute them before treating current CI/container production confidence as trustworthy.
 
+## Automated evidence after the documentation branch was pushed
+
+GitHub Actions started `VSN Production Confidence` for draft PR #1 / commit `0a9f9e364dcec206ed556863c52c0978d47e5fd1` and the workflow completed with `failure`.
+
+The job-log endpoint did not return usable logs during this audit, so the exact failing step is **not verified**. Do not attribute this specific run to the Node mismatch without step/log evidence. The Node 20 vs 22.18+ conflict remains independently proven from repository source/configuration.
+
 ## High-priority AI findings
 
 ### Strengths to preserve
@@ -70,7 +76,7 @@ Conclusion: prompt/screenshot/URL generation is table stakes. VSN differentiatio
 
 ## `.ai/` operating system created in this work unit
 
-Planned files:
+Files:
 
 - `.ai/README.md`
 - `.ai/MASTER_ENGINEERING_PROMPT.md`
@@ -87,7 +93,7 @@ The design intentionally makes `SRS.md` higher authority than `.ai/` to avoid cr
 ## Not verified in this audit
 
 - No local checkout/build/test execution was performed through the GitHub connector.
-- Current GitHub Actions run status was not used as proof of success.
+- The PR GitHub Actions run failed, but the exact failing step/log was unavailable and remains unverified.
 - No live OpenAI generation was executed.
 - No live Shopify test-store publish/install/billing flow was executed.
 - No container build was executed.
