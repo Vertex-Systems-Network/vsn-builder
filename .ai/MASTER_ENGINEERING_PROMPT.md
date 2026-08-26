@@ -8,19 +8,38 @@ Operate like a senior product-engineering team responsible for a long-lived prod
 
 Repository evidence wins over plans and conversation history.
 
-Before substantial work, read `.ai/README.md`, `.ai/CHECKPOINT.md`, `.ai/PROJECT_CONTEXT.md`, the relevant `SRS.md` sections, and the task-relevant implementation/tests. Do not load every historical milestone report by default.
+Before substantial work, read `.ai/README.md`, `.ai/WORK_STATE.md`, `.ai/CHECKPOINT.md`, `.ai/PROJECT_CONTEXT.md`, the relevant `SRS.md` sections, and the task-relevant implementation/tests. Do not load every historical milestone report by default.
 
 When sources conflict, prefer:
 
-`executable state/tests -> SRS/contracts -> current .ai decisions -> current implementation plans -> historical reports -> chat memory`
+`executable state/tests -> SRS/contracts -> current .ai decisions/state -> current implementation plans -> historical reports -> chat memory`
 
 Never infer completion from a milestone document. Verify actual code and executable gates.
+
+### 1.1 Automatic cross-session continuity
+
+Development continuity MUST live in the repository, not in conversation memory.
+
+Use `.ai/WORK_STATE.md` as the live execution cursor and `.ai/CHECKPOINT.md` as the durable verified checkpoint. Follow `.ai/RESUME_PROTOCOL.md` whenever a task resumes after interruption or in a new session.
+
+When the owner says any equivalent of `continue`, `resume`, `carry on`, `start development`, or `next`, and the repository identifies the active/paused task, do not ask where the previous session stopped. First reconcile the recorded cursor with actual Git/PR/source/test evidence, then continue from the earliest unverified step.
+
+For every non-trivial implementation operation, use a write-ahead cursor when repository writes are available:
+
+1. before execution, record one precise `in_flight_step` and a recovery-oriented `next_exact_action`;
+2. execute the operation;
+3. inspect/verify the result;
+4. only then move it to `last_verified_step`, clear `in_flight_step`, update the commit SHA when applicable, and record the next exact action.
+
+If a session ends unexpectedly with an `in_flight_step`, the next AI must inspect whether the operation completed, partially completed, failed, or never started. Never assume success and never blindly repeat a potentially side-effecting operation.
+
+Do not make the owner reconstruct history that Git, source, tests, PR state, `WORK_STATE.md`, or `CHECKPOINT.md` can recover. Ask only when a material product/security/data-loss decision genuinely requires human input.
 
 ## 2. Default engineering loop
 
 For meaningful work use:
 
-`Inspect -> Understand -> Research when needed -> Impact analysis -> Plan -> Implement -> Test -> Adversarial review -> Harden -> Document -> Commit coherent verified unit -> Checkpoint -> Report`
+`Inspect -> Understand -> Research when needed -> Impact analysis -> Plan -> Record in-flight cursor -> Implement -> Test -> Adversarial review -> Harden -> Document -> Commit coherent verified unit -> Update cursor/checkpoint -> Report`
 
 Do not force every trivial edit through ceremony. Increase rigor with blast radius, irreversibility, security exposure, data risk and production impact.
 
@@ -229,9 +248,16 @@ Before a high-impact change establish a recoverable state. For breaking changes 
 
 Use pull requests for reviewable production work. Do not merge merely because implementation exists; required quality gates and review policy still apply.
 
-## 19. Checkpoint protocol
+## 19. Checkpoint and live-state protocol
 
-Update `.ai/CHECKPOINT.md` after a meaningful work unit or before handing off a partially complete high-risk task. Keep it concise and evidence-based:
+Maintain two levels of state:
+
+- `.ai/WORK_STATE.md` for the live task cursor and exact resume position;
+- `.ai/CHECKPOINT.md` for durable verified state and meaningful engineering history.
+
+Update `WORK_STATE.md` around non-trivial operations according to `.ai/RESUME_PROTOCOL.md`. Update `CHECKPOINT.md` after a meaningful work unit or when a failure/decision materially changes future work.
+
+A checkpoint should include, as applicable:
 
 - current branch/base;
 - verified completed work;
@@ -241,7 +267,7 @@ Update `.ai/CHECKPOINT.md` after a meaningful work unit or before handing off a 
 - unverified items;
 - next safest action.
 
-Do not use the checkpoint as a substitute for Git history or detailed documentation.
+Do not use either state file as a substitute for Git history or detailed documentation.
 
 ## 20. Autonomy and ambiguity
 
@@ -250,6 +276,8 @@ Make reversible, low-risk engineering decisions from repository conventions and 
 Ask only when product behavior materially diverges, a decision is irreversible/high-risk, data loss/security/legal consequences are significant, or a credential/human approval is genuinely required.
 
 When ambiguity is low-risk, choose the simplest production-appropriate behavior and document the assumption if it affects future work.
+
+If resume state is sufficiently clear, continuing from it is not an ambiguity that requires asking the owner to repeat prior instructions.
 
 ## 21. Definition of done
 
@@ -274,4 +302,6 @@ At the end of meaningful work report concisely:
 - Known risks or unverified items.
 - Next safest action.
 
-The goal is not maximum code output. The goal is a Shopify-native platform whose AI can reason across commerce context and operate powerful visual tools while remaining structured, reversible, secure, testable, observable and merchant-controlled.
+Before ending, ensure `WORK_STATE.md` contains a precise resume cursor whenever work is not fully complete.
+
+The goal is not maximum code output. The goal is a Shopify-native platform whose AI can reason across commerce context and operate powerful visual tools while remaining structured, reversible, secure, testable, observable, recoverable across sessions and merchant-controlled.

@@ -1,7 +1,7 @@
 # VSN Engineering Checkpoint
 
 **Date:** 2026-08-26  
-**Checkpoint status:** PARTIALLY VERIFIED AUDIT / AI-NATIVE PLAN CREATED  
+**Checkpoint status:** PARTIALLY VERIFIED AUDIT / AI-NATIVE PLAN CREATED / IMPLEMENTATION PAUSED BY OWNER  
 **Base reviewed:** `main` @ `90653d9cf6f1dcf489ef45ee21d38625db7aeb38`  
 **Working branch:** `docs/ai-native-operating-system`
 
@@ -74,12 +74,14 @@ The job-log endpoint did not return usable logs during this audit, so the exact 
 
 Conclusion: prompt/screenshot/URL generation is table stakes. VSN differentiation must come from canonical cross-surface tools, deeper Shopify/brand context, reversible agent workflows, quality evidence and safe distribution through VSN/Sidekick/external agents.
 
-## `.ai/` operating system created in this work unit
+## `.ai/` operating system
 
-Files:
+Files now planned/present on the documentation branch:
 
 - `.ai/README.md`
 - `.ai/MASTER_ENGINEERING_PROMPT.md`
+- `.ai/WORK_STATE.md`
+- `.ai/RESUME_PROTOCOL.md`
 - `.ai/PROJECT_CONTEXT.md`
 - `.ai/AI_NATIVE_ARCHITECTURE.md`
 - `.ai/MARKET_BENCHMARKS.md`
@@ -89,6 +91,16 @@ Files:
 - `.ai/CHECKPOINT.md`
 
 The design intentionally makes `SRS.md` higher authority than `.ai/` to avoid creating a competing architecture source.
+
+`WORK_STATE.md` is the live execution cursor. It uses a write-ahead `in_flight_step` plus `last_verified_step`/`next_exact_action` so a later AI can determine where work stopped from repository evidence rather than conversation memory.
+
+`RESUME_PROTOCOL.md` defines the mandatory recovery algorithm: inspect Git/PR/source/tests, verify any in-flight operation, reconcile stale state silently, and continue from the earliest unverified step without asking the owner for a recap when repository evidence is sufficient.
+
+## Current owner instruction
+
+No further product/runtime development is authorized in this work unit. Only the `.ai/` planning/continuity documentation is being changed.
+
+The live cursor therefore remains `paused_by_owner`. When the owner later explicitly asks to resume/start development, the next AI should not ask where to begin; it should read `.ai/WORK_STATE.md`, reconcile current repository/PR state, and execute its recorded `next_exact_action` subject to normal safety/approval boundaries.
 
 ## Not verified in this audit
 
@@ -101,16 +113,17 @@ The design intentionally makes `SRS.md` higher authority than `.ai/` to avoid cr
 - Full codebase security review was not performed; reviewed AI/security paths are only part of the application.
 - Visual output quality was not benchmarked against competitors on identical inputs.
 
-## Next safest actions
+## Next safest actions when development is resumed
 
-1. Land/review the `.ai/` operating system as documentation only.
-2. Create a separate code PR for P0 Node CI/Docker alignment and run executable gates.
-3. Establish AI behavior/provider abstraction and telemetry versioning without changing merchant-visible behavior.
-4. Define a small typed AI command registry around existing command-bus/history primitives.
-5. Build deterministic + provider-backed eval harness before introducing broad agent autonomy.
-6. Add multi-turn in-editor agent behind a feature flag, initially restricted to reversible draft commands.
-7. Only after tool contracts stabilize, implement Sidekick and external MCP/API adapters.
+1. Reconcile whether draft PR #1 has merged and inspect current `main` head.
+2. Create a fresh code branch from current `main` for the P0 Node CI/Docker alignment; do not mix production implementation into the documentation-only branch.
+3. Run executable install/runtime/build/CI-relevant gates and record exact evidence.
+4. Establish AI behavior/provider abstraction and telemetry versioning without changing merchant-visible behavior.
+5. Define a small typed AI command registry around existing command-bus/history primitives.
+6. Build deterministic + provider-backed eval harness before introducing broad agent autonomy.
+7. Add multi-turn in-editor agent behind a feature flag, initially restricted to reversible draft commands.
+8. Only after tool contracts stabilize, implement Sidekick and external MCP/API adapters.
 
 ## Handoff rule
 
-On resume, verify the branch/PR state and re-read current source before implementing. Do not assume this checkpoint proves any unexecuted test or production state.
+On resume, do not trust conversational memory over repository evidence and do not ask the owner to reconstruct prior development if `.ai/WORK_STATE.md`, Git history, PR state, source and tests provide enough information. Verify the recorded cursor, recover any in-flight operation safely, and continue from the earliest unverified step.
