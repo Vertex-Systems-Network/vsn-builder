@@ -1,3 +1,4 @@
+/* global globalThis */
 import { widgetRegistry } from "./widgetRegistry.js";
 
 export const AI_LAYOUT_SCHEMA_VERSION = 1;
@@ -14,7 +15,7 @@ const SAFE_LINK_PROTOCOLS = new Set(["http:","https:","mailto:","tel:"]);
 const SAFE_MEDIA_PROTOCOLS = new Set(["http:","https:"]);
 
 export function aiNodeId(prefix="ai") {
-  try { if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`; } catch {}
+  try { if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`; } catch (error) { void error; }
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
 }
 
@@ -23,7 +24,7 @@ function px(value) {
   return Number.isFinite(n) && n >= 0 ? `${Math.min(2400,n)}px` : undefined;
 }
 function color(value) { return /^#[0-9a-f]{3,8}$/i.test(String(value||"")) ? String(value) : undefined; }
-function cleanText(value, max=4000) { return String(value ?? "").replace(/\u0000/g,"").slice(0,max); }
+function cleanText(value, max=4000) { return String(value ?? "").split(String.fromCharCode(0)).join("").slice(0,max); }
 function cleanAiText(value,max=4000){return cleanText(value,max).replace(/\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g,"");}
 function cssLength(value){const raw=cleanText(value,40).trim().toLowerCase();if(!raw)return"";if(["auto","min-content","max-content","fit-content"].includes(raw))return raw;return /^(?:0|(?:\d+(?:\.\d+)?|\.\d+)(?:px|%|vw|vh|rem|em))$/.test(raw)?raw:"";}
 function number(value, min, max, fallback=undefined) { const n=Number(value); return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback; }
