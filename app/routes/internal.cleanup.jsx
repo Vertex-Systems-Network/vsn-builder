@@ -1,9 +1,11 @@
+import { Buffer } from "node:buffer";
 import { timingSafeEqual } from "node:crypto";
+import { env } from "node:process";
 import db from "../db.server.js";
 import { cleanupBuilderData } from "../utils/cleanup.server";
 
 function authorized(request) {
-  const secret = String(process.env.CLEANUP_SECRET || "");
+  const secret = String(env.CLEANUP_SECRET || "");
   if (!secret) return false;
   const auth = request.headers.get("authorization") || "";
   const expected = Buffer.from(`Bearer ${secret}`);
