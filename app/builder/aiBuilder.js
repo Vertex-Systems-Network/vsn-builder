@@ -10,6 +10,8 @@ export const AI_ALLOWED_TYPES = Object.freeze([
 
 const ALLOWED = new Set(AI_ALLOWED_TYPES);
 const textWidget = new Set(["heading","text","button","product-title","product-description","collection-title","collection-description","announcement-bar"]);
+const SAFE_LINK_PROTOCOLS = new Set(["http:","https:","mailto:","tel:"]);
+const SAFE_MEDIA_PROTOCOLS = new Set(["http:","https:"]);
 
 export function aiNodeId(prefix="ai") {
   try { if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`; } catch {}
@@ -23,6 +25,25 @@ function px(value) {
 function color(value) { return /^#[0-9a-f]{3,8}$/i.test(String(value||"")) ? String(value) : undefined; }
 function cleanText(value, max=4000) { return String(value ?? "").replace(/\u0000/g,"").slice(0,max); }
 function number(value, min, max, fallback=undefined) { const n=Number(value); return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback; }
+function unsafeNetworkHost(hostname="") {
+  const host=String(hostname||"").toLowerCase().replace(/^\[|\]$/g,"").replace(/\.$/,"");
+  if(!host||host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host==="::"||host==="::1"||host.startsWith("fc")||host.startsWith("fd")||/^fe[89ab]/.test(host))return true;
+  const match=host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if(!match)return false;
+  const parts=match.slice(1).map(Number);if(parts.some((n)=>n>255))return true;
+  const[a,b,c]=parts;
+  return a===0||a===10||a===127||(a===100&&b>=64&&b<=127)||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===192&&b===0&&(c===0||c===2))||(a===198&&(b===18||b===19))||(a===198&&b===51&&c===100)||(a===203&&b===0&&c===113)||a>=224;
+}
+function cleanUrl(value,{media=false}={}) {
+  const raw=cleanText(value,media?4000:1500).trim();
+  if(!raw)return"";
+  if(!media&&((raw.startsWith("/")&&!raw.startsWith("//"))||raw.startsWith("#")))return raw;
+  let parsed;try{parsed=new URL(raw);}catch{return"";}
+  const protocols=media?SAFE_MEDIA_PROTOCOLS:SAFE_LINK_PROTOCOLS;
+  if(!protocols.has(parsed.protocol)||parsed.username||parsed.password)return"";
+  if((parsed.protocol==="http:"||parsed.protocol==="https:")&&unsafeNetworkHost(parsed.hostname))return"";
+  return raw;
+}
 
 export function normalizeAiPlan(plan={}) {
   const raw = Array.isArray(plan?.elements) ? plan.elements : [];
@@ -40,7 +61,7 @@ export function normalizeAiPlan(plan={}) {
       parentRef: cleanText(row.parentRef || "root",80).replace(/[^a-zA-Z0-9_-]/g,"_") || "root",
       type,
       label: cleanText(row.label || widgetRegistry[type]?.label || type,120),
-      text: cleanText(row.text,4000), url: cleanText(row.url,1500), imageUrl: cleanText(row.imageUrl,4000), alt: cleanText(row.alt,500),
+      text: cleanText(row.text,4000), url: cleanUrl(row.url,{media:type==="video"}), imageUrl: cleanUrl(row.imageUrl,{media:true}), alt: cleanText(row.alt,500),
       tag: ["h1","h2","h3","h4","h5","h6","p","div"].includes(row.tag)?row.tag:"",
       columns: number(row.columns,1,6,0), gap: number(row.gap,0,200,0),
       backgroundColor: color(row.backgroundColor)||"", textColor: color(row.textColor)||"", fontSize:number(row.fontSize,8,180,0), fontWeight:number(row.fontWeight,100,900,0),
