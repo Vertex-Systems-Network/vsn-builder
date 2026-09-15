@@ -28,7 +28,7 @@ jobs:
       - name: Lint
         run: npx eslint --cache --cache-location ./node_modules/.cache/eslint --format json --output-file lint-report.json .
       - name: Upload lint diagnostics
-        if: always()
+        if: ${{ always() && hashFiles('lint-report.json') != '' }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: lint-report
