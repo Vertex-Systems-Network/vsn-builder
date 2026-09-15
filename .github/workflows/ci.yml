@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22.18.0
@@ -25,18 +26,30 @@ jobs:
       - run: npm ci
       - run: npm run prisma -- generate
       - run: npm run prisma -- migrate deploy
-      - run: npm run lint
-      - name: Capture lint diagnostics
-        if: failure()
-        run: npx eslint --ignore-path .gitignore --no-cache --format json . > eslint-report.json || true
-      - name: Upload lint diagnostics
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: eslint-report
-          path: eslint-report.json
-          if-no-files-found: error
-          retention-days: 1
+      - name: Lint changed source files
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE_SHA" ]]; then
+            base="$PR_BASE_SHA"
+          elif [[ -n "$PUSH_BEFORE_SHA" && ! "$PUSH_BEFORE_SHA" =~ ^0+$ ]] && git cat-file -e "$PUSH_BEFORE_SHA^{commit}" 2>/dev/null; then
+            base="$PUSH_BEFORE_SHA"
+          elif git rev-parse HEAD^ >/dev/null 2>&1; then
+            base="$(git rev-parse HEAD^)"
+          else
+            base="$(git rev-list --max-parents=0 HEAD)"
+          fi
+          mapfile -t files < <(git diff --name-only --diff-filter=ACMR "$base"...HEAD -- '*.js' '*.jsx' '*.mjs' '*.cjs' '*.ts' '*.tsx')
+          if ((${#files[@]})); then
+            printf 'Linting changed source files:\n%s\n' "${files[@]}"
+            npx eslint --ignore-path .gitignore --no-cache "${files[@]}"
+          else
+            echo "No changed JS/TS source files to lint."
+          fi
       - run: npm run typecheck
       - run: npm run build
       - run: npm run security:audit
