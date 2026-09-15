@@ -18,8 +18,8 @@ function safeJson(value,fallback={}){try{return JSON.parse(value||"{}");}catch{r
 function ipv4IsNonPublic(host){
   const parts=String(host||"").split(".").map(Number);
   if(parts.length!==4||parts.some((n)=>!Number.isInteger(n)||n<0||n>255))return true;
-  const[a,b]=parts;
-  return a===0||a===10||a===127||(a===100&&b>=64&&b<=127)||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===198&&(b===18||b===19))||a>=224;
+  const[a,b,c]=parts;
+  return a===0||a===10||a===127||(a===100&&b>=64&&b<=127)||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===192&&b===0&&c===0)||(a===192&&b===0&&c===2)||(a===198&&(b===18||b===19))||(a===198&&b===51&&c===100)||(a===203&&b===0&&c===113)||a>=224;
 }
 function ipv6IsNonPublic(host){
   const h=String(host||"").toLowerCase().replace(/^\[|\]$/g,"");
@@ -28,7 +28,7 @@ function ipv6IsNonPublic(host){
   return mapped?ipv4IsNonPublic(mapped[1]):false;
 }
 function hostIsPrivate(host){
-  const h=String(host||"").toLowerCase().replace(/\.$/,"");
+  const h=String(host||"").toLowerCase().replace(/\.$/,"").replace(/^\[|\]$/g,"");
   if(!h||h==="localhost"||h.endsWith(".localhost")||h.endsWith(".local"))return true;
   const family=isIP(h);
   if(family===4)return ipv4IsNonPublic(h);
@@ -38,7 +38,7 @@ function hostIsPrivate(host){
 
 async function assertPublicUrl(url){
   if(!["http:","https:"].includes(url.protocol)||url.username||url.password||hostIsPrivate(url.hostname))throw new Error("Only public http(s) URLs can be used for inspiration.");
-  try{const rows=await lookup(url.hostname,{all:true});if(!rows.length||rows.some((row)=>hostIsPrivate(row.address)))throw new Error("Private network URLs are not allowed.");}catch(error){if(String(error?.message||"").includes("Private network"))throw error;throw new Error("Could not resolve the inspiration URL safely.");}
+  try{const rows=await lookup(url.hostname.replace(/^\[|\]$/g,""),{all:true});if(!rows.length||rows.some((row)=>hostIsPrivate(row.address)))throw new Error("Private network URLs are not allowed.");}catch(error){if(String(error?.message||"").includes("Private network"))throw error;throw new Error("Could not resolve the inspiration URL safely.");}
 }
 async function readLimitedText(response,maxBytes=MAX_INSPIRATION_BYTES){
   const declared=Number(response.headers.get("content-length")||0);
@@ -58,7 +58,7 @@ function normalizeImageData(value,operation){
   const raw=String(value||"");if(!raw)throw new Error("A reference image is required for screenshot reconstruction.");if(raw.length>MAX_IMAGE_DATA_CHARS)throw new Error("Reference image exceeds the 8 MB limit.");
   const comma=raw.indexOf(",");if(comma<0)throw new Error("Reference image must be a PNG, JPEG, WEBP, or GIF data URL.");
   const header=raw.slice(0,comma);const payload=raw.slice(comma+1);
-  if(!/^data:image\/(?:png|jpeg|webp|gif);base64$/i.test(header)||!/^[A-Za-z0-9+/]*={0,2}$/.test(payload))throw new Error("Reference image must be a PNG, JPEG, WEBP, or GIF data URL.");
+  if(!/^data:image\/(?:png|jpeg|webp|gif);base64$/i.test(header)||!/^[A-Za-z0-9+/]*={0,2}$/.test(payload)||payload.length%4!==0)throw new Error("Reference image must be a PNG, JPEG, WEBP, or GIF data URL.");
   const padding=payload.endsWith("==")?2:payload.endsWith("=")?1:0;const bytes=Math.floor(payload.length*3/4)-padding;
   if(bytes>MAX_IMAGE_BYTES)throw new Error("Reference image exceeds the 8 MB limit.");
   return raw;
