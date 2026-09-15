@@ -1,4 +1,5 @@
 import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import dbDefault from "../db.server.js";
 import { AI_ALLOWED_TYPES, normalizeAiPlan, aiPlanToVsnNodes, validateAiVsnOutput, scanAiAccessibility, scanAiResponsive, serializePageForAi } from "../builder/aiBuilder.js";
 import { getQuotaDecision } from "./entitlements.server.js";
@@ -6,21 +7,61 @@ import { COMMERCIAL_PLANS } from "../config/commercialPlans.js";
 
 const MODEL = process.env.VSN_AI_MODEL || "gpt-5-mini";
 const MONTH_MS=31*24*60*60*1000;
+const MAX_INSPIRATION_BYTES=500000;
+const MAX_IMAGE_BYTES=8*1024*1024;
+const MAX_IMAGE_DATA_CHARS=12*1024*1024;
 
 export const AI_PLAN_QUOTAS = Object.freeze(Object.fromEntries(Object.entries(COMMERCIAL_PLANS).map(([key, plan]) => [key, plan.aiMonthly])));
 
 function monthStart(){const d=new Date();return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1));}
 function safeJson(value,fallback={}){try{return JSON.parse(value||"{}");}catch{return fallback;}}
-function hostIsPrivate(host){const h=String(host||"").toLowerCase();return h==="localhost"||h.endsWith(".local")||/^127\./.test(h)||/^10\./.test(h)||/^192\.168\./.test(h)||/^169\.254\./.test(h)||/^172\.(1[6-9]|2\d|3[01])\./.test(h)||h==="::1";}
+function ipv4IsNonPublic(host){
+  const parts=String(host||"").split(".").map(Number);
+  if(parts.length!==4||parts.some((n)=>!Number.isInteger(n)||n<0||n>255))return true;
+  const[a,b]=parts;
+  return a===0||a===10||a===127||(a===100&&b>=64&&b<=127)||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===198&&(b===18||b===19))||a>=224;
+}
+function ipv6IsNonPublic(host){
+  const h=String(host||"").toLowerCase().replace(/^\[|\]$/g,"");
+  if(h==="::"||h==="::1"||h.startsWith("fc")||h.startsWith("fd")||/^fe[89ab]/.test(h)||h.startsWith("ff")||h.startsWith("2001:db8:"))return true;
+  const mapped=h.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  return mapped?ipv4IsNonPublic(mapped[1]):false;
+}
+function hostIsPrivate(host){
+  const h=String(host||"").toLowerCase().replace(/\.$/,"");
+  if(!h||h==="localhost"||h.endsWith(".localhost")||h.endsWith(".local"))return true;
+  const family=isIP(h);
+  if(family===4)return ipv4IsNonPublic(h);
+  if(family===6)return ipv6IsNonPublic(h);
+  return false;
+}
 
 async function assertPublicUrl(url){
   if(!["http:","https:"].includes(url.protocol)||url.username||url.password||hostIsPrivate(url.hostname))throw new Error("Only public http(s) URLs can be used for inspiration.");
-  try{const rows=await lookup(url.hostname,{all:true});if(rows.some((row)=>hostIsPrivate(row.address)))throw new Error("Private network URLs are not allowed.");}catch(error){if(String(error?.message||"").includes("Private network"))throw error;throw new Error("Could not resolve the inspiration URL safely.");}
+  try{const rows=await lookup(url.hostname,{all:true});if(!rows.length||rows.some((row)=>hostIsPrivate(row.address)))throw new Error("Private network URLs are not allowed.");}catch(error){if(String(error?.message||"").includes("Private network"))throw error;throw new Error("Could not resolve the inspiration URL safely.");}
+}
+async function readLimitedText(response,maxBytes=MAX_INSPIRATION_BYTES){
+  const declared=Number(response.headers.get("content-length")||0);
+  if(Number.isFinite(declared)&&declared>maxBytes)throw new Error("Inspiration page is too large.");
+  if(!response.body)return"";
+  const reader=response.body.getReader();const decoder=new TextDecoder();let total=0;let text="";
+  try{while(true){const{done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>maxBytes){await reader.cancel();throw new Error("Inspiration page is too large.");}text+=decoder.decode(value,{stream:true});}text+=decoder.decode();return text;}finally{try{reader.releaseLock();}catch{}}
 }
 async function fetchUrlInspiration(rawUrl){
-  if(!rawUrl)return""; let url; try{url=new URL(rawUrl);}catch{throw new Error("Enter a valid public URL.");}
+  const input=String(rawUrl||"").trim();if(!input)return"";if(input.length>2048)throw new Error("Inspiration URL is too long.");
+  let url; try{url=new URL(input);}catch{throw new Error("Enter a valid public URL.");}
   const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),8000);
-  try{for(let redirects=0;redirects<4;redirects++){await assertPublicUrl(url);const res=await fetch(url,{signal:controller.signal,redirect:"manual",headers:{"User-Agent":"VSN-Page-Builder-AI/1.0","Accept":"text/html,text/plain"}});if([301,302,303,307,308].includes(res.status)){const location=res.headers.get("location");if(!location)throw new Error("Inspiration URL redirect was invalid.");url=new URL(location,url);continue;}if(!res.ok)throw new Error(`Source URL returned ${res.status}.`);const type=res.headers.get("content-type")||"";if(!type.includes("text/html")&&!type.includes("text/plain"))throw new Error("URL inspiration currently supports HTML/text pages only.");const html=(await res.text()).slice(0,500000);return html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim().slice(0,18000);}throw new Error("Too many redirects while reading the inspiration URL.");}finally{clearTimeout(timer);}
+  try{for(let redirects=0;redirects<4;redirects++){await assertPublicUrl(url);const res=await fetch(url,{signal:controller.signal,redirect:"manual",headers:{"User-Agent":"VSN-Page-Builder-AI/1.0","Accept":"text/html,text/plain"}});if([301,302,303,307,308].includes(res.status)){const location=res.headers.get("location");if(!location)throw new Error("Inspiration URL redirect was invalid.");url=new URL(location,url);continue;}if(!res.ok)throw new Error(`Source URL returned ${res.status}.`);const type=res.headers.get("content-type")||"";if(!type.includes("text/html")&&!type.includes("text/plain"))throw new Error("URL inspiration currently supports HTML/text pages only.");const html=await readLimitedText(res);return html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim().slice(0,18000);}throw new Error("Too many redirects while reading the inspiration URL.");}finally{clearTimeout(timer);}
+}
+function normalizeImageData(value,operation){
+  if(operation!=="screenshot")return"";
+  const raw=String(value||"");if(!raw)throw new Error("A reference image is required for screenshot reconstruction.");if(raw.length>MAX_IMAGE_DATA_CHARS)throw new Error("Reference image exceeds the 8 MB limit.");
+  const comma=raw.indexOf(",");if(comma<0)throw new Error("Reference image must be a PNG, JPEG, WEBP, or GIF data URL.");
+  const header=raw.slice(0,comma);const payload=raw.slice(comma+1);
+  if(!/^data:image\/(?:png|jpeg|webp|gif);base64$/i.test(header)||!/^[A-Za-z0-9+/]*={0,2}$/.test(payload))throw new Error("Reference image must be a PNG, JPEG, WEBP, or GIF data URL.");
+  const padding=payload.endsWith("==")?2:payload.endsWith("=")?1:0;const bytes=Math.floor(payload.length*3/4)-padding;
+  if(bytes>MAX_IMAGE_BYTES)throw new Error("Reference image exceeds the 8 MB limit.");
+  return raw;
 }
 
 function responseText(payload){
@@ -50,7 +91,7 @@ async function callOpenAi({operation,prompt,imageData,currentPage,globalStyles,p
   const content=[{type:"input_text",text:userText}]; if(imageData)content.push({type:"input_image",image_url:imageData,detail:"high"});
   const body={model:MODEL,instructions:operationInstructions(operation),input:[{role:"user",content}],text:{format:{type:"json_schema",name:"vsn_ai_builder",description:"A safe editable VSN layout plan",strict:true,schema:OUTPUT_SCHEMA}}};
   const res=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(body)});
-  const payload=await res.json().catch(()=>({})); if(!res.ok)throw new Error(payload?.error?.message||`AI provider returned ${res.status}.`);
+  const payload=await res.json().catch(()=>({})); if(!res.ok)throw new Error(`AI provider request failed (${res.status}).`);
   const text=responseText(payload);if(!text)throw new Error("AI provider returned no layout output.");
   let parsed;try{parsed=JSON.parse(text);}catch{throw new Error("AI response could not be parsed as structured JSON.");}
   return {plan:normalizeAiPlan(parsed),usage:payload?.usage||{},model:payload?.model||MODEL,responseId:payload?.id||""};
@@ -67,7 +108,8 @@ export async function runAiBuilder({db=dbDefault,shop,pageId,operation,prompt,im
   const started=Date.now();let usageRow=null;try{usageRow=await db.builderAiUsage.create({data:{shop,pageId:pageId||null,operation:String(operation||"section"),model:MODEL,status:"started"}});}catch{}
   try{
     const urlText=operation==="url"?await fetchUrlInspiration(sourceUrl):"";
-    const result=await callOpenAi({operation,prompt,imageData,currentPage,globalStyles,pageTemplate,urlText,selectedElementId,commerceContext});
+    const safeImageData=normalizeImageData(imageData,operation);
+    const result=await callOpenAi({operation,prompt,imageData:safeImageData,currentPage,globalStyles,pageTemplate,urlText,selectedElementId,commerceContext});
     const nodes=aiPlanToVsnNodes(result.plan);const validation=validateAiVsnOutput(nodes);if(!validation.valid)throw new Error(`AI output failed VSN validation: ${validation.errors.join("; ")}`);
     const accessibility=scanAiAccessibility(nodes);const responsive=scanAiResponsive(nodes);
     if(usageRow)await db.builderAiUsage.update({where:{id:usageRow.id},data:{status:"completed",inputTokens:Number(result.usage?.input_tokens||0),outputTokens:Number(result.usage?.output_tokens||0),responseId:result.responseId||null,durationMs:Date.now()-started}}).catch(()=>{});
