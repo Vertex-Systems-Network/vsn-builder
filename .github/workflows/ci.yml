@@ -26,6 +26,17 @@ jobs:
       - run: npm run prisma -- generate
       - run: npm run prisma -- migrate deploy
       - run: npm run lint
+      - name: Capture lint diagnostics
+        if: failure()
+        run: npx eslint --ignore-path .gitignore --no-cache --format json . > eslint-report.json || true
+      - name: Upload lint diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: eslint-report
+          path: eslint-report.json
+          if-no-files-found: error
+          retention-days: 1
       - run: npm run typecheck
       - run: npm run build
       - run: npm run security:audit
