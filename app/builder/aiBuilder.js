@@ -25,6 +25,7 @@ function px(value) {
 function color(value) { return /^#[0-9a-f]{3,8}$/i.test(String(value||"")) ? String(value) : undefined; }
 function cleanText(value, max=4000) { return String(value ?? "").replace(/\u0000/g,"").slice(0,max); }
 function cleanAiText(value,max=4000){return cleanText(value,max).replace(/\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g,"");}
+function cssLength(value){const raw=cleanText(value,40).trim().toLowerCase();if(!raw)return"";if(["auto","min-content","max-content","fit-content"].includes(raw))return raw;return /^(?:0|(?:\d+(?:\.\d+)?|\.\d+)(?:px|%|vw|vh|rem|em))$/.test(raw)?raw:"";}
 function number(value, min, max, fallback=undefined) { const n=Number(value); return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback; }
 function unsafeNetworkHost(hostname="") {
   const host=String(hostname||"").toLowerCase().replace(/^\[|\]$/g,"").replace(/\.$/,"");
@@ -68,7 +69,7 @@ export function normalizeAiPlan(plan={}) {
       backgroundColor: color(row.backgroundColor)||"", textColor: color(row.textColor)||"", fontSize:number(row.fontSize,8,180,0), fontWeight:number(row.fontWeight,100,900,0),
       paddingTop:number(row.paddingTop,0,400,0), paddingRight:number(row.paddingRight,0,400,0), paddingBottom:number(row.paddingBottom,0,400,0), paddingLeft:number(row.paddingLeft,0,400,0),
       marginTop:number(row.marginTop,0,400,0), marginRight:number(row.marginRight,0,400,0), marginBottom:number(row.marginBottom,0,400,0), marginLeft:number(row.marginLeft,0,400,0),
-      width: cleanText(row.width,40), maxWidth: cleanText(row.maxWidth,40), height: cleanText(row.height,40), borderRadius:number(row.borderRadius,0,200,0),
+      width: cssLength(row.width), maxWidth: cssLength(row.maxWidth), height: cssLength(row.height), borderRadius:number(row.borderRadius,0,200,0),
       direction: ["row","column"].includes(row.direction)?row.direction:"", align: ["flex-start","center","flex-end","stretch"].includes(row.align)?row.align:"", justify:["flex-start","center","flex-end","space-between","space-around"].includes(row.justify)?row.justify:"",
       objectFit:["cover","contain","fill","none","scale-down"].includes(row.objectFit)?row.objectFit:"",
     });
