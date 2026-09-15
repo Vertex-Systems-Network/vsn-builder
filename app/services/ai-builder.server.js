@@ -6,15 +6,12 @@ import { getQuotaDecision } from "./entitlements.server.js";
 import { COMMERCIAL_PLANS } from "../config/commercialPlans.js";
 
 const MODEL = process.env.VSN_AI_MODEL || "gpt-5-mini";
-const MONTH_MS=31*24*60*60*1000;
 const MAX_INSPIRATION_BYTES=500000;
 const MAX_IMAGE_BYTES=8*1024*1024;
 const MAX_IMAGE_DATA_CHARS=12*1024*1024;
 
 export const AI_PLAN_QUOTAS = Object.freeze(Object.fromEntries(Object.entries(COMMERCIAL_PLANS).map(([key, plan]) => [key, plan.aiMonthly])));
 
-function monthStart(){const d=new Date();return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1));}
-function safeJson(value,fallback={}){try{return JSON.parse(value||"{}");}catch{return fallback;}}
 function ipv4IsNonPublic(host){
   const parts=String(host||"").split(".").map(Number);
   if(parts.length!==4||parts.some((n)=>!Number.isInteger(n)||n<0||n>255))return true;
@@ -45,7 +42,7 @@ async function readLimitedText(response,maxBytes=MAX_INSPIRATION_BYTES){
   if(Number.isFinite(declared)&&declared>maxBytes)throw new Error("Inspiration page is too large.");
   if(!response.body)return"";
   const reader=response.body.getReader();const decoder=new TextDecoder();let total=0;let text="";
-  try{while(true){const{done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>maxBytes){await reader.cancel();throw new Error("Inspiration page is too large.");}text+=decoder.decode(value,{stream:true});}text+=decoder.decode();return text;}finally{try{reader.releaseLock();}catch{}}
+  try{for(;;){const{done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>maxBytes){await reader.cancel();throw new Error("Inspiration page is too large.");}text+=decoder.decode(value,{stream:true});}text+=decoder.decode();return text;}finally{try{reader.releaseLock();}catch(error){void error;}}
 }
 async function fetchUrlInspiration(rawUrl){
   const input=String(rawUrl||"").trim();if(!input)return"";if(input.length>2048)throw new Error("Inspiration URL is too long.");
@@ -105,7 +102,7 @@ export async function aiUsageStatus({db=dbDefault,shop}){
 export async function runAiBuilder({db=dbDefault,shop,pageId,operation,prompt,imageData,currentPage,globalStyles,pageTemplate,sourceUrl,selectedElementId,commerceContext}){
   const quotaDecision=await getQuotaDecision(db,shop,"aiGenerations");if(!quotaDecision.allowed)throw new Error(quotaDecision.message);
   const status=await aiUsageStatus({db,shop});
-  const started=Date.now();let usageRow=null;try{usageRow=await db.builderAiUsage.create({data:{shop,pageId:pageId||null,operation:String(operation||"section"),model:MODEL,status:"started"}});}catch{}
+  const started=Date.now();let usageRow=null;try{usageRow=await db.builderAiUsage.create({data:{shop,pageId:pageId||null,operation:String(operation||"section"),model:MODEL,status:"started"}});}catch(error){void error;}
   try{
     const urlText=operation==="url"?await fetchUrlInspiration(sourceUrl):"";
     const safeImageData=normalizeImageData(imageData,operation);
