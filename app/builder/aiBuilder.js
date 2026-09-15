@@ -24,10 +24,11 @@ function px(value) {
 }
 function color(value) { return /^#[0-9a-f]{3,8}$/i.test(String(value||"")) ? String(value) : undefined; }
 function cleanText(value, max=4000) { return String(value ?? "").replace(/\u0000/g,"").slice(0,max); }
+function cleanAiText(value,max=4000){return cleanText(value,max).replace(/\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g,"");}
 function number(value, min, max, fallback=undefined) { const n=Number(value); return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback; }
 function unsafeNetworkHost(hostname="") {
   const host=String(hostname||"").toLowerCase().replace(/^\[|\]$/g,"").replace(/\.$/,"");
-  if(!host||host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host==="::"||host==="::1"||host.startsWith("fc")||host.startsWith("fd")||/^fe[89ab]/.test(host))return true;
+  if(!host||host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host==="::"||host==="::1"||host.startsWith("::ffff:")||host.startsWith("fc")||host.startsWith("fd")||/^fe[89ab]/.test(host)||host.startsWith("2001:db8:"))return true;
   const match=host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if(!match)return false;
   const parts=match.slice(1).map(Number);if(parts.some((n)=>n>255))return true;
@@ -60,8 +61,8 @@ export function normalizeAiPlan(plan={}) {
       ref,
       parentRef: cleanText(row.parentRef || "root",80).replace(/[^a-zA-Z0-9_-]/g,"_") || "root",
       type,
-      label: cleanText(row.label || widgetRegistry[type]?.label || type,120),
-      text: cleanText(row.text,4000), url: cleanUrl(row.url,{media:type==="video"}), imageUrl: cleanUrl(row.imageUrl,{media:true}), alt: cleanText(row.alt,500),
+      label: cleanAiText(row.label || widgetRegistry[type]?.label || type,120),
+      text: cleanAiText(row.text,4000), url: cleanUrl(row.url,{media:type==="video"}), imageUrl: cleanUrl(row.imageUrl,{media:true}), alt: cleanAiText(row.alt,500),
       tag: ["h1","h2","h3","h4","h5","h6","p","div"].includes(row.tag)?row.tag:"",
       columns: number(row.columns,1,6,0), gap: number(row.gap,0,200,0),
       backgroundColor: color(row.backgroundColor)||"", textColor: color(row.textColor)||"", fontSize:number(row.fontSize,8,180,0), fontWeight:number(row.fontWeight,100,900,0),
@@ -76,9 +77,9 @@ export function normalizeAiPlan(plan={}) {
   for (const row of elements) if (row.parentRef !== "root" && !validRefs.has(row.parentRef)) row.parentRef="root";
   return {
     version: AI_LAYOUT_SCHEMA_VERSION,
-    title: cleanText(plan?.title || "AI Design",120), summary: cleanText(plan?.summary,1200), replacementText: cleanText(plan?.replacementText,6000),
+    title: cleanAiText(plan?.title || "AI Design",120), summary: cleanAiText(plan?.summary,1200), replacementText: cleanAiText(plan?.replacementText,6000),
     elements,
-    suggestions: (Array.isArray(plan?.suggestions)?plan.suggestions:[]).slice(0,20).map((s)=>({kind:cleanText(s?.kind||"general",40),message:cleanText(s?.message,1000),elementRef:cleanText(s?.elementRef,80)})),
+    suggestions: (Array.isArray(plan?.suggestions)?plan.suggestions:[]).slice(0,20).map((s)=>({kind:cleanAiText(s?.kind||"general",40),message:cleanAiText(s?.message,1000),elementRef:cleanText(s?.elementRef,80)})),
   };
 }
 
@@ -173,8 +174,9 @@ export function serializePageForAi(nodes=[], {maxNodes=120}={}) {
 
 export function applyReplacementText(nodes=[], elementId, replacementText="") {
   if (!elementId || !replacementText) return nodes;
+  const safeReplacement=cleanAiText(replacementText,6000);if(!safeReplacement)return nodes;
   const visit=(items)=>(Array.isArray(items)?items:[]).map((node)=>{
-    if(node.id===elementId){ const props={...(node.props||{})}; if("text" in props) props.text=replacementText; else if("fallbackText" in props) props.fallbackText=replacementText; else if("heading" in props) props.heading=replacementText; else return node; return {...node,props}; }
+    if(node.id===elementId){ const props={...(node.props||{})}; if("text" in props) props.text=safeReplacement; else if("fallbackText" in props) props.fallbackText=safeReplacement; else if("heading" in props) props.heading=safeReplacement; else return node; return {...node,props}; }
     return {...node,children:visit(node.children)};
   }); return visit(nodes);
 }
