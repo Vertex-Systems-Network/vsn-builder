@@ -1,3 +1,4 @@
+/* eslint-env node */
 import { authenticate } from "../shopify.server.js";
 import db from "../db.server.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
