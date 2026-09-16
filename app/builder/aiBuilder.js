@@ -23,6 +23,19 @@ function px(value) {
 function color(value) { return /^#[0-9a-f]{3,8}$/i.test(String(value||"")) ? String(value) : undefined; }
 function cleanText(value, max=4000) { return String(value ?? "").replace(/\u0000/g,"").slice(0,max); }
 function number(value, min, max, fallback=undefined) { const n=Number(value); return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback; }
+function cleanUrlText(value,max=2000){return cleanText(value,max).replace(/[\u0000-\u001f\u007f]/g,"").trim();}
+function safeWebUrl(value,{allowRelative=false,allowContact=false,max=2000}={}){
+  const raw=cleanUrlText(value,max);if(!raw)return"";
+  if(allowRelative&&raw.startsWith("#"))return raw;
+  if(allowRelative&&raw.startsWith("/")&&!raw.startsWith("//"))return raw;
+  let parsed;try{parsed=new URL(raw);}catch{return"";}
+  const protocol=parsed.protocol.toLowerCase();
+  if(protocol==="https:"||protocol==="http:")return parsed.toString();
+  if(allowContact&&(protocol==="mailto:"||protocol==="tel:"))return raw;
+  return"";
+}
+function safeLinkUrl(value){return safeWebUrl(value,{allowRelative:true,allowContact:true,max:1500});}
+function safeMediaUrl(value){return safeWebUrl(value,{allowRelative:true,max:4000});}
 
 export function normalizeAiPlan(plan={}) {
   const raw = Array.isArray(plan?.elements) ? plan.elements : [];
@@ -40,7 +53,10 @@ export function normalizeAiPlan(plan={}) {
       parentRef: cleanText(row.parentRef || "root",80).replace(/[^a-zA-Z0-9_-]/g,"_") || "root",
       type,
       label: cleanText(row.label || widgetRegistry[type]?.label || type,120),
-      text: cleanText(row.text,4000), url: cleanText(row.url,1500), imageUrl: cleanText(row.imageUrl,4000), alt: cleanText(row.alt,500),
+      text: cleanText(row.text,4000),
+      url: type==="button"?safeLinkUrl(row.url):(type==="video"?safeMediaUrl(row.url):""),
+      imageUrl: type==="image"?safeMediaUrl(row.imageUrl):"",
+      alt: cleanText(row.alt,500),
       tag: ["h1","h2","h3","h4","h5","h6","p","div"].includes(row.tag)?row.tag:"",
       columns: number(row.columns,1,6,0), gap: number(row.gap,0,200,0),
       backgroundColor: color(row.backgroundColor)||"", textColor: color(row.textColor)||"", fontSize:number(row.fontSize,8,180,0), fontWeight:number(row.fontWeight,100,900,0),
