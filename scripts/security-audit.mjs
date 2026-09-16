@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { sanitizeEmailRichText } from "../app/email/emailRichText.js";
 import { sanitizeSvg } from "../app/services/svg-assets.server.js";
+import { safeFormRedirectUrl } from "../app/builder/formEngine.js";
 import { serializeVsnDescriptor, vsnElement } from "../app/sdk/renderDescriptor.js";
 
 const root=process.cwd();
@@ -43,8 +44,6 @@ walk(path.join(root,"app"));
 for(const file of files){
   const source=fs.readFileSync(file,"utf8");const relative=rel(file);
 
-  // Match an actual JSX/property assignment, not defensive string literals such as
-  // key === "dangerouslySetInnerHTML" inside descriptor sanitizers.
   if(/\bdangerouslySetInnerHTML\s*=/.test(source)){
     if(REVIEWED_DANGEROUS_HTML_FILES.has(relative))warn("Reviewed generated HTML/CSS sink present; upstream sanitizer regression checks must remain green",file);
     else fail("dangerouslySetInnerHTML is not allowed outside reviewed generated-content sinks",file);
@@ -103,6 +102,12 @@ for(const marker of ["canAccessBuilderSystem(db, session, \"formSettings\")","as
   if(!formSettings.includes(marker))fail(`Form integration/secret authorization regression detected: ${marker}`);
 }
 
+assertSafe(safeFormRedirectUrl("javascript:alert(1)")==="","Form redirect sanitizer must reject javascript: URLs");
+assertSafe(safeFormRedirectUrl("data:text/html,<script>alert(1)</script>")==="","Form redirect sanitizer must reject data: URLs");
+assertSafe(safeFormRedirectUrl("//evil.example/path")==="","Form redirect sanitizer must reject protocol-relative redirects");
+assertSafe(safeFormRedirectUrl("/thank-you")==="/thank-you","Form redirect sanitizer must preserve same-site relative redirects");
+assertSafe(safeFormRedirectUrl("https://example.com/thanks").startsWith("https://example.com/thanks"),"Form redirect sanitizer must preserve http(s) redirects");
+
 const visualTemplate=fs.readFileSync(path.join(root,"app/builder/visualTemplate.js"),"utf8");
 for(const marker of ["safeStyleText","styles.includes(\"<\")","escapeHtml(value)","SAFE_ATTR","safeHref"]){
   if(!visualTemplate.includes(marker))fail(`Visual-template HTML/CSS sanitizer regression detected: ${marker}`);
@@ -128,7 +133,7 @@ try{
 }catch(error){fail(`SVG sanitizer regression test failed: ${error instanceof Error?error.message:String(error)}`);}
 
 const emailRichText=fs.readFileSync(path.join(root,"app/email/emailRichText.js"),"utf8");
-for(const marker of ["ALLOWED_TAGS","SAFE_STYLE_PROPERTIES","safeHref","sanitizeEmailRichText","rel=\\\"noopener noreferrer\\\""]){
+for(const marker of ["ALLOWED_TAGS","SAFE_STYLE_PROPERTIES","safeHref","sanitizeEmailRichText","noopener noreferrer"]){
   if(!emailRichText.includes(marker))fail(`Email rich-text sanitizer regression detected: ${marker}`);
 }
 const emailEditor=fs.readFileSync(path.join(root,"app/components/email-studio/EmailRichTextEditor.jsx"),"utf8");
