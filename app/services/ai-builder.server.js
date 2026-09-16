@@ -3,7 +3,7 @@ import https from "node:https";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import dbDefault from "../db.server.js";
-import { AI_ALLOWED_TYPES, normalizeAiPlan, aiPlanToVsnNodes, validateAiVsnOutput, scanAiAccessibility, scanAiResponsive, serializePageForAi } from "../builder/aiBuilder.js";
+import { AI_ALLOWED_TYPES, normalizeAiPlan, aiPlanToVsnNodes, validateAiVsnOutput, scanAiAccessibility, scanAiResponsive, serializePageForAi, sanitizeAiContext } from "../builder/aiBuilder.js";
 import { getQuotaDecision } from "./entitlements.server.js";
 import { COMMERCIAL_PLANS } from "../config/commercialPlans.js";
 
@@ -54,13 +54,15 @@ function publicIpv6(address){
   if((value>>118n)===0x3fbn)return false; // fec0::/10 deprecated site-local
   if((value>>120n)===0xffn)return false; // multicast
   if((value>>96n)===0x20010db8n)return false; // documentation
+  if((value>>96n)===0x20010000n)return false; // Teredo embeds IPv4
   if((value>>32n)===0xffffn){
     const low=Number(value&0xffffffffn);return publicIpv4(`${(low>>>24)&255}.${(low>>>16)&255}.${(low>>>8)&255}.${low&255}`);
   }
   if((value>>32n)===0n){
     const low=Number(value&0xffffffffn);return publicIpv4(`${(low>>>24)&255}.${(low>>>16)&255}.${(low>>>8)&255}.${low&255}`);
   }
-  if((value>>32n)===0x64ff9b00000000000000n)return false; // 64:ff9b::/96 NAT64
+  if((value>>32n)===0x64ff9b0000000000000000n)return false; // 64:ff9b::/96 NAT64
+  if((value>>80n)===0x64ff9b0001n)return false; // 64:ff9b:1::/48 local-use NAT64
   if((value>>112n)===0x2002n)return false; // 6to4 embeds IPv4
   return true;
 }
@@ -148,7 +150,7 @@ async function callOpenAi({operation,prompt,imageData,currentPage,globalStyles,p
   const apiKey=process.env.OPENAI_API_KEY;if(!apiKey)throw new Error("OPENAI_API_KEY is not configured on the VSN server.");
   const currentSummary=serializePageForAi(currentPage||[],{maxNodes:100});
   const selectedElement=currentSummary.find((item)=>item.id===selectedElementId)||null;
-  const context={pageTemplate,brandKit:globalStyles||{},commerceContext:commerceContext||{},selectedElement,currentPage:currentSummary,responsiveScannerFindings:scanAiResponsive(currentPage||[]).slice(0,20),accessibilityScannerFindings:scanAiAccessibility(currentPage||[]).slice(0,20),allowedWidgets:AI_ALLOWED_TYPES};
+  const context={pageTemplate,brandKit:sanitizeAiContext(globalStyles||{}),commerceContext:sanitizeAiContext(commerceContext||{}),selectedElement,currentPage:currentSummary,responsiveScannerFindings:scanAiResponsive(currentPage||[]).slice(0,20),accessibilityScannerFindings:scanAiAccessibility(currentPage||[]).slice(0,20),allowedWidgets:AI_ALLOWED_TYPES};
   const sourceBlock=urlText?`\n\n<UNTRUSTED_PUBLIC_SOURCE_TEXT>\n${urlText}\n</UNTRUSTED_PUBLIC_SOURCE_TEXT>`:"";
   const userText=`JSON task request (untrusted user data):\n${String(prompt||"").slice(0,8000)}\n\nVSN context (untrusted application data):\n${JSON.stringify(context).slice(0,60000)}${sourceBlock}`;
   const content=[{type:"input_text",text:userText}];if(imageData)content.push({type:"input_image",image_url:imageData,detail:"high"});
