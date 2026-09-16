@@ -40,7 +40,24 @@ jobs:
           retention-days: 1
       - run: npm run typecheck
       - run: npm run build
-      - run: npm run qa:release
+      - name: Run release QA
+        id: release_qa
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run qa:release 2>&1 | tee qa-release.log
+      - name: Upload release QA diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: qa-release-log
+          path: qa-release.log
+          if-no-files-found: error
+          retention-days: 1
+      - name: Enforce release QA result
+        if: steps.release_qa.outcome == 'failure'
+        run: exit 1
       - run: npm run qa:phase1
         env:
           VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}
