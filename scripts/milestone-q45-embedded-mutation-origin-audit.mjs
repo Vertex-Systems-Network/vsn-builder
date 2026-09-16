@@ -23,8 +23,8 @@ process.env.SHOPIFY_APP_URL = "https://vsn-dev.trycloudflare.com";
 
 check("same-origin mutation allowed", mutationRequestTrust(req({ url: "https://vsn-dev.trycloudflare.com/app/pages", origin: "https://vsn-dev.trycloudflare.com", site: "same-origin" })).ok);
 check("configured app origin allowed behind localhost proxy", mutationRequestTrust(req({ origin: "https://vsn-dev.trycloudflare.com", site: "cross-site" })).ok);
-check("x-forwarded app origin allowed", mutationRequestTrust(req({ origin: "https://dynamic-tunnel.example", site: "cross-site", forwardedHost: "dynamic-tunnel.example", forwardedProto: "https" })).ok);
-check("standard Forwarded header app origin allowed", mutationRequestTrust(req({ origin: "https://proxy.example", site: "cross-site", forwarded: "for=127.0.0.1;proto=https;host=proxy.example" })).ok);
+check("spoofed x-forwarded-host cannot create a trusted app origin", !mutationRequestTrust(req({ origin: "https://attacker.example", site: "cross-site", forwardedHost: "attacker.example", forwardedProto: "https" })).ok);
+check("spoofed Forwarded host cannot create a trusted app origin", !mutationRequestTrust(req({ origin: "https://attacker.example", site: "cross-site", forwarded: "for=127.0.0.1;proto=https;host=attacker.example" })).ok);
 check("Shopify Admin embedded origin allowed even when fetch metadata says cross-site", mutationRequestTrust(req({ origin: "https://admin.shopify.com", site: "cross-site" })).ok);
 check("legacy merchant Shopify admin origin allowed", mutationRequestTrust(req({ origin: "https://example-shop.myshopify.com", site: "cross-site" })).ok);
 check("HTTP myshopify origin rejected", !isTrustedShopifyAdminOrigin("http://example-shop.myshopify.com"));
@@ -44,7 +44,8 @@ check("all guarded admin mutation modules authenticate with authenticate.admin",
 check("shared guard covers all mutation call sites centrally", guarded.length >= 15);
 
 const source = fs.readFileSync("app/utils/request-security.server.js", "utf8");
-check("guard understands reverse-proxy forwarded host", source.includes("x-forwarded-host") && source.includes("forwardedOrigin"));
+check("guard does not trust forwarded host headers for authorization", !source.includes("forwardedOrigin") && !source.includes('headers?.get?.("x-forwarded-host")'));
+check("guard requires configured public proxy origin instead", source.includes("SHOPIFY_APP_URL") && source.includes("configuredAppOrigin"));
 check("guard explicitly supports admin.shopify.com", source.includes('"admin.shopify.com"'));
 check("guard retains hostile cross-site rejection", source.includes("untrusted-cross-site") && source.includes("Cross-site mutation request rejected."));
 
