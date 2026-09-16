@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
-import { AI_ALLOWED_TYPES, normalizeAiPlan, aiPlanToVsnNodes, validateAiVsnOutput, scanAiAccessibility, scanAiResponsive, applyReplacementText } from '../app/builder/aiBuilder.js';
+import { AI_ALLOWED_TYPES, normalizeAiPlan, aiPlanToVsnNodes, validateAiVsnOutput, scanAiAccessibility, scanAiResponsive, applyReplacementText, sanitizeAiContext } from '../app/builder/aiBuilder.js';
 const read=(p)=>fs.readFileSync(p,'utf8'); let checks=0; const ok=(v,m)=>{assert.ok(v,m);checks++};
 ok(AI_ALLOWED_TYPES.includes('section')&&AI_ALLOWED_TYPES.includes('heading')&&AI_ALLOWED_TYPES.includes('product-title'),'AI allowed widget set missing core/commerce widgets');
 const plan=normalizeAiPlan({title:'Test',summary:'x',replacementText:'New copy',elements:[{ref:'e1',parentRef:'root',type:'section',label:'Hero',backgroundColor:'#ffffff'},{ref:'e2',parentRef:'e1',type:'heading',label:'Title',text:'Hello',fontSize:48,textColor:'#111111'}],suggestions:[]});
@@ -13,7 +13,9 @@ const unsafeUrls=normalizeAiPlan({elements:[{ref:'b',parentRef:'root',type:'butt
 ok(unsafeUrls.elements.every((item)=>!item.url&&!item.imageUrl),'AI output must drop executable, data and file URL schemes');
 const safeUrls=normalizeAiPlan({elements:[{ref:'b',parentRef:'root',type:'button',url:'/collections/all'},{ref:'m',parentRef:'root',type:'button',url:'mailto:test@example.com'},{ref:'i',parentRef:'root',type:'image',imageUrl:'https://cdn.example.com/a.jpg'}]});
 ok(safeUrls.elements[0].url==='/collections/all'&&safeUrls.elements[1].url.startsWith('mailto:')&&safeUrls.elements[2].imageUrl.startsWith('https://'),'AI URL sanitizer must preserve supported safe links');
-const service=read('app/services/ai-builder.server.js');for(const token of ['https://api.openai.com/v1/responses','text:{format:{type:"json_schema"','OPENAI_API_KEY','gpt-5-mini','AI_PLAN_QUOTAS','fetchUrlInspiration','resolvePublicTarget','pinnedRequest','URL_FETCH_MAX_BYTES','UNTRUSTED_PUBLIC_SOURCE_TEXT','scanAiResponsive(currentPage','scanAiAccessibility(currentPage'])ok(service.includes(token),`AI service missing ${token}`);
+const redacted=sanitizeAiContext({title:'Keep me',customJs:'alert(1)',apiKey:'secret-value',nested:{access_token:'token-value',designTokens:{color:'#fff'}}});
+ok(redacted.title==='Keep me'&&redacted.customJs==='[redacted]'&&redacted.apiKey==='[redacted]'&&redacted.nested.access_token==='[redacted]'&&redacted.nested.designTokens.color==='#fff','AI context sanitizer must remove secrets/custom code without deleting design tokens');
+const service=read('app/services/ai-builder.server.js');for(const token of ['https://api.openai.com/v1/responses','text:{format:{type:"json_schema"','OPENAI_API_KEY','gpt-5-mini','AI_PLAN_QUOTAS','fetchUrlInspiration','resolvePublicTarget','pinnedRequest','URL_FETCH_MAX_BYTES','UNTRUSTED_PUBLIC_SOURCE_TEXT','sanitizeAiContext','scanAiResponsive(currentPage','scanAiAccessibility(currentPage'])ok(service.includes(token),`AI service missing ${token}`);
 ok(!service.includes('dangerouslySetInnerHTML'),'AI server must never inject arbitrary HTML');
 const route=read('app/routes/app.ai.jsx');for(const token of ['authenticate.admin','runAiBuilder','screenshot','responsive','accessibility','alternatives','MAX_REQUEST_BYTES','imageDataField'])ok(route.includes(token),`AI route missing ${token}`);
 const panel=read('app/components/editor/AiBuilderPanel.jsx');for(const token of ['Prompt → Section','Prompt → Full Page','Screenshot/Image → Layout','URL → Inspiration Layout','Rewrite Selected Copy','Responsive Repair','Accessibility Suggestions','Layout Alternative','Post-generation checks','Apply to editor'])ok(panel.includes(token),`AI panel missing ${token}`);
