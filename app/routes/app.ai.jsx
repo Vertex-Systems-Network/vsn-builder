@@ -3,6 +3,7 @@ import db from "../db.server.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { aiUsageStatus, runAiBuilder } from "../services/ai-builder.server.js";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
+import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 
 const MAX_REQUEST_BYTES = 8 * 1024 * 1024;
 const MAX_IMAGE_DATA_CHARS = 6 * 1024 * 1024;
@@ -25,14 +26,19 @@ function imageDataField(form) {
   }
   return value;
 }
+function aiEnabled() {
+  return getServerFeatureFlags().aiBuilderV1 === true;
+}
 
 export async function loader({ request }) {
+  if (!aiEnabled()) throw new Response("AI Builder is disabled.", { status: 404 });
   const { session } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) throw new Response("Forbidden", { status: 403 });
   return Response.json(await aiUsageStatus({ db, shop: session.shop }));
 }
 
 export async function action({ request }) {
+  if (!aiEnabled()) return Response.json({ ok: false, code: "AI_DISABLED", error: "AI Builder is disabled." }, { status: 404 });
   const { session } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) return Response.json({ ok: false, error: "Your role cannot use AI Builder." }, { status: 403 });
   if (!process.env.OPENAI_API_KEY) return Response.json({ ok: false, code: "AI_NOT_CONFIGURED", error: "AI Builder is not configured for this developer environment. Add OPENAI_API_KEY to your .env file and restart Shopify CLI." }, { status: 503 });
