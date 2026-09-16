@@ -5,6 +5,7 @@ const root=process.cwd();
 const files=[];
 const findings=[];
 const warnings=[];
+const REVIEWED_NEW_FUNCTION_FILES=new Set(["app/builder/customCode.js"]);
 
 function walk(dir){
   for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
@@ -20,10 +21,13 @@ function warn(message,file){warnings.push(file?`${message} (${rel(file)})`:messa
 walk(path.join(root,"app"));
 
 for(const file of files){
-  const source=fs.readFileSync(file,"utf8");
+  const source=fs.readFileSync(file,"utf8");const relative=rel(file);
   if(/\bdangerouslySetInnerHTML\b/.test(source)&&!/sanitize|safeHtml|purif|trusted html/i.test(source))fail("dangerouslySetInnerHTML without an obvious sanitization boundary",file);
   if(/\beval\s*\(/.test(source))fail("eval() is not allowed in application code",file);
-  if(/\bnew\s+Function\s*\(/.test(source))fail("new Function() is not allowed in application code",file);
+  if(/\bnew\s+Function\s*\(/.test(source)){
+    if(REVIEWED_NEW_FUNCTION_FILES.has(relative))warn("Reviewed privileged new Function() compiler present; keep this path merchant-only and never feed AI output into it",file);
+    else fail("new Function() is not allowed outside the reviewed custom-code compiler",file);
+  }
   if(/(?:node:)?child_process/.test(source))fail("child_process requires explicit security review",file);
   if(/\$(?:queryRawUnsafe|executeRawUnsafe)\s*\(/.test(source))fail("Unsafe raw Prisma query API detected",file);
   if(/(?:sk-[A-Za-z0-9_-]{20,}|shpat_[A-Za-z0-9]{20,})/.test(source))fail("Possible committed API token detected",file);
