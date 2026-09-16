@@ -10,6 +10,7 @@ export const AI_ALLOWED_TYPES = Object.freeze([
 
 const ALLOWED = new Set(AI_ALLOWED_TYPES);
 const textWidget = new Set(["heading","text","button","product-title","product-description","collection-title","collection-description","announcement-bar"]);
+const AI_REDACTED_KEYS = new Set(["secret","password","authorization","apikey","api_key","access_token","accesstoken","refresh_token","refreshtoken","private_key","privatekey","client_secret","clientsecret","signing_secret","signingsecret","customjs","custom_js","filedata","file_data"]);
 
 export function aiNodeId(prefix="ai") {
   try { if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`; } catch {}
@@ -36,6 +37,23 @@ function safeWebUrl(value,{allowRelative=false,allowContact=false,max=2000}={}){
 }
 function safeLinkUrl(value){return safeWebUrl(value,{allowRelative:true,allowContact:true,max:1500});}
 function safeMediaUrl(value){return safeWebUrl(value,{allowRelative:true,max:4000});}
+function sensitiveAiKey(key){
+  const normalized=String(key||"").toLowerCase();
+  return AI_REDACTED_KEYS.has(normalized)||normalized.endsWith("_secret")||normalized.endsWith("_password")||normalized.endsWith("_api_key")||normalized.endsWith("_access_token")||normalized.endsWith("_refresh_token")||normalized.endsWith("_private_key");
+}
+export function sanitizeAiContext(value,depth=0){
+  if(depth>8)return "[truncated]";
+  if(value==null||typeof value==="boolean"||typeof value==="number")return value;
+  if(typeof value==="string")return cleanText(value,4000);
+  if(Array.isArray(value))return value.slice(0,120).map((item)=>sanitizeAiContext(item,depth+1));
+  if(typeof value!=="object")return cleanText(value,1000);
+  const out={};let count=0;
+  for(const [key,item] of Object.entries(value)){
+    if(count++>=120)break;
+    out[key]=sensitiveAiKey(key)?"[redacted]":sanitizeAiContext(item,depth+1);
+  }
+  return out;
+}
 
 export function normalizeAiPlan(plan={}) {
   const raw = Array.isArray(plan?.elements) ? plan.elements : [];
@@ -163,7 +181,7 @@ export function scanAiResponsive(nodes=[]) {
 }
 
 export function serializePageForAi(nodes=[], {maxNodes=120}={}) {
-  const rows=[]; walk(nodes,(node,depth)=>{ if(rows.length>=maxNodes||["global-styles","template-settings"].includes(node?.type)) return; rows.push({id:node.id,type:node.type,label:node.label,depth,props:node.props,styles:node.styles}); }); return rows;
+  const rows=[]; walk(nodes,(node,depth)=>{ if(rows.length>=maxNodes||["global-styles","template-settings"].includes(node?.type)) return; rows.push({id:node.id,type:node.type,label:node.label,depth,props:sanitizeAiContext(node.props||{}),styles:sanitizeAiContext(node.styles||{})}); }); return rows;
 }
 
 export function applyReplacementText(nodes=[], elementId, replacementText="") {
