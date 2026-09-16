@@ -10,7 +10,12 @@ export const AI_ALLOWED_TYPES = Object.freeze([
 
 const ALLOWED = new Set(AI_ALLOWED_TYPES);
 const textWidget = new Set(["heading","text","button","product-title","product-description","collection-title","collection-description","announcement-bar"]);
-const AI_REDACTED_KEYS = new Set(["secret","password","authorization","apikey","api_key","access_token","accesstoken","refresh_token","refreshtoken","private_key","privatekey","client_secret","clientsecret","signing_secret","signingsecret","customjs","custom_js","filedata","file_data"]);
+const AI_REDACTED_KEYS = new Set([
+  "secret","password","authorization","apikey","api_key","access_token","accesstoken","refresh_token","refreshtoken",
+  "private_key","privatekey","client_secret","clientsecret","signing_secret","signingsecret","customjs","custom_js","filedata","file_data",
+  "token","id_token","idtoken","session_token","sessiontoken","bearer","cookie","set-cookie","credentials","credential",
+  "customeremail","customer_email","email","phone","telephone","address1","address2","postalcode","postal_code","zipcode","zip_code",
+]);
 
 export function aiNodeId(prefix="ai") {
   try { if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`; } catch {}
@@ -38,8 +43,18 @@ function safeWebUrl(value,{allowRelative=false,allowContact=false,max=2000}={}){
 function safeLinkUrl(value){return safeWebUrl(value,{allowRelative:true,allowContact:true,max:1500});}
 function safeMediaUrl(value){return safeWebUrl(value,{allowRelative:true,max:4000});}
 function sensitiveAiKey(key){
-  const normalized=String(key||"").toLowerCase();
-  return AI_REDACTED_KEYS.has(normalized)||normalized.endsWith("_secret")||normalized.endsWith("_password")||normalized.endsWith("_api_key")||normalized.endsWith("_access_token")||normalized.endsWith("_refresh_token")||normalized.endsWith("_private_key");
+  const normalized=String(key||"").toLowerCase().replace(/[-\s]/g,"_");
+  return AI_REDACTED_KEYS.has(normalized)
+    || normalized.endsWith("_secret")
+    || normalized.endsWith("_password")
+    || normalized.endsWith("_api_key")
+    || normalized.endsWith("_access_token")
+    || normalized.endsWith("_refresh_token")
+    || normalized.endsWith("_private_key")
+    || normalized.endsWith("_session_token")
+    || (normalized.endsWith("token") && !normalized.endsWith("tokens"))
+    || normalized.endsWith("_credential")
+    || normalized.endsWith("_credentials");
 }
 export function sanitizeAiContext(value,depth=0){
   if(depth>8)return "[truncated]";
