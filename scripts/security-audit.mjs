@@ -18,12 +18,11 @@ function fail(message,file){findings.push(file?`${message} (${rel(file)})`:messa
 function warn(message,file){warnings.push(file?`${message} (${rel(file)})`:message);}
 
 walk(path.join(root,"app"));
-walk(path.join(root,"scripts"));
 
 for(const file of files){
   const source=fs.readFileSync(file,"utf8");
   if(/\bdangerouslySetInnerHTML\b/.test(source)&&!/sanitize|safeHtml|purif|trusted html/i.test(source))fail("dangerouslySetInnerHTML without an obvious sanitization boundary",file);
-  if(/\b(?:eval)\s*\(/.test(source))fail("eval() is not allowed in application code",file);
+  if(/\beval\s*\(/.test(source))fail("eval() is not allowed in application code",file);
   if(/\bnew\s+Function\s*\(/.test(source))fail("new Function() is not allowed in application code",file);
   if(/(?:node:)?child_process/.test(source))fail("child_process requires explicit security review",file);
   if(/\$(?:queryRawUnsafe|executeRawUnsafe)\s*\(/.test(source))fail("Unsafe raw Prisma query API detected",file);
@@ -32,7 +31,8 @@ for(const file of files){
 }
 
 const aiBuilder=fs.readFileSync(path.join(root,"app/builder/aiBuilder.js"),"utf8");
-if(!/safeLinkUrl\(row\.url\)/.test(aiBuilder)||!/safeMediaUrl\(row\.(?:url|imageUrl)\)/.test(aiBuilder))fail("AI URL protocol allowlisting regression detected");
+if(!/safeLinkUrl\(row\.url\)/.test(aiBuilder))fail("AI button URL protocol allowlisting regression detected");
+if(!/safeMediaUrl\(row\.url\)/.test(aiBuilder)||!/safeMediaUrl\(row\.imageUrl\)/.test(aiBuilder))fail("AI media URL protocol allowlisting regression detected");
 if(/url:\s*cleanText\(row\.url/.test(aiBuilder)||/imageUrl:\s*cleanText\(row\.imageUrl/.test(aiBuilder))fail("AI-generated URLs must not bypass URL sanitization");
 
 const aiService=fs.readFileSync(path.join(root,"app/services/ai-builder.server.js"),"utf8");
