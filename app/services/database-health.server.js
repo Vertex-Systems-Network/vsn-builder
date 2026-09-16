@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { Prisma } from "@prisma/client";
 import { resolveVsnDatabaseLocation } from "../utils/database-location.server.js";
 export const VSN_EXPECTED_MIGRATION = "20260808234540_milestone_n1_email_builder";
 
@@ -26,21 +27,16 @@ const HEALTH_TABLES = Object.freeze([...new Set(Object.values(VSN_FEATURE_TABLES
 const CACHE_TTL_MS = 15_000;
 let cached = null;
 
-function quoteSqliteString(value) {
-  return `'${String(value || "").replaceAll("'", "''")}'`;
-}
-
 async function existingTableNames(db, names = HEALTH_TABLES) {
   const wanted = [...new Set(names.map(String).filter(Boolean))];
   if (!wanted.length) return new Set();
-  const list = wanted.map(quoteSqliteString).join(",");
-  const rows = await db.$queryRawUnsafe(`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${list})`);
+  const rows = await db.$queryRaw(Prisma.sql`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${Prisma.join(wanted)})`);
   return new Set((Array.isArray(rows) ? rows : []).map((row) => String(row?.name || "")).filter(Boolean));
 }
 
 async function sqliteDatabaseLocation(db) {
   try {
-    const rows = await db.$queryRawUnsafe("PRAGMA database_list");
+    const rows = await db.$queryRaw(Prisma.sql`PRAGMA database_list`);
     const main = (Array.isArray(rows) ? rows : []).find((row) => String(row?.name || "") === "main");
     return { available: true, file: String(main?.file || "") || null };
   } catch (error) {
@@ -55,7 +51,7 @@ function normalizedFile(value) {
 
 async function migrationHistory(db) {
   try {
-    const rows = await db.$queryRawUnsafe('SELECT migration_name, checksum, CAST(finished_at AS TEXT) AS finished_at, CAST(rolled_back_at AS TEXT) AS rolled_back_at FROM "_prisma_migrations" ORDER BY started_at ASC');
+    const rows = await db.$queryRaw(Prisma.sql`SELECT migration_name, checksum, CAST(finished_at AS TEXT) AS finished_at, CAST(rolled_back_at AS TEXT) AS rolled_back_at FROM "_prisma_migrations" ORDER BY started_at ASC`);
     const appliedRows = (Array.isArray(rows) ? rows : []).filter((row) => row?.finished_at && !row?.rolled_back_at);
     const applied = appliedRows.map((row) => String(row.migration_name));
     return { available: true, rows: Array.isArray(rows) ? rows : [], appliedRows, applied, latest: [...applied].sort().at(-1) || null };
