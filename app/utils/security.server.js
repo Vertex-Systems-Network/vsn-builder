@@ -1,6 +1,30 @@
+import { isIP } from "node:net";
+
 const SAFE_PROTOCOLS = new Set(["https:"]);
 export function sanitizePlainText(value, max = 5000) { return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, max); }
-export function safeExternalUrl(value) { try { const url = new URL(String(value)); return SAFE_PROTOCOLS.has(url.protocol) ? url.toString() : null; } catch { return null; } }
+
+function privateIpv4(host) {
+  const parts=String(host||"").split(".").map(Number);if(parts.length!==4||parts.some((n)=>!Number.isInteger(n)||n<0||n>255))return true;
+  const [a,b,c]=parts;
+  return a===0||a===10||a===127||a>=224||(a===100&&b>=64&&b<=127)||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&(b===168||(b===0&&c===0)||(b===0&&c===2)))||(a===198&&((b===18||b===19)||(b===51&&c===100)))||(a===203&&b===0&&c===113);
+}
+function privateIpv6(host) {
+  const h=String(host||"").replace(/^\[|\]$/g,"").toLowerCase();
+  if(h==="::"||h==="::1"||h.startsWith("fc")||h.startsWith("fd")||/^fe[89ab]/.test(h)||h.startsWith("ff")||h.startsWith("2001:db8:"))return true;
+  const mapped=h.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);return mapped?privateIpv4(mapped[1]):false;
+}
+function unsafeExternalHost(hostname) {
+  const host=String(hostname||"").replace(/^\[|\]$/g,"").toLowerCase();
+  if(!host||host==="localhost"||host.endsWith(".localhost")||host.endsWith(".local")||host.endsWith(".internal"))return true;
+  const family=isIP(host);return family===4?privateIpv4(host):family===6?privateIpv6(host):false;
+}
+export function safeExternalUrl(value) {
+  try {
+    const url = new URL(String(value));
+    if(!SAFE_PROTOCOLS.has(url.protocol)||url.username||url.password||unsafeExternalHost(url.hostname))return null;
+    return url.toString();
+  } catch { return null; }
+}
 
 function stripDangerousSvgMarkup(value) {
   return String(value || "")
@@ -20,7 +44,7 @@ export function sanitizeSvg(svg) {
   }
   return out;
 }
-export function validateWebhookUrl(value) { const url = safeExternalUrl(value); if (!url) throw new Error("Webhook URL must be HTTPS."); return url; }
+export function validateWebhookUrl(value) { const url = safeExternalUrl(value); if (!url) throw new Error("Webhook URL must be a public HTTPS URL without embedded credentials."); return url; }
 export function detectSpam(fields = {}) {
   const text = Object.values(fields).map((v) => typeof v === "string" ? v : "").join(" ").toLowerCase();
   if (text.length > 30000) return "payload-too-large";
