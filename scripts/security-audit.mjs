@@ -89,11 +89,14 @@ for(const marker of ["MAX_REQUEST_BYTES","MAX_IMAGE_DATA_CHARS","imageDataField"
 }
 
 const securityUtils=fs.readFileSync(path.join(root,"app/utils/security.server.js"),"utf8");
-for(const marker of ["resolvePublicHttpsTarget","publicHttpsRequest","lookup(host","unsafeExternalHost(row.address)"]){
+for(const marker of ["resolvePublicHttpsTarget","publicHttpsRequest","lookup(host","unsafeExternalHost(row.address)","OUTBOUND_ABSOLUTE_MAX_BODY_BYTES","maxBodyBytes"]){
   if(!securityUtils.includes(marker))fail(`Public outbound-request security control missing: ${marker}`);
 }
 const formAutomation=fs.readFileSync(path.join(root,"app/services/form-automation.server.js"),"utf8");
 if(!formAutomation.includes("publicHttpsRequest(safeUrl"))fail("Form automation webhook delivery must use DNS-pinned public HTTPS requests");
+if(!formAutomation.includes("publicHttpsRequest(safe, {"))fail("File scanner delivery must use DNS-pinned public HTTPS requests");
+if(/await\s+fetch\(safe\s*,/.test(formAutomation))fail("Validated file-scanner URLs must not be re-resolved by generic fetch()");
+if(!formAutomation.includes("maxBodyBytes: 27 * 1024 * 1024"))fail("File scanner pinned transport must preserve the bounded 25 MB upload contract");
 
 const formSettings=fs.readFileSync(path.join(root,"app/routes/app.form-settings.jsx"),"utf8");
 for(const marker of ["canAccessBuilderSystem(db, session, \"formSettings\")","assertTrustedMutationRequest(request)","canBuilder(role, \"settings\")","Only the store owner can change form security"]){
@@ -158,9 +161,10 @@ for(const marker of ["VSN_PLUGIN_FORBIDDEN_APIS","child_process","eval(","new Fu
 }
 
 const requestSecurity=fs.readFileSync(path.join(root,"app/utils/request-security.server.js"),"utf8");
-for(const marker of ["assertTrustedMutationRequest","untrusted-cross-site","shopify-admin-origin"]){
+for(const marker of ["assertTrustedMutationRequest","untrusted-cross-site","shopify-admin-origin","configuredAppOrigin","SHOPIFY_APP_URL"]){
   if(!requestSecurity.includes(marker))fail(`Mutation-origin security control missing: ${marker}`);
 }
+if(requestSecurity.includes("forwardedOrigin")||/headers\?\.get\?\.\(["']x-forwarded-host["']\)/.test(requestSecurity))fail("Mutation-origin authorization must not trust client-controlled forwarded host headers");
 
 for(const message of warnings)console.warn("SECURITY WARNING",message);
 for(const message of findings)console.error("SECURITY ERROR",message);
