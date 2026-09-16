@@ -57,7 +57,7 @@ for(const file of files){
     else warn("Static-literal unsafe Prisma query remains; prefer Prisma.sql/$queryRaw when practical",file);
   }
 
-  if(/(?:sk-[A-Za-z0-9_-]{20,}|shpat_[A-Za-z0-9]{20,})/.test(source))fail("Possible committed API token detected",file);
+  if(/(?:sk-[A-Za-z0-9_-]{20,}|shpat_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,})/.test(source))fail("Possible committed API token detected",file);
   if(/target=["']_blank["']/.test(source)&&!/rel=/.test(source))warn("target=_blank should include rel=noopener/noreferrer",file);
 }
 
@@ -68,22 +68,30 @@ for(const marker of ["safeLinkUrl(row.url)","safeMediaUrl(row.url)","safeMediaUr
 if(/url:\s*cleanText\(row\.url/.test(aiBuilder)||/imageUrl:\s*cleanText\(row\.imageUrl/.test(aiBuilder))fail("AI-generated URLs must not bypass URL sanitization");
 
 const aiService=fs.readFileSync(path.join(root,"app/services/ai-builder.server.js"),"utf8");
-for(const marker of ["resolvePublicTarget","pinnedRequest","URL_FETCH_MAX_BYTES","redirects<URL_FETCH_MAX_REDIRECTS","UNTRUSTED_PUBLIC_SOURCE_TEXT","sanitizeAiContext"]){
-  if(!aiService.includes(marker))fail(`AI URL/prompt security control missing: ${marker}`);
+for(const marker of ["resolvePublicTarget","pinnedRequest","URL_FETCH_MAX_BYTES","URL_FETCH_MAX_REDIRECTS","UNTRUSTED_PUBLIC_SOURCE_TEXT","sanitizeAiContext","reserveAiUsage","AI_RESERVATION_TTL_MS","status: \"started\""]){
+  if(!aiService.includes(marker))fail(`AI URL/prompt/quota security control missing: ${marker}`);
 }
 if(/await\s+fetch\(url\s*,/.test(aiService))fail("AI inspiration URLs must use DNS-pinned requests, not generic fetch()");
+if(!/createdAt:\s*\{\s*gte:\s*monthStart/.test(aiService)||!aiService.includes("status: \"completed\""))fail("AI quota reservation must count monthly completed and active generations");
 
 const aiRoute=fs.readFileSync(path.join(root,"app/routes/app.ai.jsx"),"utf8");
-for(const marker of ["MAX_REQUEST_BYTES","MAX_IMAGE_DATA_CHARS","imageDataField","content-length","aiBuilderV1","AI Builder is disabled"]){
+for(const marker of ["MAX_REQUEST_BYTES","MAX_IMAGE_DATA_CHARS","imageDataField","boundedFormData","assertTrustedMutationRequest","aiBuilderV1","AI Builder is disabled"]){
   if(!aiRoute.includes(marker))fail(`AI route security control missing: ${marker}`);
 }
+
+const securityUtils=fs.readFileSync(path.join(root,"app/utils/security.server.js"),"utf8");
+for(const marker of ["resolvePublicHttpsTarget","publicHttpsRequest","lookup(host","unsafeExternalHost(row.address)"]){
+  if(!securityUtils.includes(marker))fail(`Public outbound-request security control missing: ${marker}`);
+}
+const formAutomation=fs.readFileSync(path.join(root,"app/services/form-automation.server.js"),"utf8");
+if(!formAutomation.includes("publicHttpsRequest(safeUrl"))fail("Form automation webhook delivery must use DNS-pinned public HTTPS requests");
 
 const visualTemplate=fs.readFileSync(path.join(root,"app/builder/visualTemplate.js"),"utf8");
 for(const marker of ["safeStyleText","styles.includes(\"<\")","escapeHtml(value)","SAFE_ATTR","safeHref"]){
   if(!visualTemplate.includes(marker))fail(`Visual-template HTML/CSS sanitizer regression detected: ${marker}`);
 }
 const stylePipeline=fs.readFileSync(path.join(root,"app/builder/stylePipeline.js"),"utf8");
-if(!stylePipeline.includes("sanitizeCustomCss")||!stylePipeline.includes("style\\b"))fail("Custom CSS style-closing sanitizer regression detected");
+if(!stylePipeline.includes("sanitizeCustomCss")||!/<\\\/\?style/.test(stylePipeline))fail("Custom CSS style-closing sanitizer regression detected");
 
 const widgetStudio=fs.readFileSync(path.join(root,"app/components/builder-panel/WidgetStudioPanel.jsx"),"utf8");
 for(const marker of ["validateVisualTemplate","renderVisualTemplateHtml","parseVisualTemplate"]){
