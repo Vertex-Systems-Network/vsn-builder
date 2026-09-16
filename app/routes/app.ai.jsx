@@ -1,6 +1,7 @@
 import { authenticate } from "../shopify.server.js";
 import db from "../db.server.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
+import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/request-security.server.js";
 import { aiUsageStatus, runAiBuilder } from "../services/ai-builder.server.js";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
@@ -29,6 +30,37 @@ function imageDataField(form) {
 function aiEnabled() {
   return getServerFeatureFlags().aiBuilderV1 === true;
 }
+async function boundedFormData(request) {
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
+    throw new Response("AI Builder request is too large.", { status: 413 });
+  }
+  if (!request.body) return request.formData();
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      total += value?.byteLength || 0;
+      if (total > MAX_REQUEST_BYTES) {
+        try { await reader.cancel(); } catch {}
+        throw new Response("AI Builder request is too large.", { status: 413 });
+      }
+      if (value?.byteLength) chunks.push(Buffer.from(value));
+    }
+  } finally {
+    try { reader.releaseLock(); } catch {}
+  }
+  const replay = new Request(request.url, {
+    method: request.method,
+    headers: request.headers,
+    body: Buffer.concat(chunks),
+    duplex: "half",
+  });
+  return replay.formData();
+}
 
 export async function loader({ request }) {
   if (!aiEnabled()) throw new Response("AI Builder is disabled.", { status: 404 });
@@ -38,18 +70,14 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
+  assertTrustedMutationRequest(request);
   if (!aiEnabled()) return Response.json({ ok: false, code: "AI_DISABLED", error: "AI Builder is disabled." }, { status: 404 });
   const { session } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) return Response.json({ ok: false, error: "Your role cannot use AI Builder." }, { status: 403 });
   if (!process.env.OPENAI_API_KEY) return Response.json({ ok: false, code: "AI_NOT_CONFIGURED", error: "AI Builder is not configured for this developer environment. Add OPENAI_API_KEY to your .env file and restart Shopify CLI." }, { status: 503 });
 
-  const contentLength = Number(request.headers.get("content-length") || 0);
-  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
-    return Response.json({ ok: false, error: "AI Builder request is too large." }, { status: 413 });
-  }
-
   try {
-    const form = await request.formData();
+    const form = await boundedFormData(request);
     const operation = field(form, "operation", 40) || "section";
     const allowed = new Set(["section", "page", "screenshot", "url", "rewrite", "responsive", "accessibility", "alternatives"]);
     if (!allowed.has(operation)) return Response.json({ ok: false, error: "Unsupported AI operation." }, { status: 400 });
@@ -77,6 +105,9 @@ export async function action({ request }) {
     const message = error instanceof Error ? error.message : "AI Builder failed.";
     if (process.env.NODE_ENV === "production") console.error("VSN AI Builder error:", message);
     else console.warn("VSN AI Builder request failed:", message);
-    return Response.json({ ok: false, error: message }, { status: 500 });
+    const clientMessage = process.env.NODE_ENV === "production"
+      ? "AI Builder request failed."
+      : safeClientErrorMessage(error, "AI Builder failed.");
+    return Response.json({ ok: false, error: clientMessage }, { status: 500 });
   }
 }
