@@ -6,6 +6,7 @@ const SAFE_PROTOCOLS = new Set(["https:"]);
 const OUTBOUND_TIMEOUT_MS = 8000;
 const OUTBOUND_MAX_RESPONSE_BYTES = 256 * 1024;
 const OUTBOUND_MAX_BODY_BYTES = 512 * 1024;
+const OUTBOUND_ABSOLUTE_MAX_BODY_BYTES = 32 * 1024 * 1024;
 export function sanitizePlainText(value, max = 5000) { return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, max); }
 
 function privateIpv4(host) {
@@ -68,10 +69,11 @@ export async function resolvePublicHttpsTarget(value) {
   return { url, target: rows.find((row) => row.family === 4) || rows[0] };
 }
 
-export async function publicHttpsRequest(value, { method = "POST", headers = {}, body = "", timeoutMs = OUTBOUND_TIMEOUT_MS, maxResponseBytes = OUTBOUND_MAX_RESPONSE_BYTES } = {}) {
+export async function publicHttpsRequest(value, { method = "POST", headers = {}, body = "", timeoutMs = OUTBOUND_TIMEOUT_MS, maxResponseBytes = OUTBOUND_MAX_RESPONSE_BYTES, maxBodyBytes = OUTBOUND_MAX_BODY_BYTES } = {}) {
   const { url, target } = await resolvePublicHttpsTarget(value);
   const payload = Buffer.isBuffer(body) ? body : Buffer.from(String(body || ""));
-  if (payload.byteLength > OUTBOUND_MAX_BODY_BYTES) throw new Error("Outbound request body is too large.");
+  const bodyLimit = Math.max(0, Math.min(OUTBOUND_ABSOLUTE_MAX_BODY_BYTES, Number(maxBodyBytes) || OUTBOUND_MAX_BODY_BYTES));
+  if (payload.byteLength > bodyLimit) throw new Error("Outbound request body is too large.");
   return new Promise((resolve, reject) => {
     let settled = false;
     const request = https.request(url, {
