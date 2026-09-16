@@ -1,22 +1,136 @@
 import { createHash, createHmac } from "node:crypto";
 import { normalizeFormAutomationSettings, formSuccessPayload } from "../builder/formEngine.js";
-import { validateWebhookUrl } from "../utils/security.server.js";
-function parse(value,fallback={}){try{return JSON.parse(value||"")||fallback}catch{return fallback}}
-export async function getFormConfig(db,shop,formKey){const key=String(formKey||"*").trim()||"*";let row=key!=="*"?await db.builderFormConfig.findUnique({where:{shop_formKey:{shop,formKey:key}}}):null;if(row&&!row.enabled)row=null;if(!row)row=await db.builderFormConfig.findUnique({where:{shop_formKey:{shop,formKey:"*"}}});if(row&&!row.enabled)row=null;return{row,settings:normalizeFormAutomationSettings(parse(row?.settingsJson,{})),retentionDays:Math.max(1,Math.min(3650,Number(row?.retentionDays||90)))}}
-export function requesterHash(request,shop){const raw=String(request.headers.get("cf-connecting-ip")||request.headers.get("x-forwarded-for")||request.headers.get("x-real-ip")||"").split(",")[0].trim()||"unknown";return createHash("sha256").update(`${shop}:${raw}`).digest("hex")}
-export async function verifyTurnstile(token,request){const secret=String(process.env.VSN_TURNSTILE_SECRET_KEY||"").trim();if(!secret)return{ok:false,error:"Turnstile is enabled but VSN_TURNSTILE_SECRET_KEY is not configured."};if(!token)return{ok:false,error:"Complete the security verification."};const body=new URLSearchParams({secret,response:token});const ip=String(request.headers.get("cf-connecting-ip")||request.headers.get("x-forwarded-for")||"").split(",")[0].trim();if(ip)body.set("remoteip",ip);try{const res=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",body,signal:AbortSignal.timeout?.(7000)});const data=await res.json();return{ok:Boolean(data?.success),error:data?.success?null:"Security verification failed."}}catch{return{ok:false,error:"Security verification is temporarily unavailable."}}}
-export async function verifyHcaptcha(token,request){const secret=String(process.env.VSN_HCAPTCHA_SECRET_KEY||"").trim();if(!secret)return{ok:false,error:"hCaptcha is enabled but VSN_HCAPTCHA_SECRET_KEY is not configured."};if(!token)return{ok:false,error:"Complete the security verification."};const body=new URLSearchParams({secret,response:token});const ip=String(request.headers.get("cf-connecting-ip")||request.headers.get("x-forwarded-for")||"").split(",")[0].trim();if(ip)body.set("remoteip",ip);try{const res=await fetch("https://api.hcaptcha.com/siteverify",{method:"POST",body,signal:AbortSignal.timeout?.(7000)});const data=await res.json();return{ok:Boolean(data?.success),error:data?.success?null:"Security verification failed."}}catch{return{ok:false,error:"Security verification is temporarily unavailable."}}}
-export async function verifyGoogleRecaptcha(token,request,{secretKey,version="v2",threshold=0.5,expectedAction="form_submit"}={}){const secret=String(secretKey||"").trim();if(!secret)return{ok:false,error:`Google reCAPTCHA ${version} is enabled but its secret key is not configured.`};if(!token)return{ok:false,error:"Complete the security verification."};const body=new URLSearchParams({secret,response:String(token)});const ip=String(request.headers.get("cf-connecting-ip")||request.headers.get("x-forwarded-for")||"").split(",")[0].trim();if(ip)body.set("remoteip",ip);try{const res=await fetch("https://www.google.com/recaptcha/api/siteverify",{method:"POST",body,signal:AbortSignal.timeout?.(7000)});const data=await res.json();if(!data?.success)return{ok:false,error:"Google reCAPTCHA verification failed.",codes:Array.isArray(data?.["error-codes"])?data["error-codes"]:[]};if(version==="v3"){const score=Number(data?.score);const action=String(data?.action||"");const min=Math.max(0,Math.min(1,Number(threshold??0.5)));if(!Number.isFinite(score)||score<min)return{ok:false,error:"Google reCAPTCHA risk score did not meet the required threshold.",score,action};if(action!==String(expectedAction||"form_submit"))return{ok:false,error:"Google reCAPTCHA action did not match this form.",score,action};return{ok:true,score,action};}return{ok:true};}catch{return{ok:false,error:"Google reCAPTCHA verification is temporarily unavailable."}}}
-async function loggedFetch({db,shop,submission,provider,target,url,payload,secret,headers={}}){let safeUrl;try{safeUrl=validateWebhookUrl(url)}catch(error){await db.builderAutomationLog.create({data:{shop,submissionId:submission?.id||null,formKey:submission?.formKey||"*",provider,target,status:"failed",attempt:0,error:error.message}});return{ok:false,error:error.message}}let lastError="";for(let attempt=1;attempt<=3;attempt++){const serialized=JSON.stringify(payload);const signature=secret?createHmac("sha256",secret).update(serialized).digest("hex"):"";try{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7000);const res=await fetch(safeUrl,{method:"POST",headers:{"content-type":"application/json",accept:"application/json",...(signature?{"x-vsn-signature":signature}:{}),...headers},body:serialized,signal:controller.signal});clearTimeout(timer);await db.builderAutomationLog.create({data:{shop,submissionId:submission?.id||null,formKey:submission?.formKey||"*",provider,target:safeUrl,status:res.ok?"delivered":"retrying",attempt,responseStatus:res.status,error:res.ok?null:`HTTP ${res.status}`,nextRetryAt:res.ok?null:new Date(Date.now()+attempt*60000)}});if(res.ok)return{ok:true,status:res.status};lastError=`HTTP ${res.status}`}catch(error){lastError=error instanceof Error?error.message:"Delivery failed";await db.builderAutomationLog.create({data:{shop,submissionId:submission?.id||null,formKey:submission?.formKey||"*",provider,target:safeUrl,status:attempt===3?"failed":"retrying",attempt,error:lastError,nextRetryAt:attempt===3?null:new Date(Date.now()+attempt*60000)}})}}return{ok:false,error:lastError}}
-export async function deliverFormAutomations({db,shop,submission,fields,settings}){
-  const payload={id:submission.id,shop,formKey:submission.formKey,pageUrl:submission.pageUrl,productHandle:submission.productHandle,customerEmail:submission.customerEmail,fields,createdAt:submission.createdAt,notificationEmail:settings.notificationEmail,autoresponder:settings.autoresponderEnabled?{to:submission.customerEmail,subject:settings.autoresponderSubject,body:settings.autoresponderBody}:null};
-  const [legacy,integrations]=await Promise.all([db.builderWebhookEndpoint.findMany({where:{shop,enabled:true}}),db.builderIntegration.findMany({where:{shop,enabled:true}})]);const jobs=[];
-  legacy.filter(x=>x.formKey==="*"||x.formKey===submission.formKey).forEach(x=>jobs.push(loggedFetch({db,shop,submission,provider:"webhook",target:"legacy",url:x.url,payload,secret:x.secret||""})));
-  integrations.filter(x=>x.formKey==="*"||x.formKey===submission.formKey).forEach(row=>{const config=parse(row.configJson,{}),secrets=parse(row.secretJson,{});const url=String(config.url||"");if(!url)return;const headers={};if(secrets.apiKey)headers.authorization=`Bearer ${secrets.apiKey}`;jobs.push(loggedFetch({db,shop,submission,provider:row.provider,target:row.name,url,payload,secret:secrets.signingSecret||"",headers}))});
-  const mailUrl=String(process.env.VSN_FORM_EMAIL_WEBHOOK_URL||"").trim();const mailSecret=String(process.env.VSN_FORM_EMAIL_WEBHOOK_SECRET||"").trim();
-  if(mailUrl&&settings.notificationEmail)jobs.push(loggedFetch({db,shop,submission,provider:"admin-email",target:settings.notificationEmail,url:mailUrl,secret:mailSecret,payload:{type:"admin-notification",to:settings.notificationEmail,subject:`New ${submission.formKey} submission`,submission:payload}}));
-  if(mailUrl&&settings.autoresponderEnabled&&submission.customerEmail)jobs.push(loggedFetch({db,shop,submission,provider:"autoresponder",target:submission.customerEmail,url:mailUrl,secret:mailSecret,payload:{type:"autoresponder",to:submission.customerEmail,subject:settings.autoresponderSubject,body:settings.autoresponderBody,submission:{id:submission.id,formKey:submission.formKey,shop}}}));
-  const results=await Promise.allSettled(jobs);const failed=results.filter(x=>x.status==="rejected"||x.value?.ok===false).length;await db.builderFormSubmission.update({where:{id:submission.id},data:{deliveryStatus:jobs.length?(failed?(failed===jobs.length?"failed":"partial"):"delivered"):"stored"}});return{count:jobs.length,failed}
+import { publicHttpsRequest, resolvePublicHttpsTarget, validateWebhookUrl } from "../utils/security.server.js";
+
+function parse(value, fallback = {}) {
+  try { return JSON.parse(value || "") || fallback; } catch { return fallback; }
 }
-export async function scanUpload({file,shop,submissionId}){const url=String(process.env.VSN_FORM_FILE_SCAN_WEBHOOK||"").trim();if(!url)return{status:"skipped",message:"No scan hook configured."};try{const bytes=Buffer.from(await file.arrayBuffer());const hash=createHash("sha256").update(bytes).digest("hex");const safe=validateWebhookUrl(url);const body=new FormData();body.set("shop",shop);body.set("submissionId",submissionId);body.set("fileName",String(file.name||"upload"));body.set("mimeType",String(file.type||"application/octet-stream"));body.set("size",String(file.size||bytes.length));body.set("sha256",hash);body.set("file",new Blob([bytes],{type:file.type||"application/octet-stream"}),String(file.name||"upload"));const res=await fetch(safe,{method:"POST",body,signal:AbortSignal.timeout?.(12000)});const data=await res.json().catch(()=>({}));return{status:res.ok&&data?.clean!==false?"clean":"blocked",message:data?.message||`Scanner HTTP ${res.status}`}}catch(error){return{status:"error",message:error instanceof Error?error.message:"Scan failed"}}}
+
+export async function getFormConfig(db, shop, formKey) {
+  const key = String(formKey || "*").trim() || "*";
+  let row = key !== "*" ? await db.builderFormConfig.findUnique({ where: { shop_formKey: { shop, formKey: key } } }) : null;
+  if (row && !row.enabled) row = null;
+  if (!row) row = await db.builderFormConfig.findUnique({ where: { shop_formKey: { shop, formKey: "*" } } });
+  if (row && !row.enabled) row = null;
+  return { row, settings: normalizeFormAutomationSettings(parse(row?.settingsJson, {})), retentionDays: Math.max(1, Math.min(3650, Number(row?.retentionDays || 90))) };
+}
+
+export function requesterHash(request, shop) {
+  const raw = String(request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "").split(",")[0].trim() || "unknown";
+  return createHash("sha256").update(`${shop}:${raw}`).digest("hex");
+}
+
+export async function verifyTurnstile(token, request) {
+  const secret = String(process.env.VSN_TURNSTILE_SECRET_KEY || "").trim();
+  if (!secret) return { ok: false, error: "Turnstile is enabled but VSN_TURNSTILE_SECRET_KEY is not configured." };
+  if (!token) return { ok: false, error: "Complete the security verification." };
+  const body = new URLSearchParams({ secret, response: token });
+  const ip = String(request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "").split(",")[0].trim();
+  if (ip) body.set("remoteip", ip);
+  try {
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body, signal: AbortSignal.timeout?.(7000) });
+    const data = await res.json();
+    return { ok: Boolean(data?.success), error: data?.success ? null : "Security verification failed." };
+  } catch { return { ok: false, error: "Security verification is temporarily unavailable." }; }
+}
+
+export async function verifyHcaptcha(token, request) {
+  const secret = String(process.env.VSN_HCAPTCHA_SECRET_KEY || "").trim();
+  if (!secret) return { ok: false, error: "hCaptcha is enabled but VSN_HCAPTCHA_SECRET_KEY is not configured." };
+  if (!token) return { ok: false, error: "Complete the security verification." };
+  const body = new URLSearchParams({ secret, response: token });
+  const ip = String(request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "").split(",")[0].trim();
+  if (ip) body.set("remoteip", ip);
+  try {
+    const res = await fetch("https://api.hcaptcha.com/siteverify", { method: "POST", body, signal: AbortSignal.timeout?.(7000) });
+    const data = await res.json();
+    return { ok: Boolean(data?.success), error: data?.success ? null : "Security verification failed." };
+  } catch { return { ok: false, error: "Security verification is temporarily unavailable." }; }
+}
+
+export async function verifyGoogleRecaptcha(token, request, { secretKey, version = "v2", threshold = 0.5, expectedAction = "form_submit" } = {}) {
+  const secret = String(secretKey || "").trim();
+  if (!secret) return { ok: false, error: `Google reCAPTCHA ${version} is enabled but its secret key is not configured.` };
+  if (!token) return { ok: false, error: "Complete the security verification." };
+  const body = new URLSearchParams({ secret, response: String(token) });
+  const ip = String(request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "").split(",")[0].trim();
+  if (ip) body.set("remoteip", ip);
+  try {
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", { method: "POST", body, signal: AbortSignal.timeout?.(7000) });
+    const data = await res.json();
+    if (!data?.success) return { ok: false, error: "Google reCAPTCHA verification failed.", codes: Array.isArray(data?.["error-codes"]) ? data["error-codes"] : [] };
+    if (version === "v3") {
+      const score = Number(data?.score); const action = String(data?.action || ""); const min = Math.max(0, Math.min(1, Number(threshold ?? 0.5)));
+      if (!Number.isFinite(score) || score < min) return { ok: false, error: "Google reCAPTCHA risk score did not meet the required threshold.", score, action };
+      if (action !== String(expectedAction || "form_submit")) return { ok: false, error: "Google reCAPTCHA action did not match this form.", score, action };
+      return { ok: true, score, action };
+    }
+    return { ok: true };
+  } catch { return { ok: false, error: "Google reCAPTCHA verification is temporarily unavailable." }; }
+}
+
+async function loggedFetch({ db, shop, submission, provider, target, url, payload, secret, headers = {} }) {
+  let safeUrl;
+  try { safeUrl = validateWebhookUrl(url); }
+  catch (error) {
+    await db.builderAutomationLog.create({ data: { shop, submissionId: submission?.id || null, formKey: submission?.formKey || "*", provider, target, status: "failed", attempt: 0, error: error.message } });
+    return { ok: false, error: error.message };
+  }
+
+  const serialized = JSON.stringify(payload);
+  const signature = secret ? createHmac("sha256", secret).update(serialized).digest("hex") : "";
+  let lastError = "";
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await publicHttpsRequest(safeUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json", ...(signature ? { "x-vsn-signature": signature } : {}), ...headers },
+        body: serialized,
+        timeoutMs: 7000,
+      });
+      await db.builderAutomationLog.create({ data: { shop, submissionId: submission?.id || null, formKey: submission?.formKey || "*", provider, target: safeUrl, status: res.ok ? "delivered" : "retrying", attempt, responseStatus: res.status, error: res.ok ? null : `HTTP ${res.status}`, nextRetryAt: res.ok ? null : new Date(Date.now() + attempt * 60000) } });
+      if (res.ok) return { ok: true, status: res.status };
+      lastError = `HTTP ${res.status}`;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "Delivery failed";
+      await db.builderAutomationLog.create({ data: { shop, submissionId: submission?.id || null, formKey: submission?.formKey || "*", provider, target: safeUrl, status: attempt === 3 ? "failed" : "retrying", attempt, error: lastError, nextRetryAt: attempt === 3 ? null : new Date(Date.now() + attempt * 60000) } });
+    }
+  }
+  return { ok: false, error: lastError };
+}
+
+export async function deliverFormAutomations({ db, shop, submission, fields, settings }) {
+  const payload = { id: submission.id, shop, formKey: submission.formKey, pageUrl: submission.pageUrl, productHandle: submission.productHandle, customerEmail: submission.customerEmail, fields, createdAt: submission.createdAt, notificationEmail: settings.notificationEmail, autoresponder: settings.autoresponderEnabled ? { to: submission.customerEmail, subject: settings.autoresponderSubject, body: settings.autoresponderBody } : null };
+  const [legacy, integrations] = await Promise.all([db.builderWebhookEndpoint.findMany({ where: { shop, enabled: true } }), db.builderIntegration.findMany({ where: { shop, enabled: true } })]);
+  const jobs = [];
+  legacy.filter((x) => x.formKey === "*" || x.formKey === submission.formKey).forEach((x) => jobs.push(loggedFetch({ db, shop, submission, provider: "webhook", target: "legacy", url: x.url, payload, secret: x.secret || "" })));
+  integrations.filter((x) => x.formKey === "*" || x.formKey === submission.formKey).forEach((row) => {
+    const config = parse(row.configJson, {}); const secrets = parse(row.secretJson, {}); const url = String(config.url || ""); if (!url) return;
+    const headers = {}; if (secrets.apiKey) headers.authorization = `Bearer ${secrets.apiKey}`;
+    jobs.push(loggedFetch({ db, shop, submission, provider: row.provider, target: row.name, url, payload, secret: secrets.signingSecret || "", headers }));
+  });
+  const mailUrl = String(process.env.VSN_FORM_EMAIL_WEBHOOK_URL || "").trim(); const mailSecret = String(process.env.VSN_FORM_EMAIL_WEBHOOK_SECRET || "").trim();
+  if (mailUrl && settings.notificationEmail) jobs.push(loggedFetch({ db, shop, submission, provider: "admin-email", target: settings.notificationEmail, url: mailUrl, secret: mailSecret, payload: { type: "admin-notification", to: settings.notificationEmail, subject: `New ${submission.formKey} submission`, submission: payload } }));
+  if (mailUrl && settings.autoresponderEnabled && submission.customerEmail) jobs.push(loggedFetch({ db, shop, submission, provider: "autoresponder", target: submission.customerEmail, url: mailUrl, secret: mailSecret, payload: { type: "autoresponder", to: submission.customerEmail, subject: settings.autoresponderSubject, body: settings.autoresponderBody, submission: { id: submission.id, formKey: submission.formKey, shop } } }));
+  const results = await Promise.allSettled(jobs); const failed = results.filter((x) => x.status === "rejected" || x.value?.ok === false).length;
+  await db.builderFormSubmission.update({ where: { id: submission.id }, data: { deliveryStatus: jobs.length ? (failed ? (failed === jobs.length ? "failed" : "partial") : "delivered") : "stored" } });
+  return { count: jobs.length, failed };
+}
+
+export async function scanUpload({ file, shop, submissionId }) {
+  const url = String(process.env.VSN_FORM_FILE_SCAN_WEBHOOK || "").trim();
+  if (!url) return { status: "skipped", message: "No scan hook configured." };
+  try {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const hash = createHash("sha256").update(bytes).digest("hex");
+    const safe = validateWebhookUrl(url);
+    await resolvePublicHttpsTarget(safe);
+    const body = new FormData();
+    body.set("shop", shop); body.set("submissionId", submissionId); body.set("fileName", String(file.name || "upload")); body.set("mimeType", String(file.type || "application/octet-stream")); body.set("size", String(file.size || bytes.length)); body.set("sha256", hash); body.set("file", new Blob([bytes], { type: file.type || "application/octet-stream" }), String(file.name || "upload"));
+    const res = await fetch(safe, { method: "POST", body, signal: AbortSignal.timeout?.(12000), redirect: "error" });
+    const data = await res.json().catch(() => ({}));
+    return { status: res.ok && data?.clean !== false ? "clean" : "blocked", message: data?.message || `Scanner HTTP ${res.status}` };
+  } catch (error) { return { status: "error", message: error instanceof Error ? error.message : "Scan failed" }; }
+}
+
 export { formSuccessPayload };
