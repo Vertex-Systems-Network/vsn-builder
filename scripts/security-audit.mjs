@@ -86,12 +86,19 @@ for(const marker of ["resolvePublicHttpsTarget","publicHttpsRequest","lookup(hos
 const formAutomation=fs.readFileSync(path.join(root,"app/services/form-automation.server.js"),"utf8");
 if(!formAutomation.includes("publicHttpsRequest(safeUrl"))fail("Form automation webhook delivery must use DNS-pinned public HTTPS requests");
 
+const formSettings=fs.readFileSync(path.join(root,"app/routes/app.form-settings.jsx"),"utf8");
+for(const marker of ["canAccessBuilderSystem(db, session, \"formSettings\")","assertTrustedMutationRequest(request)","canBuilder(role, \"settings\")","Only the store owner can change form security"]){
+  if(!formSettings.includes(marker))fail(`Form integration/secret authorization regression detected: ${marker}`);
+}
+
 const visualTemplate=fs.readFileSync(path.join(root,"app/builder/visualTemplate.js"),"utf8");
 for(const marker of ["safeStyleText","styles.includes(\"<\")","escapeHtml(value)","SAFE_ATTR","safeHref"]){
   if(!visualTemplate.includes(marker))fail(`Visual-template HTML/CSS sanitizer regression detected: ${marker}`);
 }
 const stylePipeline=fs.readFileSync(path.join(root,"app/builder/stylePipeline.js"),"utf8");
-if(!stylePipeline.includes("sanitizeCustomCss")||!/<\\\/\?style/.test(stylePipeline))fail("Custom CSS style-closing sanitizer regression detected");
+for(const marker of ["sanitizeCustomCss",".replace(/<\\/?style\\b"]){
+  if(!stylePipeline.includes(marker))fail(`Custom CSS style-closing sanitizer regression detected: ${marker}`);
+}
 
 const widgetStudio=fs.readFileSync(path.join(root,"app/components/builder-panel/WidgetStudioPanel.jsx"),"utf8");
 for(const marker of ["validateVisualTemplate","renderVisualTemplateHtml","parseVisualTemplate"]){
