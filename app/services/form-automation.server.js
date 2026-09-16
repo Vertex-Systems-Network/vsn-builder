@@ -1,6 +1,6 @@
 import { createHash, createHmac } from "node:crypto";
 import { normalizeFormAutomationSettings, formSuccessPayload } from "../builder/formEngine.js";
-import { publicHttpsRequest, resolvePublicHttpsTarget, validateWebhookUrl } from "../utils/security.server.js";
+import { publicHttpsRequest, validateWebhookUrl } from "../utils/security.server.js";
 
 function parse(value, fallback = {}) {
   try { return JSON.parse(value || "") || fallback; } catch { return fallback; }
@@ -124,11 +124,32 @@ export async function scanUpload({ file, shop, submissionId }) {
     const bytes = Buffer.from(await file.arrayBuffer());
     const hash = createHash("sha256").update(bytes).digest("hex");
     const safe = validateWebhookUrl(url);
-    await resolvePublicHttpsTarget(safe);
-    const body = new FormData();
-    body.set("shop", shop); body.set("submissionId", submissionId); body.set("fileName", String(file.name || "upload")); body.set("mimeType", String(file.type || "application/octet-stream")); body.set("size", String(file.size || bytes.length)); body.set("sha256", hash); body.set("file", new Blob([bytes], { type: file.type || "application/octet-stream" }), String(file.name || "upload"));
-    const res = await fetch(safe, { method: "POST", body, signal: AbortSignal.timeout?.(12000), redirect: "error" });
-    const data = await res.json().catch(() => ({}));
+    const form = new FormData();
+    form.set("shop", shop);
+    form.set("submissionId", submissionId);
+    form.set("fileName", String(file.name || "upload"));
+    form.set("mimeType", String(file.type || "application/octet-stream"));
+    form.set("size", String(file.size || bytes.length));
+    form.set("sha256", hash);
+    form.set("file", new Blob([bytes], { type: file.type || "application/octet-stream" }), String(file.name || "upload"));
+
+    // Let the Fetch/Undici implementation serialize multipart syntax locally, then
+    // send those exact bytes through VSN's DNS-pinned HTTPS transport. This avoids
+    // a second DNS lookup after validation (DNS-rebinding/SSRF) while preserving
+    // standards-compliant multipart boundaries.
+    const serialized = new Response(form);
+    const contentType = serialized.headers.get("content-type") || "multipart/form-data";
+    const multipartBytes = Buffer.from(await serialized.arrayBuffer());
+    const res = await publicHttpsRequest(safe, {
+      method: "POST",
+      headers: { "content-type": contentType, accept: "application/json" },
+      body: multipartBytes,
+      timeoutMs: 12000,
+      maxBodyBytes: 27 * 1024 * 1024,
+      maxResponseBytes: 64 * 1024,
+    });
+    let data = {};
+    try { data = JSON.parse(res.body || "{}"); } catch {}
     return { status: res.ok && data?.clean !== false ? "clean" : "blocked", message: data?.message || `Scanner HTTP ${res.status}` };
   } catch (error) { return { status: "error", message: error instanceof Error ? error.message : "Scan failed" }; }
 }
