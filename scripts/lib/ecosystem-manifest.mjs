@@ -27,7 +27,12 @@ export async function buildEcosystemManifest(root=process.cwd()) {
   ]);
   const packageJson=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
   const migrationDirs=fs.existsSync(path.join(root,'prisma/migrations')) ? fs.readdirSync(path.join(root,'prisma/migrations'),{withFileTypes:true}).filter((entry)=>entry.isDirectory()).map((entry)=>entry.name).sort() : [];
-  const routeFiles=walk(path.join(root,'app/routes'),(file)=>/\.[jt]sx?$/.test(file));
+  // `builder-proxy.$.jsx` is now a compatibility implementation module whose loader
+  // is re-exported by the manually registered hardened proxy route. app/routes.js
+  // explicitly excludes the legacy module from filesystem route registration, so it
+  // must not inflate the ecosystem's active route-module count.
+  const inactiveCompatibilityRouteFiles=new Set(['builder-proxy.$.jsx']);
+  const routeFiles=walk(path.join(root,'app/routes'),(file)=>/\.[jt]sx?$/.test(file)&&!inactiveCompatibilityRouteFiles.has(path.basename(file)));
   const userDocs=walk(path.join(root,'docs/user'),(file)=>file.endsWith('.md'));
   const developerDocs=walk(path.join(root,'docs/developer'),(file)=>file.endsWith('.md'));
   const engineeringDocs=walk(path.join(root,'docs/engineering'),(file)=>file.endsWith('.md'));
