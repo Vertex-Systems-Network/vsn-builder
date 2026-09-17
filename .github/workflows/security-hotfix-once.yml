@@ -20,8 +20,9 @@ jobs:
           ref: security/ai-hardening-20260916
           fetch-depth: 1
       - name: Apply exact security replacements
-        shell: python
+        shell: bash
         run: |
+          python3 - <<'PY'
           from pathlib import Path
 
           proxy_path = Path("app/routes/builder-proxy.$.jsx")
@@ -88,6 +89,7 @@ assertSafe(safeExternalUrl("https://example.com/hook")!==null,"Outbound URL guar
           audit_path.write_text(audit)
 
           Path(".github/workflows/security-hotfix-once.yml").unlink()
+          PY
       - name: Commit scoped patch
         run: |
           git config user.name "github-actions[bot]"
