@@ -102,6 +102,12 @@ jobs:
       - name: Security audit
         run: npm run security:audit
 
+      - name: Generate Prisma client
+        run: npm run prisma -- generate
+
+      - name: Prepare release QA database
+        run: npm run prisma -- migrate deploy
+
       - name: Release QA
         run: npm run qa:release
 
