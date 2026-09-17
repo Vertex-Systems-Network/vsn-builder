@@ -62,7 +62,9 @@ jobs:
       - name: Enforce release QA result
         if: steps.release_qa.outcome == 'failure'
         run: exit 1
-      - run: npm run qa:phase1
+      - name: Run external phase-1 QA with protected credentials
+        if: github.event_name != 'pull_request'
+        run: npm run qa:phase1
         env:
           VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}
           VSN_E2E_EDITOR_URL: ${{ secrets.VSN_E2E_EDITOR_URL }}
@@ -71,7 +73,9 @@ jobs:
       - run: npm run performance:large-pages
       - run: npm install --no-save --package-lock=false @playwright/test@1.55.0
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: npm run e2e:playwright
+      - name: Run external Playwright E2E with protected credentials
+        if: github.event_name != 'pull_request'
+        run: npm run e2e:playwright
         env:
           VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}
           VSN_E2E_EDITOR_URL: ${{ secrets.VSN_E2E_EDITOR_URL }}
