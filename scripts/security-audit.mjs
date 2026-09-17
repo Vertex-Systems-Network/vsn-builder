@@ -70,7 +70,7 @@ for(const file of files){
 }
 
 const aiBuilder=fs.readFileSync(path.join(root,"app/builder/aiBuilder.js"),"utf8");
-for(const marker of ["safeLinkUrl(row.url)","safeMediaUrl(row.url)","safeMediaUrl(row.imageUrl)","sanitizeAiContext"]){
+for(const marker of ["safeLinkUrl(row.url)","safeMediaUrl(row.url)","safeMediaUrl(row.imageUrl)","sanitizeAiContext","unsafeNetworkHost","cleanAiText","cssLength"]){
   if(!aiBuilder.includes(marker))fail(`AI output/context sanitizer regression detected: ${marker}`);
 }
 if(/url:\s*cleanText\(row\.url/.test(aiBuilder)||/imageUrl:\s*cleanText\(row\.imageUrl/.test(aiBuilder))fail("AI-generated URLs must not bypass URL sanitization");
