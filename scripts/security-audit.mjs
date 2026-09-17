@@ -165,6 +165,12 @@ for(const marker of ["VSN_PLUGIN_FORBIDDEN_APIS","child_process","eval(","new Fu
   if(!sdkSecurity.includes(marker))fail(`SDK plugin isolation denylist regression detected: ${marker}`);
 }
 
+const emailAi=fs.readFileSync(path.join(root,"app/services/email-ai.server.js"),"utf8");
+for(const marker of ["EMAIL_BINDING_TOKENS","AI_EMAIL_TOKENS","AI_EMAIL_URL_TOKENS","sanitizeAiText","unsafeNetworkHost","Never invent merge-token paths","AI provider request failed"]){
+  if(!emailAi.includes(marker))fail(`Email AI output sanitizer regression detected: ${marker}`);
+}
+if(emailAi.includes("payload?.error?.message"))fail("Email AI provider errors must not be reflected verbatim");
+
 const requestSecurity=fs.readFileSync(path.join(root,"app/utils/request-security.server.js"),"utf8");
 for(const marker of ["assertTrustedMutationRequest","untrusted-cross-site","shopify-admin-origin","configuredAppOrigin","SHOPIFY_APP_URL"]){
   if(!requestSecurity.includes(marker))fail(`Mutation-origin security control missing: ${marker}`);
