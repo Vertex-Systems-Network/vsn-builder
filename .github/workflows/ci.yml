@@ -27,6 +27,8 @@ jobs:
         continue-on-error: true
         run: npm audit --include=dev --audit-level=high
       - run: npm run security:audit
+      - name: Legacy webhook egress security audit
+        run: node scripts/legacy-webhook-egress-audit.mjs
       - run: npm run prisma -- generate
       - run: npm run prisma -- migrate deploy
       - name: Repository lint diagnostics
