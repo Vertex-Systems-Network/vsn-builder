@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   refresh-lock:
-    if: github.event.head_commit.message != 'chore: refresh non-breaking dependency lock'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -25,11 +24,8 @@ jobs:
           node-version: 22.18.0
           cache: npm
 
-      - name: Install exact tree
-        run: npm ci
-
       - name: Refresh non-breaking dependency lock
-        run: npm audit fix --package-lock-only
+        run: npm audit fix --package-lock-only || true
 
       - name: Guard package manifest
         shell: bash
@@ -39,6 +35,9 @@ jobs:
             git diff -- package.json
             exit 1
           fi
+
+      - name: Validate refreshed lock
+        run: npm ci
 
       - name: Report remaining development advisories
         continue-on-error: true
