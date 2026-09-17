@@ -68,7 +68,7 @@ export async function action({ request }) {
     return Response.json({ ok: true, intent, message: `Form configuration saved for ${formKey}.` });
   }
 
-  if (intent === "save-google-captcha") {
+  if(intent==="save-google-captcha"){
     const version = String(form.get("version") || "");
     if (!["v2", "v3"].includes(version)) return Response.json({ ok: false, error: "Choose Google reCAPTCHA v2 or v3." }, { status: 400 });
     const saved = await saveGoogleCaptchaSettings(db, session.shop, version, { enabled: String(form.get("enabled") || "true") !== "false", siteKey: form.get("siteKey"), secretKey: form.get("secretKey"), threshold: form.get("threshold"), action: form.get("action") });
