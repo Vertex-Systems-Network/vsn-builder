@@ -26,7 +26,7 @@ check(
 );
 check(
   "Filesystem routing cannot register the legacy proxy action",
-  routes.includes('ignoredRouteFiles: ["builder-proxy.$.jsx", "builder-proxy-secure.$.jsx"]'),
+  routes.includes('ignoredRouteFiles: ["**/builder-proxy.$.jsx", "**/builder-proxy-secure.$.jsx"]'),
 );
 check(
   "Hardened proxy preserves the mature loader only",
