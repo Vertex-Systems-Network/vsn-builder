@@ -1,4 +1,4 @@
-name: Dev Audit Lock Refresh
+name: Dev Toolchain Upgrade Validation
 
 on:
   push:
@@ -8,10 +8,14 @@ on:
 permissions:
   contents: write
 
+env:
+  DATABASE_URL: file:./ci.sqlite
+  NODE_ENV: test
+
 jobs:
-  refresh-lock:
+  validate-upgrade:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -24,34 +28,54 @@ jobs:
           node-version: 22.18.0
           cache: npm
 
-      - name: Refresh non-breaking dependency lock
-        run: npm audit fix --package-lock-only || true
+      - name: Upgrade vulnerable development toolchains
+        run: >-
+          npm install --save-dev --package-lock-only
+          @shopify/api-codegen-preset@3.0.0
+          @typescript-eslint/eslint-plugin@8.70.0
+          @typescript-eslint/parser@8.70.0
 
-      - name: Guard package manifest
+      - name: Install upgraded exact tree
+        run: npm ci
+
+      - name: Generate GraphQL artifacts
+        run: npm run graphql-codegen
+
+      - name: Guard generated source stability
         shell: bash
         run: |
-          if ! git diff --quiet -- package.json; then
-            echo 'Refusing unexpected package.json modification.' >&2
-            git diff -- package.json
+          changed="$(git diff --name-only -- . ':(exclude)package.json' ':(exclude)package-lock.json')"
+          if [ -n "$changed" ]; then
+            echo 'Upgrade changed generated/source files unexpectedly:' >&2
+            printf '%s\n' "$changed" >&2
+            git diff -- . ':(exclude)package.json' ':(exclude)package-lock.json'
             exit 1
           fi
 
-      - name: Validate refreshed lock
-        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
 
-      - name: Report remaining development advisories
-        continue-on-error: true
+      - name: Build
+        run: npm run build
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Development dependency audit
         run: npm audit --include=dev --audit-level=high
 
-      - name: Commit lockfile only
+      - name: Security audit
+        run: npm run security:audit
+
+      - name: Commit validated dependency upgrade
         shell: bash
         run: |
-          if git diff --quiet -- package-lock.json; then
-            echo 'No package-lock.json changes required.'
-            exit 0
-          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add package-lock.json
-          git commit -m 'chore: refresh non-breaking dependency lock'
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo 'No dependency changes to commit.'
+            exit 0
+          fi
+          git commit -m 'security: upgrade vulnerable development toolchains'
           git push origin HEAD:security/dev-toolchain-audit-20260917
