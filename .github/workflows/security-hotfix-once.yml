@@ -1,0 +1,98 @@
+name: VSN Scoped Security Hotfix
+
+on:
+  push:
+    branches:
+      - security/ai-hardening-20260916
+    paths:
+      - .github/workflows/security-hotfix-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: security/ai-hardening-20260916
+          fetch-depth: 1
+      - name: Apply exact security replacements
+        shell: python
+        run: |
+          from pathlib import Path
+
+          proxy_path = Path("app/routes/builder-proxy.$.jsx")
+          proxy = proxy_path.read_text()
+          old_import = 'import { detectSpam } from "../utils/security.server.js";'
+          new_import = 'import { detectSpam, publicHttpsRequest } from "../utils/security.server.js";'
+          if old_import not in proxy:
+              raise SystemExit("Expected builder proxy security import was not found")
+          proxy = proxy.replace(old_import, new_import, 1)
+
+          old_egress = '''\t\t\t\tconst controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 5000);
+\t\t\t\ttry { await fetch(endpoint.url, { method: "POST", headers: { "content-type": "application/json", ...(signature ? { "x-vsn-signature": signature } : {}) }, body: payload, signal: controller.signal }); } finally { clearTimeout(timer); }'''
+          new_egress = '''\t\t\t\tawait publicHttpsRequest(endpoint.url, {
+\t\t\t\t\tmethod: "POST",
+\t\t\t\t\theaders: { "content-type": "application/json", ...(signature ? { "x-vsn-signature": signature } : {}) },
+\t\t\t\t\tbody: payload,
+\t\t\t\t\ttimeoutMs: 5000,
+\t\t\t\t\tmaxBodyBytes: 512 * 1024,
+\t\t\t\t\tmaxResponseBytes: 64 * 1024,
+\t\t\t\t});'''
+          if old_egress not in proxy:
+              raise SystemExit("Expected legacy webhook egress block was not found")
+          proxy = proxy.replace(old_egress, new_egress, 1)
+          proxy_path.write_text(proxy)
+
+          control_path = Path("app/routes/app.control-center.jsx")
+          control = control_path.read_text()
+          raw_health = 'await db.$queryRawUnsafe("SELECT 1")'
+          safe_health = 'await db.$queryRaw`SELECT 1`'
+          raw_migrations = '''await db.$queryRawUnsafe('SELECT migration_name, finished_at FROM "_prisma_migrations" WHERE finished_at IS NOT NULL ORDER BY finished_at DESC')'''
+          safe_migrations = '''await db.$queryRaw`SELECT migration_name, finished_at FROM "_prisma_migrations" WHERE finished_at IS NOT NULL ORDER BY finished_at DESC`'''
+          if raw_health not in control or raw_migrations not in control:
+              raise SystemExit("Expected static raw Prisma diagnostics were not found")
+          control = control.replace(raw_health, safe_health, 1).replace(raw_migrations, safe_migrations, 1)
+          control_path.write_text(control)
+
+          audit_path = Path("scripts/security-audit.mjs")
+          audit = audit_path.read_text()
+          old_svg_import = 'import { sanitizeSvg } from "../app/services/svg-assets.server.js";'
+          new_svg_import = old_svg_import + '\nimport { safeExternalUrl } from "../app/utils/security.server.js";'
+          if old_svg_import not in audit:
+              raise SystemExit("Expected security audit import anchor was not found")
+          audit = audit.replace(old_svg_import, new_svg_import, 1)
+
+          old_transport_markers = '''for(const marker of ["resolvePublicHttpsTarget","publicHttpsRequest","lookup(host","unsafeExternalHost(row.address)","OUTBOUND_ABSOLUTE_MAX_BODY_BYTES","maxBodyBytes"]){'''
+          new_transport_markers = '''for(const marker of ["resolvePublicHttpsTarget","publicHttpsRequest","lookup(host","unsafeExternalHost(row.address)","lookup(_hostname, options, callback)","target.address","OUTBOUND_ABSOLUTE_MAX_BODY_BYTES","maxBodyBytes"]){'''
+          if old_transport_markers not in audit:
+              raise SystemExit("Expected outbound transport marker list was not found")
+          audit = audit.replace(old_transport_markers, new_transport_markers, 1)
+
+          anchor = '''if(!formAutomation.includes("maxBodyBytes: 27 * 1024 * 1024"))fail("File scanner pinned transport must preserve the bounded 25 MB upload contract");'''
+          insertion = anchor + '''
+
+const builderProxy=fs.readFileSync(path.join(root,"app/routes/builder-proxy.$.jsx"),"utf8");
+if(!builderProxy.includes("publicHttpsRequest(endpoint.url"))fail("Legacy storefront webhook delivery must use the shared DNS-pinned public HTTPS transport");
+if(/fetch\s*\(\s*endpoint\.url/.test(builderProxy))fail("Legacy storefront webhook delivery must not bypass hardened egress with generic fetch()");
+for(const hostileUrl of ["https://127.0.0.1/hook","https://10.0.0.1/hook","https://169.254.169.254/latest/meta-data","https://[::1]/hook","https://[fc00::1]/hook","https://user:pass@example.com/hook"]){
+  assertSafe(safeExternalUrl(hostileUrl)===null,`Outbound URL guard must reject ${hostileUrl}`);
+}
+assertSafe(safeExternalUrl("https://example.com/hook")!==null,"Outbound URL guard must preserve public HTTPS destinations");'''
+          if anchor not in audit:
+              raise SystemExit("Expected security audit webhook anchor was not found")
+          audit = audit.replace(anchor, insertion, 1)
+          audit_path.write_text(audit)
+
+          Path(".github/workflows/security-hotfix-once.yml").unlink()
+      - name: Commit scoped patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/routes/'builder-proxy.$.jsx' app/routes/app.control-center.jsx scripts/security-audit.mjs .github/workflows/security-hotfix-once.yml
+          git diff --cached --check
+          git commit -m "security: close legacy webhook egress bypass"
+          git push origin HEAD:security/ai-hardening-20260916
