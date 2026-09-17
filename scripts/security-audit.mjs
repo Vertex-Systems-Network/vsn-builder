@@ -165,6 +165,13 @@ for(const marker of ["VSN_PLUGIN_FORBIDDEN_APIS","child_process","eval(","new Fu
   if(!sdkSecurity.includes(marker))fail(`SDK plugin isolation denylist regression detected: ${marker}`);
 }
 
+const ciWorkflow=fs.readFileSync(path.join(root,".github/workflows/ci.yml"),"utf8");
+for(const stepBlock of ciWorkflow.split(/\n(?=\s{6}- )/)){
+  if(stepBlock.includes("${{ secrets.")&&!stepBlock.includes("if: github.event_name != 'pull_request'")){
+    fail("CI secret-bearing step must be disabled on pull_request events");
+  }
+}
+
 const emailAi=fs.readFileSync(path.join(root,"app/services/email-ai.server.js"),"utf8");
 for(const marker of ["EMAIL_BINDING_TOKENS","AI_EMAIL_TOKENS","AI_EMAIL_URL_TOKENS","sanitizeAiText","unsafeNetworkHost","Never invent merge-token paths","AI provider request failed"]){
   if(!emailAi.includes(marker))fail(`Email AI output sanitizer regression detected: ${marker}`);
