@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { encryptSecret, decryptSecret, maskSecret } from "../app/services/secret-vault.server.js";
 import { defaultTemplatesViewSettings, normalizeTemplatesViewSettings } from "../app/services/templates-view-settings.server.js";
+import { resolveScriptDatabaseLocation } from "./lib/database-location.mjs";
 
 const read=(file)=>fs.readFileSync(file,"utf8");
 const exists=(file)=>fs.existsSync(file);
@@ -34,6 +35,9 @@ const permissions=read("app/utils/builder-permissions.js");
 const lifecycle=read("app/services/shop-data-lifecycle.server.js");
 const toml=read("shopify.app.toml");
 const env=read(".env.example");
+const databaseLocation=resolveScriptDatabaseLocation({cwd:process.cwd(),env:process.env});
+const databaseFile=databaseLocation.file;
+if(!databaseFile)throw new Error(`Milestone Q.6.3 audit requires a SQLite DATABASE_URL; resolved ${databaseLocation.url}`);
 
 await check("Version is v2.5.101 or newer",()=>assert.ok(versionAtLeast(pkg.version,"2.5.101")));
 await check("Baseline retains Q.6.3 lineage",()=>{assert.ok(versionAtLeast(baseline.version,"2.5.101"));assert.ok(String(baseline.milestone).startsWith("Q.6"))});
@@ -121,9 +125,9 @@ await check("Stock search cache Prisma model exists",()=>assert.ok(schema.includ
 await check("Stock cache has per-shop/provider/cacheKey uniqueness",()=>assert.ok(schema.includes("@@unique([shop, provider, cacheKey])")));
 await check("Q6.3 migration exists",()=>assert.ok(exists(migrationPath)));
 await check("Q6.3 migration is additive only",()=>{assert.match(migration,/ALTER TABLE "BuilderShopSetting" ADD COLUMN "templatesViewJson"/);assert.match(migration,/CREATE TABLE "BuilderStockSearchCache"/);assert.doesNotMatch(migration,/DROP TABLE|DROP COLUMN|DELETE FROM/i)});
-await check("Packaged SQLite has templatesViewJson",()=>{const db=new DatabaseSync("prisma/dev.sqlite");const cols=db.prepare("PRAGMA table_info('BuilderShopSetting')").all().map((row)=>row.name);db.close();assert.ok(cols.includes("templatesViewJson"))});
-await check("Packaged SQLite has stock search cache table",()=>{const db=new DatabaseSync("prisma/dev.sqlite");const row=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='BuilderStockSearchCache'").get();db.close();assert.equal(row?.name,"BuilderStockSearchCache")});
-await check("Packaged SQLite records Q6.3 migration checksum",()=>{const checksum=crypto.createHash("sha256").update(fs.readFileSync(migrationPath)).digest("hex");const db=new DatabaseSync("prisma/dev.sqlite");const row=db.prepare("SELECT checksum FROM _prisma_migrations WHERE migration_name=?").get("20260810093000_milestone_q63_stock_image_hub");db.close();assert.equal(row?.checksum,checksum)});
+await check("Packaged SQLite has templatesViewJson",()=>{const db=new DatabaseSync(databaseFile,{readOnly:true});const cols=db.prepare("PRAGMA table_info('BuilderShopSetting')").all().map((row)=>row.name);db.close();assert.ok(cols.includes("templatesViewJson"))});
+await check("Packaged SQLite has stock search cache table",()=>{const db=new DatabaseSync(databaseFile,{readOnly:true});const row=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='BuilderStockSearchCache'").get();db.close();assert.equal(row?.name,"BuilderStockSearchCache")});
+await check("Packaged SQLite records Q6.3 migration checksum",()=>{const checksum=crypto.createHash("sha256").update(fs.readFileSync(migrationPath)).digest("hex");const db=new DatabaseSync(databaseFile,{readOnly:true});const row=db.prepare("SELECT checksum FROM _prisma_migrations WHERE migration_name=?").get("20260810093000_milestone_q63_stock_image_hub");db.close();assert.equal(row?.checksum,checksum)});
 
 await check("Exact Shopify billing handles remain unchanged",()=>{const plans=read("app/config/commercialPlans.js");for(const h of ["free","sliver","gold","platenium"])assert.ok(plans.includes(h),h)});
 
