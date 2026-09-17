@@ -1,4 +1,4 @@
-name: Dev Toolchain Upgrade Validation
+name: Dev Toolchain Security Diagnostic
 
 on:
   push:
@@ -6,21 +6,21 @@ on:
       - security/dev-toolchain-audit-20260917
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   DATABASE_URL: file:./ci.sqlite
   NODE_ENV: test
 
 jobs:
-  validate-upgrade:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -28,54 +28,37 @@ jobs:
           node-version: 22.18.0
           cache: npm
 
-      - name: Upgrade vulnerable development toolchains
-        run: >-
-          npm install --save-dev --package-lock-only
-          @shopify/api-codegen-preset@3.0.0
-          @typescript-eslint/eslint-plugin@8.70.0
-          @typescript-eslint/parser@8.70.0
+      - name: Locate codegen interpolation variables
+        shell: bash
+        run: |
+          grep -R -n -C 4 --exclude-dir=node_modules --exclude-dir=.git --exclude=package-lock.json \
+            -e 'APP_METAFIELD_NAMESPACE' -e 'VSN_THEME_MANIFEST_METAFIELD' . || true
 
-      - name: Install upgraded exact tree
+      - name: Stage candidate secure development tree
+        shell: bash
+        run: |
+          npm pkg set 'overrides.lodash=4.18.1'
+          npm install --save-dev --package-lock-only \
+            @shopify/api-codegen-preset@3.0.0 \
+            @typescript-eslint/eslint-plugin@8.70.0 \
+            @typescript-eslint/parser@8.70.0
+
+      - name: Install candidate exact tree
         run: npm ci
 
-      - name: Generate GraphQL artifacts
-        run: npm run graphql-codegen
+      - name: Explain lodash resolution
+        run: npm explain lodash
 
-      - name: Guard generated source stability
-        shell: bash
-        run: |
-          changed="$(git diff --name-only -- . ':(exclude)package.json' ':(exclude)package-lock.json')"
-          if [ -n "$changed" ]; then
-            echo 'Upgrade changed generated/source files unexpectedly:' >&2
-            printf '%s\n' "$changed" >&2
-            git diff -- . ':(exclude)package.json' ':(exclude)package-lock.json'
-            exit 1
-          fi
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build
-        run: npm run build
-
-      - name: Production dependency audit
-        run: npm audit --omit=dev --audit-level=high
-
-      - name: Development dependency audit
+      - name: Development dependency audit candidate
+        continue-on-error: true
         run: npm audit --include=dev --audit-level=high
 
-      - name: Security audit
-        run: npm run security:audit
-
-      - name: Commit validated dependency upgrade
+      - name: Codegen diagnostic
         shell: bash
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add package.json package-lock.json
-          if git diff --cached --quiet; then
-            echo 'No dependency changes to commit.'
-            exit 0
+          set -o pipefail
+          npm run graphql-codegen 2>&1 | tee /tmp/graphql-codegen.log
+          if grep -E '^Error: Variable "(APP_METAFIELD_NAMESPACE|VSN_THEME_MANIFEST_METAFIELD)" not found' /tmp/graphql-codegen.log; then
+            echo 'Codegen interpolation normalization errors remain.' >&2
+            exit 1
           fi
-          git commit -m 'security: upgrade vulnerable development toolchains'
-          git push origin HEAD:security/dev-toolchain-audit-20260917
