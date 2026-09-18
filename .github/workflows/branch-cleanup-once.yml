@@ -1,0 +1,66 @@
+name: One-time stale branch cleanup
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/branch-cleanup-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.repository == 'Vertex-Systems-Network/vsn-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete exact stale branch allowlist
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          branches=(
+            "docs/ai-native-operating-system"
+            "security/ai-hardening-2026-09-15"
+            "security/ai-hardening-2026-09-16"
+            "security/ai-hardening-20260916"
+            "security/ai-network-hardening-2026-09-15"
+            "security/ci-token-action-hardening-20260915"
+            "security/dev-toolchain-audit-20260917"
+            "security/github-governance-automation-20260919"
+            "security/prisma-raw-query-cleanup-20260917"
+            "security/security-policy-20260919"
+            "security/branch-cleanup-once-20260919"
+          )
+
+          for branch in "${branches[@]}"; do
+            if [[ "$branch" == "main" || "$branch" == dependabot/* ]]; then
+              echo "Refusing unsafe target: $branch" >&2
+              exit 1
+            fi
+
+            api="https://api.github.com/repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}"
+            body_file="$(mktemp)"
+            status="$(curl -sS -L -o "$body_file" -w "%{http_code}"               -X DELETE               -H "Authorization: Bearer ${GITHUB_TOKEN}"               -H "Accept: application/vnd.github+json"               -H "X-GitHub-Api-Version: 2022-11-28"               "$api")"
+
+            case "$status" in
+              204)
+                echo "Deleted $branch"
+                ;;
+              404)
+                echo "Already absent: $branch"
+                ;;
+              *)
+                echo "Failed to delete $branch (HTTP $status)" >&2
+                cat "$body_file" >&2
+                rm -f "$body_file"
+                exit 1
+                ;;
+            esac
+
+            rm -f "$body_file"
+          done
