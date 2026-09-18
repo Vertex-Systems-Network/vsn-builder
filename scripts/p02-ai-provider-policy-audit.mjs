@@ -29,9 +29,17 @@ checks += 1;
 const pageService = read("app/services/ai-builder.server.js");
 const emailService = read("app/services/email-ai.server.js");
 const providerService = read("app/services/ai-provider.server.js");
-ok(!pageService.includes("api.openai.com") && !emailService.includes("api.openai.com"), "Product AI surfaces must not call vendor endpoints directly");
+const vendorTransportMarkers = ["OPENAI_API_KEY", "/v1/responses", "Authorization:"];
+for (const [label, source] of [["Page AI", pageService], ["Email AI", emailService]]) {
+  ok(vendorTransportMarkers.every((marker) => !source.includes(marker)), `${label} must not own provider credentials or transport`);
+}
 ok(pageService.includes("generateStructuredAi") && emailService.includes("generateStructuredAi"), "Page and Email AI must use the shared provider contract");
-ok(providerService.includes("https://api.openai.com/v1/responses"), "OpenAI endpoint must live only behind the provider adapter");
+ok(
+  providerService.includes("/v1/responses") &&
+    providerService.includes("OPENAI_API_KEY") &&
+    providerService.includes("Authorization:"),
+  "OpenAI transport must live only behind the provider adapter",
+);
 ok(providerService.includes("RETRYABLE_STATUS") && providerService.includes("fallbackProvider: null"), "Provider adapter must declare retry/fallback policy");
 
 const schema = read("prisma/schema.prisma");
