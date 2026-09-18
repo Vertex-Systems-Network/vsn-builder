@@ -183,10 +183,22 @@ for(const stepBlock of ciWorkflow.split(/\n(?=\s{6}- )/)){
   }
 }
 
-const emailAi=fs.readFileSync(path.join(root,"app/services/email-ai.server.js"),"utf8");
-for(const marker of ["EMAIL_BINDING_TOKENS","AI_EMAIL_TOKENS","AI_EMAIL_URL_TOKENS","sanitizeAiText","unsafeNetworkHost","Never invent merge-token paths","AI provider request failed"]){
-  if(!emailAi.includes(marker))fail(`Email AI output sanitizer regression detected: ${marker}`);
+const aiProvider=fs.readFileSync(path.join(root,"app/services/ai-provider.server.js"),"utf8");
+for(const marker of ["SUPPORTED_PROVIDERS","RETRYABLE_STATUS","AbortSignal.timeout","fallbackProvider: null","AI provider request failed"]){
+  if(!aiProvider.includes(marker))fail(`AI provider security contract regression detected: ${marker}`);
 }
+if(aiProvider.includes("payload?.error?.message"))fail("AI provider errors must not reflect vendor error messages verbatim");
+
+const aiBehaviors=fs.readFileSync(path.join(root,"app/ai/behaviors.js"),"utf8");
+for(const marker of ["untrusted data","Never invent merge-token paths"]){
+  if(!aiBehaviors.includes(marker))fail(`AI behavior safety contract regression detected: ${marker}`);
+}
+
+const emailAi=fs.readFileSync(path.join(root,"app/services/email-ai.server.js"),"utf8");
+for(const marker of ["EMAIL_BINDING_TOKENS","AI_EMAIL_TOKENS","AI_EMAIL_URL_TOKENS","sanitizeAiText","unsafeNetworkHost","generateStructuredAi","resolveAiBehavior"]){
+  if(!emailAi.includes(marker))fail(`Email AI output sanitizer/provider regression detected: ${marker}`);
+}
+if(emailAi.includes("api.openai.com"))fail("Email AI must not bypass the shared AI provider boundary");
 if(emailAi.includes("payload?.error?.message"))fail("Email AI provider errors must not be reflected verbatim");
 
 const requestSecurity=fs.readFileSync(path.join(root,"app/utils/request-security.server.js"),"utf8");
