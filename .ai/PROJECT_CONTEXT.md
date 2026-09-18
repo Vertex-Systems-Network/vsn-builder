@@ -1,7 +1,7 @@
 # VSN Builder Project Context
 
-**Last verified:** 2026-08-26  
-**Base reviewed:** `main` at `90653d9cf6f1dcf489ef45ee21d38625db7aeb38`  
+**Last verified:** 2026-09-18  
+**Base reviewed:** `main` at `5edbece879d5eca0650fe34b96b07447ad6b5739`  
 **Package version:** `2.5.107`
 
 This file is a compact navigation map, not a replacement for source code or `SRS.md`.
@@ -103,17 +103,19 @@ Do not greenfield what VSN already owns:
 - Use existing entitlements for server-side AI authorization/quota policy.
 - Use existing experiments as the downstream system for AI-generated variants rather than inventing an AI-only A/B-test store.
 
-## Verified operational drift requiring action
+## Verified operational baseline and remaining debt
 
-### P0 — Node contract disagreement
+### P0.1 runtime alignment — resolved and guarded
 
-The repository declares/supports Node 22.18+ LTS in its runtime compatibility code and package engine contract. However:
+The repository runtime contract is now consistent across release paths:
 
-- `.github/workflows/ci.yml` configures Node `20.19.0` before `npm ci`.
-- `Dockerfile` uses `node:20-alpine` before `npm ci --omit=dev`.
-- `package.json` runs the Node compatibility guard in `preinstall`.
+- `package.json` requires Node `>=22.18 <23`;
+- `.nvmrc` and `.node-version` select Node 22;
+- `.github/workflows/ci.yml` pins Node `22.18.0`;
+- `Dockerfile` uses `node:22-alpine3.24`;
+- `scripts/security-audit.mjs` blocks drift in the runtime version matrix.
 
-This means CI/container installation is structurally inconsistent with the repository's own runtime gate. Treat this as a release-path blocker until fixed and executed successfully.
+The security hardening stack is merged to `main`, and post-merge Production Confidence run #385 passed. Treat runtime alignment as a maintained invariant rather than an outstanding blocker.
 
 ### P1 — oversized integration hotspots
 
