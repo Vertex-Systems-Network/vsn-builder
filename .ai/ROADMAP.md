@@ -8,22 +8,24 @@ A merchant should be able to describe a commerce goal, not a CSS task, and VSN s
 
 ## P0 — Production evidence and AI control plane
 
-### P0.1 Fix runtime/release drift
+### P0.1 Maintain runtime/release alignment — COMPLETED BASELINE
 
-**Problem:** repository runtime policy requires Node 22.18+ while CI and Docker currently use Node 20.
+**Status:** completed and validated on the security-hardened `main` baseline.
 
-Actions:
+Current invariant:
 
-- align `.github/workflows/ci.yml` with the supported Node 22.18+ line;
-- align `Dockerfile` base image with the same supported runtime;
-- execute `npm ci`, build and applicable release gates in the corrected environments;
-- document any package/runtime incompatibility found rather than relaxing the guard without evidence.
+- `package.json`: Node `>=22.18 <23`;
+- `.nvmrc` / `.node-version`: Node 22;
+- CI: pinned Node `22.18.0`;
+- Docker: maintained `node:22-alpine3.24`;
+- blocking security audit detects runtime-version drift;
+- post-merge Production Confidence run #385 passed, including protected external QA/E2E.
 
-Acceptance:
+Ongoing acceptance:
 
-- preinstall runtime guard and CI/Docker agree;
-- CI install/build can execute under the declared runtime;
-- container install/build can execute under the declared runtime.
+- keep package/runtime/CI/Docker contracts aligned;
+- keep Production Confidence green;
+- do not relax runtime guards to accommodate an incompatible dependency without evidence and explicit review.
 
 ### P0.2 Version AI behavior and provider policy
 
