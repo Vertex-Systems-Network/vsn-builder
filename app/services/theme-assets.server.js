@@ -358,12 +358,12 @@ async function setAssetState(admin, { ready, manifest = null } = {}) {
 
 async function getAssetManifest(admin) {
   const response = await admin.graphql(`#graphql
-    query VsnAssetManifest {
+    query VsnAssetManifest($namespace: String!, $key: String!) {
       currentAppInstallation {
-        metafield(namespace: "${APP_METAFIELD_NAMESPACE}", key: "${VSN_THEME_MANIFEST_METAFIELD}") { value }
+        metafield(namespace: $namespace, key: $key) { value }
       }
     }
-  `);
+  `, { variables: { namespace: APP_METAFIELD_NAMESPACE, key: VSN_THEME_MANIFEST_METAFIELD } });
   const result = await response.json();
   if (result.errors?.length) throw new Error(result.errors.map((item) => item.message).filter(Boolean).join(" ") || "Could not read the VSN asset manifest.");
   return parseJson(result.data?.currentAppInstallation?.metafield?.value, {
