@@ -198,7 +198,7 @@ const emailAi=fs.readFileSync(path.join(root,"app/services/email-ai.server.js"),
 for(const marker of ["EMAIL_BINDING_TOKENS","AI_EMAIL_TOKENS","AI_EMAIL_URL_TOKENS","sanitizeAiText","unsafeNetworkHost","generateStructuredAi","resolveAiBehavior"]){
   if(!emailAi.includes(marker))fail(`Email AI output sanitizer/provider regression detected: ${marker}`);
 }
-if(emailAi.includes("api.openai.com"))fail("Email AI must not bypass the shared AI provider boundary");
+if(["OPENAI_API_KEY","/v1/responses","Authorization:"].some((marker)=>emailAi.includes(marker)))fail("Email AI must not bypass the shared AI provider boundary");
 if(emailAi.includes("payload?.error?.message"))fail("Email AI provider errors must not be reflected verbatim");
 
 const requestSecurity=fs.readFileSync(path.join(root,"app/utils/request-security.server.js"),"utf8");
