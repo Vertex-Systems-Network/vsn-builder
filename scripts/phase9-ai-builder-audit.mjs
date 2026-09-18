@@ -22,18 +22,18 @@ const redacted=sanitizeAiContext({title:'Keep me',customJs:'alert(1)',apiKey:'se
 ok(redacted.title==='Keep me'&&redacted.customJs==='[redacted]'&&redacted.apiKey==='[redacted]'&&redacted.nested.access_token==='[redacted]'&&redacted.nested.designTokens.color==='#fff','AI context sanitizer must remove secrets/custom code without deleting design tokens');
 const service=read('app/services/ai-builder.server.js');
 for(const token of ['AI_PLAN_QUOTAS','fetchUrlInspiration','resolvePublicTarget','pinnedRequest','URL_FETCH_MAX_BYTES','UNTRUSTED_PUBLIC_SOURCE_TEXT','sanitizeAiContext','reserveAiUsage','AI_RESERVATION_TTL_MS','generateStructuredAi','resolveAiBehavior','createAiExecution','status: "started"','status: "completed"'])ok(service.includes(token),`AI service missing ${token}`);
-ok(!service.includes('api.openai.com'),'Page AI must call the product-level provider contract, not a vendor endpoint directly');
+ok(!['OPENAI_API_KEY','/v1/responses','Authorization:'].some((marker)=>service.includes(marker)),'Page AI must call the product-level provider contract, not own provider credentials or transport');
 ok(!service.includes('dangerouslySetInnerHTML'),'AI server must never inject arbitrary HTML');
 
 const provider=read('app/services/ai-provider.server.js');
-for(const token of ['https://api.openai.com/v1/responses','json_schema','OPENAI_API_KEY','gpt-5-mini','AbortSignal.timeout','RETRYABLE_STATUS','fallbackProvider: null'])ok(provider.includes(token),`AI provider contract missing ${token}`);
+for(const token of ['/v1/responses','json_schema','OPENAI_API_KEY','Authorization:','gpt-5-mini','AbortSignal.timeout','RETRYABLE_STATUS','fallbackProvider: null'])ok(provider.includes(token),`AI provider contract missing ${token}`);
 
 const behaviors=read('app/ai/behaviors.js');
 for(const token of ['page-v1','email-v1','untrusted data','Never invent merge-token paths'])ok(behaviors.includes(token),`AI behavior registry missing ${token}`);
 
 const emailAi=read('app/services/email-ai.server.js');
 for(const token of ['EMAIL_BINDING_TOKENS','AI_EMAIL_TOKENS','AI_EMAIL_URL_TOKENS','sanitizeAiText','unsafeNetworkHost','generateStructuredAi','resolveAiBehavior','createAiExecution'])ok(emailAi.includes(token),`Email AI sanitizer/provider contract missing ${token}`);
-ok(!emailAi.includes('api.openai.com'),'Email AI must call the product-level provider contract, not a vendor endpoint directly');
+ok(!['OPENAI_API_KEY','/v1/responses','Authorization:'].some((marker)=>emailAi.includes(marker)),'Email AI must call the product-level provider contract, not own provider credentials or transport');
 ok(!emailAi.includes('payload?.error?.message'),'Email AI provider errors must not be reflected verbatim');
 const route=read('app/routes/app.ai.jsx');for(const token of ['authenticate.admin','runAiBuilder','screenshot','responsive','accessibility','alternatives','MAX_REQUEST_BYTES','imageDataField','boundedFormData','assertTrustedMutationRequest','getServerFeatureFlags','aiBuilderV1','AI_DISABLED'])ok(route.includes(token),`AI route missing ${token}`);
 const panel=read('app/components/editor/AiBuilderPanel.jsx');for(const token of ['Prompt → Section','Prompt → Full Page','Screenshot/Image → Layout','URL → Inspiration Layout','Rewrite Selected Copy','Responsive Repair','Accessibility Suggestions','Layout Alternative','Post-generation checks','Apply to editor'])ok(panel.includes(token),`AI panel missing ${token}`);
