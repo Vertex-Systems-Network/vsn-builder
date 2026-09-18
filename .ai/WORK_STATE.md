@@ -2,19 +2,19 @@
 
 ---
 schema_version: 1
-status: paused_by_owner
-mode: documentation_only
+status: complete
+mode: repository_baseline
 task_key: ai-native-platform-foundation
-owner_intent: "No product/runtime development in this work unit. Preserve the AI-native plan and make future engineering resume automatically from repository state."
+owner_intent: "Land the reconciled AI-native engineering operating system on the security-hardened main baseline and use repository evidence for future automatic resume."
 base_branch: main
-working_branch: docs/ai-native-operating-system
-pull_request: 1
-last_verified_commit: 46606ac82e231033e02a7691f4bd89db340f98bc
-last_verified_step: "AI-native audit/plan exists on draft PR #1; initial PR workflow completed with failure, exact failing step was not available."
+working_branch: main
+pull_request: none
+last_verified_commit: 5edbece879d5eca0650fe34b96b07447ad6b5739
+last_verified_step: "Security remediation #8/#10/#11 is merged to main; post-merge Production Confidence run #385 passed; AI-native documentation has been reconciled to that baseline."
 in_flight_step: none
-next_exact_action: "When the owner next asks to continue/start development, first reconcile PR #1 with current main. If the .ai operating system has merged, create a fresh code branch from current main for the P0 Node runtime alignment (CI and Docker to the repository-supported Node 22.18+ line), then run the applicable executable gates. If PR #1 is still unmerged, do not build production code on this docs branch unless explicitly required; preserve its documentation-only scope and use current repository evidence to choose the safest code branch."
+next_exact_action: "On the next authorized AI-native implementation task, start from current main on a fresh feature branch and begin with the earliest uncompleted roadmap item (P0.2 AI provider/behavior versioning), after verifying current repository state."
 approval_needed_now: false
-updated_at: 2026-08-26
+updated_at: 2026-09-18
 ---
 
 ## Purpose
@@ -91,8 +91,8 @@ Do not update it for every keystroke or trivial local edit.
 - If tests previously failed, do not treat them as passed merely because the next session started later.
 - If a task is fully complete, set `status: complete`, clear `in_flight_step`, and set `next_exact_action` to the next roadmap item or `none`.
 
-## Current pause
+## Current state
 
-The owner explicitly requested no further product/runtime development in this work unit. Therefore the current cursor is intentionally `paused_by_owner`; documentation continuity work is allowed, implementation is not.
+The documentation operating-system task is complete once this reconciled PR lands on `main`. The previous runtime-alignment implementation task is also complete and validated independently.
 
-When development is explicitly resumed later, the next AI should execute the recorded `next_exact_action` without requiring a recap from the owner.
+Future engineering should start from current `main` on a fresh feature branch, verify repository state, and continue from the earliest uncompleted roadmap item. Do not revive the completed Node-runtime remediation or use this historical docs branch for product implementation.
