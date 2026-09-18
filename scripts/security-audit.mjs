@@ -165,10 +165,18 @@ for(const marker of ["VSN_PLUGIN_FORBIDDEN_APIS","child_process","eval(","new Fu
   if(!sdkSecurity.includes(marker))fail(`SDK plugin isolation denylist regression detected: ${marker}`);
 }
 
+const packageRuntime=JSON.parse(fs.readFileSync(path.join(root,"package.json"),"utf8"));
+const nvmRuntime=fs.readFileSync(path.join(root,".nvmrc"),"utf8").trim();
+const nodeVersionRuntime=fs.readFileSync(path.join(root,".node-version"),"utf8").trim();
+if(packageRuntime?.engines?.node!==">=22.18 <23"||nvmRuntime!=="22"||nodeVersionRuntime!=="22"){
+  fail("Runtime version matrix regression: package engines, .nvmrc and .node-version must stay on the supported Node 22.18+ / <23 line");
+}
+
 const dockerfile=fs.readFileSync(path.join(root,"Dockerfile"),"utf8");
 if(!/^FROM node:22-alpine3\.24(?:\s|$)/m.test(dockerfile))fail("Production Docker runtime must use the maintained Node 22 / Alpine 3.24 line");
 
 const ciWorkflow=fs.readFileSync(path.join(root,".github/workflows/ci.yml"),"utf8");
+if(!ciWorkflow.includes("node-version: 22.18.0"))fail("Runtime version matrix regression: CI must remain pinned to Node 22.18.0");
 for(const stepBlock of ciWorkflow.split(/\n(?=\s{6}- )/)){
   if(stepBlock.includes("${{ secrets.")&&!stepBlock.includes("if: github.event_name != 'pull_request'")){
     fail("CI secret-bearing step must be disabled on pull_request events");
