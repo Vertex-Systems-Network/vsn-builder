@@ -130,6 +130,6 @@ Bad:
 
 Good:
 
-`Create a fresh code branch from current main, align CI and Docker to the repository-supported Node 22.18+ line, then run install/runtime/build gates and record exact failures.`
+`Create a fresh feature branch from current main for P0.2 AI provider/behavior versioning, preserve current behavior, run the applicable deterministic and Production Confidence gates, and record the verified result.`
 
 The objective is that another competent AI or engineer can resume from repository state alone.
