@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
+import { resolveScriptDatabaseLocation } from "./lib/database-location.mjs";
 import {
   migrationChecksum,
   readMigrationRows,
@@ -29,6 +30,8 @@ const reconcile = read("scripts/reconcile-email-builder-migration.mjs");
 const health = read("app/services/database-health.server.js");
 const migration = "20260808234540_milestone_n1_email_builder";
 const expectedChecksum = crypto.createHash("sha256").update(fs.readFileSync(`prisma/migrations/${migration}/migration.sql`)).digest("hex");
+const databaseLocation = resolveScriptDatabaseLocation({ cwd: process.cwd(), env: process.env });
+const databaseFile = databaseLocation.file;
 
 check("Q4.4 serialization contract retained on current Q4 baseline", lock.version === pkg.version && lock.packages?.[""]?.version === pkg.version && baseline.version === pkg.version && String(baseline.milestone || "").startsWith("Q.") && runtime.includes(`version: "${pkg.version}"`) && runtime.includes("migrationHistorySerialization: 1"));
 check("Migration-history timestamps are cast to text", helper.includes("CAST(finished_at AS TEXT)") && helper.includes("CAST(rolled_back_at AS TEXT)") && helper.includes("CAST(started_at AS TEXT)"));
@@ -40,9 +43,11 @@ check("Legacy timestamp normalization exists", helper.includes("normalizeApplied
 check("Runtime database health casts migration dates to text", health.includes("CAST(finished_at AS TEXT)") && health.includes("CAST(rolled_back_at AS TEXT)"));
 check("No destructive DB reset path", !helper.includes("unlinkSync") && !helper.includes("rmSync") && !reconcile.includes("DROP TABLE"));
 check("Q4.4 docs packaged", fs.existsSync("MILESTONE_Q44_DEVELOPER_MODE.md") && fs.existsSync("VSN_MILESTONE_Q44_MIGRATION_HISTORY_SERIALIZATION_REPORT_v2.5.88.md"));
+check("Q4.4 audit resolves SQLite target", Boolean(databaseFile), databaseLocation.url);
 
+if (!databaseFile) throw new Error("Milestone Q4.4 audit requires a SQLite DATABASE_URL so migration history serialization can be verified locally.");
 const fixture = path.join(os.tmpdir(), `vsn-q44-${process.pid}.sqlite`);
-fs.copyFileSync("prisma/dev.sqlite", fixture);
+fs.copyFileSync(databaseFile, fixture);
 const fixtureDb = new DatabaseSync(fixture);
 fixtureDb.prepare('DELETE FROM "_prisma_migrations" WHERE migration_name = ?').run(migration);
 fixtureDb.prepare('INSERT INTO "_prisma_migrations" (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count) VALUES (?, ?, CURRENT_TIMESTAMP, ?, ?, NULL, CURRENT_TIMESTAMP, 1)').run(

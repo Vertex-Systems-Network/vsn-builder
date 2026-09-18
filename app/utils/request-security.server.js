@@ -13,33 +13,6 @@ function normalizeHttpsOrigin(value) {
   }
 }
 
-function firstForwardedValue(value) {
-  return String(value || "").split(",")[0]?.trim() || "";
-}
-
-function forwardedOrigin(request) {
-  const forwarded = firstForwardedValue(request?.headers?.get?.("forwarded"));
-  if (forwarded) {
-    const parts = Object.fromEntries(
-      forwarded
-        .split(";")
-        .map((part) => part.trim().split("="))
-        .filter((pair) => pair.length === 2)
-        .map(([key, value]) => [String(key).toLowerCase(), String(value).replace(/^\"|\"$/g, "")]),
-    );
-    if (parts.host) {
-      const proto = parts.proto || "https";
-      const origin = normalizeHttpsOrigin(`${proto}://${parts.host}`);
-      if (origin) return origin;
-    }
-  }
-
-  const host = firstForwardedValue(request?.headers?.get?.("x-forwarded-host"));
-  if (!host) return null;
-  const proto = firstForwardedValue(request?.headers?.get?.("x-forwarded-proto")) || "https";
-  return normalizeHttpsOrigin(`${proto}://${host}`);
-}
-
 function configuredAppOrigin() {
   return normalizeHttpsOrigin(process.env.SHOPIFY_APP_URL || process.env.HOST || "");
 }
@@ -50,8 +23,10 @@ function effectiveAppOrigins(request) {
     const requestOrigin = new URL(request.url).origin;
     if (requestOrigin) origins.add(requestOrigin);
   } catch {}
-  const forwarded = forwardedOrigin(request);
-  if (forwarded) origins.add(forwarded);
+  // Never trust Forwarded/X-Forwarded-Host for an authorization decision. Those
+  // headers are safe only when a deployment guarantees they are stripped and
+  // rewritten by a trusted proxy, which application code cannot prove. A public
+  // reverse-proxy/tunnel origin must be configured through SHOPIFY_APP_URL/HOST.
   const configured = configuredAppOrigin();
   if (configured) origins.add(configured);
   return origins;

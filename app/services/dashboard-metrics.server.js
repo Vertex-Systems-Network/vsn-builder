@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { OVERLAY_CAMPAIGN_TEMPLATE_TYPES, normalizeCampaignSettings, campaignScheduleState } from "../builder/campaignSystem.js";
 import { getVisitorSummary } from "./visitor-analytics.server.js";
 
@@ -29,7 +30,7 @@ export async function getCampaignDashboardSummary(db, shop) {
 export async function getLiveSystemMonitor(db, shop) {
   const started = Date.now();
   let databaseOk = true;
-  try { await db.$queryRawUnsafe("SELECT 1"); } catch { databaseOk = false; }
+  try { await db.$queryRaw(Prisma.sql`SELECT 1`); } catch { databaseOk = false; }
   const databaseLatencyMs = Date.now() - started;
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
   const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);

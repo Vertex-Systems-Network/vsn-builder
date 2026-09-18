@@ -205,7 +205,20 @@
     "@shopify/plugin-cloudflare"
   ],
   "overrides": {
-    "p-map": "^4.0.0"
+    "p-map": "^4.0.0",
+    "minimatch@9.0.9": {
+      "brace-expansion": "2.1.4"
+    },
+    "@prisma/config@6.19.3": {
+      "deepmerge-ts": "8.0.2"
+    },
+    "postcss@8.5.24": {
+      "nanoid": "3.3.19"
+    },
+    "@react-router/serve": {
+      "morgan": "1.12.0"
+    },
+    "qs": "6.16.0"
   },
   "author": "AbdulHanan"
 }

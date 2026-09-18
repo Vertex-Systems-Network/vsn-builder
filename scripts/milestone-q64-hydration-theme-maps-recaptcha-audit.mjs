@@ -4,6 +4,7 @@ import { DatabaseSync } from "node:sqlite";
 import { UI_COLOR_SCHEMES, normalizeUiColorScheme, normalizeUiHex, resolveUiTheme } from "../app/config/ui-theme.js";
 import { loadGoogleMapsApiKey, loadGoogleMapsSettings, saveGoogleMapsSettings, loadGoogleCaptchaSettings, loadGoogleCaptchaRuntime, saveGoogleCaptchaSettings } from "../app/services/google-platform.server.js";
 import { verifyGoogleRecaptcha } from "../app/services/form-automation.server.js";
+import { resolveScriptDatabaseLocation } from "./lib/database-location.mjs";
 
 const read=(file)=>fs.readFileSync(file,"utf8");
 const exists=(file)=>fs.existsSync(file);
@@ -29,6 +30,9 @@ const renderer=read("extensions/vsn-page-builder-theme/assets/vsn-page-renderer.
 const formSubmission=read("app/services/storefront-form-submission.server.js");
 const env=read(".env.example");
 const plans=read("app/config/commercialPlans.js");
+const databaseLocation=resolveScriptDatabaseLocation({cwd:process.cwd(),env:process.env});
+const databaseFile=databaseLocation.file;
+if(!databaseFile)throw new Error(`Milestone Q.6.4 audit requires a SQLite DATABASE_URL; resolved ${databaseLocation.url}`);
 
 await check("Version is v2.5.107",()=>assert.equal(pkg.version,"2.5.107"));
 await check("Baseline is Q.6.4",()=>{assert.equal(baseline.version,"2.5.107");assert.equal(baseline.milestone,"Q.6.4")});
@@ -89,7 +93,7 @@ await check("reCAPTCHA v3 enforces score threshold",async()=>{const prior=global
 await check("reCAPTCHA v3 enforces exact action",async()=>{const prior=global.fetch;try{global.fetch=async()=>new Response(JSON.stringify({success:true,score:.9,action:"wrong"}),{status:200,headers:{"content-type":"application/json"}});const result=await verifyGoogleRecaptcha("token",new Request("https://shop.test/"),{secretKey:"secret",version:"v3",threshold:.5,expectedAction:"form_submit"});assert.equal(result.ok,false);assert.match(result.error,/action/i)}finally{global.fetch=prior}});
 await check("reCAPTCHA v3 accepts matching score and action",async()=>{const prior=global.fetch;try{global.fetch=async()=>new Response(JSON.stringify({success:true,score:.9,action:"form_submit"}),{status:200,headers:{"content-type":"application/json"}});const result=await verifyGoogleRecaptcha("token",new Request("https://shop.test/"),{secretKey:"secret",version:"v3",threshold:.5,expectedAction:"form_submit"});assert.equal(result.ok,true);assert.equal(result.score,.9)}finally{global.fetch=prior}});
 
-await check("No Prisma migration was added for Q6.4",()=>{const db=new DatabaseSync("prisma/dev.sqlite");const latest=db.prepare("SELECT migration_name FROM _prisma_migrations ORDER BY finished_at DESC, started_at DESC LIMIT 1").get();db.close();assert.equal(latest?.migration_name,"20260810114500_milestone_q633_stock_usage_history")});
+await check("No Prisma migration was added for Q6.4",()=>{const db=new DatabaseSync(databaseFile,{readOnly:true});const latest=db.prepare("SELECT migration_name FROM _prisma_migrations ORDER BY finished_at DESC, started_at DESC LIMIT 1").get();db.close();assert.equal(latest?.migration_name,"20260810114500_milestone_q633_stock_usage_history")});
 await check("Exact Shopify billing handles remain unchanged",()=>{for(const handle of ["free","sliver","gold","platenium"])assert.ok(plans.includes(handle),handle)});
 
 const failed=checks.filter(([,ok])=>!ok);

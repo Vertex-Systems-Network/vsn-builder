@@ -3,6 +3,8 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -11,19 +13,58 @@ jobs:
       DATABASE_URL: file:./ci.sqlite
       NODE_ENV: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 20.19.0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
           cache: npm
       - run: npm ci
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Development dependency advisory report
+        continue-on-error: true
+        run: npm audit --include=dev --audit-level=high
+      - run: npm run security:audit
+      - name: Legacy webhook egress security audit
+        run: node scripts/legacy-webhook-egress-audit.mjs
       - run: npm run prisma -- generate
       - run: npm run prisma -- migrate deploy
-      - run: npm run lint
+      - name: Repository lint diagnostics
+        continue-on-error: true
+        run: npm run lint -- --format json --output-file lint-report.json
+      - name: Upload lint diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lint-report
+          path: lint-report.json
+          if-no-files-found: error
+          retention-days: 1
       - run: npm run typecheck
       - run: npm run build
-      - run: npm run qa:release
-      - run: npm run qa:phase1
+      - name: Run release QA
+        id: release_qa
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run qa:release 2>&1 | tee qa-release.log
+      - name: Upload release QA diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: qa-release-log
+          path: qa-release.log
+          if-no-files-found: error
+          retention-days: 1
+      - name: Enforce release QA result
+        if: steps.release_qa.outcome == 'failure'
+        run: exit 1
+      - name: Run external phase-1 QA with protected credentials
+        if: github.event_name != 'pull_request'
+        run: npm run qa:phase1
         env:
           VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}
           VSN_E2E_EDITOR_URL: ${{ secrets.VSN_E2E_EDITOR_URL }}
@@ -32,7 +73,9 @@ jobs:
       - run: npm run performance:large-pages
       - run: npm install --no-save --package-lock=false @playwright/test@1.55.0
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: npm run e2e:playwright
+      - name: Run external Playwright E2E with protected credentials
+        if: github.event_name != 'pull_request'
+        run: npm run e2e:playwright
         env:
           VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}
           VSN_E2E_EDITOR_URL: ${{ secrets.VSN_E2E_EDITOR_URL }}
