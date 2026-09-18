@@ -166,7 +166,7 @@ for(const marker of ["VSN_PLUGIN_FORBIDDEN_APIS","child_process","eval(","new Fu
 }
 
 const dockerfile=fs.readFileSync(path.join(root,"Dockerfile"),"utf8");
-if(!/^FROM node:22\.18\.0-alpine(?:\s|$)/m.test(dockerfile))fail("Production Docker Node runtime must match the supported Node 22.18 line");
+if(!/^FROM node:22-alpine3\.24(?:\s|$)/m.test(dockerfile))fail("Production Docker runtime must use the maintained Node 22 / Alpine 3.24 line");
 
 const ciWorkflow=fs.readFileSync(path.join(root,".github/workflows/ci.yml"),"utf8");
 for(const stepBlock of ciWorkflow.split(/\n(?=\s{6}- )/)){
