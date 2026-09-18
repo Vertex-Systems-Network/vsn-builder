@@ -1,0 +1,7 @@
+* @wpessential
+
+/.github/ @wpessential
+/Dockerfile @wpessential
+/package.json @wpessential
+/package-lock.json @wpessential
+/scripts/security-audit.mjs @wpessential
