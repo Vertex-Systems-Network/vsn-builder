@@ -466,21 +466,25 @@ model BuilderExperimentEvent {
 
 
 model BuilderAiUsage {
-  id           String   @id @default(cuid())
-  shop         String
-  pageId       String?
-  operation    String
-  model        String?
-  status       String   @default("started")
-  inputTokens  Int      @default(0)
-  outputTokens Int      @default(0)
-  responseId   String?
-  durationMs   Int?
-  error        String?
-  createdAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  shop            String
+  pageId          String?
+  operation       String
+  provider        String?
+  model           String?
+  behaviorVersion String?
+  generationId    String?  @unique
+  status          String   @default("started")
+  inputTokens     Int      @default(0)
+  outputTokens    Int      @default(0)
+  responseId      String?
+  durationMs      Int?
+  error           String?
+  createdAt       DateTime @default(now())
 
   @@index([shop, createdAt])
   @@index([shop, status, createdAt])
+  @@index([shop, provider, behaviorVersion, createdAt])
 }
 
 

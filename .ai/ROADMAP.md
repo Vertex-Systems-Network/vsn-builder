@@ -27,7 +27,9 @@ Ongoing acceptance:
 - keep Production Confidence green;
 - do not relax runtime guards to accommodate an incompatible dependency without evidence and explicit review.
 
-### P0.2 Version AI behavior and provider policy
+### P0.2 Version AI behavior and provider policy — COMPLETED BASELINE
+
+**Status:** implemented in PR #21 with versioned Page/Email behavior contracts, a shared provider boundary, attributable generation telemetry, bounded timeout/retry policy, and release-blocking deterministic QA.
 
 Actions:
 
