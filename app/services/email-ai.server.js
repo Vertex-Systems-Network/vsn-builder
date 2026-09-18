@@ -43,9 +43,9 @@ export async function runEmailAi({ db = dbDefault, shop, operation = "email", pr
   const policy = getAiRuntimePolicy();
   const behavior = resolveAiBehavior({ surface: "email", operation, version: policy.behaviorVersions.email });
   const execution = createAiExecution({ behavior });
+  const status = await aiUsageStatus({ db, shop });
   const started = Date.now();
   const usageRow = await reserveAiUsage({ db, shop, pageId: null, operation: `email-${operation}`, execution });
-  const status = await aiUsageStatus({ db, shop });
 
   try {
     const provider = await callProvider({ execution, behavior, prompt, currentDocument, meta, commerceContext });
