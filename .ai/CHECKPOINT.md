@@ -1,8 +1,8 @@
 # VSN Engineering Checkpoint
 
-**Date:** 2026-08-26  
-**Checkpoint status:** PARTIALLY VERIFIED AUDIT / AI-NATIVE PLAN CREATED / IMPLEMENTATION PAUSED BY OWNER  
-**Base reviewed:** `main` @ `90653d9cf6f1dcf489ef45ee21d38625db7aeb38`  
+**Date:** 2026-09-18  
+**Checkpoint status:** SECURITY/RUNTIME BASELINE VERIFIED / AI-NATIVE PLAN RECONCILED / DOCUMENTATION READY  
+**Base reviewed:** `main` @ `5edbece879d5eca0650fe34b96b07447ad6b5739`  
 **Working branch:** `docs/ai-native-operating-system`
 
 ## Completed and verified by repository inspection
@@ -17,22 +17,21 @@
 - Confirmed `extensions/` contains the current VSN theme extension but no reviewed Sidekick data/action extension.
 - Reviewed current official Shopify Sidekick/Tools/theme-block documentation and current AI capabilities documented by Replo, Instant, GemPages and Klaviyo.
 
-## Critical finding
+## Resolved release-path finding
 
-### P0 — Node runtime policy drift
+### P0.1 — Node runtime/release alignment completed
 
-Repository runtime policy and `package.json` engine/preinstall path require Node 22.18+ LTS, but:
+The previous Node 20 vs Node 22.18+ release-path drift has been fixed and validated on `main`:
 
-- `.github/workflows/ci.yml` sets Node `20.19.0`;
-- `Dockerfile` uses `node:20-alpine`.
+- `package.json` requires `>=22.18 <23`;
+- `.nvmrc` and `.node-version` use Node 22;
+- GitHub Actions is pinned to Node `22.18.0`;
+- production Docker uses the maintained `node:22-alpine3.24` line;
+- the blocking security audit enforces this runtime version matrix.
 
-Because installation runs the runtime compatibility guard, these release paths are inconsistent by construction. Fix and execute them before treating current CI/container production confidence as trustworthy.
+The security remediation stack (#8, #10 and #11) was merged to `main`. Post-merge `VSN Production Confidence` run #385 / `35350490530` completed successfully, including production/development dependency audits, security/egress audits, Prisma, lint, typecheck, build, release QA, protected Phase-1 QA, performance and external Playwright E2E.
 
-## Automated evidence after the documentation branch was pushed
-
-GitHub Actions started `VSN Production Confidence` for draft PR #1 / commit `0a9f9e364dcec206ed556863c52c0978d47e5fd1` and the workflow completed with `failure`.
-
-The job-log endpoint did not return usable logs during this audit, so the exact failing step is **not verified**. Do not attribute this specific run to the Node mismatch without step/log evidence. The Node 20 vs 22.18+ conflict remains independently proven from repository source/configuration.
+P0.1 is therefore a maintained baseline, not an outstanding implementation task.
 
 ## High-priority AI findings
 
@@ -96,16 +95,16 @@ The design intentionally makes `SRS.md` higher authority than `.ai/` to avoid cr
 
 `RESUME_PROTOCOL.md` defines the mandatory recovery algorithm: inspect Git/PR/source/tests, verify any in-flight operation, reconcile stale state silently, and continue from the earliest unverified step without asking the owner for a recap when repository evidence is sufficient.
 
-## Current owner instruction
+## Current work-unit instruction
 
-No further product/runtime development is authorized in this work unit. Only the `.ai/` planning/continuity documentation is being changed.
+This PR remains documentation-only. The runtime/security implementation it previously identified has already landed independently on `main`; do not duplicate that production work in this branch.
 
-The live cursor therefore remains `paused_by_owner`. When the owner later explicitly asks to resume/start development, the next AI should not ask where to begin; it should read `.ai/WORK_STATE.md`, reconcile current repository/PR state, and execute its recorded `next_exact_action` subject to normal safety/approval boundaries.
+The AI-native operating system is reconciled against the verified security-hardened `main` baseline so it can land without stale execution instructions.
 
 ## Not verified in this audit
 
 - No local checkout/build/test execution was performed through the GitHub connector.
-- The PR GitHub Actions run failed, but the exact failing step/log was unavailable and remains unverified.
+- The historical draft-PR CI failure is superseded by the later security/runtime remediation and successful post-merge `main` run #385; it is no longer a current blocker.
 - No live OpenAI generation was executed.
 - No live Shopify test-store publish/install/billing flow was executed.
 - No container build was executed.
@@ -113,16 +112,15 @@ The live cursor therefore remains `paused_by_owner`. When the owner later explic
 - Full codebase security review was not performed; reviewed AI/security paths are only part of the application.
 - Visual output quality was not benchmarked against competitors on identical inputs.
 
-## Next safest actions when development is resumed
+## Next safest actions after this operating-system documentation lands
 
-1. Reconcile whether draft PR #1 has merged and inspect current `main` head.
-2. Create a fresh code branch from current `main` for the P0 Node CI/Docker alignment; do not mix production implementation into the documentation-only branch.
-3. Run executable install/runtime/build/CI-relevant gates and record exact evidence.
-4. Establish AI behavior/provider abstraction and telemetry versioning without changing merchant-visible behavior.
-5. Define a small typed AI command registry around existing command-bus/history primitives.
-6. Build deterministic + provider-backed eval harness before introducing broad agent autonomy.
-7. Add multi-turn in-editor agent behind a feature flag, initially restricted to reversible draft commands.
-8. Only after tool contracts stabilize, implement Sidekick and external MCP/API adapters.
+1. Start new implementation work from current `main`, never from this historical documentation branch.
+2. Proceed to P0.2: introduce AI provider/behavior versioning while preserving current merchant-visible behavior.
+3. Define the first small typed AI-capable command registry around existing command-bus/history primitives.
+4. Build deterministic + provider-backed eval harness before broad agent autonomy.
+5. Add multi-turn in-editor agent only behind a feature flag and initially restrict it to reversible draft commands.
+6. Implement Sidekick/external MCP adapters only after internal tool contracts and policy gates stabilize.
+7. Keep P0.1 runtime-version matrix and Production Confidence checks green as a permanent release baseline.
 
 ## Handoff rule
 
