@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { STOCK_AUDIO_IMPORT_PROVIDERS, STOCK_AUDIO_PROVIDERS, STOCK_IMAGE_IMPORT_PROVIDERS, STOCK_IMAGE_PROVIDERS, STOCK_VIDEO_IMPORT_PROVIDERS, STOCK_VIDEO_PROVIDERS } from "../app/services/stock-image-integrations.server.js";
+import { resolveScriptDatabaseLocation } from "./lib/database-location.mjs";
 
 const read=(file)=>fs.readFileSync(file,"utf8");
 const exists=(file)=>fs.existsSync(file);
@@ -36,6 +37,9 @@ const mediaShopify=read("app/services/stock-media-shopify.server.js");
 const env=read(".env.example");
 const plans=read("app/config/commercialPlans.js");
 const q632=read("scripts/milestone-q632-stock-media-expansion-audit.mjs");
+const databaseLocation=resolveScriptDatabaseLocation({cwd:process.cwd(),env:process.env});
+const databaseFile=databaseLocation.file;
+if(!databaseFile)throw new Error(`Milestone Q.6.3.3 audit requires a SQLite DATABASE_URL; resolved ${databaseLocation.url}`);
 
 await check("Version is v2.5.104 or newer",()=>assert.ok(versionAtLeast(pkg.version,"2.5.104")));
 await check("Baseline retains Q.6.3 lineage",()=>{assert.ok(versionAtLeast(baseline.version,"2.5.104"));assert.ok(String(baseline.milestone).startsWith("Q.6"))});
@@ -131,9 +135,9 @@ await check("Pexels/Pixabay direct video imports remain supported",()=>{assert.o
 await check("Unsplash/Pexels/Pixabay direct image imports remain supported",()=>{for(const key of ["unsplash","pexels","pixabay"])assert.ok(STOCK_IMAGE_IMPORT_PROVIDERS.includes(key));});
 await check("Freesound direct audio import remains commercially gated",()=>assert.ok(STOCK_AUDIO_IMPORT_PROVIDERS.includes("freesound")&&audioService.includes("commercialApiLicensed")));
 
-await check("Migration checksum is recorded in packaged SQLite",()=>{const db=new DatabaseSync("prisma/dev.sqlite"),row=db.prepare("SELECT checksum FROM _prisma_migrations WHERE migration_name=?").get("20260810114500_milestone_q633_stock_usage_history");db.close();const checksum=crypto.createHash("sha256").update(migration).digest("hex");assert.equal(row?.checksum,checksum)});
-await check("Packaged SQLite has API usage table",()=>{const db=new DatabaseSync("prisma/dev.sqlite"),row=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='BuilderStockApiUsage'").get();db.close();assert.equal(row?.name,"BuilderStockApiUsage")});
-await check("Packaged SQLite has search history table",()=>{const db=new DatabaseSync("prisma/dev.sqlite"),row=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='BuilderStockSearchHistory'").get();db.close();assert.equal(row?.name,"BuilderStockSearchHistory")});
+await check("Migration checksum is recorded in packaged SQLite",()=>{const db=new DatabaseSync(databaseFile,{readOnly:true}),row=db.prepare("SELECT checksum FROM _prisma_migrations WHERE migration_name=?").get("20260810114500_milestone_q633_stock_usage_history");db.close();const checksum=crypto.createHash("sha256").update(migration).digest("hex");assert.equal(row?.checksum,checksum)});
+await check("Packaged SQLite has API usage table",()=>{const db=new DatabaseSync(databaseFile,{readOnly:true}),row=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='BuilderStockApiUsage'").get();db.close();assert.equal(row?.name,"BuilderStockApiUsage")});
+await check("Packaged SQLite has search history table",()=>{const db=new DatabaseSync(databaseFile,{readOnly:true}),row=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='BuilderStockSearchHistory'").get();db.close();assert.equal(row?.name,"BuilderStockSearchHistory")});
 await check("Exact Shopify billing handles remain unchanged",()=>{for(const handle of ["free","sliver","gold","platenium"])assert.ok(plans.includes(handle),handle)});
 
 const failed=checks.filter(([,ok])=>!ok);

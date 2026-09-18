@@ -5,6 +5,7 @@ const TOKEN=/{{\s*([a-zA-Z0-9_.-]+)\s*}}/g;
 
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function tokenValue(name,props={}){if(name==="vsn.content")return null;if(name.startsWith("vsn."))return "";const key=name.startsWith("prop.")?name.slice(5):name;return props?.[key]??"";}
+function safeStyleText(value=""){const source=String(value||"");if(source.includes("<"))return"";return source;}
 export function interpolateVisualTemplateText(text,props={}){return String(text??"").replace(TOKEN,(_,name)=>name==="vsn.content"?"{{vsn.content}}":String(tokenValue(name,props)));}
 
 export function validateVisualTemplate(html="",css="",{requireContent=true,fieldKeys=[]}={}){
@@ -15,6 +16,7 @@ export function validateVisualTemplate(html="",css="",{requireContent=true,field
   if(/<\s*(script|iframe|object|embed|form|style|link|meta)\b/i.test(source))errors.push("Script, iframe, form, style and document-level tags are not allowed in widget templates.");
   if(/\son[a-z]+\s*=|javascript\s*:|data\s*:\s*text\/html/i.test(source))errors.push("Inline event handlers and unsafe URL schemes are not allowed.");
   const ids=[...source.matchAll(/\sid\s*=\s*["']([^"']+)["']/gi)].map((m)=>m[1]);if(new Set(ids).size!==ids.length)errors.push("Duplicate HTML ids are not allowed inside one template.");
+  if(styles.includes("<"))errors.push("Template CSS cannot contain HTML markup or style-closing sequences.");
   if(/@import|expression\s*\(|javascript\s*:|url\s*\(\s*["']?\s*data:/i.test(styles))errors.push("Scoped CSS contains an unsafe construct.");
   if(/@/i.test(styles))errors.push("CSS at-rules are not supported in Template Lab because every override must remain widget-scoped. Use Motion Library for reusable animation.");
   const known=new Set(["vsn.root","vsn.content","vsn.items","vsn.attributes",...fieldKeys,...fieldKeys.map((key)=>`prop.${key}`)]);
@@ -54,7 +56,7 @@ function attrsHtml(node,props,templateKey){const attrs=[];for(const[key,raw]of O
 export function renderVisualTemplateHtml(tree,{props={},slotHtml="",templateKey="custom"}={}){const render=(node)=>{if(node.type==="slot")return String(slotHtml||"");if(node.type==="text")return escapeHtml(interpolateVisualTemplateText(node.value,props));if(node.type!=="element")return"";const attrs=attrsHtml(node,props,templateKey);if(VOID_TAGS.has(node.tag))return`<${node.tag}${attrs}>`;return`<${node.tag}${attrs}>${(node.children||[]).map(render).join("")}</${node.tag}>`;};return render(tree);}
 
 export function scopeVisualTemplateCss(css="",templateKey="custom"){
-  const source=String(css||"").trim();if(!source||/@/g.test(source))return"";const prefix=`[data-vsn-template="${String(templateKey).replace(/[^a-zA-Z0-9:_-]/g,"")}"]`;
+  const source=safeStyleText(css).trim();if(!source||/@/g.test(source))return"";const prefix=`[data-vsn-template="${String(templateKey).replace(/[^a-zA-Z0-9:_-]/g,"")}"]`;
   return source.replace(/(^|})\s*([^{}]+)\{/g,(all,boundary,selectors)=>{const scoped=selectors.split(",").map((selector)=>{const clean=selector.trim();if(!clean)return"";if(clean.includes(":root")||clean.startsWith(prefix))return clean.replace(":root",prefix);return`${prefix} ${clean}`;}).filter(Boolean).join(", ");return`${boundary}${scoped}{`;});
 }
 

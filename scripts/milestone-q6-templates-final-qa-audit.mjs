@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { deriveTemplateMetadata, templateTableQueryFromUrl } from "../app/services/template-management.server.js";
+import { resolveScriptDatabaseLocation } from "./lib/database-location.mjs";
 
 const read=(file)=>fs.readFileSync(file,"utf8");
 const exists=(file)=>fs.existsSync(file);
@@ -23,6 +24,9 @@ const schema=read("prisma/schema.prisma");
 const migrationPath="prisma/migrations/20260810013000_templates_management_final_qa/migration.sql";
 const migration=read(migrationPath);
 const css=read("app/styles/dashboard.css");
+const databaseLocation=resolveScriptDatabaseLocation({cwd:process.cwd(),env:process.env});
+const databaseFile=databaseLocation.file;
+if(!databaseFile)throw new Error(`Milestone Q.6 audit requires a SQLite DATABASE_URL; resolved ${databaseLocation.url}`);
 
 await check("Version retains v2.5.98+ Templates baseline",()=>{const parts=pkg.version.split(".").map(Number);assert.ok(parts[0]>2||(parts[0]===2&&(parts[1]>5||(parts[1]===5&&parts[2]>=98))))});
 await check("Baseline remains on Q.6 lineage",()=>assert.match(String(baseline.milestone||""),/^Q\.6(?:\.|$)/));
@@ -114,8 +118,8 @@ await check("Template table metadata fields exist in Prisma schema",()=>{for(con
 await check("Q6 migration exists",()=>assert.equal(exists(migrationPath),true));
 await check("Migration is additive to BuilderPage",()=>{assert.match(migration,/ALTER TABLE "BuilderPage" ADD COLUMN "views"/);assert.doesNotMatch(migration,/DROP TABLE|DELETE FROM|DROP COLUMN/i)});
 await check("Migration adds query indexes",()=>assert.ok(migration.includes("BuilderPage_shop_deletedAt_status_updatedAt_idx")&&migration.includes("BuilderPage_shop_deletedAt_seoScore_createdBy_idx")));
-await check("Packaged SQLite has all Q6 columns",()=>{const db=new DatabaseSync("prisma/dev.sqlite");const cols=db.prepare("PRAGMA table_info('BuilderPage')").all().map((row)=>row.name);db.close();for(const field of ["views","templateImage","seoScore","pageCount","createdBy","scheduledAt"])assert.ok(cols.includes(field),field)});
-await check("Packaged SQLite records Q6 migration checksum",()=>{const checksum=crypto.createHash("sha256").update(fs.readFileSync(migrationPath)).digest("hex");const db=new DatabaseSync("prisma/dev.sqlite");const row=db.prepare("SELECT checksum FROM _prisma_migrations WHERE migration_name=?").get("20260810013000_templates_management_final_qa");db.close();assert.equal(row?.checksum,checksum)});
+await check("Packaged SQLite has all Q6 columns",()=>{const db=new DatabaseSync(databaseFile,{readOnly:true});const cols=db.prepare("PRAGMA table_info('BuilderPage')").all().map((row)=>row.name);db.close();for(const field of ["views","templateImage","seoScore","pageCount","createdBy","scheduledAt"])assert.ok(cols.includes(field),field)});
+await check("Packaged SQLite records Q6 migration checksum",()=>{const checksum=crypto.createHash("sha256").update(fs.readFileSync(migrationPath)).digest("hex");const db=new DatabaseSync(databaseFile,{readOnly:true});const row=db.prepare("SELECT checksum FROM _prisma_migrations WHERE migration_name=?").get("20260810013000_templates_management_final_qa");db.close();assert.equal(row?.checksum,checksum)});
 
 await check("Bulk publish preserves collaboration lock guard",()=>assert.ok(bulkService.includes("getBlockingPageLock")&&bulkService.includes("Locked by")));
 await check("Bulk publish preserves approval workflow",()=>assert.ok(bulkService.includes("Approve this template before publishing.")));
