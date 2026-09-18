@@ -165,6 +165,9 @@ for(const marker of ["VSN_PLUGIN_FORBIDDEN_APIS","child_process","eval(","new Fu
   if(!sdkSecurity.includes(marker))fail(`SDK plugin isolation denylist regression detected: ${marker}`);
 }
 
+const dockerfile=fs.readFileSync(path.join(root,"Dockerfile"),"utf8");
+if(!/^FROM node:22\.18\.0-alpine(?:\s|$)/m.test(dockerfile))fail("Production Docker Node runtime must match the supported Node 22.18 line");
+
 const ciWorkflow=fs.readFileSync(path.join(root,".github/workflows/ci.yml"),"utf8");
 for(const stepBlock of ciWorkflow.split(/\n(?=\s{6}- )/)){
   if(stepBlock.includes("${{ secrets.")&&!stepBlock.includes("if: github.event_name != 'pull_request'")){
