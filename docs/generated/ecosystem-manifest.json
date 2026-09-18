@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-10T13:49:48.177Z",
+  "generatedAt": "2026-09-18T23:31:00.000Z",
   "version": "2.5.107",
   "milestone": "Q.6.4",
   "baselineName": "Hydration, UI Theme, Maps & Form Security — Q.6.4",
@@ -114,14 +114,14 @@
     "systems": 35,
     "permissionResources": 10,
     "permissionActions": 41,
-    "migrations": 34,
+    "migrations": 35,
     "routeModules": 51,
     "userDocs": 25,
-    "developerDocs": 28,
+    "developerDocs": 29,
     "engineeringDocs": 16
   },
   "migrations": {
-    "latest": "20260810114500_milestone_q633_stock_usage_history",
+    "latest": "20260919042500_p02_ai_provider_policy",
     "all": [
       "20240530213853_create_session_table",
       "20260728222821_add_builder_pages",
@@ -156,7 +156,8 @@
       "20260809030000_milestone_q52_subscription_sync",
       "20260810013000_templates_management_final_qa",
       "20260810093000_milestone_q63_stock_image_hub",
-      "20260810114500_milestone_q633_stock_usage_history"
+      "20260810114500_milestone_q633_stock_usage_history",
+      "20260919042500_p02_ai_provider_policy"
     ]
   },
   "documentation": {
@@ -188,6 +189,7 @@
       "docs/user/wishlist.md"
     ],
     "developer": [
+      "docs/developer/ai-provider-policy.md",
       "docs/developer/architecture.md",
       "docs/developer/billing-lifecycle.md",
       "docs/developer/billing-production-qa.md",
