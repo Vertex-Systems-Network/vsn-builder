@@ -229,6 +229,22 @@ for(const marker of ["profileJson","brandProfileFromForm","normalizeBrandProfile
 if(aiAgent.includes("builderBrandKit.update")||aiAgent.includes("saveBrandKit"))fail("Editor Agent must not mutate Brand Intelligence");
 if(!aiAgent.includes("publicVisualTokens")||!aiAgent.includes("loadAgentBrandContext"))fail("Editor Agent must bound Brand Intelligence context");
 
+const brandExtraction=fs.readFileSync(path.join(root,"app/services/brand-extraction.server.js"),"utf8");
+const brandExtractionContract=fs.readFileSync(path.join(root,"app/brand/brandExtraction.js"),"utf8");
+const brandKitsRoute=fs.readFileSync(path.join(root,"app/routes/app.brand-kits.jsx"),"utf8");
+for(const marker of ["publicHttpsRequest","BRAND_SOURCE_MAX_REDIRECTS","BRAND_SOURCE_MAX_BYTES","generateStructuredAi","reserveAiUsage","normalizeBrandProfile","UNTRUSTED_BRAND_SOURCE"]){
+  if(!brandExtraction.includes(marker))fail(`Brand extraction security contract regression detected: ${marker}`);
+}
+for(const forbidden of ["saveBrandKit","builderBrandKit.create","builderBrandKit.update","builderBrandKit.upsert","publishedJson","designTokensJson","OPENAI_API_KEY","/v1/responses","Authorization:"]){
+  if(brandExtraction.includes(forbidden))fail(`Brand extraction must remain preview-only/shared-provider; forbidden marker: ${forbidden}`);
+}
+for(const marker of ["BRAND_SOURCE_MAX_BYTES = 256 * 1024","BRAND_SOURCE_MAX_REDIRECTS = 3","BRAND_SOURCE_MAX_TEXT = 18000","publicBrandSourceText"]){
+  if(!brandExtractionContract.includes(marker))fail(`Brand extraction bounded-source regression detected: ${marker}`);
+}
+for(const marker of ['intent==="extract-profile"',"assertTrustedMutationRequest","brandIntelligenceExtractionV1","authorized:String(form.get(\"authorized\"))===\"true\""]){
+  if(!brandKitsRoute.includes(marker))fail(`Brand extraction route guard regression detected: ${marker}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);

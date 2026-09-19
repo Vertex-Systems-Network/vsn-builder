@@ -5,6 +5,9 @@ import { canBuilder, getBuilderRole } from "../utils/builder-permissions.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { FALLBACK_GOOGLE_FONTS, SYSTEM_FONTS } from "../data/font-catalog.js";
 import { applyBrandKitToLibraryItem, saveBrandKit, serializeBrandKit, setDefaultBrandKit } from "../services/brand-kits.server.js";
+import { extractOwnedSiteBrandProfile } from "../services/brand-extraction.server.js";
+import { getServerFeatureFlags } from "../services/feature-flags.server.js";
+import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/request-security.server.js";
 
 function safe(value){return String(value||"").trim();}
 export async function loader({request}){
@@ -17,13 +20,34 @@ export async function loader({request}){
     db.builderCustomFont.findMany({where:{shop:session.shop,deletedAt:null},select:{family:true},orderBy:{family:"asc"}}).catch(()=>[]),
   ]);
   const fontFamilies=[...SYSTEM_FONTS,...FALLBACK_GOOGLE_FONTS,...customFonts.map((font)=>({family:font.family,value:`'${font.family}', sans-serif`,provider:"Custom"}))];
-  return {fontFamilies,kits:kits.map(serializeBrandKit),trash:trash.map(serializeBrandKit),library,designTokensJson:setting?.designTokensJson||"{}"};
+  return {fontFamilies,kits:kits.map(serializeBrandKit),trash:trash.map(serializeBrandKit),library,designTokensJson:setting?.designTokensJson||"{}",aiBrandExtractionEnabled:getServerFeatureFlags().brandIntelligenceExtractionV1===true};
 }
 
 export async function action({request}){
   const {session}=await authenticate.admin(request);if(!(await canAccessBuilderEditor(db,session)))return Response.json({ok:false,error:"Brand Kit access denied."},{status:403});
   const role=getBuilderRole(session);if(!canBuilder(role,"edit"))return Response.json({ok:false,error:"Your role cannot change Brand Kits."},{status:403});
   const form=await request.formData();const intent=safe(form.get("intent"));const id=safe(form.get("id"));
+  if(intent==="extract-profile"){
+    assertTrustedMutationRequest(request);
+    if(getServerFeatureFlags().brandIntelligenceExtractionV1!==true)return Response.json({ok:false,intent,code:"BRAND_EXTRACTION_DISABLED",error:"Brand Intelligence extraction is disabled."},{status:404});
+    try{
+      const result=await extractOwnedSiteBrandProfile({
+        db,
+        shop:session.shop,
+        sourceUrl:form.get("sourceUrl"),
+        authorized:String(form.get("authorized"))==="true",
+      });
+      return Response.json(result);
+    }catch(error){
+      const status=Number(error?.status||500);
+      return Response.json({
+        ok:false,
+        intent,
+        code:String(error?.code||"BRAND_EXTRACTION_FAILED"),
+        error:process.env.NODE_ENV==="production"&&status>=500?"Brand extraction failed.":safeClientErrorMessage(error,"Brand extraction failed."),
+      },{status:status>=400&&status<=599?status:500});
+    }
+  }
   if(intent==="save"){
     const kit=await saveBrandKit({db,shop:session.shop,id:id||null,name:form.get("name"),logoUrl:form.get("logoUrl"),isDefault:String(form.get("isDefault"))==="true",input:{primary:form.get("primary"),secondary:form.get("secondary"),accent:form.get("accent"),text:form.get("text"),background:form.get("background"),surface:form.get("surface"),bodyFont:form.get("bodyFont"),headingFont:form.get("headingFont"),headingScale:form.get("headingScale"),spacingBase:form.get("spacingBase"),containerMaxWidth:form.get("containerMaxWidth"),radiusSm:form.get("radiusSm"),radiusMd:form.get("radiusMd"),radiusLg:form.get("radiusLg"),buttonRadius:form.get("buttonRadius"),shadowSm:form.get("shadowSm"),shadowMd:form.get("shadowMd"),shadowLg:form.get("shadowLg"),brandSummary:form.get("brandSummary"),brandAudience:form.get("brandAudience"),brandToneVoice:form.get("brandToneVoice"),brandImageryDirection:form.get("brandImageryDirection"),brandMerchandisingRules:form.get("brandMerchandisingRules"),brandCtaRules:form.get("brandCtaRules"),brandComponentGuidance:form.get("brandComponentGuidance"),brandDoRules:form.get("brandDoRules"),brandDontRules:form.get("brandDontRules")}});return Response.json({ok:true,intent,id:kit.id,message:id?"Brand Kit updated.":"Brand Kit created."});
   }
