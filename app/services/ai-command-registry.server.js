@@ -82,6 +82,14 @@ function optionalString(value, max = 200) {
   return text || null;
 }
 
+function safeDraftText(value, field, max = 6000, { required = true } = {}) {
+  const text = String(value || "").trim();
+  if (!text && required) throw new AiCommandError("AI_COMMAND_INVALID_INPUT", `${field} is required.`, 400);
+  if (text.length > max) throw new AiCommandError("AI_COMMAND_INVALID_INPUT", `${field} is too long.`, 400);
+  if (text && UNSAFE_TEXT.test(text)) throw new AiCommandError("AI_COMMAND_UNSAFE_INPUT", `${field} contains executable or template syntax.`, 400);
+  return text || null;
+}
+
 function optionalPatch(value) {
   if (value == null) return {};
   const patch = sanitizePatch(value);
@@ -108,7 +116,7 @@ function normalizeElementInsert(input = {}) {
     beforeId,
     afterId,
     nodeType,
-    label: optionalString(input.label, 160),
+    label: safeDraftText(input.label, "label", 160, { required: false }),
     props: optionalPatch(input.props),
     styles: optionalPatch(input.styles),
     sourceGenerationId: safeGenerationId(input.sourceGenerationId),
@@ -135,7 +143,7 @@ function normalizeElementRewrite(input = {}) {
     pageId: requiredString(input.pageId, "pageId"),
     baseVersion: requiredVersion(input.baseVersion),
     elementId: requiredString(input.elementId, "elementId"),
-    text: requiredString(input.text, "text", 6000),
+    text: safeDraftText(input.text, "text", 6000),
     sourceGenerationId: safeGenerationId(input.sourceGenerationId),
   };
 }
