@@ -38,7 +38,18 @@ const attested = resolveProductionDataTopologyEvidence({
   VSN_SQLITE_BACKUP_MODE: "infrastructure-snapshot",
   VSN_SQLITE_RESTORE_TESTED_AT: "2026-09-18T00:00:00Z",
 });
-ok(attested.status === "ATTESTED" && attested.missing.length === 0, "Complete explicit deployment evidence must become ATTESTED");
+ok(attested.status === "ATTESTED" && attested.missing.length === 0 && attested.checks.databaseTargetOnVolume, "Complete explicit deployment evidence must become ATTESTED");
+
+const offVolume = resolveProductionDataTopologyEvidence({
+  DATABASE_URL: "file:/app/vsn-builder.sqlite",
+  VSN_PRODUCTION_HOSTING_PROVIDER: "example-host",
+  VSN_SQLITE_VOLUME_MOUNT: "/data",
+  VSN_SQLITE_INSTANCE_MODE: "single-instance",
+  VSN_SQLITE_DURABILITY: "durable-volume",
+  VSN_SQLITE_BACKUP_MODE: "infrastructure-snapshot",
+  VSN_SQLITE_RESTORE_TESTED_AT: "2026-09-18T00:00:00Z",
+});
+ok(offVolume.status === "NOT_VERIFIED" && offVolume.missing.includes("databaseTargetOnVolume"), "SQLite target outside the declared durable volume must fail verification");
 
 const wrongDatabase = resolveProductionDataTopologyEvidence({
   DATABASE_URL: "postgresql://db.example/vsn",
