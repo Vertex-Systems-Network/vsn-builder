@@ -122,6 +122,9 @@ for(const forbidden of ["OPENAI_API_KEY","/v1/responses","Authorization:"]){
   ok(!service.includes(forbidden),`Brand extraction must not bypass shared provider transport: ${forbidden}`);
 }
 
+const flags=read("app/config/featureFlags.js");
+ok(flags.includes('brandIntelligenceExtractionV1')&&flags.includes('VSN_FEATURE_BRAND_INTELLIGENCE_EXTRACTION')&&flags.includes('defaultValue: false'),"Brand extraction must have an independent default-off kill switch");
+
 const route=read("app/routes/app.brand-kits.jsx");
 for(const marker of ['intent==="extract-profile"',"assertTrustedMutationRequest","extractOwnedSiteBrandProfile",'authorized:String(form.get("authorized"))==="true"']){
   ok(route.includes(marker),`Brand Kits route missing extraction guard: ${marker}`);
