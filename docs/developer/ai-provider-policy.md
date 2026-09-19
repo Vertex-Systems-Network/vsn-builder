@@ -1,6 +1,6 @@
 # AI provider and behavior policy
 
-VSN AI uses a product-level provider contract. Page AI and Email AI do not call vendor endpoints directly.
+VSN AI uses a product-level provider contract. Page AI, Email AI and the in-editor Agent do not call vendor endpoints directly.
 
 ## Runtime policy
 
@@ -20,17 +20,19 @@ Environment controls:
 - `VSN_AI_MAX_RETRIES`
 - `VSN_AI_PAGE_BEHAVIOR_VERSION`
 - `VSN_AI_EMAIL_BEHAVIOR_VERSION`
+- `VSN_AI_AGENT_BEHAVIOR_VERSION`
 
 Only registered providers and behavior versions are accepted. Unknown values fail closed.
 
 ## Behavior versions
 
-Production instructions live in `app/ai/behaviors.js`. Page and Email behavior definitions are versioned independently so a prompt/instruction change can be attributed, evaluated and rolled back without changing the provider adapter.
+Production instructions live in `app/ai/behaviors.js`. Page, Email and Agent behavior definitions are versioned independently so a prompt/instruction change can be attributed, evaluated and rolled back without changing the provider adapter.
 
 Initial stable versions:
 
 - Page AI: `page-v1`
 - Email AI: `email-v1`
+- Editor Agent: `agent-v1`
 
 ## Telemetry
 
