@@ -102,7 +102,8 @@ const result=await extractOwnedSiteBrandProfile({
 ok(generatedInput.includes("UNTRUSTED_BRAND_SOURCE")&&generatedInput.includes("Pella Atelier"),"Brand source text must be explicitly delimited as untrusted provider input");
 ok(result.ok===true&&result.intent==="extract-profile"&&result.sourceHost==="brand.example","Extraction result must be a preview response with source-host metadata only");
 ok(!("text" in result)&&!("body" in result)&&!("html" in result)&&!("sourceText" in result),"Extraction response must never return raw source text or HTML");
-ok(result.profile.version===1&&result.profile.summary.includes("Premium")&&!/[<>{}]|javascript\s*:/i.test(JSON.stringify(result.profile)),"Provider output must pass through Brand Profile v1 normalization");
+const profileText=[result.profile.summary,result.profile.audience,result.profile.toneVoice,result.profile.imageryDirection,result.profile.merchandisingRules,result.profile.ctaRules,result.profile.componentGuidance,...result.profile.doRules,...result.profile.dontRules].join(" ");
+ok(result.profile.version===1&&result.profile.summary.includes("Premium")&&!/[<>{}]|javascript\s*:/i.test(profileText),"Provider output must pass through Brand Profile v1 normalization");
 ok(result.profile.doRules.length===2,"Suggested rules must inherit Brand Profile deduplication");
 ok(result.behaviorVersion==="brand-extract-v1","Extraction must use the versioned Brand behavior");
 
