@@ -63,7 +63,9 @@ Acceptance:
 - every command is auditable and safely rejected when unauthorized/stale;
 - no direct model -> Prisma/Shopify mutation path.
 
-### P0.4 Build AI eval harness
+### P0.4 Build AI eval harness — COMPLETED BASELINE
+
+**Status:** implemented in Issue #24 / the P0.4 branch with versioned deterministic and provider-backed suites, release-blocking adversarial contract evals, safe result artifacts, and old-vs-new comparison reporting. Provider semantic evals remain explicit opt-in and report NOT VERIFIED when unavailable.
 
 Actions:
 
