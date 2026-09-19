@@ -20,7 +20,7 @@ export async function loader({request}){
     db.builderCustomFont.findMany({where:{shop:session.shop,deletedAt:null},select:{family:true},orderBy:{family:"asc"}}).catch(()=>[]),
   ]);
   const fontFamilies=[...SYSTEM_FONTS,...FALLBACK_GOOGLE_FONTS,...customFonts.map((font)=>({family:font.family,value:`'${font.family}', sans-serif`,provider:"Custom"}))];
-  return {fontFamilies,kits:kits.map(serializeBrandKit),trash:trash.map(serializeBrandKit),library,designTokensJson:setting?.designTokensJson||"{}",aiBrandExtractionEnabled:getServerFeatureFlags().aiBuilderV1===true};
+  return {fontFamilies,kits:kits.map(serializeBrandKit),trash:trash.map(serializeBrandKit),library,designTokensJson:setting?.designTokensJson||"{}",aiBrandExtractionEnabled:getServerFeatureFlags().brandIntelligenceExtractionV1===true};
 }
 
 export async function action({request}){
@@ -29,7 +29,7 @@ export async function action({request}){
   const form=await request.formData();const intent=safe(form.get("intent"));const id=safe(form.get("id"));
   if(intent==="extract-profile"){
     assertTrustedMutationRequest(request);
-    if(getServerFeatureFlags().aiBuilderV1!==true)return Response.json({ok:false,intent,code:"AI_DISABLED",error:"AI Builder is disabled."},{status:404});
+    if(getServerFeatureFlags().brandIntelligenceExtractionV1!==true)return Response.json({ok:false,intent,code:"BRAND_EXTRACTION_DISABLED",error:"Brand Intelligence extraction is disabled."},{status:404});
     try{
       const result=await extractOwnedSiteBrandProfile({
         db,
