@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "status": "NOT_VERIFIED",
+  "lastReviewedAt": "2026-09-19T01:18:00.000Z",
+  "implementedTopology": {
+    "databaseEngine": "sqlite",
+    "prismaProvider": "sqlite",
+    "persistenceMedium": "filesystem",
+    "defaultDevelopmentDatabase": "prisma/dev.sqlite",
+    "externalDatabaseSupport": "NOT_IMPLEMENTED",
+    "multiInstanceSqliteSupport": "UNSUPPORTED",
+    "dockerVolumeDeclared": false
+  },
+  "deployedTopology": {
+    "hostingProvider": "NOT_VERIFIED",
+    "databaseTarget": "NOT_RECORDED",
+    "durableVolume": "NOT_VERIFIED",
+    "replicaCount": "NOT_VERIFIED",
+    "infrastructureSnapshots": "NOT_VERIFIED",
+    "restoreDrill": "NOT_VERIFIED"
+  },
+  "supportedProductionMode": {
+    "databaseEngine": "sqlite",
+    "explicitDatabaseUrlRequired": true,
+    "singleInstanceRequired": true,
+    "durableVolumeRequired": true,
+    "infrastructureSnapshotRequired": true,
+    "restoreDrillRequired": true
+  },
+  "applicationBackup": {
+    "type": "tenant-product-state-json",
+    "disasterRecoveryBackup": false,
+    "intentionallyExcluded": [
+      "form submissions",
+      "GraphQL history",
+      "integration secrets"
+    ]
+  },
+  "agentJobReadiness": "BLOCKED_ON_DEPLOYMENT_EVIDENCE",
+  "evidenceNeeded": [
+    "hosting provider/project identity",
+    "production DATABASE_URL file target",
+    "durable volume or equivalent persistent filesystem evidence",
+    "single application replica policy",
+    "infrastructure snapshot/backup policy",
+    "successful restore-drill timestamp"
+  ]
+}
