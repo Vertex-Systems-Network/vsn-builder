@@ -156,6 +156,15 @@ for (const token of ["assertTrustedMutationRequest", "authenticate.admin", "canA
   ok(route.includes(token), `Agent route missing security contract: ${token}`);
 }
 
+const panel = read("app/components/editor/AiBuilderPanel.jsx");
+for (const token of ['["agent","Agent · Multi-step Edit"]', 'fetch("/app/ai-agent"', "agentConversation", "hasUnsavedChanges", "Undo last Agent turn", "onAgentResult"]) {
+  ok(panel.includes(token), `Agent editor UI missing bounded workflow contract: ${token}`);
+}
+const pageEditor = read("app/components/editor/PageEditor.jsx");
+for (const token of ["handleAgentResult", "hasUnsavedChanges={!isSaved}", "onAgentResult={handleAgentResult}", "Agent changes saved"]) {
+  ok(pageEditor.includes(token), `PageEditor missing Agent synchronization contract: ${token}`);
+}
+
 const schema = read("prisma/schema.prisma");
 ok(!schema.includes("model BuilderAgent") && !schema.includes("model BuilderAiAgent") && !schema.includes("model BuilderJob"), "P1.1 must not introduce agent/job persistence while P0.5 remains unverified");
 
@@ -167,5 +176,10 @@ for (const token of ['"element.insert"', '"element.move"', '"element.rewrite"', 
   ok(registry.includes(token), `Command registry missing Agent safety primitive: ${token}`);
 }
 ok(registry.includes("safeDraftText") && registry.includes("UNSAFE_TEXT"), "Direct rewrite/insert text must retain executable/template sanitization");
+ok(registry.includes("AI_COMMAND_SYSTEM_NODE_PROTECTED"), "Agent command registry must protect builder system nodes");
+
+const pkg = JSON.parse(read("package.json"));
+ok(pkg.scripts?.["qa:p11-agent"] === "node scripts/p11-editor-agent-audit.mjs && node scripts/ai-eval-deterministic.mjs", "P1.1 QA command missing");
+ok(pkg.scripts?.["qa:release"]?.includes("p11-editor-agent-audit.mjs"), "P1.1 audit must be release-blocking");
 
 console.log(`VSN P1.1 bounded editor Agent audit: PASS (${checks}/${checks})`);
