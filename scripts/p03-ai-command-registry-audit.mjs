@@ -18,6 +18,11 @@ const service = read("app/services/ai-command-registry.server.js");
 for (const token of [
   "runBuilderCommand",
   "canAccessBuilderAction",
+  "getBuilderRuntimeEntitlements",
+  "getCollaborationRole",
+  "getBlockingPageLock",
+  "canCollaborate",
+  "AI_COMMAND_PAGE_LOCKED",
   "baseVersion",
   "AI_COMMAND_STALE_VERSION",
   "builderRevision.create",
