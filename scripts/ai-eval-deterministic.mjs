@@ -60,9 +60,10 @@ const evaluators = {
       preheader: "Safe",
       summary: "Safe",
       subjectVariants: ["{{ customer.password }}"],
-      blocks: [{ type: "hero", heading: "<script>alert(1)</script>New", text: "javascript:alert(1)", buttonText: "Shop", buttonUrl: "javascript:alert(1)", image: "data:text/html,bad", alt: "Product", align: "center", background: "#fff", textColor: "#111" }],
+      blocks: [{ type: "hero", heading: "<scr<script>ipt>alert(1)</scr<script>ipt>New", text: "javascript:alert(1)", buttonText: "Shop", buttonUrl: "javascript:alert(1)", image: "data:text/html,bad", alt: "Product", align: "center", background: "#fff", textColor: "#111" }],
     }, {});
     assert.equal(noExecutableEmail(result), true);
+    assert.equal(/[<>]/.test(result.document.blocks[0]?.content?.heading || ""), false);
     assert.equal(result.document.blocks[0]?.content?.buttonUrl, "{{ shop.url }}");
   },
   unsupportedProviderFailsClosed() {
