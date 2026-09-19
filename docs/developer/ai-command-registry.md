@@ -8,6 +8,7 @@ The AI command registry is the server-side boundary between AI-assisted intent a
 - Every executable AI command resolves through a named registry entry.
 - Authorization uses the existing VSN role/action permission model.
 - Page mutations require an exact `baseVersion` and fail closed when stale.
+- When Collaboration & Review is enabled, draft commands honor the same collaboration save permission and active page lock as the visual editor.
 - Draft mutations run through `runBuilderCommand`, so the mutation and command audit event share one database transaction.
 - Each draft mutation creates an undo revision before the change and an applied AI revision after it.
 - Consequential operations are typed but are not directly executable by AI.
