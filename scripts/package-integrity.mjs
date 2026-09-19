@@ -74,6 +74,7 @@ const required = [
   "app/ai/contextTools.js",
   "app/services/ai-context-tools.server.js",
   "scripts/p13a-shopify-context-audit.mjs",
+  "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
   "prisma/migrations/20260919151000_p12_brand_profile/migration.sql",
   "docs/developer/ai-provider-policy.md",
