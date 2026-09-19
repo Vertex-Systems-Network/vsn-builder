@@ -154,6 +154,10 @@ export async function runEditorAgentTurn({
   conversation = [],
   generate = generateStructuredAi,
   executeCommand = executeAiCommand,
+  reserveUsage = reserveAiUsage,
+  getUsage = aiUsageStatus,
+  providerConfigured = isAiProviderConfigured,
+  env = process.env,
 } = {}) {
   if (!db) throw new Error("Agent database is unavailable.");
   if (!session?.shop) {
@@ -178,17 +182,17 @@ export async function runEditorAgentTurn({
     breakpoint,
     conversation,
   });
-  const policy = getAiRuntimePolicy();
+  const policy = getAiRuntimePolicy({ env });
   const behavior = resolveAiBehavior({ surface: "agent", operation: "edit", version: policy.behaviorVersions.agent });
-  const execution = createAiExecution({ behavior });
-  if (!isAiProviderConfigured({ execution })) {
+  const execution = createAiExecution({ behavior, env });
+  if (!providerConfigured({ execution, env })) {
     const error = new Error("AI Agent is not configured on the VSN server.");
     error.code = "AI_NOT_CONFIGURED";
     error.status = 503;
     throw error;
   }
 
-  const usageRow = await reserveAiUsage({
+  const usageRow = await reserveUsage({
     db,
     shop: session.shop,
     pageId: context.page.id,
@@ -274,7 +278,7 @@ export async function runEditorAgentTurn({
 
   const finalPage = await loadAgentPage(db, session.shop, context.page.id);
   const finalContent = parseContent(finalPage.contentJson);
-  const usage = await aiUsageStatus({ db, shop: session.shop });
+  const usage = await getUsage({ db, shop: session.shop });
 
   return {
     ok: !failure,
