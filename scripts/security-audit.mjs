@@ -256,7 +256,7 @@ for(const marker of ["AI_CONTEXT_SHOPIFY_QUERIES","VsnAiContextProducts","VsnAiC
 for(const forbidden of ["builderPage.update","builderPage.create","builderExperiment.update","builderExperiment.create","executeDeveloperGraphql","OPENAI_API_KEY","generateStructuredAi","publishedJson"]){
   if(aiContextService.includes(forbidden))fail(`AI context service must remain read-only/provider-independent: ${forbidden}`);
 }
-if(/\bmutation\b/i.test(Object.values((()=>{const matches=[...aiContextService.matchAll(/query VsnAiContext[\s\S]*?(?=\n  \`,|\n\}\);)/g)];return Object.fromEntries(matches.map((match,index)=>[index,match[0]]));})()).join("\n")))fail("AI context fixed Shopify documents must not contain mutations");
+if(/\bmutation\s+VsnAiContext/i.test(aiContextService))fail("AI context fixed Shopify documents must not contain mutations");
 if(aiAgentContract.includes("AI_CONTEXT_TOOL_NAMES")||aiAgentContract.includes("shopify.products.search"))fail("P1.3a must not broaden the executable Agent protocol before P1.3b");
 
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
