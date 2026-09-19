@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T00:15:00.000Z",
+  "generatedAt": "2026-09-19T00:35:00.000Z",
   "version": "2.5.107",
   "milestone": "Q.6.4",
   "baselineName": "Hydration, UI Theme, Maps & Form Security — Q.6.4",
@@ -117,7 +117,7 @@
     "migrations": 35,
     "routeModules": 52,
     "userDocs": 25,
-    "developerDocs": 30,
+    "developerDocs": 31,
     "engineeringDocs": 16
   },
   "migrations": {
@@ -190,6 +190,7 @@
     ],
     "developer": [
       "docs/developer/ai-command-registry.md",
+      "docs/developer/ai-evals.md",
       "docs/developer/ai-provider-policy.md",
       "docs/developer/architecture.md",
       "docs/developer/billing-lifecycle.md",
