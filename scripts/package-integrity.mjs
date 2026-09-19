@@ -62,6 +62,7 @@ const required = [
   "app/ai/agent.js",
   "app/services/ai-agent.server.js",
   "app/routes/app.ai-agent.jsx",
+  "app/components/editor/hooks/useAgentEditorSync.js",
   "scripts/p11-editor-agent-audit.mjs",
   "docs/developer/editor-agent.md",
   "docs/developer/ai-provider-policy.md",
