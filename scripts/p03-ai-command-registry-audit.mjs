@@ -6,9 +6,9 @@ const read = (file) => fs.readFileSync(file, "utf8");
 let checks = 0;
 const ok = (value, message) => { assert.ok(value, message); checks += 1; };
 
-ok(AI_COMMAND_REGISTRY_VERSION === 1, "Command registry version must be explicit");
+ok(AI_COMMAND_REGISTRY_VERSION === 2, "Command registry version must be explicit");
 const definitions = listAiCommandDefinitions();
-for (const name of ["page.read", "element.update-props", "element.update-styles", "element.remove", "page.publish"]) {
+for (const name of ["page.read", "element.insert", "element.move", "element.rewrite", "element.update-props", "element.update-styles", "element.remove", "revision.restore", "page.publish"]) {
   ok(definitions.some((row) => row.name === name), `Command registry missing ${name}`);
 }
 const publish = resolveAiCommandDefinition("page.publish");
@@ -115,6 +115,55 @@ ok(revisions.length === 2 && revisions[0].kind === "ai-command-undo" && revision
 ok(Boolean(mutation.result?.undo?.revisionId) && mutation.result?.sourceGenerationId === "generation-1", "Draft command must return attributable undo metadata");
 ok(auditRows.some((row) => row.action === "command.ai.element.update-props.executed"), "Draft command must inherit command-bus audit logging");
 
+const insert = await executeAiCommand({
+  db: fakeDb,
+  session: ownerSession,
+  actor: "owner@example.com",
+  role: "admin",
+  name: "element.insert",
+  input: { pageId: pageState.id, baseVersion: 2, nodeType: "text", label: "Agent text", props: { text: "Inserted" }, sourceGenerationId: "generation-2" },
+});
+ok(pageState.version === 3 && Boolean(insert.result?.elementId), "Agent insert must create a widget and increment version");
+const insertedId = insert.result.elementId;
+ok(JSON.parse(pageState.contentJson).some((node) => node?.id === insertedId && node?.props?.text === "Inserted"), "Agent insert must persist bounded widget props");
+
+const rewrite = await executeAiCommand({
+  db: fakeDb,
+  session: ownerSession,
+  actor: "owner@example.com",
+  role: "admin",
+  name: "element.rewrite",
+  input: { pageId: pageState.id, baseVersion: 3, elementId: insertedId, text: "Rewritten", sourceGenerationId: "generation-3" },
+});
+ok(pageState.version === 4 && rewrite.result?.elementId === insertedId, "Agent rewrite must be revision-backed");
+ok(JSON.parse(pageState.contentJson).find((node) => node?.id === insertedId)?.props?.text === "Rewritten", "Agent rewrite must update editable text");
+
+const checkpoint = insert.result?.undo?.revisionId;
+ok(Boolean(checkpoint), "Agent command must expose a checkpoint revision");
+const restored = await executeAiCommand({
+  db: fakeDb,
+  session: ownerSession,
+  actor: "owner@example.com",
+  role: "admin",
+  name: "revision.restore",
+  input: { pageId: pageState.id, baseVersion: 4, revisionId: checkpoint, sourceGenerationId: "generation-restore" },
+});
+ok(pageState.version === 5 && restored.result?.command === "revision.restore", "Revision restore must be a reversible draft command");
+ok(!JSON.parse(pageState.contentJson).some((node) => node?.id === insertedId), "Revision restore must restore the requested checkpoint content");
+
+await assert.rejects(
+  () => executeAiCommand({
+    db: fakeDb,
+    session: ownerSession,
+    actor: "owner@example.com",
+    role: "admin",
+    name: "element.insert",
+    input: { pageId: pageState.id, baseVersion: 5, nodeType: "html", props: { code: "<script>alert(1)</script>" } },
+  }),
+  (error) => error instanceof AiCommandError && ["AI_COMMAND_UNSUPPORTED_WIDGET", "AI_COMMAND_UNSAFE_INPUT"].includes(error.code),
+);
+checks += 1;
+
 await assert.rejects(
   () => executeAiCommand({
     db: fakeDb,
@@ -135,7 +184,7 @@ await assert.rejects(
     actor: "owner@example.com",
     role: "admin",
     name: "page.publish",
-    input: { pageId: pageState.id, baseVersion: 2 },
+    input: { pageId: pageState.id, baseVersion: 5 },
   }),
   (error) => error instanceof AiCommandError && error.code === "AI_COMMAND_EXPLICIT_APPROVAL_REQUIRED",
 );
