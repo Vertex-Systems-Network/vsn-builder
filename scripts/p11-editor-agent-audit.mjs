@@ -161,8 +161,12 @@ for (const token of ['["agent","Agent · Multi-step Edit"]', 'fetch("/app/ai-age
   ok(panel.includes(token), `Agent editor UI missing bounded workflow contract: ${token}`);
 }
 const pageEditor = read("app/components/editor/PageEditor.jsx");
-for (const token of ["handleAgentResult", "hasUnsavedChanges={!isSaved}", "onAgentResult={handleAgentResult}", "Agent changes saved"]) {
+for (const token of ["useAgentEditorSync", "handleAgentResult", "hasUnsavedChanges={!isSaved}", "onAgentResult={handleAgentResult}"]) {
   ok(pageEditor.includes(token), `PageEditor missing Agent synchronization contract: ${token}`);
+}
+const agentSync = read("app/components/editor/hooks/useAgentEditorSync.js");
+for (const token of ["Agent changes saved", "setIsSaved(true)", "setLocalizationData", "localStorage.setItem"]) {
+  ok(agentSync.includes(token), `Agent editor sync hook missing authoritative-state contract: ${token}`);
 }
 
 const schema = read("prisma/schema.prisma");
