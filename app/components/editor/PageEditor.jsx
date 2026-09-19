@@ -849,6 +849,35 @@ export default function PageEditor({
     setShowAI(false);
   }, [elements, selectedId, commit]);
 
+  const handleAgentResult = useCallback((data) => {
+    const next = Array.isArray(data?.page?.content) ? structuredClone(data.page.content) : null;
+    if (!next) return;
+    setElements(next);
+    setGlobalStyles({ ...readGlobalStyles(next), ...designTokens });
+    setPageSettings(readPageSettings(next));
+    setHistory((current) => [
+      ...current.slice(0, historyIdx + 1),
+      {
+        elements: next,
+        label: data?.status === "reverted" ? "Agent turn reverted" : "Agent draft edits applied",
+        time: Date.now(),
+        icon: "✦",
+      },
+    ]);
+    setHistoryIdx((current) => current + 1);
+    setSelectedId(null);
+    setSelectedIds([]);
+    setStagedRevisionId("");
+    setRevisionDiff(null);
+    setIsSaved(true);
+    setAutosaveAt(Date.now());
+    setSaveStatus(data?.status === "reverted" ? "Agent turn reverted" : "Agent changes saved");
+    if (Number.isFinite(Number(data?.page?.version))) {
+      setLocalizationData((current) => ({ ...current, pageVersion: Number(data.page.version) }));
+    }
+    try { localStorage.setItem(storageKey(page.id), JSON.stringify(next)); } catch {}
+  }, [historyIdx, designTokens, page.id]);
+
   const handleDrop = ({
     type,
     nodeId,
@@ -1692,7 +1721,7 @@ export default function PageEditor({
         />
         {showQA && <TemplateQAPanel elements={elements} page={page} componentDefinitions={componentDefinitions} onSelect={(id)=>{handleSelect(id,null);setShowQA(false);}} />}
 
-        <AiBuilderPanel open={showAI} onClose={()=>setShowAI(false)} fetcher={aiFetcher} page={page} elements={elements} globalStyles={globalStyles} selectedElement={selectedElement} commerceContext={{product:previewProduct?{title:previewProduct.title,handle:previewProduct.handle,vendor:previewProduct.vendor,productType:previewProduct.productType,description:previewProduct.description}:null,collection:previewCollection?{title:previewCollection.title,handle:previewCollection.handle,description:previewCollection.description}:null,search:previewSearch?{query:previewSearch.query}:null}} onApply={handleApplyAiResult} />
+        <AiBuilderPanel open={showAI} onClose={()=>setShowAI(false)} fetcher={aiFetcher} page={page} elements={elements} globalStyles={globalStyles} selectedElement={selectedElement} selectedIds={selectedIds.length?selectedIds:(selectedId?[selectedId]:[])} breakpoint={deviceMode} hasUnsavedChanges={!isSaved} commerceContext={{product:previewProduct?{title:previewProduct.title,handle:previewProduct.handle,vendor:previewProduct.vendor,productType:previewProduct.productType,description:previewProduct.description}:null,collection:previewCollection?{title:previewCollection.title,handle:previewCollection.handle,description:previewCollection.description}:null,search:previewSearch?{query:previewSearch.query}:null}} onApply={handleApplyAiResult} onAgentResult={handleAgentResult} />
 
         <PanelResizeHandle side="right" value={rightPanelWidth} onChange={setRightPanelWidth} />
         <EditorPanelBoundary resetKey={`global:${deviceMode}`}>
