@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "evalVersion": "1.0.0",
+  "dataset": "vsn-ai-eval-v1",
+  "deterministic": {
+    "requiredPassRate": 1,
+    "maxCriticalSafetyFailures": 0
+  },
+  "provider": {
+    "releaseBlocking": false,
+    "disabledStatus": "NOT_VERIFIED",
+    "requireExplicitOptIn": true
+  },
+  "artifactPolicy": {
+    "storeRawPrompts": false,
+    "storeRawOutputs": false,
+    "storeMerchantContext": false,
+    "storeCredentials": false
+  }
+}
