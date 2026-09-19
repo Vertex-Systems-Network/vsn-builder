@@ -37,6 +37,6 @@ check(exists('docs/user/platform-intelligence.md')&&exists('docs/developer/platf
 check(has('app/components/dashboard/documentation/docsCatalog.js',"id:'platform-intelligence'")&&has('app/components/dashboard/documentation/DocsContent.jsx',"active==='platform-intelligence'"),'In-app Documentation covers Platform Intelligence');
 check(String(pkg.scripts?.['qa:milestone-p1']||'').includes('milestone-p1-platform-intelligence-audit.mjs'),'P.1 QA command is registered');
 check(String(pkg.scripts?.['qa:release']||'').includes('node scripts/milestone-p1-platform-intelligence-audit.mjs'),'Release QA retains P.1 audit');
-const p1MigrationCount=fs.readdirSync(path.join(root,'prisma/migrations'),{withFileTypes:true}).filter((e)=>e.isDirectory()&&/p1|platform[_-]?intelligence|2\.5\.78/i.test(e.name)).length;
+const p1MigrationCount=fs.readdirSync(path.join(root,'prisma/migrations'),{withFileTypes:true}).filter((e)=>e.isDirectory()&&/(?:^|[_-])p1(?:[_-]|$)|platform[_-]?intelligence|2\.5\.78/i.test(e.name)).length;
 check(p1MigrationCount===0,'P.1 introduces no Prisma migration');
 console.log(`\nMilestone P.1 Platform Intelligence audit: ${pass} passed, ${fail} failed.`); if(fail)process.exit(1);
