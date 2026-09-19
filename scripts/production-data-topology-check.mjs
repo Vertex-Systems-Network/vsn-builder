@@ -35,8 +35,10 @@ const evidence = resolveProductionDataTopologyEvidence(process.env);
 if (requireEvidence) {
   check("Production DATABASE_URL is explicit", evidence.checks.explicitDatabaseUrl);
   check("Production DATABASE_URL matches implemented SQLite provider", evidence.checks.sqliteDatabaseUrl);
+  check("Production SQLite target is absolute", evidence.checks.absoluteDatabaseTarget);
   check("Hosting provider identity is attested", evidence.checks.hostingProvider);
   check("Durable SQLite volume mount is identified", evidence.checks.volumeMount);
+  check("Production SQLite target is inside the declared durable volume", evidence.checks.databaseTargetOnVolume);
   check("Production is explicitly single-instance", evidence.checks.singleInstance);
   check("SQLite filesystem is attested as durable", evidence.checks.durableVolume);
   check("Infrastructure snapshot backup is attested", evidence.checks.infrastructureSnapshot);
