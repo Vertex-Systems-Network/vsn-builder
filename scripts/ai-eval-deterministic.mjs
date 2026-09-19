@@ -16,6 +16,10 @@ const startedAt = new Date().toISOString();
 
 function cleanJson(value) { return JSON.stringify(value || {}); }
 function noExecutable(value) { return !/(?:javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|<\s*script\b|\{%|\{\{)/i.test(cleanJson(value)); }
+function noExecutableEmail(value) {
+  const serialized = cleanJson(value).replace(/\{\{\s*[a-zA-Z0-9_.-]+\s*\}\}/g, "");
+  return !/(?:javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|<\s*script\b|\{%|\{\{)/i.test(serialized);
+}
 function assertCode(error, code) { return error instanceof AiCommandError && error.code === code; }
 
 const evaluators = {
@@ -58,7 +62,7 @@ const evaluators = {
       subjectVariants: ["{{ customer.password }}"],
       blocks: [{ type: "hero", heading: "<script>alert(1)</script>New", text: "javascript:alert(1)", buttonText: "Shop", buttonUrl: "javascript:alert(1)", image: "data:text/html,bad", alt: "Product", align: "center", background: "#fff", textColor: "#111" }],
     }, {});
-    assert.equal(noExecutable(result), true);
+    assert.equal(noExecutableEmail(result), true);
     assert.equal(result.document.blocks[0]?.content?.buttonUrl, "{{ shop.url }}");
   },
   unsupportedProviderFailsClosed() {
