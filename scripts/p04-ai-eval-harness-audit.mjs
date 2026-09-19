@@ -25,6 +25,8 @@ for (const id of [
   "command-cross-shop-rejected",
   "command-stale-version-rejected",
   "command-unsafe-patch-rejected",
+  "agent-publish-plan-rejected",
+  "agent-step-bound-rejected",
 ]) ok(deterministic.cases.some((row) => row.id === id), `Deterministic safety suite missing ${id}`);
 
 ok(provider.cases.length === 15, "Provider golden suite must cover all 15 initial QUALITY_GATES tasks");
