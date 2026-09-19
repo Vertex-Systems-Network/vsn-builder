@@ -245,6 +245,20 @@ for(const marker of ['intent==="extract-profile"',"assertTrustedMutationRequest"
   if(!brandKitsRoute.includes(marker))fail(`Brand extraction route guard regression detected: ${marker}`);
 }
 
+const aiContextContract=fs.readFileSync(path.join(root,"app/ai/contextTools.js"),"utf8");
+const aiContextService=fs.readFileSync(path.join(root,"app/services/ai-context-tools.server.js"),"utf8");
+for(const marker of ["AI_CONTEXT_MAX_REQUESTS = 4","AI_CONTEXT_MAX_ITEMS = 10","AI_CONTEXT_MAX_RESOURCE_IDS = 5","AI_CONTEXT_TOOL_NAMES","normalizeAiContextRequests"]){
+  if(!aiContextContract.includes(marker))fail(`AI context registry bound regression detected: ${marker}`);
+}
+for(const marker of ["AI_CONTEXT_SHOPIFY_QUERIES","VsnAiContextProducts","VsnAiContextFiles","VsnAiContextMarkets","VsnAiContextTranslations","loadCurrentPage","getVisitorSummary","loadPageExperiments"]){
+  if(!aiContextService.includes(marker))fail(`AI context service contract regression detected: ${marker}`);
+}
+for(const forbidden of ["builderPage.update","builderPage.create","builderExperiment.update","builderExperiment.create","executeDeveloperGraphql","OPENAI_API_KEY","generateStructuredAi","publishedJson"]){
+  if(aiContextService.includes(forbidden))fail(`AI context service must remain read-only/provider-independent: ${forbidden}`);
+}
+if(/\bmutation\s+VsnAiContext/i.test(aiContextService))fail("AI context fixed Shopify documents must not contain mutations");
+if(aiAgentContract.includes("AI_CONTEXT_TOOL_NAMES")||aiAgentContract.includes("shopify.products.search"))fail("P1.3a must not broaden the executable Agent protocol before P1.3b");
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);

@@ -19,6 +19,7 @@ export const VSN_BASELINE = Object.freeze({
     managedAssets: 1,
     marketplace: 1,
     brandKits: 2,
+    aiContextTools: 1,
     developerSdk: 2,
     pluginManifest: 1,
     enterpriseHardening: 1,

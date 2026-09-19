@@ -16,6 +16,7 @@
     "managedAssets": 1,
     "marketplace": 1,
     "brandKits": 2,
+    "aiContextTools": 1,
     "developerSdk": 2,
     "pluginManifest": 1,
     "enterpriseHardening": 1,
@@ -117,7 +118,7 @@
     "migrations": 36,
     "routeModules": 53,
     "userDocs": 25,
-    "developerDocs": 34,
+    "developerDocs": 35,
     "engineeringDocs": 16
   },
   "migrations": {
@@ -191,6 +192,7 @@
     ],
     "developer": [
       "docs/developer/ai-command-registry.md",
+      "docs/developer/ai-context-tools.md",
       "docs/developer/ai-evals.md",
       "docs/developer/ai-provider-policy.md",
       "docs/developer/architecture.md",
