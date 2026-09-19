@@ -46,6 +46,9 @@ const candidateCases = [
 ];
 const baseline = buildEvalArtifact({ evalVersion: "1.0.0", dataset: "vsn-ai-eval-v1", runLabel: "baseline", mode: "provider", status: "VERIFIED", cases: baselineCases });
 const candidate = buildEvalArtifact({ evalVersion: "1.0.0", dataset: "vsn-ai-eval-v1", runLabel: "candidate", mode: "provider", status: "VERIFIED", cases: candidateCases });
+const unpriced = buildEvalArtifact({ evalVersion: "1.0.0", dataset: "vsn-ai-eval-v1", runLabel: "unpriced", mode: "provider", status: "NOT_VERIFIED", cases: [], cost: { status: "NOT_CONFIGURED", estimatedUsd: null } });
+ok(unpriced.cost.status === "NOT_CONFIGURED" && unpriced.cost.estimatedUsd === null, "Unconfigured provider pricing must not be reported as zero cost");
+
 const comparison = compareEvalArtifacts(baseline, candidate);
 ok(comparison.decision === "block", "New safety/schema failures must mechanically block rollout");
 ok(comparison.regressions.includes("a"), "Comparison must identify per-case regressions");
@@ -54,7 +57,7 @@ const deterministicRunner = read("scripts/ai-eval-deterministic.mjs");
 for (const token of ["buildEvalArtifact", "criticalFailures", "artifacts/ai-evals", "process.exit(1)"]) ok(deterministicRunner.includes(token), `Deterministic runner missing ${token}`);
 
 const providerRunner = read("scripts/ai-eval-provider.mjs");
-for (const token of ["VSN_AI_EVALS", "NOT VERIFIED", "OPENAI_API_KEY", "runAiBuilder", "runEmailAi", "inputHash", "VSN_AI_EVAL_INPUT_USD_PER_M", "VSN_AI_EVAL_OUTPUT_USD_PER_M"]) {
+for (const token of ["VSN_AI_EVALS", "NOT VERIFIED", "OPENAI_API_KEY", "runAiBuilder", "runEmailAi", "inputHash", "VSN_AI_EVAL_INPUT_USD_PER_M", "VSN_AI_EVAL_OUTPUT_USD_PER_M", "!inputRaw || !outputRaw", "NOT_CONFIGURED"]) {
   ok(providerRunner.includes(token), `Provider eval runner missing ${token}`);
 }
 ok(!providerRunner.includes("outputText:"), "Provider eval artifact must not persist raw model output");
