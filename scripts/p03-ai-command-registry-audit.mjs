@@ -58,7 +58,10 @@ const pageState = {
   workflowStatus: "draft",
   version: 1,
   deletedAt: null,
-  contentJson: JSON.stringify([{ id: "heading-1", type: "heading", label: "Heading", props: { text: "Old" }, styles: {}, children: [] }]),
+  contentJson: JSON.stringify([
+    { id: "__vsn_global_styles__", type: "global-styles", label: "Global Styles", props: {}, styles: {}, children: [] },
+    { id: "heading-1", type: "heading", label: "Heading", props: { text: "Old" }, styles: {}, children: [] },
+  ]),
 };
 const revisions = [];
 const auditRows = [];
@@ -164,6 +167,19 @@ await assert.rejects(
     input: { pageId: pageState.id, baseVersion: 5, nodeType: "html", props: { code: "<script>alert(1)</script>" } },
   }),
   (error) => error instanceof AiCommandError && ["AI_COMMAND_UNSUPPORTED_WIDGET", "AI_COMMAND_UNSAFE_INPUT"].includes(error.code),
+);
+checks += 1;
+
+await assert.rejects(
+  () => executeAiCommand({
+    db: fakeDb,
+    session: ownerSession,
+    actor: "owner@example.com",
+    role: "admin",
+    name: "element.remove",
+    input: { pageId: pageState.id, baseVersion: 5, elementId: "__vsn_global_styles__" },
+  }),
+  (error) => error instanceof AiCommandError && error.code === "AI_COMMAND_SYSTEM_NODE_PROTECTED",
 );
 checks += 1;
 
