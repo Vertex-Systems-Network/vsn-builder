@@ -218,6 +218,17 @@ for(const marker of ["assertTrustedMutationRequest","authenticate.admin","canAcc
   if(!aiAgentRoute.includes(marker))fail(`Editor Agent route security regression detected: ${marker}`);
 }
 
+const brandProfile=fs.readFileSync(path.join(root,"app/brand/brandProfile.js"),"utf8");
+for(const marker of ["BRAND_PROFILE_VERSION = 1","EXECUTABLE_OR_TEMPLATE","MAX_RULES = 12","normalizeBrandProfile"]){
+  if(!brandProfile.includes(marker))fail(`Brand Intelligence sanitizer regression detected: ${marker}`);
+}
+const brandKitService=fs.readFileSync(path.join(root,"app/services/brand-kits.server.js"),"utf8");
+for(const marker of ["profileJson","brandProfileFromForm","normalizeBrandProfile"]){
+  if(!brandKitService.includes(marker))fail(`Brand Intelligence persistence regression detected: ${marker}`);
+}
+if(aiAgent.includes("builderBrandKit.update")||aiAgent.includes("saveBrandKit"))fail("Editor Agent must not mutate Brand Intelligence");
+if(!aiAgent.includes("publicVisualTokens")||!aiAgent.includes("loadAgentBrandContext"))fail("Editor Agent must bound Brand Intelligence context");
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
