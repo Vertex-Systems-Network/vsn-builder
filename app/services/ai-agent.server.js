@@ -41,7 +41,6 @@ function publicRevision(row) {
     id: String(row?.id || ""),
     kind: cleanText(row?.kind, 80),
     label: cleanText(row?.label || row?.title, 160),
-    createdBy: cleanText(row?.createdBy, 160),
     createdAt: row?.createdAt?.toISOString?.() || row?.createdAt || null,
   };
 }
@@ -49,7 +48,6 @@ function publicRevision(row) {
 function publicCommand(row) {
   return {
     action: cleanText(row?.action, 120),
-    actor: cleanText(row?.actor, 160),
     createdAt: row?.createdAt || null,
   };
 }
@@ -97,7 +95,7 @@ export async function buildEditorAgentContext({
       where: { shop, pageId: page.id },
       orderBy: { createdAt: "desc" },
       take: 12,
-      select: { id: true, kind: true, label: true, title: true, createdBy: true, createdAt: true },
+      select: { id: true, kind: true, label: true, title: true, createdAt: true },
     }).catch(() => []),
     listRecentBuilderCommands(db, shop, 30),
   ]);
