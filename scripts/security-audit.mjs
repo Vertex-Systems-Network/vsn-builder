@@ -189,6 +189,17 @@ for(const marker of ["SUPPORTED_PROVIDERS","RETRYABLE_STATUS","AbortSignal.timeo
 }
 if(aiProvider.includes("payload?.error?.message"))fail("AI provider errors must not reflect vendor error messages verbatim");
 
+const aiCommands=fs.readFileSync(path.join(root,"app/services/ai-command-registry.server.js"),"utf8");
+for(const marker of ["runBuilderCommand","canAccessBuilderAction","AI_COMMAND_STALE_VERSION","ai-command-undo","AI_COMMAND_EXPLICIT_APPROVAL_REQUIRED"]){
+  if(!aiCommands.includes(marker))fail(`AI command boundary regression detected: ${marker}`);
+}
+if(aiCommands.includes("admin.graphql"))fail("AI command registry must not call Shopify Admin GraphQL directly");
+if(aiCommands.includes("publishedJson"))fail("AI command registry must not mutate published content directly");
+const aiCommandRoute=fs.readFileSync(path.join(root,"app/routes/app.ai-command.jsx"),"utf8");
+for(const marker of ["assertTrustedMutationRequest","authenticate.admin","MAX_COMMAND_BYTES","executeAiCommand"]){
+  if(!aiCommandRoute.includes(marker))fail(`AI command route security regression detected: ${marker}`);
+}
+
 const aiBehaviors=fs.readFileSync(path.join(root,"app/ai/behaviors.js"),"utf8");
 for(const marker of ["untrusted data","Never invent merge-token paths"]){
   if(!aiBehaviors.includes(marker))fail(`AI behavior safety contract regression detected: ${marker}`);
