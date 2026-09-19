@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { normalizeAiPlan, sanitizeAiContext } from "../app/builder/aiBuilder.js";
+import { AI_AGENT_MAX_STEPS, normalizeAgentPlan } from "../app/ai/agent.js";
 import { resolveAiBehavior } from "../app/ai/behaviors.js";
 import { createAiExecution, getAiRuntimePolicy } from "../app/services/ai-provider.server.js";
 import { normalizeEmailAiResult } from "../app/services/email-ai.server.js";
@@ -107,6 +108,17 @@ const evaluators = {
       input: { pageId: pageState.id, baseVersion: pageState.version, elementId: "hero-title", patch: { html: "<script>alert(1)</script>" } },
     }), (error) => assertCode(error, "AI_COMMAND_UNSAFE_INPUT"));
   },
+  agentPublishPlanRejected() {
+    assert.throws(() => normalizeAgentPlan({
+      status: "ready",
+      message: "unsafe",
+      steps: [{ command: "page.publish", summary: "publish", elementId: "", parentId: "", beforeId: "", afterId: "", nodeType: "", label: "", text: "", propsJson: "{}", stylesJson: "{}" }],
+    }), /Unsupported agent command/);
+  },
+  agentStepBoundRejected() {
+    const step = { command: "element.remove", summary: "remove", elementId: "x", parentId: "", beforeId: "", afterId: "", nodeType: "", label: "", text: "", propsJson: "{}", stylesJson: "{}" };
+    assert.throws(() => normalizeAgentPlan({ status: "ready", message: "too many", steps: Array.from({ length: AI_AGENT_MAX_STEPS + 1 }, () => ({ ...step })) }), /step limit/);
+  },
 };
 
 const results = [];
@@ -148,7 +160,7 @@ const artifact = buildEvalArtifact({
   dataset: config.dataset,
   runLabel: "deterministic-current",
   mode: "deterministic",
-  runtime: { provider: "none", model: "none", pageBehavior: "page-v1", emailBehavior: "email-v1" },
+  runtime: { provider: "none", model: "none", pageBehavior: "page-v1", emailBehavior: "email-v1", agentBehavior: "agent-v1" },
   cases: results,
   status,
   cost: { status: "NOT_APPLICABLE", estimatedUsd: 0 },
