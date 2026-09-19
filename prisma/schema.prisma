@@ -744,6 +744,7 @@ model BuilderBrandKit {
   spacingJson    String   @default("{}")
   radiusJson     String   @default("{}")
   shadowsJson    String   @default("{}")
+  profileJson    String   @default("{}")
   isDefault      Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

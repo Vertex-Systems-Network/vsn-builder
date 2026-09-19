@@ -1,4 +1,5 @@
 import { GLOBAL_DESIGN_DEFAULTS } from "../builder/globalDesign.js";
+import { brandProfileFromForm, normalizeBrandProfile } from "../brand/brandProfile.js";
 
 function parseJson(value, fallback) { try { return JSON.parse(String(value || "")); } catch { return fallback; } }
 function stringify(value) { return JSON.stringify(value || {}); }
@@ -25,10 +26,10 @@ export function brandKitToTokens(kit) {
   };
 }
 
-export function serializeBrandKit(kit) { return {...kit,colors:parseJson(kit.colorsJson,{}),typography:parseJson(kit.typographyJson,{}),spacing:parseJson(kit.spacingJson,{}),radius:parseJson(kit.radiusJson,{}),shadows:parseJson(kit.shadowsJson,{}),tokens:brandKitToTokens(kit)}; }
+export function serializeBrandKit(kit) { return {...kit,colors:parseJson(kit.colorsJson,{}),typography:parseJson(kit.typographyJson,{}),spacing:parseJson(kit.spacingJson,{}),radius:parseJson(kit.radiusJson,{}),shadows:parseJson(kit.shadowsJson,{}),profile:normalizeBrandProfile(kit.profileJson),tokens:brandKitToTokens(kit)}; }
 
 export async function saveBrandKit({db,shop,id,name,logoUrl,input,isDefault=false}) {
-  const normalized=normalizeKitInput(input); const data={name:String(name||"Brand Kit").trim().slice(0,100)||"Brand Kit",logoUrl:String(logoUrl||"").trim().slice(0,1000)||null,colorsJson:stringify(normalized.colors),typographyJson:stringify(normalized.typography),spacingJson:stringify(normalized.spacing),radiusJson:stringify(normalized.radius),shadowsJson:stringify(normalized.shadows),deletedAt:null};
+  const normalized=normalizeKitInput(input); const profile=brandProfileFromForm(input); const data={name:String(name||"Brand Kit").trim().slice(0,100)||"Brand Kit",logoUrl:String(logoUrl||"").trim().slice(0,1000)||null,colorsJson:stringify(normalized.colors),typographyJson:stringify(normalized.typography),spacingJson:stringify(normalized.spacing),radiusJson:stringify(normalized.radius),shadowsJson:stringify(normalized.shadows),profileJson:stringify(profile),deletedAt:null};
   let kit;
   if(id){const existing=await db.builderBrandKit.findFirst({where:{id,shop}});if(!existing)throw new Error("Brand Kit not found.");kit=await db.builderBrandKit.update({where:{id},data});} else kit=await db.builderBrandKit.create({data:{shop,...data,isDefault:false}});
   if(isDefault)kit=await setDefaultBrandKit({db,shop,id:kit.id});

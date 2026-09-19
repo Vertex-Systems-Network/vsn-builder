@@ -119,7 +119,9 @@ Capabilities:
 
 Do not permit live publish in the initial autonomous command set.
 
-### P1.2 Brand intelligence
+### P1.2 Brand intelligence — IMPLEMENTED BASELINE
+
+**Status:** versioned Brand Profile v1 storage/UI + read-only Editor Agent context implemented as an additive extension of existing Brand Kits. Visual tokens and storefront rendering remain unchanged. AI-assisted owned-site extraction remains the next P1.2 sub-step after this baseline is sealed.
 
 Create a versioned brand profile using existing VSN settings/tokens as the base.
 
