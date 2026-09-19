@@ -19,6 +19,8 @@ import {
 import { aiUsageStatus, reserveAiUsage } from "./ai-builder.server.js";
 import { executeAiCommand } from "./ai-command-registry.server.js";
 import { listRecentBuilderCommands } from "./command-bus.server.js";
+import { brandKitToTokens } from "./brand-kits.server.js";
+import { normalizeBrandProfile } from "../brand/brandProfile.js";
 
 const MAX_PROMPT_CHARS = 8000;
 const MAX_BREAKPOINT_CHARS = 40;
@@ -62,6 +64,34 @@ function publicQuality(issue) {
   };
 }
 
+function parseObject(value) {
+  try {
+    const parsed = JSON.parse(String(value || "{}"));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch { return {}; }
+}
+
+async function loadAgentBrandContext(db, shop) {
+  const kitPromise = db.builderBrandKit?.findFirst
+    ? db.builderBrandKit.findFirst({
+        where: { shop, deletedAt: null },
+        orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+      }).catch(() => null)
+    : Promise.resolve(null);
+  const settingPromise = db.builderShopSetting?.findUnique
+    ? db.builderShopSetting.findUnique({ where: { shop }, select: { designTokensJson: true } }).catch(() => null)
+    : Promise.resolve(null);
+  const [kit, setting] = await Promise.all([kitPromise, settingPromise]);
+  const fallbackTokens = parseObject(setting?.designTokensJson);
+  return {
+    kitId: kit?.id || null,
+    name: cleanText(kit?.name || "", 160),
+    isDefault: kit?.isDefault === true,
+    visualTokens: kit ? brandKitToTokens(kit) : fallbackTokens,
+    profile: normalizeBrandProfile(kit?.profileJson || {}),
+  };
+}
+
 async function loadAgentPage(db, shop, pageId) {
   const page = await db.builderPage.findFirst({
     where: { id: pageId, shop, deletedAt: null },
@@ -90,7 +120,7 @@ export async function buildEditorAgentContext({
   const pageIds = new Set(pageRows.map((row) => String(row.id)));
   const validSelectedIds = normalizeAgentSelectedIds(selectedIds).filter((id) => pageIds.has(id));
 
-  const [revisions, commands] = await Promise.all([
+  const [revisions, commands, brand] = await Promise.all([
     db.builderRevision.findMany({
       where: { shop, pageId: page.id },
       orderBy: { createdAt: "desc" },
@@ -98,6 +128,7 @@ export async function buildEditorAgentContext({
       select: { id: true, kind: true, label: true, title: true, createdAt: true },
     }).catch(() => []),
     listRecentBuilderCommands(db, shop, 30),
+    loadAgentBrandContext(db, shop),
   ]);
   const quality = scanBuilderPage({ page, elements: content });
 
@@ -116,6 +147,7 @@ export async function buildEditorAgentContext({
     recentRevisions: revisions.map(publicRevision),
     recentCommands: commands.filter((row) => !row.pageId || String(row.pageId) === String(page.id)).slice(0, 12).map(publicCommand),
     qualityFindings: (quality?.issues || []).slice(0, 16).map(publicQuality),
+    brand,
     conversation: normalizeAgentConversation(conversation),
     executableCommands: [...AI_AGENT_EXECUTABLE_COMMANDS],
   };
