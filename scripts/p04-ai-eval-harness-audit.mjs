@@ -58,7 +58,8 @@ for (const token of ["VSN_AI_EVALS", "NOT VERIFIED", "OPENAI_API_KEY", "runAiBui
   ok(providerRunner.includes(token), `Provider eval runner missing ${token}`);
 }
 ok(!providerRunner.includes("outputText:"), "Provider eval artifact must not persist raw model output");
-ok(!providerRunner.includes("prompt: testCase.prompt"), "Provider eval artifact must not persist raw prompts");
+ok(providerRunner.includes("inputHash: hashEvalInput(testCase.prompt)"), "Provider eval artifact must attribute cases with prompt hashes");
+ok(!read("app/ai/evalHarness.js").includes("prompt:"), "Safe eval artifact schema must not expose raw prompt fields");
 
 const compareRunner = read("scripts/ai-eval-compare.mjs");
 ok(compareRunner.includes("compareEvalArtifacts") && compareRunner.includes("process.exit(2)"), "Comparison runner must distinguish NOT VERIFIED");
