@@ -81,7 +81,9 @@ Acceptance:
 - critical policy failures block rollout;
 - semantic quality is no longer represented by static source checks alone.
 
-### P0.5 Verify production data topology
+### P0.5 Verify production data topology — IN PROGRESS / DEPLOYMENT EVIDENCE BLOCKED
+
+**Status:** repository topology is now explicit and release-gated: the implemented persistence layer is SQLite, external database URLs are not supported by the current Prisma/runtime stack, and production requires explicit single-instance durable-volume SQLite with infrastructure snapshots and a restore drill. Actual deployed hosting/volume/replica/backup evidence is still NOT VERIFIED, so this milestone is intentionally not marked complete.
 
 Actions:
 

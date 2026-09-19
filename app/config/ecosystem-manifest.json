@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T00:35:00.000Z",
+  "generatedAt": "2026-09-19T01:22:00.000Z",
   "version": "2.5.107",
   "milestone": "Q.6.4",
   "baselineName": "Hydration, UI Theme, Maps & Form Security — Q.6.4",
@@ -117,7 +117,7 @@
     "migrations": 35,
     "routeModules": 52,
     "userDocs": 25,
-    "developerDocs": 31,
+    "developerDocs": 32,
     "engineeringDocs": 16
   },
   "migrations": {
@@ -207,6 +207,7 @@
       "docs/developer/platform-intelligence.md",
       "docs/developer/platform-p2.md",
       "docs/developer/plugin-manifest.md",
+      "docs/developer/production-data-topology.md",
       "docs/developer/renderer.md",
       "docs/developer/reusable-data-view-kit.md",
       "docs/developer/runtime-security.md",

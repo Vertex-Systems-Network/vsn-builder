@@ -23,4 +23,6 @@ The Theme Active badge uses Shopify App Bridge to verify the published theme app
 
 ## Runtime hosting variables
 
-Production hosting requires at least `SHOPIFY_APP_URL`, `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET` and the production database configuration. `VSN_DEFAULT_PLAN` must stay blank in production.
+Production hosting requires at least `SHOPIFY_APP_URL`, `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET` and an explicit SQLite `DATABASE_URL=file:...`. The current release does not implement Postgres/MySQL by changing the URL alone. `VSN_DEFAULT_PLAN` must stay blank in production.
+
+Before `release:production:check` can pass, also provide the P0.5 persistence evidence: `VSN_PRODUCTION_HOSTING_PROVIDER`, `VSN_SQLITE_VOLUME_MOUNT`, `VSN_SQLITE_INSTANCE_MODE=single-instance`, `VSN_SQLITE_DURABILITY=durable-volume`, `VSN_SQLITE_BACKUP_MODE=infrastructure-snapshot`, and a valid `VSN_SQLITE_RESTORE_TESTED_AT` timestamp. See `docs/developer/production-data-topology.md` for the boundary between repository support and actual deployment evidence.
