@@ -1,6 +1,7 @@
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
-import { findNode, removeNode, updateNode } from "../builder/tree.js";
-import { serializePageForAi } from "../builder/aiBuilder.js";
+import { findNode, insertNode, relocateNode, removeNode, updateNode } from "../builder/tree.js";
+import { AI_ALLOWED_TYPES, aiNodeId, applyReplacementText, serializePageForAi } from "../builder/aiBuilder.js";
+import { widgetRegistry } from "../builder/widgetRegistry.js";
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 import { canCollaborate, getBlockingPageLock, getCollaborationRole } from "./collaboration.server.js";
 import { getBuilderRuntimeEntitlements } from "./builder-runtime-entitlements.server.js";
@@ -14,6 +15,7 @@ const MAX_CONTENT_CHARS = 2_000_000;
 const FORBIDDEN_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 const UNSAFE_KEY = /^(?:on[a-z]+|script|scripts|srcdoc|customjs|custom_js|customcode|custom_code|liquid|html)$/i;
 const UNSAFE_TEXT = /(?:javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|<\s*script\b|\{%|\{\{)/i;
+const SYSTEM_NODE_TYPES = new Set(["global-styles", "template-settings"]);
 
 export class AiCommandError extends Error {
   constructor(code, message, status = 400) {
@@ -73,6 +75,122 @@ function requiredPatch(value) {
     throw new AiCommandError("AI_COMMAND_INVALID_INPUT", "patch must be a non-empty object.", 400);
   }
   return patch;
+}
+
+function optionalString(value, max = 200) {
+  const text = String(value || "").trim();
+  if (text.length > max) throw new AiCommandError("AI_COMMAND_INVALID_INPUT", "Optional command field is too long.", 400);
+  return text || null;
+}
+
+function safeDraftText(value, field, max = 6000, { required = true } = {}) {
+  const text = String(value || "").trim();
+  if (!text && required) throw new AiCommandError("AI_COMMAND_INVALID_INPUT", `${field} is required.`, 400);
+  if (text.length > max) throw new AiCommandError("AI_COMMAND_INVALID_INPUT", `${field} is too long.`, 400);
+  if (text && UNSAFE_TEXT.test(text)) throw new AiCommandError("AI_COMMAND_UNSAFE_INPUT", `${field} contains executable or template syntax.`, 400);
+  return text || null;
+}
+
+function optionalPatch(value) {
+  if (value == null) return {};
+  const patch = sanitizePatch(value);
+  if (!patch || Array.isArray(patch) || typeof patch !== "object") {
+    throw new AiCommandError("AI_COMMAND_INVALID_INPUT", "Patch must be an object.", 400);
+  }
+  return patch;
+}
+
+const AI_INSERT_TYPE_SET = new Set(AI_ALLOWED_TYPES);
+
+function normalizeElementInsert(input = {}) {
+  const nodeType = requiredString(input.nodeType, "nodeType", 80);
+  if (!AI_INSERT_TYPE_SET.has(nodeType)) {
+    throw new AiCommandError("AI_COMMAND_UNSUPPORTED_WIDGET", `AI cannot insert unsupported widget type: ${nodeType}.`, 400);
+  }
+  const beforeId = optionalString(input.beforeId);
+  const afterId = optionalString(input.afterId);
+  if (beforeId && afterId) throw new AiCommandError("AI_COMMAND_INVALID_INPUT", "Use beforeId or afterId, not both.", 400);
+  return {
+    pageId: requiredString(input.pageId, "pageId"),
+    baseVersion: requiredVersion(input.baseVersion),
+    parentId: optionalString(input.parentId),
+    beforeId,
+    afterId,
+    nodeType,
+    label: safeDraftText(input.label, "label", 160, { required: false }),
+    props: optionalPatch(input.props),
+    styles: optionalPatch(input.styles),
+    sourceGenerationId: safeGenerationId(input.sourceGenerationId),
+  };
+}
+
+function normalizeElementMove(input = {}) {
+  const beforeId = optionalString(input.beforeId);
+  const afterId = optionalString(input.afterId);
+  if (beforeId && afterId) throw new AiCommandError("AI_COMMAND_INVALID_INPUT", "Use beforeId or afterId, not both.", 400);
+  return {
+    pageId: requiredString(input.pageId, "pageId"),
+    baseVersion: requiredVersion(input.baseVersion),
+    elementId: requiredString(input.elementId, "elementId"),
+    parentId: optionalString(input.parentId),
+    beforeId,
+    afterId,
+    sourceGenerationId: safeGenerationId(input.sourceGenerationId),
+  };
+}
+
+function normalizeElementRewrite(input = {}) {
+  return {
+    pageId: requiredString(input.pageId, "pageId"),
+    baseVersion: requiredVersion(input.baseVersion),
+    elementId: requiredString(input.elementId, "elementId"),
+    text: safeDraftText(input.text, "text", 6000),
+    sourceGenerationId: safeGenerationId(input.sourceGenerationId),
+  };
+}
+
+function normalizeRevisionRestore(input = {}) {
+  return {
+    pageId: requiredString(input.pageId, "pageId"),
+    baseVersion: requiredVersion(input.baseVersion),
+    revisionId: requiredString(input.revisionId, "revisionId"),
+    sourceGenerationId: safeGenerationId(input.sourceGenerationId),
+  };
+}
+
+function insertionIndex(siblings, { beforeId, afterId } = {}) {
+  if (beforeId) {
+    const index = siblings.findIndex((item) => item?.id === beforeId);
+    if (index < 0) throw new AiCommandError("AI_COMMAND_INVALID_PLACEMENT", "beforeId is not a sibling in the requested destination.", 400);
+    if (SYSTEM_NODE_TYPES.has(siblings[index]?.type)) throw new AiCommandError("AI_COMMAND_SYSTEM_NODE_PROTECTED", "AI draft commands cannot use builder system nodes as placement anchors.", 403);
+    return index;
+  }
+  if (afterId) {
+    const index = siblings.findIndex((item) => item?.id === afterId);
+    if (index < 0) throw new AiCommandError("AI_COMMAND_INVALID_PLACEMENT", "afterId is not a sibling in the requested destination.", 400);
+    if (SYSTEM_NODE_TYPES.has(siblings[index]?.type)) throw new AiCommandError("AI_COMMAND_SYSTEM_NODE_PROTECTED", "AI draft commands cannot use builder system nodes as placement anchors.", 403);
+    return index + 1;
+  }
+  return siblings.length;
+}
+
+function assertParentCanAccept(nodes, parentId) {
+  if (!parentId) return null;
+  const parent = findNode(nodes, parentId);
+  if (!parent) throw new AiCommandError("AI_COMMAND_PARENT_NOT_FOUND", "Destination parent was not found.", 404);
+  if (widgetRegistry[parent.type]?.acceptsChildren !== true) {
+    throw new AiCommandError("AI_COMMAND_INVALID_PLACEMENT", `${parent.label || parent.type} cannot contain child widgets.`, 400);
+  }
+  return parent;
+}
+
+function assertMutableElement(nodes, elementId) {
+  const node = findNode(nodes, elementId);
+  if (!node) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+  if (SYSTEM_NODE_TYPES.has(node.type)) {
+    throw new AiCommandError("AI_COMMAND_SYSTEM_NODE_PROTECTED", "AI draft commands cannot mutate builder system nodes.", 403);
+  }
+  return node;
 }
 
 function mergePatch(current, patch) {
@@ -248,6 +366,96 @@ const REGISTRY = Object.freeze({
       };
     },
   }),
+  "element.insert": Object.freeze({
+    kind: "draft-mutation",
+    resource: "pages",
+    action: "edit",
+    reversible: true,
+    requiresBaseVersion: true,
+    directExecution: true,
+    approval: "none",
+    input: Object.freeze({ pageId: "string", baseVersion: "integer", parentId: "string?", beforeId: "string?", afterId: "string?", nodeType: "string", label: "string?", props: "object?", styles: "object?", sourceGenerationId: "string?" }),
+    normalize: normalizeElementInsert,
+    execute(tx, context) {
+      return applyDraftMutation(tx, {
+        ...context,
+        commandName: "element.insert",
+        mutate(nodes) {
+          const parent = assertParentCanAccept(nodes, context.input.parentId);
+          const siblings = context.input.parentId ? (parent?.children || []) : nodes;
+          const index = insertionIndex(siblings, context.input);
+          const definition = widgetRegistry[context.input.nodeType];
+          if (!definition) throw new AiCommandError("AI_COMMAND_UNSUPPORTED_WIDGET", "Widget definition is unavailable.", 400);
+          const node = {
+            id: aiNodeId(`agent-${context.input.nodeType}`),
+            type: context.input.nodeType,
+            label: context.input.label || definition.label || context.input.nodeType,
+            props: mergePatch(structuredClone(definition.props || {}), context.input.props),
+            styles: mergePatch(structuredClone(definition.styles || {}), context.input.styles),
+            children: [],
+          };
+          const next = insertNode(nodes, node, context.input.parentId, index);
+          if (next === nodes) throw new AiCommandError("AI_COMMAND_INVALID_PLACEMENT", "Widget could not be inserted at the requested destination.", 400);
+          return { nodes: next, elementId: node.id };
+        },
+      });
+    },
+  }),
+  "element.move": Object.freeze({
+    kind: "draft-mutation",
+    resource: "pages",
+    action: "edit",
+    reversible: true,
+    requiresBaseVersion: true,
+    directExecution: true,
+    approval: "none",
+    input: Object.freeze({ pageId: "string", baseVersion: "integer", elementId: "string", parentId: "string?", beforeId: "string?", afterId: "string?", sourceGenerationId: "string?" }),
+    normalize: normalizeElementMove,
+    execute(tx, context) {
+      return applyDraftMutation(tx, {
+        ...context,
+        commandName: "element.move",
+        mutate(nodes) {
+          const moving = assertMutableElement(nodes, context.input.elementId);
+          const parent = assertParentCanAccept(nodes, context.input.parentId);
+          const siblings = context.input.parentId ? (parent?.children || []) : nodes;
+          insertionIndex(siblings.filter((item) => item?.id !== moving.id), context.input);
+          const next = relocateNode(nodes, moving.id, {
+            parentId: context.input.parentId,
+            beforeId: context.input.beforeId,
+            afterId: context.input.afterId,
+          });
+          if (next === nodes) throw new AiCommandError("AI_COMMAND_NO_CHANGE", "Move did not change the page.", 409);
+          return { nodes: next, elementId: moving.id };
+        },
+      });
+    },
+  }),
+  "element.rewrite": Object.freeze({
+    kind: "draft-mutation",
+    resource: "pages",
+    action: "edit",
+    reversible: true,
+    requiresBaseVersion: true,
+    directExecution: true,
+    approval: "none",
+    input: Object.freeze({ pageId: "string", baseVersion: "integer", elementId: "string", text: "string", sourceGenerationId: "string?" }),
+    normalize: normalizeElementRewrite,
+    execute(tx, context) {
+      return applyDraftMutation(tx, {
+        ...context,
+        commandName: "element.rewrite",
+        mutate(nodes) {
+          assertMutableElement(nodes, context.input.elementId);
+          const next = applyReplacementText(nodes, context.input.elementId, context.input.text);
+          if (next === nodes || JSON.stringify(next) === JSON.stringify(nodes)) {
+            throw new AiCommandError("AI_COMMAND_NO_CHANGE", "Selected element does not expose editable text.", 409);
+          }
+          return { nodes: next, elementId: context.input.elementId };
+        },
+      });
+    },
+  }),
   "element.update-props": Object.freeze({
     kind: "draft-mutation",
     resource: "pages",
@@ -263,8 +471,7 @@ const REGISTRY = Object.freeze({
         ...context,
         commandName: "element.update-props",
         mutate(nodes) {
-          const node = findNode(nodes, context.input.elementId);
-          if (!node) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+          const node = assertMutableElement(nodes, context.input.elementId);
           return {
             elementId: node.id,
             nodes: updateNode(nodes, node.id, (current) => ({ ...current, props: mergePatch(current.props || {}, context.input.patch) })),
@@ -288,8 +495,7 @@ const REGISTRY = Object.freeze({
         ...context,
         commandName: "element.update-styles",
         mutate(nodes) {
-          const node = findNode(nodes, context.input.elementId);
-          if (!node) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+          const node = assertMutableElement(nodes, context.input.elementId);
           return {
             elementId: node.id,
             nodes: updateNode(nodes, node.id, (current) => ({ ...current, styles: mergePatch(current.styles || {}, context.input.patch) })),
@@ -313,9 +519,33 @@ const REGISTRY = Object.freeze({
         ...context,
         commandName: "element.remove",
         mutate(nodes) {
-          const node = findNode(nodes, context.input.elementId);
-          if (!node) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+          const node = assertMutableElement(nodes, context.input.elementId);
           return { elementId: node.id, nodes: removeNode(nodes, node.id) };
+        },
+      });
+    },
+  }),
+  "revision.restore": Object.freeze({
+    kind: "draft-mutation",
+    resource: "pages",
+    action: "edit",
+    reversible: true,
+    requiresBaseVersion: true,
+    directExecution: true,
+    approval: "none",
+    input: Object.freeze({ pageId: "string", baseVersion: "integer", revisionId: "string", sourceGenerationId: "string?" }),
+    normalize: normalizeRevisionRestore,
+    async execute(tx, context) {
+      const revision = await tx.builderRevision.findFirst({
+        where: { id: context.input.revisionId, shop: context.shop, pageId: context.input.pageId },
+      });
+      if (!revision) throw new AiCommandError("AI_COMMAND_REVISION_NOT_FOUND", "Revision checkpoint was not found.", 404);
+      const target = parsePageContent(revision.contentJson);
+      return applyDraftMutation(tx, {
+        ...context,
+        commandName: "revision.restore",
+        mutate() {
+          return { nodes: target, elementId: null };
         },
       });
     },
@@ -339,7 +569,7 @@ const REGISTRY = Object.freeze({
   }),
 });
 
-export const AI_COMMAND_REGISTRY_VERSION = 1;
+export const AI_COMMAND_REGISTRY_VERSION = 2;
 
 export function listAiCommandDefinitions() {
   return Object.freeze(Object.entries(REGISTRY).map(([name, definition]) => publicDefinition(name, definition)));

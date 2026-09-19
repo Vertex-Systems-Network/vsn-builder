@@ -1,13 +1,6 @@
 import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnColorField, VsnSearchField, VsnUrlField, VsnDateField, VsnSpinner } from "./EditorUi";
 import useCollaborationHeartbeat from "./hooks/useCollaborationHeartbeat.js";
-import {
-  Component,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createEditorCommand, editorHistoryEntry } from "../../builder/editorCommand.js";
 import { buildEditorBindingContext } from "./bindingInspectorContext.js";
 import {
@@ -57,6 +50,7 @@ import { compareBuilderContents } from "../../builder/revisionDiff.js";
 import { applyLocalizationOverrides } from "../../builder/localizationEngine.js";
 import useTemplateBrowser from "./hooks/useTemplateBrowser.js";
 import useEditorAppearance from "./hooks/useEditorAppearance.js";
+import useAgentEditorSync from "./hooks/useAgentEditorSync.js";
 
 
 const DEFAULT_GLOBAL_STYLES = {
@@ -848,6 +842,8 @@ export default function PageEditor({
     setSelectedId(firstId); setSelectedIds(firstId ? [firstId] : []);
     setShowAI(false);
   }, [elements, selectedId, commit]);
+
+  const handleAgentResult = useAgentEditorSync({ pageId: page.id, historyIdx, designTokens, readGlobalStyles, readPageSettings, storageKey, setElements, setGlobalStyles, setPageSettings, setHistory, setHistoryIdx, setSelectedId, setSelectedIds, setStagedRevisionId, setRevisionDiff, setIsSaved, setAutosaveAt, setSaveStatus, setLocalizationData });
 
   const handleDrop = ({
     type,
@@ -1692,7 +1688,7 @@ export default function PageEditor({
         />
         {showQA && <TemplateQAPanel elements={elements} page={page} componentDefinitions={componentDefinitions} onSelect={(id)=>{handleSelect(id,null);setShowQA(false);}} />}
 
-        <AiBuilderPanel open={showAI} onClose={()=>setShowAI(false)} fetcher={aiFetcher} page={page} elements={elements} globalStyles={globalStyles} selectedElement={selectedElement} commerceContext={{product:previewProduct?{title:previewProduct.title,handle:previewProduct.handle,vendor:previewProduct.vendor,productType:previewProduct.productType,description:previewProduct.description}:null,collection:previewCollection?{title:previewCollection.title,handle:previewCollection.handle,description:previewCollection.description}:null,search:previewSearch?{query:previewSearch.query}:null}} onApply={handleApplyAiResult} />
+        <AiBuilderPanel open={showAI} onClose={()=>setShowAI(false)} fetcher={aiFetcher} page={page} elements={elements} globalStyles={globalStyles} selectedElement={selectedElement} selectedIds={selectedIds.length?selectedIds:(selectedId?[selectedId]:[])} breakpoint={deviceMode} hasUnsavedChanges={!isSaved} commerceContext={{product:previewProduct?{title:previewProduct.title,handle:previewProduct.handle,vendor:previewProduct.vendor,productType:previewProduct.productType,description:previewProduct.description}:null,collection:previewCollection?{title:previewCollection.title,handle:previewCollection.handle,description:previewCollection.description}:null,search:previewSearch?{query:previewSearch.query}:null}} onApply={handleApplyAiResult} onAgentResult={handleAgentResult} />
 
         <PanelResizeHandle side="right" value={rightPanelWidth} onChange={setRightPanelWidth} />
         <EditorPanelBoundary resetKey={`global:${deviceMode}`}>

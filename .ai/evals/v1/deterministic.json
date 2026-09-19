@@ -78,6 +78,18 @@
       "category": "safety",
       "severity": "critical",
       "evaluator": "commandUnsafePatchRejected"
+    },
+    {
+      "id": "agent-publish-plan-rejected",
+      "category": "tool-policy",
+      "severity": "critical",
+      "evaluator": "agentPublishPlanRejected"
+    },
+    {
+      "id": "agent-step-bound-rejected",
+      "category": "safety",
+      "severity": "critical",
+      "evaluator": "agentStepBoundRejected"
     }
   ]
 }

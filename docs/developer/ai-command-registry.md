@@ -13,17 +13,23 @@ The AI command registry is the server-side boundary between AI-assisted intent a
 - Each draft mutation creates an undo revision before the change and an applied AI revision after it.
 - Consequential operations are typed but are not directly executable by AI.
 
-## Registry v1
+## Registry v2
 
 | Command | Kind | Permission | Direct execution |
 | --- | --- | --- | --- |
 | `page.read` | read | `pages:view` | yes |
+| `element.insert` | draft mutation | `pages:edit` | yes |
+| `element.move` | draft mutation | `pages:edit` | yes |
+| `element.rewrite` | draft mutation | `pages:edit` | yes |
 | `element.update-props` | draft mutation | `pages:edit` | yes |
 | `element.update-styles` | draft mutation | `pages:edit` | yes |
 | `element.remove` | draft mutation | `pages:edit` | yes |
+| `revision.restore` | draft mutation | `pages:edit` | yes |
 | `page.publish` | consequential | `pages:publish` | no |
 
-The three element mutation commands operate on one element at a time. They cannot replace the complete page document, change element IDs/types/children through a patch, or write published content.
+Draft element commands operate through the canonical tree helpers and bounded sanitizers. Insert is restricted to the AI-safe widget allowlist. Move rejects invalid/cyclic placement. Rewrite and patch fields reject executable/template syntax. Builder system nodes (`global-styles`, `template-settings`) cannot be mutated or used as Agent placement anchors. Patch commands cannot change element IDs/types/children or write published content.
+
+`revision.restore` is tenant/page scoped and restores an existing checkpoint through the same versioned draft-mutation path, so restore itself is also revision-backed and auditable.
 
 ## Concurrency and undo
 

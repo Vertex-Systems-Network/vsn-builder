@@ -200,6 +200,24 @@ for(const marker of ["assertTrustedMutationRequest","authenticate.admin","MAX_CO
   if(!aiCommandRoute.includes(marker))fail(`AI command route security regression detected: ${marker}`);
 }
 
+const aiAgent=fs.readFileSync(path.join(root,"app/services/ai-agent.server.js"),"utf8");
+for(const marker of ["AI_AGENT_OUTPUT_SCHEMA","AI_AGENT_EXECUTABLE_COMMANDS","scanBuilderPage","listRecentBuilderCommands","reserveAiUsage","executeAiCommand","checkpointRevisionId"]){
+  if(!aiAgent.includes(marker))fail(`Editor Agent security boundary regression detected: ${marker}`);
+}
+if(["page.publish","setInterval(","Worker(","BullMQ","enqueue("].some((marker)=>aiAgent.includes(marker)))fail("Editor Agent must remain request-scoped and unable to publish directly");
+if(["OPENAI_API_KEY","/v1/responses","Authorization:"].some((marker)=>aiAgent.includes(marker)))fail("Editor Agent must not bypass the shared provider boundary");
+
+const aiAgentContract=fs.readFileSync(path.join(root,"app/ai/agent.js"),"utf8");
+for(const marker of ["AI_AGENT_MAX_STEPS = 6","AI_AGENT_MAX_CONVERSATION_TURNS = 8","AI_AGENT_EXECUTABLE_COMMANDS","Agent plan exceeds"]){
+  if(!aiAgentContract.includes(marker))fail(`Editor Agent bounded-plan regression detected: ${marker}`);
+}
+if(aiAgentContract.includes('"page.publish"'))fail("Editor Agent executable contract must not include page.publish");
+
+const aiAgentRoute=fs.readFileSync(path.join(root,"app/routes/app.ai-agent.jsx"),"utf8");
+for(const marker of ["assertTrustedMutationRequest","authenticate.admin","canAccessBuilderEditor","MAX_AGENT_BYTES","runEditorAgentTurn","restoreEditorAgentCheckpoint"]){
+  if(!aiAgentRoute.includes(marker))fail(`Editor Agent route security regression detected: ${marker}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
