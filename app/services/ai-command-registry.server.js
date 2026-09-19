@@ -162,11 +162,13 @@ function insertionIndex(siblings, { beforeId, afterId } = {}) {
   if (beforeId) {
     const index = siblings.findIndex((item) => item?.id === beforeId);
     if (index < 0) throw new AiCommandError("AI_COMMAND_INVALID_PLACEMENT", "beforeId is not a sibling in the requested destination.", 400);
+    if (SYSTEM_NODE_TYPES.has(siblings[index]?.type)) throw new AiCommandError("AI_COMMAND_SYSTEM_NODE_PROTECTED", "AI draft commands cannot use builder system nodes as placement anchors.", 403);
     return index;
   }
   if (afterId) {
     const index = siblings.findIndex((item) => item?.id === afterId);
     if (index < 0) throw new AiCommandError("AI_COMMAND_INVALID_PLACEMENT", "afterId is not a sibling in the requested destination.", 400);
+    if (SYSTEM_NODE_TYPES.has(siblings[index]?.type)) throw new AiCommandError("AI_COMMAND_SYSTEM_NODE_PROTECTED", "AI draft commands cannot use builder system nodes as placement anchors.", 403);
     return index + 1;
   }
   return siblings.length;
@@ -493,8 +495,7 @@ const REGISTRY = Object.freeze({
         ...context,
         commandName: "element.update-styles",
         mutate(nodes) {
-          const node = findNode(nodes, context.input.elementId);
-          if (!node) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+          const node = assertMutableElement(nodes, context.input.elementId);
           return {
             elementId: node.id,
             nodes: updateNode(nodes, node.id, (current) => ({ ...current, styles: mergePatch(current.styles || {}, context.input.patch) })),
@@ -518,8 +519,7 @@ const REGISTRY = Object.freeze({
         ...context,
         commandName: "element.remove",
         mutate(nodes) {
-          const node = findNode(nodes, context.input.elementId);
-          if (!node) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+          const node = assertMutableElement(nodes, context.input.elementId);
           return { elementId: node.id, nodes: removeNode(nodes, node.id) };
         },
       });
