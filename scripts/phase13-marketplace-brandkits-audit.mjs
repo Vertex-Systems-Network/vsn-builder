@@ -20,7 +20,7 @@ const baselineJson=JSON.parse(read("BASELINE.json"));
 const serverBaseline=read("app/config/baseline.js");
 
 check("baseline remains Phase 13 or later",Number(baselineJson.phase)>=13);
-check("server baseline preserves Phase 13 schemas",serverBaseline.includes("marketplace: 1")&&serverBaseline.includes("brandKits: 1")&&/phase:\s*(?:1[3-9]|[2-9]\d)/.test(serverBaseline));
+check("server baseline preserves Phase 13 schemas",serverBaseline.includes("marketplace: 1")&&/brandKits:\s*(?:[1-9]|[1-9]\d+)/.test(serverBaseline)&&/phase:\s*(?:1[3-9]|[2-9]\d)/.test(serverBaseline));
 check("Phase 13 feature flag is developer-safe default-off",has("app/config/featureFlags.js","VSN_FEATURE_MARKETPLACE_BRAND_KITS","defaultValue: false","phase: 13"));
 check("Phase 13 Prisma migration exists",exists("prisma/migrations/20260807030000_phase13_marketplace_brand_kits/migration.sql"));
 check("BuilderBrandKit model exists",schema.includes("model BuilderBrandKit"));
