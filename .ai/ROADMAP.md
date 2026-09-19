@@ -45,7 +45,9 @@ Acceptance:
 - model/prompt changes are attributable and rollbackable;
 - current behavior remains feature-flag recoverable.
 
-### P0.3 Define typed AI-capable command registry
+### P0.3 Define typed AI-capable command registry — COMPLETED BASELINE
+
+**Status:** implemented in PR #23 with a versioned server-side command registry, tenant/role/collaboration guards, stale-version rejection, transactional audit logging, revision-based undo metadata, and direct denial of consequential publish execution.
 
 Actions:
 
