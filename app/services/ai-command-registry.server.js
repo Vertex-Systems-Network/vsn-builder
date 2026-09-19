@@ -15,6 +15,7 @@ const MAX_CONTENT_CHARS = 2_000_000;
 const FORBIDDEN_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 const UNSAFE_KEY = /^(?:on[a-z]+|script|scripts|srcdoc|customjs|custom_js|customcode|custom_code|liquid|html)$/i;
 const UNSAFE_TEXT = /(?:javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|<\s*script\b|\{%|\{\{)/i;
+const SYSTEM_NODE_TYPES = new Set(["global-styles", "template-settings"]);
 
 export class AiCommandError extends Error {
   constructor(code, message, status = 400) {
@@ -179,6 +180,15 @@ function assertParentCanAccept(nodes, parentId) {
     throw new AiCommandError("AI_COMMAND_INVALID_PLACEMENT", `${parent.label || parent.type} cannot contain child widgets.`, 400);
   }
   return parent;
+}
+
+function assertMutableElement(nodes, elementId) {
+  const node = findNode(nodes, elementId);
+  if (!node) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+  if (SYSTEM_NODE_TYPES.has(node.type)) {
+    throw new AiCommandError("AI_COMMAND_SYSTEM_NODE_PROTECTED", "AI draft commands cannot mutate builder system nodes.", 403);
+  }
+  return node;
 }
 
 function mergePatch(current, patch) {
@@ -404,8 +414,7 @@ const REGISTRY = Object.freeze({
         ...context,
         commandName: "element.move",
         mutate(nodes) {
-          const moving = findNode(nodes, context.input.elementId);
-          if (!moving) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+          const moving = assertMutableElement(nodes, context.input.elementId);
           const parent = assertParentCanAccept(nodes, context.input.parentId);
           const siblings = context.input.parentId ? (parent?.children || []) : nodes;
           insertionIndex(siblings.filter((item) => item?.id !== moving.id), context.input);
@@ -435,7 +444,7 @@ const REGISTRY = Object.freeze({
         ...context,
         commandName: "element.rewrite",
         mutate(nodes) {
-          if (!findNode(nodes, context.input.elementId)) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+          assertMutableElement(nodes, context.input.elementId);
           const next = applyReplacementText(nodes, context.input.elementId, context.input.text);
           if (next === nodes || JSON.stringify(next) === JSON.stringify(nodes)) {
             throw new AiCommandError("AI_COMMAND_NO_CHANGE", "Selected element does not expose editable text.", 409);
@@ -460,8 +469,7 @@ const REGISTRY = Object.freeze({
         ...context,
         commandName: "element.update-props",
         mutate(nodes) {
-          const node = findNode(nodes, context.input.elementId);
-          if (!node) throw new AiCommandError("AI_COMMAND_ELEMENT_NOT_FOUND", "Builder element not found.", 404);
+          const node = assertMutableElement(nodes, context.input.elementId);
           return {
             elementId: node.id,
             nodes: updateNode(nodes, node.id, (current) => ({ ...current, props: mergePatch(current.props || {}, context.input.patch) })),
