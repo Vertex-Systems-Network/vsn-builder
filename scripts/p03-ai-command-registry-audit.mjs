@@ -80,7 +80,10 @@ const fakeDb = {
     },
   },
   builderRevision: {
-    findFirst: async () => revisions.at(-1) || null,
+    findFirst: async ({ where } = {}) => {
+      if (where?.id) return revisions.find((row) => row.id === where.id && (!where.shop || row.shop === where.shop) && (!where.pageId || row.pageId === where.pageId)) || null;
+      return revisions.at(-1) || null;
+    },
     create: async ({ data }) => {
       const row = { id: `rev-${revisions.length + 1}`, ...data };
       revisions.push(row);
