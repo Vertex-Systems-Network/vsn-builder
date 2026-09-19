@@ -16,6 +16,7 @@
     "managedAssets": 1,
     "marketplace": 1,
     "brandKits": 2,
+    "aiContextTools": 1,
     "developerSdk": 2,
     "pluginManifest": 1,
     "enterpriseHardening": 1,
@@ -98,8 +99,7 @@
     "emailVersionHistory": 1,
     "emailTemplateMarketplace": 1,
     "emailAiFoundation": 1,
-    "privacyLifecycle": 2,
-    "aiContextTools": 1
+    "privacyLifecycle": 2
   },
   "counts": {
     "widgets": 117,
