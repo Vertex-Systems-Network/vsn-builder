@@ -74,6 +74,7 @@ ok(runtime.includes("resolveProductionDataTopologyEvidence") && runtime.includes
 const pkg = JSON.parse(read("package.json"));
 ok(pkg.scripts?.["docker-start"]?.startsWith("node scripts/validate-production-runtime.mjs && npm run setup"), "Docker startup must validate topology before running database migrations");
 ok(pkg.scripts?.["qa:p05"] === "node scripts/p05-production-data-topology-audit.mjs && node scripts/production-data-topology-check.mjs", "P0.5 QA command missing");
-ok(pkg.scripts?.["release:production:check"]?.includes("production-data-topology-check.mjs --require-production-evidence"), "Production release must require topology evidence");
+ok(pkg.scripts?.["data-topology:production"] === "node scripts/production-data-topology-check.mjs --require-production-evidence", "Production topology command must require deployment evidence");
+ok(pkg.scripts?.["release:production:check"]?.includes("npm run data-topology:production"), "Production release must require topology evidence");
 
 console.log(`VSN P0.5 production data topology audit: PASS (${checks}/${checks})`);
