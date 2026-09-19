@@ -44,5 +44,17 @@
     "single application replica policy",
     "infrastructure snapshot/backup policy",
     "successful restore-drill timestamp"
+  ],
+  "connectedInfrastructureChecks": [
+    {
+      "provider": "Railway",
+      "checkedAt": "2026-09-19T01:19:00.000Z",
+      "result": "NO_MATCHING_VSN_BUILDER_PROJECT"
+    },
+    {
+      "provider": "Vercel",
+      "checkedAt": "2026-09-19T01:20:00.000Z",
+      "result": "NO_MATCHING_VSN_BUILDER_PROJECT"
+    }
   ]
 }
