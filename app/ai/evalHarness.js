@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 
 export const AI_EVAL_ARTIFACT_SCHEMA_VERSION = 1;
 
-const FORBIDDEN_ARTIFACT_KEYS = /(?:prompt|output|responseText|merchantContext|apiKey|authorization|credential|secret|tokenValue)/i;
+const FORBIDDEN_ARTIFACT_KEYS = /^(?:prompt|rawPrompt|systemPrompt|rawOutput|outputText|responseText|merchantContext|apiKey|authorization|credential|credentials|secret|tokenValue)$/i;
 
 function finite(value, fallback = 0) {
   const number = Number(value);
