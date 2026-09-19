@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T01:22:00.000Z",
+  "generatedAt": "2026-09-19T08:15:00.000Z",
   "version": "2.5.107",
   "milestone": "Q.6.4",
   "baselineName": "Hydration, UI Theme, Maps & Form Security — Q.6.4",
@@ -115,9 +115,9 @@
     "permissionResources": 10,
     "permissionActions": 41,
     "migrations": 35,
-    "routeModules": 52,
+    "routeModules": 53,
     "userDocs": 25,
-    "developerDocs": 32,
+    "developerDocs": 33,
     "engineeringDocs": 16
   },
   "migrations": {
@@ -196,6 +196,7 @@
       "docs/developer/billing-lifecycle.md",
       "docs/developer/billing-production-qa.md",
       "docs/developer/data-providers.md",
+      "docs/developer/editor-agent.md",
       "docs/developer/email-renderer.md",
       "docs/developer/entitlement-engine.md",
       "docs/developer/field-types.md",
