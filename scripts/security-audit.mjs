@@ -219,7 +219,7 @@ for(const marker of ["assertTrustedMutationRequest","authenticate.admin","canAcc
 }
 
 const brandProfile=fs.readFileSync(path.join(root,"app/brand/brandProfile.js"),"utf8");
-for(const marker of ["BRAND_PROFILE_VERSION = 1","EXECUTABLE_OR_TEMPLATE","MAX_RULES = 12","normalizeBrandProfile"]){
+for(const marker of ["BRAND_PROFILE_VERSION = 1","UNSAFE_SCHEME","UNSAFE_DATA_HTML","MAX_RULES = 12","normalizeBrandProfile"]){
   if(!brandProfile.includes(marker))fail(`Brand Intelligence sanitizer regression detected: ${marker}`);
 }
 const brandKitService=fs.readFileSync(path.join(root,"app/services/brand-kits.server.js"),"utf8");
