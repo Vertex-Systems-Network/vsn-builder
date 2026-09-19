@@ -69,8 +69,10 @@ for (const token of ["--require-production-evidence", "sqlite_master", "PRAGMA d
 
 const runtime = read("scripts/validate-production-runtime.mjs");
 ok(runtime.includes("DATABASE_URL") && runtime.includes("file:"), "Production runtime must reject implicit/non-SQLite database configuration");
+ok(runtime.includes("resolveProductionDataTopologyEvidence") && runtime.includes('status !== "ATTESTED"'), "Production runtime must require topology attestation");
 
 const pkg = JSON.parse(read("package.json"));
+ok(pkg.scripts?.["docker-start"]?.startsWith("node scripts/validate-production-runtime.mjs && npm run setup"), "Docker startup must validate topology before running database migrations");
 ok(pkg.scripts?.["qa:p05"] === "node scripts/p05-production-data-topology-audit.mjs && node scripts/production-data-topology-check.mjs", "P0.5 QA command missing");
 ok(pkg.scripts?.["release:production:check"]?.includes("production-data-topology-check.mjs --require-production-evidence"), "Production release must require topology evidence");
 
