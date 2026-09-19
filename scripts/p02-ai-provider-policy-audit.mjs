@@ -32,12 +32,13 @@ checks += 1;
 
 const pageService = read("app/services/ai-builder.server.js");
 const emailService = read("app/services/email-ai.server.js");
+const agentService = read("app/services/ai-agent.server.js");
 const providerService = read("app/services/ai-provider.server.js");
 const vendorTransportMarkers = ["OPENAI_API_KEY", "/v1/responses", "Authorization:"];
-for (const [label, source] of [["Page AI", pageService], ["Email AI", emailService]]) {
+for (const [label, source] of [["Page AI", pageService], ["Email AI", emailService], ["Editor Agent", agentService]]) {
   ok(vendorTransportMarkers.every((marker) => !source.includes(marker)), `${label} must not own provider credentials or transport`);
 }
-ok(pageService.includes("generateStructuredAi") && emailService.includes("generateStructuredAi"), "Page and Email AI must use the shared provider contract");
+ok(pageService.includes("generateStructuredAi") && emailService.includes("generateStructuredAi") && agentService.includes("generateStructuredAi"), "Page, Email and Agent AI must use the shared provider contract");
 ok(
   providerService.includes("/v1/responses") &&
     providerService.includes("OPENAI_API_KEY") &&
