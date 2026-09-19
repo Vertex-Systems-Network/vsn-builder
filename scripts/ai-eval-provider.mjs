@@ -58,9 +58,13 @@ function tokenUsage(rows) {
 }
 
 function estimateCost(inputTokens, outputTokens) {
-  const inputRate = Number(process.env.VSN_AI_EVAL_INPUT_USD_PER_M || "");
-  const outputRate = Number(process.env.VSN_AI_EVAL_OUTPUT_USD_PER_M || "");
-  if (!Number.isFinite(inputRate) || !Number.isFinite(outputRate)) return { status: "NOT_CONFIGURED", estimatedUsd: null };
+  const inputRaw = String(process.env.VSN_AI_EVAL_INPUT_USD_PER_M || "").trim();
+  const outputRaw = String(process.env.VSN_AI_EVAL_OUTPUT_USD_PER_M || "").trim();
+  const inputRate = Number(inputRaw);
+  const outputRate = Number(outputRaw);
+  if (!inputRaw || !outputRaw || !Number.isFinite(inputRate) || !Number.isFinite(outputRate) || inputRate < 0 || outputRate < 0) {
+    return { status: "NOT_CONFIGURED", estimatedUsd: null };
+  }
   return {
     status: "CONFIGURED",
     estimatedUsd: (Number(inputTokens || 0) / 1_000_000) * inputRate + (Number(outputTokens || 0) / 1_000_000) * outputRate,
