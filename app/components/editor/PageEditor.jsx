@@ -1,13 +1,6 @@
 import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnColorField, VsnSearchField, VsnUrlField, VsnDateField, VsnSpinner } from "./EditorUi";
 import useCollaborationHeartbeat from "./hooks/useCollaborationHeartbeat.js";
-import {
-  Component,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createEditorCommand, editorHistoryEntry } from "../../builder/editorCommand.js";
 import { buildEditorBindingContext } from "./bindingInspectorContext.js";
 import {
@@ -57,6 +50,7 @@ import { compareBuilderContents } from "../../builder/revisionDiff.js";
 import { applyLocalizationOverrides } from "../../builder/localizationEngine.js";
 import useTemplateBrowser from "./hooks/useTemplateBrowser.js";
 import useEditorAppearance from "./hooks/useEditorAppearance.js";
+import useAgentEditorSync from "./hooks/useAgentEditorSync.js";
 
 
 const DEFAULT_GLOBAL_STYLES = {
@@ -849,34 +843,7 @@ export default function PageEditor({
     setShowAI(false);
   }, [elements, selectedId, commit]);
 
-  const handleAgentResult = useCallback((data) => {
-    const next = Array.isArray(data?.page?.content) ? structuredClone(data.page.content) : null;
-    if (!next) return;
-    setElements(next);
-    setGlobalStyles({ ...readGlobalStyles(next), ...designTokens });
-    setPageSettings(readPageSettings(next));
-    setHistory((current) => [
-      ...current.slice(0, historyIdx + 1),
-      {
-        elements: next,
-        label: data?.status === "reverted" ? "Agent turn reverted" : "Agent draft edits applied",
-        time: Date.now(),
-        icon: "✦",
-      },
-    ]);
-    setHistoryIdx((current) => current + 1);
-    setSelectedId(null);
-    setSelectedIds([]);
-    setStagedRevisionId("");
-    setRevisionDiff(null);
-    setIsSaved(true);
-    setAutosaveAt(Date.now());
-    setSaveStatus(data?.status === "reverted" ? "Agent turn reverted" : "Agent changes saved");
-    if (Number.isFinite(Number(data?.page?.version))) {
-      setLocalizationData((current) => ({ ...current, pageVersion: Number(data.page.version) }));
-    }
-    try { localStorage.setItem(storageKey(page.id), JSON.stringify(next)); } catch {}
-  }, [historyIdx, designTokens, page.id]);
+  const handleAgentResult = useAgentEditorSync({ pageId: page.id, historyIdx, designTokens, readGlobalStyles, readPageSettings, storageKey, setElements, setGlobalStyles, setPageSettings, setHistory, setHistoryIdx, setSelectedId, setSelectedIds, setStagedRevisionId, setRevisionDiff, setIsSaved, setAutosaveAt, setSaveStatus, setLocalizationData });
 
   const handleDrop = ({
     type,
