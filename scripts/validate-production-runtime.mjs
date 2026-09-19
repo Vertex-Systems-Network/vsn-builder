@@ -9,6 +9,9 @@ if (process.env.NODE_ENV !== "production") {
 if (!productionUrl(process.env.SHOPIFY_APP_URL)) fail("SHOPIFY_APP_URL must be a real HTTPS production origin.");
 if (!String(process.env.SHOPIFY_API_KEY || "").trim()) fail("SHOPIFY_API_KEY is required.");
 if (!String(process.env.SHOPIFY_API_SECRET || "").trim()) fail("SHOPIFY_API_SECRET is required.");
+const productionDatabaseUrl = String(process.env.DATABASE_URL || "").trim();
+if (!productionDatabaseUrl) fail("DATABASE_URL is required in production; the development prisma/dev.sqlite fallback is not production-safe.");
+else if (!/^file:/i.test(productionDatabaseUrl)) fail("Current Prisma/runtime topology supports SQLite only; production DATABASE_URL must use file: until an external-database migration is implemented.");
 if (String(process.env.VSN_DEFAULT_PLAN || "").trim()) fail("VSN_DEFAULT_PLAN is a developer-only entitlement override and must be blank in production.");
 const commercializationEnabled = /^(1|true|yes|on)$/i.test(String(process.env.VSN_FEATURE_COMMERCIALIZATION || ""));
 const appPricingUrl = String(process.env.SHOPIFY_APP_PRICING_URL || "").trim();
