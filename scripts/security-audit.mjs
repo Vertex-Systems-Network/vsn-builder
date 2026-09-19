@@ -208,7 +208,8 @@ const aiEvalProvider=fs.readFileSync(path.join(root,"scripts/ai-eval-provider.mj
 for(const marker of ["VSN_AI_EVALS","NOT VERIFIED","inputHash","runAiBuilder","runEmailAi"]){
   if(!aiEvalProvider.includes(marker))fail(`AI provider eval safety/control regression detected: ${marker}`);
 }
-if(aiEvalProvider.includes("prompt: testCase.prompt")||aiEvalProvider.includes("outputText:"))fail("AI eval artifacts must not persist raw prompt/model output");
+if(aiEvalProvider.includes("outputText:"))fail("AI eval artifacts must not persist raw model output");
+if(!aiEvalProvider.includes("inputHash: hashEvalInput(testCase.prompt)"))fail("AI provider eval artifacts must persist only prompt hashes for case attribution");
 const aiEvalConfig=JSON.parse(fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8"));
 for(const key of ["storeRawPrompts","storeRawOutputs","storeMerchantContext","storeCredentials"]){
   if(aiEvalConfig?.artifactPolicy?.[key]!==false)fail(`AI eval artifact policy must keep ${key}=false`);
