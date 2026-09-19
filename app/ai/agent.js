@@ -83,7 +83,8 @@ export function normalizeAgentSelectedIds(value = []) {
 export function normalizeAgentPlan(plan = {}) {
   const status = ["ready", "needs_input", "no_change"].includes(plan?.status) ? plan.status : "needs_input";
   const message = cleanText(plan?.message, 3000);
-  const rawSteps = Array.isArray(plan?.steps) ? plan.steps.slice(0, AI_AGENT_MAX_STEPS) : [];
+  const rawSteps = Array.isArray(plan?.steps) ? plan.steps : [];
+  if (rawSteps.length > AI_AGENT_MAX_STEPS) throw new Error(`Agent plan exceeds the ${AI_AGENT_MAX_STEPS}-step limit.`);
   const steps = rawSteps.map((step, index) => {
     const command = cleanText(step?.command, 80);
     if (!COMMAND_SET.has(command)) throw new Error(`Unsupported agent command at step ${index + 1}: ${command || "missing"}.`);
