@@ -30,3 +30,6 @@ database.sqlite
 .react-router/
 # Generated Shopify production config (create with npm run config:production)
 shopify.app.production.toml
+
+# Generated AI eval comparison/result artifacts
+/artifacts/ai-evals/
