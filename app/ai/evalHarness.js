@@ -94,7 +94,11 @@ export function buildEvalArtifact({
     summary: buildEvalSummary(cases),
     cost: {
       status: safeEvalId(cost.status || "NOT_CONFIGURED"),
-      estimatedUsd: Number.isFinite(Number(cost.estimatedUsd)) ? Number(Number(cost.estimatedUsd).toFixed(6)) : null,
+      estimatedUsd: cost.estimatedUsd == null
+        ? null
+        : Number.isFinite(Number(cost.estimatedUsd))
+          ? Number(Number(cost.estimatedUsd).toFixed(6))
+          : null,
     },
     cases: cases.map((row) => ({
       id: safeEvalId(row.id),
