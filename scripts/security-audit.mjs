@@ -227,6 +227,19 @@ for(const marker of ["EMAIL_BINDING_TOKENS","AI_EMAIL_TOKENS","AI_EMAIL_URL_TOKE
 if(["OPENAI_API_KEY","/v1/responses","Authorization:"].some((marker)=>emailAi.includes(marker)))fail("Email AI must not bypass the shared AI provider boundary");
 if(emailAi.includes("payload?.error?.message"))fail("Email AI provider errors must not be reflected verbatim");
 
+const productionTopology=JSON.parse(fs.readFileSync(path.join(root,".ai/PRODUCTION_DATA_TOPOLOGY.json"),"utf8"));
+if(productionTopology?.implementedTopology?.databaseEngine!=="sqlite"||productionTopology?.implementedTopology?.externalDatabaseSupport!=="NOT_IMPLEMENTED")fail("Production topology manifest must match the implemented SQLite provider");
+if(productionTopology?.implementedTopology?.multiInstanceSqliteSupport!=="UNSUPPORTED")fail("Production topology must fail closed on multi-instance SQLite");
+if(productionTopology?.agentJobReadiness!=="BLOCKED_ON_DEPLOYMENT_EVIDENCE")fail("Agent/job persistence readiness must remain blocked while deployment topology is unverified");
+const productionRuntime=fs.readFileSync(path.join(root,"scripts/validate-production-runtime.mjs"),"utf8");
+for(const marker of ["DATABASE_URL is required in production","supports SQLite only","file:"]){
+  if(!productionRuntime.includes(marker))fail(`Production database runtime guard regression detected: ${marker}`);
+}
+const topologyCheck=fs.readFileSync(path.join(root,"scripts/production-data-topology-check.mjs"),"utf8");
+for(const marker of ["--require-production-evidence","singleInstance","durableVolume","infrastructureSnapshot","restoreDrill"]){
+  if(!topologyCheck.includes(marker))fail(`Production topology release guard regression detected: ${marker}`);
+}
+
 const requestSecurity=fs.readFileSync(path.join(root,"app/utils/request-security.server.js"),"utf8");
 for(const marker of ["assertTrustedMutationRequest","untrusted-cross-site","shopify-admin-origin","configuredAppOrigin","SHOPIFY_APP_URL"]){
   if(!requestSecurity.includes(marker))fail(`Mutation-origin security control missing: ${marker}`);
