@@ -2,6 +2,8 @@ import { migrateBuilderContent } from "../builder/schemaMigrations.js";
 import { findNode, removeNode, updateNode } from "../builder/tree.js";
 import { serializePageForAi } from "../builder/aiBuilder.js";
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
+import { canCollaborate, getBlockingPageLock, getCollaborationRole } from "./collaboration.server.js";
+import { getBuilderRuntimeEntitlements } from "./builder-runtime-entitlements.server.js";
 import { runBuilderCommand } from "./command-bus.server.js";
 
 const MAX_PATCH_KEYS = 80;
@@ -11,7 +13,7 @@ const MAX_PATCH_STRING = 8000;
 const MAX_CONTENT_CHARS = 2_000_000;
 const FORBIDDEN_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 const UNSAFE_KEY = /^(?:on[a-z]+|script|scripts|srcdoc|customjs|custom_js|customcode|custom_code|liquid|html)$/i;
-const UNSAFE_TEXT = /(?:javascript\s*:|<\s*script\b|\{%|\{\{)/i;
+const UNSAFE_TEXT = /(?:javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|<\s*script\b|\{%|\{\{)/i;
 
 export class AiCommandError extends Error {
   constructor(code, message, status = 400) {
@@ -360,6 +362,19 @@ export async function executeAiCommand({ db, session, actor = "system", role = "
   }
 
   const normalized = definition.normalize(input);
+  if (definition.kind === "draft-mutation") {
+    const runtimeEntitlements = await getBuilderRuntimeEntitlements(db, session.shop);
+    if (runtimeEntitlements.collaborationEnabled) {
+      const collaborationRole = await getCollaborationRole(db, session);
+      if (!canCollaborate(collaborationRole, "save")) {
+        throw new AiCommandError("AI_COMMAND_COLLABORATION_FORBIDDEN", `Your ${collaborationRole} collaboration role cannot apply AI draft commands.`, 403);
+      }
+      const blockingLock = await getBlockingPageLock(db, { session, pageId: normalized.pageId });
+      if (blockingLock) {
+        throw new AiCommandError("AI_COMMAND_PAGE_LOCKED", `This page is locked by ${blockingLock.ownerName}.`, 423);
+      }
+    }
+  }
   if (definition.directExecution === false || definition.kind === "consequential") {
     throw new AiCommandError(
       "AI_COMMAND_EXPLICIT_APPROVAL_REQUIRED",
