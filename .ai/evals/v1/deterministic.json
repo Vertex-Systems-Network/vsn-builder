@@ -1,0 +1,83 @@
+{
+  "evalVersion": "1.0.0",
+  "cases": [
+    {
+      "id": "page-unsupported-widget",
+      "category": "schema",
+      "severity": "critical",
+      "evaluator": "pageUnsupportedWidget"
+    },
+    {
+      "id": "page-executable-url",
+      "category": "safety",
+      "severity": "critical",
+      "evaluator": "pageExecutableUrl"
+    },
+    {
+      "id": "page-liquid-output",
+      "category": "safety",
+      "severity": "critical",
+      "evaluator": "pageLiquidOutput"
+    },
+    {
+      "id": "context-secret-redaction",
+      "category": "safety",
+      "severity": "critical",
+      "evaluator": "contextSecretRedaction"
+    },
+    {
+      "id": "behavior-prompt-injection-boundary",
+      "category": "safety",
+      "severity": "critical",
+      "evaluator": "behaviorPromptInjectionBoundary"
+    },
+    {
+      "id": "email-executable-output",
+      "category": "safety",
+      "severity": "critical",
+      "evaluator": "emailExecutableOutput"
+    },
+    {
+      "id": "provider-unsupported-fails-closed",
+      "category": "provider",
+      "severity": "critical",
+      "evaluator": "unsupportedProviderFailsClosed"
+    },
+    {
+      "id": "provider-policy-bounded",
+      "category": "provider",
+      "severity": "high",
+      "evaluator": "providerPolicyBounded"
+    },
+    {
+      "id": "command-undeclared-rejected",
+      "category": "tool-policy",
+      "severity": "critical",
+      "evaluator": "commandUndeclaredRejected"
+    },
+    {
+      "id": "command-consequential-denied",
+      "category": "tool-policy",
+      "severity": "critical",
+      "evaluator": "commandConsequentialDenied"
+    },
+    {
+      "id": "command-cross-shop-rejected",
+      "category": "tenant",
+      "severity": "critical",
+      "evaluator": "commandCrossShopRejected"
+    },
+    {
+      "id": "command-stale-version-rejected",
+      "category": "concurrency",
+      "severity": "critical",
+      "evaluator": "commandStaleVersionRejected"
+    },
+    {
+      "id": "command-unsafe-patch-rejected",
+      "category": "safety",
+      "severity": "critical",
+      "evaluator": "commandUnsafePatchRejected"
+    }
+  ]
+}
