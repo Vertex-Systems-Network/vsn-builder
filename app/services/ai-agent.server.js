@@ -71,6 +71,18 @@ function parseObject(value) {
   } catch { return {}; }
 }
 
+const BRAND_VISUAL_TOKEN_KEYS = Object.freeze([
+  "primaryColor", "secondaryColor", "accentColor", "textColor", "backgroundColor", "surfaceColor",
+  "fontFamily", "headingFontFamily", "headingScale", "spacingBase", "containerMaxWidth",
+  "radiusSm", "radiusMd", "radiusLg", "buttonRadius", "shadowSm", "shadowMd", "shadowLg",
+  "buttonBackground", "buttonTextColor",
+]);
+
+function publicVisualTokens(value = {}) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return Object.fromEntries(BRAND_VISUAL_TOKEN_KEYS.filter((key) => source[key] != null).map((key) => [key, source[key]]));
+}
+
 async function loadAgentBrandContext(db, shop) {
   const kitPromise = db.builderBrandKit?.findFirst
     ? db.builderBrandKit.findFirst({
@@ -87,7 +99,7 @@ async function loadAgentBrandContext(db, shop) {
     kitId: kit?.id || null,
     name: cleanText(kit?.name || "", 160),
     isDefault: kit?.isDefault === true,
-    visualTokens: kit ? brandKitToTokens(kit) : fallbackTokens,
+    visualTokens: publicVisualTokens(kit ? brandKitToTokens(kit) : fallbackTokens),
     profile: normalizeBrandProfile(kit?.profileJson || {}),
   };
 }
