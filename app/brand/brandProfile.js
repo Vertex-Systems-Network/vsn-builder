@@ -18,11 +18,12 @@ const MAX_LONG = 2400;
 const MAX_RULES = 12;
 const MAX_RULE = 320;
 const EXECUTABLE_OR_TEMPLATE = /(?:<\s*\/?\s*script\b|javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|\{%|\{\{)/i;
+const EXECUTABLE_OR_TEMPLATE_GLOBAL = /(?:<\s*\/?\s*script\b|javascript\s*:|vbscript\s*:|data\s*:\s*text\/html|\{%|\{\{)/gi;
 
 function plainText(value, max) {
   const raw = String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
   if (!raw) return "";
-  return EXECUTABLE_OR_TEMPLATE.test(raw) ? raw.replace(EXECUTABLE_OR_TEMPLATE, "").trim() : raw;
+  return EXECUTABLE_OR_TEMPLATE.test(raw) ? raw.replace(EXECUTABLE_OR_TEMPLATE_GLOBAL, "").replace(/[<>]/g, "").trim() : raw.replace(/[<>]/g, "");
 }
 
 function ruleList(value) {
