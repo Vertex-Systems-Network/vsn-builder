@@ -109,7 +109,8 @@ const mutation = await executeAiCommand({
   input: { pageId: pageState.id, baseVersion: 1, elementId: "heading-1", patch: { text: "New heading" }, sourceGenerationId: "generation-1" },
 });
 ok(pageState.version === 2, "Executable draft command must increment the page version");
-ok(JSON.parse(pageState.contentJson)[0].props.text === "New heading", "Executable draft command must apply a bounded element patch");
+const persistedHeading = JSON.parse(pageState.contentJson).find((node) => node?.id === "heading-1");
+ok(persistedHeading?.props?.text === "New heading", "Executable draft command must apply a bounded element patch");
 ok(revisions.length === 2 && revisions[0].kind === "ai-command-undo" && revisions[1].kind === "ai-command", "Draft command must create undo and applied revisions");
 ok(Boolean(mutation.result?.undo?.revisionId) && mutation.result?.sourceGenerationId === "generation-1", "Draft command must return attributable undo metadata");
 ok(auditRows.some((row) => row.action === "command.ai.element.update-props.executed"), "Draft command must inherit command-bus audit logging");
