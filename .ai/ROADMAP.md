@@ -97,7 +97,9 @@ Acceptance:
 
 ## P1 — Agentic editor parity and differentiation
 
-### P1.1 Multi-turn in-editor Agent
+### P1.1 Multi-turn in-editor Agent — IMPLEMENTED BASELINE
+
+**Status:** request-scoped bounded Agent baseline implemented on the P1.1 branch using the versioned provider contract and central reversible command registry. Conversation state stays client-side; each server turn rebuilds tenant-scoped page/revision/command/quality context. Background jobs, agent persistence tables and direct publish remain intentionally excluded while P0.5 deployment evidence is open.
 
 Build a bounded agent loop that understands:
 
