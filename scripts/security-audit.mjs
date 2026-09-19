@@ -200,6 +200,20 @@ for(const marker of ["assertTrustedMutationRequest","authenticate.admin","MAX_CO
   if(!aiCommandRoute.includes(marker))fail(`AI command route security regression detected: ${marker}`);
 }
 
+const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
+for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
+  if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
+}
+const aiEvalProvider=fs.readFileSync(path.join(root,"scripts/ai-eval-provider.mjs"),"utf8");
+for(const marker of ["VSN_AI_EVALS","NOT VERIFIED","inputHash","runAiBuilder","runEmailAi"]){
+  if(!aiEvalProvider.includes(marker))fail(`AI provider eval safety/control regression detected: ${marker}`);
+}
+if(aiEvalProvider.includes("prompt: testCase.prompt")||aiEvalProvider.includes("outputText:"))fail("AI eval artifacts must not persist raw prompt/model output");
+const aiEvalConfig=JSON.parse(fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8"));
+for(const key of ["storeRawPrompts","storeRawOutputs","storeMerchantContext","storeCredentials"]){
+  if(aiEvalConfig?.artifactPolicy?.[key]!==false)fail(`AI eval artifact policy must keep ${key}=false`);
+}
+
 const aiBehaviors=fs.readFileSync(path.join(root,"app/ai/behaviors.js"),"utf8");
 for(const marker of ["untrusted data","Never invent merge-token paths"]){
   if(!aiBehaviors.includes(marker))fail(`AI behavior safety contract regression detected: ${marker}`);
