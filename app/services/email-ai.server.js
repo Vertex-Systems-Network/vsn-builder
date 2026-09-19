@@ -15,7 +15,7 @@ function cleanColor(value,fallback=""){const raw=String(value||"").trim();return
 function sanitizeAiText(value,max=2400){return String(value||"")
   .replace(/\{\{[\s\S]*?\}\}/g,(token)=>{const path=token.slice(2,-2).trim();return /^[a-zA-Z0-9_.-]+$/.test(path)&&AI_EMAIL_TOKENS.has(path)?`{{ ${path} }}`:"";})
   .replace(/\{%[\s\S]*?%\}/g,"")
-  .replace(/<\s*\/?\s*(?:script|iframe|object|embed|form|style|link|meta)\b[^>]*>/gi,"")
+  .replace(/[<>]/g,"")
   .replace(/(?:javascript|vbscript)\s*:/gi,"")
   .replace(/data\s*:\s*text\/html/gi,"")
   .split("\u0000").join("").slice(0,max);}
