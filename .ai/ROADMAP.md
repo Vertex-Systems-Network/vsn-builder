@@ -186,7 +186,9 @@ Unify deterministic scanners behind an explainable quality surface:
 
 The agent explains prioritized findings and can generate a reversible fix plan. Deterministic validators decide pass/fail.
 
-### P1.6 Incremental hotspot decomposition
+### P1.6 Incremental hotspot decomposition — P1.6a STOREFRONT PRODUCT PAGINATION BOUNDARY IMPLEMENTED
+
+**Status:** P1.6a extracts the pure product page-size, sort normalization/configuration, and synthetic price-pagination behavior from the oversized `builder-proxy.$.jsx` route into `app/storefront/productPagination.js`. The proxy keeps authentication, GraphQL, persistence, rendering, caching, and response orchestration unchanged. A dedicated characterization audit locks the historical bounds, fallback mappings, nested collection-grid behavior, price tie-breaking, cursor behavior, and route/module boundary. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
 
 While touching AI/storefront/editor integration, extract cohesive behavior from oversized hotspots such as `builder-proxy.$.jsx` and legacy editor mega-files.
 
