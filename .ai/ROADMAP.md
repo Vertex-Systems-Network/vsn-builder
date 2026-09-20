@@ -170,9 +170,9 @@ Upgrade screenshot/URL/reference workflows:
 
 Figma should become a direct/structured ingestion path if a stable integration can preserve hierarchy better than screenshots.
 
-### P1.5 AI Quality Agent — P1.5b-b GUARDED AI PLANNING INTEGRATION IMPLEMENTED
+### P1.5 AI Quality Agent — P1.5b-c GUARDED REVERSIBLE EXECUTION IMPLEMENTED
 
-**Status:** P1.5a provides the deterministic Quality Report v1 and P1.5b-a seals the proposal-only Quality Fix Plan v1 contract. P1.5b-b now adds a default-off `VSN_FEATURE_AI_QUALITY_FIX_PLAN` integration through the existing authenticated AI Agent route. For the `quality-plan` intent, VSN loads the tenant-scoped Builder page server-side, rebuilds deterministic findings, sends only the bounded finding projection plus an optional bounded merchant goal through the versioned `quality-fix-v1` provider behavior, meters one AI request, and normalizes the response back through the sealed plan contract. Client-supplied findings are not trusted. No fix is executed and the result remains `executable: false`, `proposalOnly: true`, and `requiresRevalidation: true`. P1.5b-c remains explicit merchant-invoked reversible execution plus deterministic revalidation.
+**Status:** P1.5a provides the deterministic Quality Report v1, P1.5b-a seals the proposal-only Quality Fix Plan v1 contract, and P1.5b-b adds default-off provider-backed planning. P1.5b-c now adds a second independent default-off `VSN_FEATURE_AI_QUALITY_FIX_EXECUTION` boundary for explicit merchant-approved application. The server rebuilds the current deterministic report, verifies the projected finding/code/element target, accepts only the six existing reversible Builder draft command intents, rejects client authority over page/version/target fields, executes through the typed AI command registry with its existing undo revisions and concurrency checks, then rebuilds the deterministic report again and reports whether the original finding remains. No publish/send/schedule or direct Shopify mutation authority is added.
 
 Unify deterministic scanners behind an explainable quality surface:
 

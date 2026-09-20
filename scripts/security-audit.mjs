@@ -330,6 +330,23 @@ for(const marker of ['intent === "quality-plan"',"qualityFixPlanningV1","runAiQu
 }
 if(qualityAgentRoute.includes("body.qualityReport")||qualityAgentRoute.includes("body.findings"))fail("P1.5b-b must rebuild deterministic findings server-side instead of trusting client quality data");
 
+const qualityExecutionService=fs.readFileSync(path.join(root,"app/services/ai-quality-fix-execution.server.js"),"utf8");
+for(const marker of ["buildQualityReport","buildQualityFixPlanInput","QUALITY_FIX_PLAN_COMMAND_INTENTS","executeAiCommand","AI_QUALITY_FIX_EXPLICIT_APPROVAL_REQUIRED","commandInputForQualityFix","findMatchingFinding","resolved"]){
+  if(!qualityExecutionService.includes(marker))fail(`P1.5b-c quality execution regression detected: ${marker}`);
+}
+for(const forbidden of ["generateStructuredAi","OPENAI_API_KEY","builderPage.update","builderPage.create","admin.graphql","fetch(","runBuilderCommand","page.publish"]){
+  if(qualityExecutionService.includes(forbidden))fail(`P1.5b-c execution must use the typed command registry without provider/direct page/Shopify authority: ${forbidden}`);
+}
+for(const marker of ['qualityFixExecutionV1: Object.freeze({ env: "VSN_FEATURE_AI_QUALITY_FIX_EXECUTION", defaultValue: false',"qualityFixPlanningV1"]){
+  if(!featureFlagsContract.includes(marker))fail(`P1.5b-c default-off execution guard regression detected: ${marker}`);
+}
+for(const marker of ['intent === "quality-apply"',"qualityFixExecutionV1","applyAiQualityFix","body.confirm === true"]){
+  if(!qualityAgentRoute.includes(marker))fail(`P1.5b-c route approval/execution guard regression detected: ${marker}`);
+}
+for(const forbiddenAuthority of ["commandData.pageId","commandData.baseVersion","commandData.elementId"]){
+  if(qualityExecutionService.includes(forbiddenAuthority))fail(`P1.5b-c commandInput must not accept client authority field: ${forbiddenAuthority}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);

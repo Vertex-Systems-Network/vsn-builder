@@ -54,4 +54,17 @@ Provider output is always normalized through `normalizeQualityFixPlan`. The resp
 
 P1.5b-b adds provider inference and AI usage telemetry, but no page write, Shopify mutation, command execution, publish, send or schedule path. The provider receives no execution authority and the quality behavior explicitly treats deterministic findings as authoritative application data.
 
-P1.5b-c may later add explicit user-invoked reversible execution. Any execution layer must independently validate proposed actions through the existing typed command registry, create undo/checkpoint metadata, and re-run the deterministic Quality Report after changes before a result can be treated as valid.
+P1.5b-c adds explicit user-invoked reversible execution through the existing typed command registry, preserves undo/checkpoint metadata, and re-runs the deterministic Quality Report after changes before a result can be treated as valid.
+
+
+## P1.5b-c explicit reversible execution
+
+P1.5b-c adds a separate default-OFF `VSN_FEATURE_AI_QUALITY_FIX_EXECUTION` boundary on the authenticated AI Agent route. Execution uses the `quality-apply` intent and requires `confirm: true`; planning being enabled is not enough to mutate a page.
+
+The client identifies one displayed proposal with `findingId`, `findingCode`, `elementId`, `commandIntent`, and a bounded `commandInput`. These values are not accepted as authority. VSN reloads the tenant-scoped page, rebuilds the deterministic Quality Report, reconstructs the bounded fix-plan projection, and verifies that the finding ID still resolves to the same code and element target. Stale or shifted findings fail closed.
+
+Only the six reversible Builder draft command intents from the existing AI command registry may be used. `manual-review` is never executable. The execution service rejects client-supplied page/version/target authority inside `commandInput`; page ID, current version, deterministic target element, and optional source generation ID are constructed server-side. Insert proposals are bound to the deterministic finding element as their destination parent, while targeted commands are forced to the finding element.
+
+The command is executed through `executeAiCommand`, so existing role checks, collaboration locks, runtime entitlements, stale-version concurrency protection, patch sanitization, command-bus logging, and undo revision creation remain authoritative. The quality execution service does not call the model and cannot publish, send, schedule, call Shopify Admin GraphQL, or write Builder pages directly.
+
+After the command completes, VSN reloads the page and rebuilds the deterministic Quality Report. The response includes authoritative before/after quality summaries, command/revision identifiers, the undo checkpoint revision, and a `resolved` flag based only on the revalidated deterministic finding signature. A successful mutation may therefore still return `applied_unresolved`; if the deterministic report itself is findings-truncated, the service returns `applied_revalidation_truncated` and does not claim resolution. Execution never claims a fix solely because a command ran.

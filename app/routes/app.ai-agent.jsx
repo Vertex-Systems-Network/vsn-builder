@@ -6,6 +6,7 @@ import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/r
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { restoreEditorAgentCheckpoint, runEditorAgentTurn } from "../services/ai-agent.server.js";
 import { runAiQualityFixPlan } from "../services/ai-quality-fix-plan.server.js";
+import { applyAiQualityFix } from "../services/ai-quality-fix-execution.server.js";
 
 const MAX_AGENT_BYTES = 128 * 1024;
 
@@ -48,6 +49,7 @@ export async function action({ request }) {
     if (!pageId) return Response.json({ ok: false, code: "AI_AGENT_INVALID_INPUT", error: "pageId is required." }, { status: 400 });
     const intent = stringValue(body.intent, 40);
     const flags = getServerFeatureFlags();
+    const common = { db, session, actor: builderActor(session), role: getBuilderRole(session), pageId };
 
     if (intent === "quality-plan") {
       if (flags.qualityFixPlanningV1 !== true) {
@@ -62,13 +64,13 @@ export async function action({ request }) {
       return Response.json(result);
     }
 
-    const common = {
-      db,
-      session,
-      actor: builderActor(session),
-      role: getBuilderRole(session),
-      pageId,
-    };
+    if (intent === "quality-apply") {
+      if (flags.qualityFixPlanningV1 !== true || flags.qualityFixExecutionV1 !== true) {
+        return Response.json({ ok: false, code: "AI_QUALITY_FIX_EXECUTION_DISABLED", error: "AI Quality fix execution is disabled." }, { status: 404 });
+      }
+      const result = await applyAiQualityFix({ ...common, findingId: stringValue(body.findingId, 80), findingCode: stringValue(body.findingCode, 120), expectedElementId: stringValue(body.elementId, 160), commandIntent: stringValue(body.commandIntent, 80), commandInput: body.commandInput, sourceGenerationId: stringValue(body.sourceGenerationId, 100), confirmed: body.confirm === true });
+      return Response.json(result);
+    }
 
     if (intent === "revert") {
       const revisionId = stringValue(body.revisionId, 200);
