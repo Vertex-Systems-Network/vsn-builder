@@ -110,6 +110,8 @@ const required = [
   "scripts/p16i-storefront-product-queries-audit.mjs",
   "app/storefront/reusableSections.server.js",
   "scripts/p16j-storefront-reusable-sections-audit.mjs",
+  "app/storefront/presentationMetadata.js",
+  "scripts/p16k-storefront-presentation-metadata-audit.mjs",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
