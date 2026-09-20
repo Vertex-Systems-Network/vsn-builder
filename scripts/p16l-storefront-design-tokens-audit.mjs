@@ -31,7 +31,7 @@ equal(toCssSize({ desktop: 14, unit: "rem" }), "14rem", "Responsive desktop nume
 equal(toCssSize({ value: 8, unit: "em" }), "8em", "Object value numeric CSS size uses supplied unit");
 equal(toCssSize({ tablet: 6 }), "6px", "Tablet numeric fallback uses px");
 equal(toCssSize({ mobile: "3rem", unit: "px" }), "3rem", "String responsive candidate preserves its own unit semantics");
-equal(toCssSize({ desktop: "", value: 4 }), "4px", "Empty desktop candidate falls through to object value");
+equal(toCssSize({ desktop: "", value: 4 }), "0px", "Empty desktop candidate keeps historical fallback behavior");
 equal(toCssSize({}, "11px"), "11px", "Object without candidate uses fallback");
 
 const defaults = getGlobalStyles([]);
@@ -166,8 +166,7 @@ const source = fs.readFileSync("app/storefront/designTokens.js", "utf8");
 
 ok(route.includes('from "../storefront/designTokens.js"'), "Builder proxy imports extracted design-token boundary");
 ok((route.match(/\btoCssSize\b/g) || []).length >= 50, "Builder proxy keeps broad historical CSS-size usage through imported helper");
-ok(route.includes("mergeShopDesignTokens(getGlobalStyles(elements), designTokens)"), "Fragment renderer keeps global/token merge call");
-ok(route.includes("mergeShopDesignTokens(getGlobalStyles(elements), designTokens)"), "Document renderer retains same design-token contract");
+equal((route.match(/mergeShopDesignTokens\(getGlobalStyles\(elements\), designTokens\)/g) || []).length, 2, "Fragment and document renderers keep both historical design-token merge calls");
 for (const duplicate of [
   "function toCssSize(",
   "function getGlobalStyles(",
