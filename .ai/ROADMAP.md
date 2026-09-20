@@ -170,9 +170,9 @@ Upgrade screenshot/URL/reference workflows:
 
 Figma should become a direct/structured ingestion path if a stable integration can preserve hierarchy better than screenshots.
 
-### P1.5 AI Quality Agent — P1.5b-a BOUNDED FIX-PLAN CONTRACT IMPLEMENTED
+### P1.5 AI Quality Agent — P1.5b-b GUARDED AI PLANNING INTEGRATION IMPLEMENTED
 
-**Status:** P1.5a adds the internal deterministic Quality Report v1. P1.5b-a now adds a proposal-only Quality Fix Plan v1 contract: at most 40 deterministic findings are projected into stable bounded input, at most 12 remediation proposals may be returned, every proposal must bind to an existing finding/target, and only the six existing reversible Builder command intents (plus manual review) may be named. The contract accepts no executable command payloads and explicitly remains `executable: false`, `proposalOnly: true`, and `requiresRevalidation: true`. P1.5b-b remains the default-off provider-backed explanation/planning integration; P1.5b-c remains explicit reversible execution plus deterministic revalidation.
+**Status:** P1.5a provides the deterministic Quality Report v1 and P1.5b-a seals the proposal-only Quality Fix Plan v1 contract. P1.5b-b now adds a default-off `VSN_FEATURE_AI_QUALITY_FIX_PLAN` integration through the existing authenticated AI Agent route. For the `quality-plan` intent, VSN loads the tenant-scoped Builder page server-side, rebuilds deterministic findings, sends only the bounded finding projection plus an optional bounded merchant goal through the versioned `quality-fix-v1` provider behavior, meters one AI request, and normalizes the response back through the sealed plan contract. Client-supplied findings are not trusted. No fix is executed and the result remains `executable: false`, `proposalOnly: true`, and `requiresRevalidation: true`. P1.5b-c remains explicit merchant-invoked reversible execution plus deterministic revalidation.
 
 Unify deterministic scanners behind an explainable quality surface:
 
