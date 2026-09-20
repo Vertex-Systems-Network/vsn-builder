@@ -398,6 +398,26 @@ for(const forbidden of ["db.","fetch(","graphql(","authenticate.","builderPage."
 if(!storefrontProxy.includes('from "../storefront/templateSettings.js"'))fail("P1.6e builder proxy must consume extracted template-settings boundary");
 if(storefrontProxy.includes("function getTemplateSettings("))fail("P1.6e builder proxy must not retain template-settings implementation");
 
+const storefrontSecureProxy=fs.readFileSync(path.join(root,"app/routes/builder-proxy-secure.$.jsx"),"utf8");
+const storefrontRoutes=fs.readFileSync(path.join(root,"app/routes.js"),"utf8");
+const storefrontResponses=fs.readFileSync(path.join(root,"app/storefront/responses.server.js"),"utf8");
+for(const marker of ["applyVsnSecurityHeaders","text/html; charset=utf-8","application/javascript; charset=utf-8","application/json; charset=utf-8","public, max-age=15, stale-while-revalidate=30","Accept-Encoding"]){
+  if(!storefrontResponses.includes(marker))fail(`P1.6f storefront response-security boundary regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","builderPage.","shopify.server","process.env"]){
+  if(storefrontResponses.includes(forbidden))fail(`P1.6f response boundary gained unrelated authority: ${forbidden}`);
+}
+for(const header of ["Referrer-Policy","Permissions-Policy","X-Content-Type-Options"]){
+  if(!requestSecurity.includes(header))fail(`P1.6f shared response security header regression detected: ${header}`);
+}
+if(!storefrontRoutes.includes('route("builder-proxy/*", "./routes/builder-proxy-secure.$.jsx")'))fail("P1.6f builder proxy URL must remain manually bound to the hardened secure action route");
+if(!storefrontSecureProxy.includes('export { loader } from "./builder-proxy.$.jsx";')||!storefrontSecureProxy.includes("export async function action({ request })"))fail("P1.6f secure proxy must own mutations while reusing the mature loader");
+if(!storefrontSecureProxy.includes('from "../storefront/responses.server.js"'))fail("P1.6f secure proxy must use hardened shared JSON responses");
+if(!storefrontProxy.includes('from "../storefront/responses.server.js"'))fail("P1.6f loader/render proxy must use hardened shared responses");
+for(const forbidden of ["export async function action({ request })","createHmac","detectSpam(","recordExperimentEvent(","handleStorefrontFormSubmission(","handleWishlistProxyAction(","fetch(endpoint.url","builderFormSubmission.create","builderWebhookEndpoint.findMany"]){
+  if(storefrontProxy.includes(forbidden))fail(`P1.6f legacy loader regained dormant mutation/webhook authority: ${forbidden}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
