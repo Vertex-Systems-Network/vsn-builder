@@ -358,6 +358,18 @@ for(const forbidden of ["db.","fetch(","authenticate.","builderPage.","renderBui
 if(!storefrontProxy.includes('from "../storefront/dynamicMetaobjects.server.js"')||!storefrontProxy.includes("loadDynamicMetaobjects({ admin, elements: resolvedElements })"))fail("P1.6b builder proxy must consume the extracted metaobject boundary");
 if(storefrontProxy.includes("function collectDynamicMetaobjectBindings(")||storefrontProxy.includes("async function loadDynamicMetaobjects("))fail("P1.6b builder proxy must not retain extracted metaobject implementations");
 
+const storefrontContentQueries=fs.readFileSync(path.join(root,"app/storefront/contentQueries.server.js"),"utf8");
+for(const marker of ["safeAdminData","getSearchData","getBlogData","getArticleData","SearchProducts","SearchPages","SearchArticles","BlogData","ArticleData"]){
+  if(!storefrontContentQueries.includes(marker))fail(`P1.6c storefront content query boundary regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","authenticate.","builderPage.","renderBuilder","shopify.server"]){
+  if(storefrontContentQueries.includes(forbidden))fail(`P1.6c storefront content query boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/contentQueries.server.js"'))fail("P1.6c builder proxy must consume the extracted content query boundary");
+for(const duplicate of ["async function safeAdminData(","async function getSearchData(","async function getBlogData(","async function getArticleData("]){
+  if(storefrontProxy.includes(duplicate))fail(`P1.6c builder proxy retained extracted content query helper: ${duplicate}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);

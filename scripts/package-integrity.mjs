@@ -94,6 +94,8 @@ const required = [
   "scripts/p16a-storefront-product-pagination-audit.mjs",
   "app/storefront/dynamicMetaobjects.server.js",
   "scripts/p16b-storefront-dynamic-metaobjects-audit.mjs",
+  "app/storefront/contentQueries.server.js",
+  "scripts/p16c-storefront-content-queries-audit.mjs",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
