@@ -303,6 +303,17 @@ for(const forbidden of ["fetch(","generateStructuredAi","OPENAI_API_KEY","builde
   if(qualityAgent.includes(forbidden))fail(`P1.5a quality foundation must remain read-only, network-free and provider-free: ${forbidden}`);
 }
 
+const qualityFixPlan=fs.readFileSync(path.join(root,"app/ai/qualityFixPlan.js"),"utf8");
+for(const marker of ["QUALITY_FIX_PLAN_MAX_ITEMS","QUALITY_FIX_PLAN_MAX_INPUT_FINDINGS","proposalOnly","executable: false","requiresRevalidation","validatorsAuthoritative","rerun-deterministic-quality-report"]){
+  if(!qualityFixPlan.includes(marker))fail(`P1.5b-a quality fix-plan contract regression detected: ${marker}`);
+}
+for(const forbidden of ["fetch(","generateStructuredAi","OPENAI_API_KEY","builderPage.update","builderPage.create","db.","admin.graphql","executeAiCommand","prisma"]){
+  if(qualityFixPlan.includes(forbidden))fail(`P1.5b-a quality fix-plan contract must remain proposal-only and provider/mutation-free: ${forbidden}`);
+}
+for(const executableField of ["propsJson","stylesJson","sourceGenerationId","baseVersion"]){
+  if(qualityFixPlan.includes(executableField))fail(`P1.5b-a proposal contract must not accept executable command payload fields: ${executableField}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
