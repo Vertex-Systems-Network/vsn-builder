@@ -12,17 +12,7 @@ import {
   formSuccessPayload,
 } from "./form-automation.server.js";
 import { loadGoogleCaptchaRuntime } from "./google-platform.server.js";
-
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
-}
+import { jsonResponse } from "../storefront/responses.server.js";
 
 function collectFormBuilderKeys(nodes, out = new Set()) {
   for (const node of Array.isArray(nodes) ? nodes : []) {
