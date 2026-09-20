@@ -370,6 +370,24 @@ for(const duplicate of ["async function safeAdminData(","async function getSearc
   if(storefrontProxy.includes(duplicate))fail(`P1.6c builder proxy retained extracted content query helper: ${duplicate}`);
 }
 
+const storefrontProductMapper=fs.readFileSync(path.join(root,"app/storefront/productMapper.js"),"utf8");
+const storefrontWidgetGrid=fs.readFileSync(path.join(root,"app/storefront/widgetGridData.server.js"),"utf8");
+for(const marker of ["mapProductNode","availableForSale","Product image","currencyCode"]){
+  if(!storefrontProductMapper.includes(marker))fail(`P1.6d storefront product mapper regression detected: ${marker}`);
+}
+for(const marker of ["STOREFRONT_WIDGET_GRID_REQUEST_LIMIT","collectWidgetGridRequests","loadWidgetGridData","VsnWidgetProducts","VsnWidgetCollections","current-collection","search-context"]){
+  if(!storefrontWidgetGrid.includes(marker))fail(`P1.6d storefront widget-grid boundary regression detected: ${marker}`);
+}
+for(const source of [storefrontProductMapper,storefrontWidgetGrid]){
+  for(const forbidden of ["db.","fetch(","authenticate.","builderPage.","renderBuilder","shopify.server"]){
+    if(source.includes(forbidden))fail(`P1.6d extracted storefront boundary gained unrelated authority: ${forbidden}`);
+  }
+}
+if(!storefrontProxy.includes('from "../storefront/productMapper.js"')||!storefrontProxy.includes('from "../storefront/widgetGridData.server.js"'))fail("P1.6d builder proxy must consume extracted product mapper and widget-grid boundaries");
+for(const duplicate of ["function mapProductNode(","function collectWidgetGridRequests(","async function loadWidgetGridData("]){
+  if(storefrontProxy.includes(duplicate))fail(`P1.6d builder proxy retained extracted helper: ${duplicate}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
