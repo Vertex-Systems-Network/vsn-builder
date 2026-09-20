@@ -21,18 +21,32 @@ Environment controls:
 - `VSN_AI_PAGE_BEHAVIOR_VERSION`
 - `VSN_AI_EMAIL_BEHAVIOR_VERSION`
 - `VSN_AI_AGENT_BEHAVIOR_VERSION`
+- `VSN_AI_AGENT_CONTEXT_BEHAVIOR_VERSION`
+- `VSN_AI_REFERENCE_BEHAVIOR_VERSION`
+- `VSN_AI_BRAND_BEHAVIOR_VERSION`
 
 Only registered providers and behavior versions are accepted. Unknown values fail closed.
 
 ## Behavior versions
 
-Production instructions live in `app/ai/behaviors.js`. Page, Email and Agent behavior definitions are versioned independently so a prompt/instruction change can be attributed, evaluated and rolled back without changing the provider adapter.
+Production instructions live in `app/ai/behaviors.js`. Page, Email, Agent, Brand extraction and Reference analysis behavior definitions are versioned independently so a prompt/instruction change can be attributed, evaluated and rolled back without changing the provider adapter.
 
 Initial stable versions:
 
 - Page AI: `page-v1`
 - Email AI: `email-v1`
 - Editor Agent: `agent-v1`
+- Context-aware Editor Agent: `agent-v2` (used only when its separate feature flag is enabled)
+- Brand extraction: `brand-extract-v1`
+- Reference fidelity analysis: `reference-v1`
+
+## Reference fidelity analysis
+
+P1.4a adds an internal `reference-v1` analysis surface for screenshot, bounded URL text and future structured Figma-like data. It uses the shared provider adapter and existing AI usage telemetry, but it is not exposed through a route or UI in P1.4a.
+
+Reference inputs are treated as untrusted data. The output is a bounded normalized model containing section hierarchy, visual tokens, asset roles, responsive hints and fidelity priorities. The service does not fetch URLs, call Figma, execute commands, mutate pages, or persist raw reference material.
+
+Deterministic fidelity scoring is explicitly marked `semantic-structural-v1` and `notPixelScore: true`; it is a reproducible heuristic for comparing generated VSN plans against extracted reference intent, not a claim of pixel-perfect identity.
 
 ## Telemetry
 

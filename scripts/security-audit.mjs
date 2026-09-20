@@ -271,6 +271,18 @@ for(const forbidden of ["builderPage.update","builderPage.create","builderExperi
 if(/\bmutation\s+VsnAiContext/i.test(aiContextService))fail("AI context fixed Shopify documents must not contain mutations");
 if(aiAgentContract.includes("AI_CONTEXT_TOOL_NAMES")||aiAgentContract.includes("shopify.products.search"))fail("P1.3a must not broaden the executable Agent protocol before P1.3b");
 
+const referenceContract=fs.readFileSync(path.join(root,"app/ai/referenceFidelity.js"),"utf8");
+const referenceService=fs.readFileSync(path.join(root,"app/services/reference-analysis.server.js"),"utf8");
+for(const marker of ["REFERENCE_ANALYSIS_VERSION = 1","REFERENCE_MAX_SECTIONS = 12","REFERENCE_MAX_COLORS = 8","REFERENCE_MAX_ASSETS = 16","normalizeReferenceAnalysis","scoreReferencePlanFidelity","notPixelScore"]){
+  if(!referenceContract.includes(marker))fail(`Reference fidelity contract regression detected: ${marker}`);
+}
+for(const marker of ["REFERENCE_ANALYSIS_SCHEMA","generateStructuredAi","reserveAiUsage","vsn_reference_analysis","UNTRUSTED_REFERENCE_URL_TEXT","UNTRUSTED_STRUCTURED_REFERENCE","MAX_SCREENSHOT_CHARS","MAX_URL_TEXT_CHARS","MAX_STRUCTURED_CHARS"]){
+  if(!referenceService.includes(marker))fail(`Reference analysis service regression detected: ${marker}`);
+}
+for(const forbidden of ["builderPage.update","builderPage.create","saveBrandKit","executeAiCommand","admin.graphql","fetch(","publicHttpsRequest","OPENAI_API_KEY","/v1/responses","Authorization:"]){
+  if(referenceService.includes(forbidden))fail(`P1.4a reference analysis must remain non-mutating, network-free and provider-isolated: ${forbidden}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
