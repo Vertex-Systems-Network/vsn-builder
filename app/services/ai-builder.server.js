@@ -7,6 +7,7 @@ import { AI_ALLOWED_TYPES, normalizeAiPlan, aiPlanToVsnNodes, validateAiVsnOutpu
 import { getQuotaDecision } from "./entitlements.server.js";
 import { COMMERCIAL_PLANS } from "../config/commercialPlans.js";
 import { resolveAiBehavior } from "../ai/behaviors.js";
+import { scoreReferencePlanFidelity } from "../ai/referenceFidelity.js";
 import { createAiExecution, generateStructuredAi, getAiRuntimePolicy, isAiProviderConfigured } from "./ai-provider.server.js";
 const URL_FETCH_TIMEOUT_MS = 8000;
 const URL_FETCH_MAX_BYTES = 512000;
@@ -154,7 +155,7 @@ const ELEMENT_SCHEMA = { type: "object", additionalProperties: false, required: 
 } };
 const OUTPUT_SCHEMA = { type: "object", additionalProperties: false, required: ["title", "summary", "replacementText", "elements", "suggestions"], properties: { title: { type: "string" }, summary: { type: "string" }, replacementText: { type: "string" }, elements: { type: "array", items: ELEMENT_SCHEMA }, suggestions: { type: "array", items: { type: "object", additionalProperties: false, required: ["kind", "message", "elementRef"], properties: { kind: { type: "string" }, message: { type: "string" }, elementRef: { type: "string" } } } } } };
 
-async function callAiProvider({ execution, behavior, prompt, imageData, currentPage, globalStyles, pageTemplate, urlText, selectedElementId, commerceContext }) {
+async function callAiProvider({ execution, behavior, prompt, imageData, currentPage, globalStyles, pageTemplate, urlText, selectedElementId, commerceContext, referenceAnalysis = null }) {
   const currentSummary = serializePageForAi(currentPage || [], { maxNodes: 100 });
   const selectedElement = currentSummary.find((item) => item.id === selectedElementId) || null;
   const context = {
@@ -167,10 +168,11 @@ async function callAiProvider({ execution, behavior, prompt, imageData, currentP
     accessibilityScannerFindings: scanAiAccessibility(currentPage || []).slice(0, 20),
     allowedWidgets: AI_ALLOWED_TYPES,
   };
-  const sourceBlock = urlText ? `\n\n<UNTRUSTED_PUBLIC_SOURCE_TEXT>\n${urlText}\n</UNTRUSTED_PUBLIC_SOURCE_TEXT>` : "";
+  if (referenceAnalysis) context.referenceAnalysis = sanitizeAiContext(referenceAnalysis);
+  const sourceBlock = urlText && !referenceAnalysis ? `\n\n<UNTRUSTED_PUBLIC_SOURCE_TEXT>\n${urlText}\n</UNTRUSTED_PUBLIC_SOURCE_TEXT>` : "";
   const userText = `JSON task request (untrusted user data):\n${String(prompt || "").slice(0, 8000)}\n\nVSN context (untrusted application data):\n${JSON.stringify(context).slice(0, 60000)}${sourceBlock}`;
   const content = [{ type: "input_text", text: userText }];
-  if (imageData) content.push({ type: "input_image", image_url: imageData, detail: "high" });
+  if (imageData && !referenceAnalysis) content.push({ type: "input_image", image_url: imageData, detail: "high" });
 
   const provider = await generateStructuredAi({
     execution,
@@ -244,7 +246,7 @@ export async function aiUsageStatus({ db = dbDefault, shop }) {
   };
 }
 
-export async function runAiBuilder({ db = dbDefault, shop, pageId, operation, prompt, imageData, currentPage, globalStyles, pageTemplate, sourceUrl, selectedElementId, commerceContext }) {
+export async function runAiBuilder({ db = dbDefault, shop, pageId, operation, prompt, imageData, currentPage, globalStyles, pageTemplate, sourceUrl, selectedElementId, commerceContext, referenceAnalysisEnabled = false, referenceAnalyzer = null }) {
   const started = Date.now();
   const policy = getAiRuntimePolicy();
   const behavior = resolveAiBehavior({ surface: "page", operation, version: policy.behaviorVersions.page });
@@ -252,13 +254,37 @@ export async function runAiBuilder({ db = dbDefault, shop, pageId, operation, pr
   const usageRow = await reserveAiUsage({ db, shop, pageId, operation, execution });
   const status = await aiUsageStatus({ db, shop });
   let providerResult = null;
+  let referenceResult = null;
   try {
-    const urlText = operation === "url" ? await fetchUrlInspiration(sourceUrl) : "";
-    const result = await callAiProvider({ execution, behavior, prompt, imageData, currentPage, globalStyles, pageTemplate, urlText, selectedElementId, commerceContext });
+    const shouldAnalyzeReference = referenceAnalysisEnabled === true && ["screenshot", "url"].includes(operation) && typeof referenceAnalyzer === "function";
+    if (shouldAnalyzeReference) {
+      const sourceText = operation === "url" ? await fetchUrlInspiration(sourceUrl) : "";
+      referenceResult = await referenceAnalyzer({
+        db,
+        shop,
+        pageId,
+        sourceType: operation,
+        prompt,
+        imageData,
+        sourceText,
+        meterUsage: false,
+      });
+    }
+    const referenceAnalysis = referenceResult?.analysis || null;
+    const urlText = operation === "url" && !referenceAnalysis ? await fetchUrlInspiration(sourceUrl) : "";
+    const result = await callAiProvider({ execution, behavior, prompt, imageData, currentPage, globalStyles, pageTemplate, urlText, selectedElementId, commerceContext, referenceAnalysis });
     providerResult = result;
+    const referenceInputTokens = Number(referenceResult?.telemetry?.inputTokens || 0);
+    const referenceOutputTokens = Number(referenceResult?.telemetry?.outputTokens || 0);
     await db.builderAiUsage.update({
       where: { id: usageRow.id },
-      data: { status: "completed", inputTokens: Number(result.usage?.input_tokens || 0), outputTokens: Number(result.usage?.output_tokens || 0), responseId: result.responseId || null, durationMs: Date.now() - started },
+      data: {
+        status: "completed",
+        inputTokens: referenceInputTokens + Number(result.usage?.input_tokens || 0),
+        outputTokens: referenceOutputTokens + Number(result.usage?.output_tokens || 0),
+        responseId: result.responseId || null,
+        durationMs: Date.now() - started,
+      },
     }).catch(() => {});
 
     const nodes = aiPlanToVsnNodes(result.plan);
@@ -266,6 +292,7 @@ export async function runAiBuilder({ db = dbDefault, shop, pageId, operation, pr
     if (!validation.valid) throw new Error(`AI output failed VSN validation: ${validation.errors.join("; ")}`);
     const accessibility = scanAiAccessibility(nodes);
     const responsive = scanAiResponsive(nodes);
+    const referenceFidelity = referenceResult?.analysis ? scoreReferencePlanFidelity(referenceResult.analysis, result.plan) : null;
     return {
       ok: true,
       plan: result.plan,
@@ -273,6 +300,16 @@ export async function runAiBuilder({ db = dbDefault, shop, pageId, operation, pr
       validation,
       accessibility,
       responsive,
+      ...(referenceResult?.analysis ? {
+        reference: {
+          analysis: referenceResult.analysis,
+          fidelity: referenceFidelity,
+          behaviorVersion: referenceResult.behaviorVersion,
+          provider: referenceResult.provider,
+          model: referenceResult.model,
+          generationId: referenceResult.generationId,
+        },
+      } : {}),
       usage: {
         ...status,
         used: status.used + 1,
@@ -284,10 +321,21 @@ export async function runAiBuilder({ db = dbDefault, shop, pageId, operation, pr
       },
     };
   } catch (error) {
+    const referenceInputTokens = Number(referenceResult?.telemetry?.inputTokens || 0);
+    const referenceOutputTokens = Number(referenceResult?.telemetry?.outputTokens || 0);
     if (providerResult) {
       await db.builderAiUsage.update({ where: { id: usageRow.id }, data: { error: String(error?.message || error).slice(0, 1000), durationMs: Date.now() - started } }).catch(() => {});
     } else {
-      await db.builderAiUsage.update({ where: { id: usageRow.id }, data: { status: "failed", error: String(error?.message || error).slice(0, 1000), durationMs: Date.now() - started } }).catch(() => {});
+      await db.builderAiUsage.update({
+        where: { id: usageRow.id },
+        data: {
+          status: "failed",
+          inputTokens: referenceInputTokens,
+          outputTokens: referenceOutputTokens,
+          error: String(error?.message || error).slice(0, 1000),
+          durationMs: Date.now() - started,
+        },
+      }).catch(() => {});
     }
     throw error;
   }

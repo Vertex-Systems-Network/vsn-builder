@@ -118,7 +118,7 @@
     "migrations": 36,
     "routeModules": 53,
     "userDocs": 25,
-    "developerDocs": 35,
+    "developerDocs": 36,
     "engineeringDocs": 16
   },
   "migrations": {
@@ -213,6 +213,7 @@
       "docs/developer/platform-p2.md",
       "docs/developer/plugin-manifest.md",
       "docs/developer/production-data-topology.md",
+      "docs/developer/reference-fidelity.md",
       "docs/developer/renderer.md",
       "docs/developer/reusable-data-view-kit.md",
       "docs/developer/runtime-security.md",

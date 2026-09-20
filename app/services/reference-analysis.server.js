@@ -107,6 +107,7 @@ export async function analyzeReferenceSource({
   reserveUsage = reserveAiUsage,
   getUsage = aiUsageStatus,
   providerConfigured = isAiProviderConfigured,
+  meterUsage = true,
   env = process.env,
 } = {}) {
   if (!db || !shop) throw referenceError("REFERENCE_UNAUTHENTICATED", "Authenticated shop context is required.", 401);
@@ -119,13 +120,13 @@ export async function analyzeReferenceSource({
     throw referenceError("AI_NOT_CONFIGURED", "Reference analysis is not configured on the VSN server.", 503);
   }
 
-  const usageRow = await reserveUsage({
+  const usageRow = meterUsage ? await reserveUsage({
     db,
     shop,
     pageId,
     operation: "reference-analyze",
     execution,
-  });
+  }) : null;
   const startedAt = Date.now();
   let provider;
   try {
@@ -155,7 +156,7 @@ export async function analyzeReferenceSource({
   });
 
   const analysis = normalizeReferenceAnalysis({ ...provider.output, sourceType: type });
-  const usage = await getUsage({ db, shop });
+  const usage = meterUsage ? await getUsage({ db, shop }) : null;
   return Object.freeze({
     ok: true,
     analysis,
@@ -163,6 +164,11 @@ export async function analyzeReferenceSource({
     provider: provider?.provider || execution.provider,
     model: provider?.model || execution.model,
     generationId: execution.generationId,
+    telemetry: Object.freeze({
+      inputTokens: Number(provider?.usage?.input_tokens || 0),
+      outputTokens: Number(provider?.usage?.output_tokens || 0),
+      responseId: provider?.responseId || null,
+    }),
     usage,
   });
 }
