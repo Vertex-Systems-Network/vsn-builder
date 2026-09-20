@@ -86,6 +86,8 @@ const required = [
   "scripts/p15b-quality-fix-plan-audit.mjs",
   "app/ai/qualityFixPlan.js",
   "docs/developer/ai-quality-fix-plan.md",
+  "app/services/ai-quality-fix-plan.server.js",
+  "scripts/p15b-quality-plan-integration-audit.mjs",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
