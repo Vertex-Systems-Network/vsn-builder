@@ -46,7 +46,15 @@ ok(normalized.sourceType==="figma"&&normalized.sections[0].role==="products"&&no
 ok(normalized.tokens.colors.length===2&&normalized.tokens.colors[0]==="#aabbcc","Reference colors must normalize and deduplicate");
 ok(normalized.tokens.typography[0].scale===180&&normalized.tokens.typography[0].weight===900,"Typography tokens must be bounded");
 ok(normalized.tokens.spacing.includes(400)&&normalized.tokens.spacing.includes(0)&&normalized.tokens.radii.includes(200),"Spacing/radius tokens must be clamped");
-ok(!/[<>{}]|javascript\s*:|{%/i.test(JSON.stringify(normalized)),"Reference output must strip markup/template/executable text");
+const normalizedText=[
+  normalized.summary,
+  ...normalized.sections.flatMap((row)=>[row.key,row.role,row.label,row.layout,row.alignment,row.emphasis,row.contentHint]),
+  ...normalized.assets.flatMap((row)=>[row.kind,row.role,row.positionHint]),
+  ...normalized.responsiveHints,
+  ...normalized.fidelityPriorities,
+  ...normalized.transformationNotes,
+].join(" ");
+ok(!/[<>{}]|javascript\s*:|{%/i.test(normalizedText),"Reference output must strip markup/template/executable text");
 ok(normalized.responsiveHints.length===1,"Reference hint arrays must deduplicate");
 
 const reference=normalizeReferenceAnalysis({
