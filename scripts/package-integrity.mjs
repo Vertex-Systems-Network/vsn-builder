@@ -90,6 +90,8 @@ const required = [
   "scripts/p15b-quality-plan-integration-audit.mjs",
   "app/services/ai-quality-fix-execution.server.js",
   "scripts/p15b-quality-fix-execution-audit.mjs",
+  "app/storefront/productPagination.js",
+  "scripts/p16a-storefront-product-pagination-audit.mjs",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
