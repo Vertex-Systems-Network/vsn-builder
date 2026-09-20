@@ -283,6 +283,18 @@ for(const forbidden of ["builderPage.update","builderPage.create","saveBrandKit"
   if(referenceService.includes(forbidden))fail(`P1.4a reference analysis must remain non-mutating, network-free and provider-isolated: ${forbidden}`);
 }
 
+const featureFlagsContract=fs.readFileSync(path.join(root,"app/config/featureFlags.js"),"utf8");
+const aiBuilderRoute=fs.readFileSync(path.join(root,"app/routes/app.ai.jsx"),"utf8");
+const aiBuilderService=fs.readFileSync(path.join(root,"app/services/ai-builder.server.js"),"utf8");
+for(const marker of ['referenceFidelityV1: Object.freeze({ env: "VSN_FEATURE_REFERENCE_FIDELITY", defaultValue: false',"referenceAnalysisEnabled: featureFlags.referenceFidelityV1 === true","referenceAnalyzer: analyzeReferenceSource"]){
+  const source=marker.startsWith("referenceFidelityV1")?featureFlagsContract:aiBuilderRoute;
+  if(!source.includes(marker))fail(`P1.4b reference integration guard regression detected: ${marker}`);
+}
+for(const marker of ["shouldAnalyzeReference","meterUsage: false","context.referenceAnalysis","urlText && !referenceAnalysis","imageData && !referenceAnalysis","scoreReferencePlanFidelity","referenceInputTokens + Number(result.usage?.input_tokens || 0)","referenceOutputTokens + Number(result.usage?.output_tokens || 0)"]){
+  if(!aiBuilderService.includes(marker))fail(`P1.4b Builder reference integration regression detected: ${marker}`);
+}
+if(aiBuilderService.includes("builderPage.update")||aiBuilderService.includes("builderPage.create"))fail("P1.4b reference integration must not add Builder page persistence");
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
