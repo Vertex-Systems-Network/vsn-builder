@@ -1,12 +1,10 @@
 import { syncCustomerWishlist, wishlistResponse } from "./wishlist.server.js";
+import { jsonResponse as json } from "../storefront/responses.server.js";
 import {
   boundedStorefrontText,
   STOREFRONT_WISHLIST_ITEMS_MAX_CHARS,
 } from "../storefront/mutationRequest.server.js";
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
-}
 export function proxyWishlistCustomer(url) {
   const customerId = String(url.searchParams.get("logged_in_customer_id") || "").trim();
   return { signedCustomerId: customerId, customerData: { loggedIn: Boolean(customerId), id: customerId || null, name: String(url.searchParams.get("customerName") || "").trim(), email: String(url.searchParams.get("customerEmail") || "").trim() } };
