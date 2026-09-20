@@ -40,7 +40,16 @@ ok(input.requiresRevalidation === true, "Every plan must require deterministic r
 ok(input.findings.length > 0, "Quality report findings must project into bounded fix-plan input");
 ok(QUALITY_FIX_PLAN_OUTPUT_SCHEMA.additionalProperties === false, "Strict output schema must reject hidden top-level payloads");
 ok(QUALITY_FIX_PLAN_OUTPUT_SCHEMA.properties.items.maxItems === QUALITY_FIX_PLAN_MAX_ITEMS, "Strict schema must enforce item bound");
-ok(QUALITY_FIX_PLAN_COMMAND_INTENTS.length === 6, "Only the six existing reversible Builder command intents may be proposed");
+assert.deepEqual(QUALITY_FIX_PLAN_COMMAND_INTENTS, [
+  "element.insert",
+  "element.move",
+  "element.update-props",
+  "element.update-styles",
+  "element.rewrite",
+  "element.remove",
+], "Fix-plan command intents must exactly match the existing reversible Editor Agent command set");
+checks += 1;
+ok(QUALITY_FIX_PLAN_OUTPUT_SCHEMA.properties.items.items.properties.commandIntent.enum.includes("manual-review"), "Manual review must be available for findings without a safe Builder command mapping");
 
 const linkFinding = input.findings.find((item) => item.code === "unsafe-link-protocol");
 ok(Boolean(linkFinding?.elementId), "Unsafe-link test finding must retain deterministic element target");
