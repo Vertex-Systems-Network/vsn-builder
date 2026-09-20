@@ -19,12 +19,19 @@ const CATEGORY_ORDER = Object.freeze({
   email: 7,
 });
 const BLOCKING = new Set(["error", "danger"]);
-const CURRENT_RESOURCE_PREFIXES = Object.freeze([
-  ["product-", "product"],
-  ["collection-", "collection"],
-  ["article-", "article"],
-  ["blog-", "blog"],
-]);
+const CURRENT_RESOURCE_TYPES = Object.freeze({
+  product: new Set([
+    "product-inquiry-form", "product-title", "product-image", "product-gallery", "product-price", "product-compare-price",
+    "product-description", "product-vendor", "product-sku", "product-availability", "product-variant-selector", "product-quantity",
+    "product-add-to-cart", "product-buy-now", "product-metafield", "product-recommendations", "product-media", "product-tabs",
+  ]),
+  collection: new Set([
+    "collection-title", "collection-description", "collection-image", "collection-product-count", "collection-product-grid",
+    "collection-filters", "collection-sorting", "collection-pagination",
+  ]),
+  blog: new Set(["blog-title", "blog-description", "blog-article-grid"]),
+  article: new Set(["article-title", "article-featured-image", "article-content", "article-author", "article-date", "article-tags", "article-navigation"]),
+});
 
 function text(value, max = 1200) {
   return String(value ?? "").replace(/\u0000/g, "").trim().slice(0, max);
@@ -45,24 +52,30 @@ function finding({ category, code, severity = "warning", title, message, element
   });
 }
 
-function flattenNodes(nodes = []) {
+function boundedTree(nodes = []) {
   const rows = [];
-  const stack = (Array.isArray(nodes) ? nodes : []).map((node) => ({ node, depth: 0 })).reverse();
   const seen = new Set();
   let truncated = false;
-  while (stack.length) {
-    const current = stack.pop();
-    if (!current?.node || typeof current.node !== "object" || seen.has(current.node)) continue;
-    seen.add(current.node);
-    if (rows.length >= QUALITY_MAX_NODES) {
-      truncated = true;
-      break;
+  function visit(node, depth) {
+    if (!node || typeof node !== "object" || seen.has(node)) return null;
+    if (rows.length >= QUALITY_MAX_NODES) { truncated = true; return null; }
+    seen.add(node);
+    rows.push({ node, depth });
+    const children = [];
+    for (const child of Array.isArray(node.children) ? node.children : []) {
+      const bounded = visit(child, depth + 1);
+      if (bounded) children.push(bounded);
+      if (truncated) break;
     }
-    rows.push(current);
-    const children = Array.isArray(current.node.children) ? current.node.children : [];
-    for (let i = children.length - 1; i >= 0; i -= 1) stack.push({ node: children[i], depth: current.depth + 1 });
+    return { ...node, children };
   }
-  return { rows, truncated };
+  const boundedNodes = [];
+  for (const node of Array.isArray(nodes) ? nodes : []) {
+    const bounded = visit(node, 0);
+    if (bounded) boundedNodes.push(bounded);
+    if (truncated) break;
+  }
+  return { nodes: boundedNodes, rows, truncated };
 }
 
 function normalizeScannerFinding(category, row = {}) {
@@ -172,9 +185,8 @@ function shopifyFindings(nodes, rows, pageTemplate) {
   if (!template) return out;
   for (const { node } of rows) {
     const type = text(node?.type, 120);
-    const match = CURRENT_RESOURCE_PREFIXES.find(([prefix]) => type.startsWith(prefix));
-    if (!match) continue;
-    const expected = match[1];
+    const expected = Object.keys(CURRENT_RESOURCE_TYPES).find((resource) => CURRENT_RESOURCE_TYPES[resource].has(type));
+    if (!expected) continue;
     if (!template.includes(expected)) {
       out.push(finding({
         category: "shopify",
@@ -290,12 +302,12 @@ function explanationFor(counts, findings) {
 
 export function buildQualityReport(nodes = [], options = {}) {
   const inputNodes = Array.isArray(nodes) ? nodes : [];
-  const { rows, truncated } = flattenNodes(inputNodes);
+  const { nodes: boundedNodes, rows, truncated } = boundedTree(inputNodes);
   const contextProvided = Object.prototype.hasOwnProperty.call(options, "bindingContext");
   const findings = sortedFindings([
-    ...shopifyFindings(inputNodes, rows, options.pageTemplate),
-    ...scanAiAccessibility(inputNodes).map((row) => normalizeScannerFinding("accessibility", row)),
-    ...scanAiResponsive(inputNodes).map((row) => normalizeScannerFinding("responsive", row)),
+    ...shopifyFindings(boundedNodes, rows, options.pageTemplate),
+    ...scanAiAccessibility(boundedNodes).map((row) => normalizeScannerFinding("accessibility", row)),
+    ...scanAiResponsive(boundedNodes).map((row) => normalizeScannerFinding("responsive", row)),
     ...bindingFindings(rows, options.bindingContext, contextProvided),
     ...linkFindings(rows),
     ...performanceFindings(rows, truncated),
