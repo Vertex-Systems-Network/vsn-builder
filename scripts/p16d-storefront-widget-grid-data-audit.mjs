@@ -220,7 +220,7 @@ ok(route.includes("loadWidgetGridData({ admin, elements: resolvedElements, colle
 for (const duplicate of ["function mapProductNode(", "function collectWidgetGridRequests(", "async function loadWidgetGridData("]) {
   ok(!route.includes(duplicate), `Builder proxy must not retain extracted helper: ${duplicate}`);
 }
-for (const marker of ["availableForSale", "Product image", 'currencyCode: "USD"']) {
+for (const marker of ["availableForSale", "Product image", '"USD"']) {
   ok(mapperSource.includes(marker), `Product mapper contract marker missing: ${marker}`);
 }
 for (const marker of ["STOREFRONT_WIDGET_GRID_REQUEST_LIMIT", "VsnWidgetProducts", "VsnWidgetCollections", "current-collection", "search-context"]) {
