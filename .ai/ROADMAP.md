@@ -170,7 +170,9 @@ Upgrade screenshot/URL/reference workflows:
 
 Figma should become a direct/structured ingestion path if a stable integration can preserve hierarchy better than screenshots.
 
-### P1.5 AI Quality Agent
+### P1.5 AI Quality Agent — P1.5a DETERMINISTIC REPORT FOUNDATION IMPLEMENTED
+
+**Status:** P1.5a adds an internal-only, read-only Quality Report v1 that unifies bounded VSN validity, accessibility, responsive, dynamic-binding, link-syntax, Shopify resource-context, performance, motion/reduced-motion and optional email compatibility findings. Identical inputs produce identical prioritized findings; deterministic validators alone decide pass/fail. No provider call, route, persistence or fix execution is introduced. P1.5b remains the bounded explanation/reversible fix-plan layer.
 
 Unify deterministic scanners behind an explainable quality surface:
 
