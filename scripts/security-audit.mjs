@@ -407,8 +407,9 @@ for(const marker of ["applyVsnSecurityHeaders","text/html; charset=utf-8","appli
 for(const forbidden of ["db.","fetch(","graphql(","authenticate.","builderPage.","shopify.server","process.env"]){
   if(storefrontResponses.includes(forbidden))fail(`P1.6f response boundary gained unrelated authority: ${forbidden}`);
 }
+const storefrontRequestSecurity=fs.readFileSync(path.join(root,"app/utils/request-security.server.js"),"utf8");
 for(const header of ["Referrer-Policy","Permissions-Policy","X-Content-Type-Options"]){
-  if(!requestSecurity.includes(header))fail(`P1.6f shared response security header regression detected: ${header}`);
+  if(!storefrontRequestSecurity.includes(header))fail(`P1.6f shared response security header regression detected: ${header}`);
 }
 if(!storefrontRoutes.includes('route("builder-proxy/*", "./routes/builder-proxy-secure.$.jsx")'))fail("P1.6f builder proxy URL must remain manually bound to the hardened secure action route");
 if(!storefrontSecureProxy.includes('export { loader } from "./builder-proxy.$.jsx";')||!storefrontSecureProxy.includes("export async function action({ request })"))fail("P1.6f secure proxy must own mutations while reusing the mature loader");
