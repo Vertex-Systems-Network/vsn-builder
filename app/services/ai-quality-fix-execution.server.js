@@ -103,8 +103,8 @@ function commandInputForQualityFix(commandIntent, rawInput, { page, finding, sou
       throw qualityExecutionError("AI_QUALITY_FIX_COMMAND_UNSUPPORTED", "The requested quality fix command is not executable.");
   }
 }
-function findMatchingFinding(input, original) {
-  return (input.findings || []).find((item) => item.code === original.code && item.elementId === original.elementId && item.blockId === original.blockId) || null;
+function findMatchingFinding(report, original) {
+  return (report.findings || []).find((item) => item.code === original.code && item.elementId === original.elementId && item.blockId === original.blockId) || null;
 }
 
 export async function applyAiQualityFix({
@@ -137,7 +137,7 @@ export async function applyAiQualityFix({
   const commandResult = await executeCommand({ db, session, actor, role, name: safeCommandIntent, input });
   const afterPage = await loadPage(db, session.shop, page.id);
   const afterState = qualityState(afterPage);
-  const remaining = findMatchingFinding(afterState.input, finding);
+  const remaining = findMatchingFinding(afterState.report, finding);
   const result = commandResult?.result || {};
 
   return Object.freeze({
