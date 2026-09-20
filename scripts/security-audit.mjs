@@ -388,6 +388,16 @@ for(const duplicate of ["function mapProductNode(","function collectWidgetGridRe
   if(storefrontProxy.includes(duplicate))fail(`P1.6d builder proxy retained extracted helper: ${duplicate}`);
 }
 
+const storefrontTemplateSettings=fs.readFileSync(path.join(root,"app/storefront/templateSettings.js"),"utf8");
+for(const marker of ["getTemplateSettings","headerEnabled","footerEnabled","schemaEnabled","mobileBreakpoint","fullWidth"]){
+  if(!storefrontTemplateSettings.includes(marker))fail(`P1.6e storefront template-settings boundary regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","builderPage.","Response(","renderBuilder","shopify.server"]){
+  if(storefrontTemplateSettings.includes(forbidden))fail(`P1.6e template-settings boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/templateSettings.js"'))fail("P1.6e builder proxy must consume extracted template-settings boundary");
+if(storefrontProxy.includes("function getTemplateSettings("))fail("P1.6e builder proxy must not retain template-settings implementation");
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
