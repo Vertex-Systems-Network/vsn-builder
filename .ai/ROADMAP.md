@@ -153,7 +153,9 @@ Create bounded context/tool services for:
 
 The model should request specific context through tools instead of receiving giant store dumps.
 
-### P1.4 Reference/Figma fidelity pipeline
+### P1.4 Reference/Figma fidelity pipeline — P1.4a FOUNDATION IMPLEMENTED
+
+**Status:** P1.4a defines a strict bounded reference-analysis model for screenshot, URL-text and future structured Figma inputs, plus deterministic semantic/structural fidelity scoring. It is internal-only and does not change the current screenshot/URL Builder runtime. P1.4b will integrate the sealed analysis layer behind a default-off flag.
 
 Upgrade screenshot/URL/reference workflows:
 
