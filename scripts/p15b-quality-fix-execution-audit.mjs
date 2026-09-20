@@ -50,7 +50,7 @@ const result = await applyAiQualityFix({
 });
 ok(executeCalls === 1, "Approved quality fix must execute exactly one command");
 ok(result.ok === true && result.status === "applied_resolved", "Resolved quality fix must report applied_resolved");
-ok(result.resolved === true && result.revalidated === true, "Result must come from deterministic post-command revalidation");
+ok(result.resolved === true && result.revalidated === true && result.revalidationComplete === true, "Result must come from complete deterministic post-command revalidation");
 ok(result.validatorsAuthoritative === true, "Deterministic validators must remain authoritative");
 ok(result.before.pass === false && result.after.pass === true, "Before/after summaries must reflect the deterministic rerun");
 ok(result.command.undoRevisionId === "rev-before", "Existing command-registry undo checkpoint must be returned");
@@ -81,7 +81,7 @@ try {
 ok(authorityRejected, "commandInput must reject client-supplied authority fields");
 
 const service = fs.readFileSync("app/services/ai-quality-fix-execution.server.js", "utf8");
-for (const marker of ["buildQualityReport","buildQualityFixPlanInput","QUALITY_FIX_PLAN_COMMAND_INTENTS","executeAiCommand","AI_QUALITY_FIX_EXPLICIT_APPROVAL_REQUIRED","findMatchingFinding",'status: remaining ? "applied_unresolved" : "applied_resolved"']) {
+for (const marker of ["buildQualityReport","buildQualityFixPlanInput","QUALITY_FIX_PLAN_COMMAND_INTENTS","executeAiCommand","AI_QUALITY_FIX_EXPLICIT_APPROVAL_REQUIRED","findMatchingFinding","applied_revalidation_truncated","revalidationComplete"]) {
   ok(service.includes(marker), `Quality fix execution marker missing: ${marker}`);
 }
 for (const forbidden of ["generateStructuredAi","OPENAI_API_KEY","builderPage.update","builderPage.create","admin.graphql","fetch(","runBuilderCommand","page.publish"]) {
