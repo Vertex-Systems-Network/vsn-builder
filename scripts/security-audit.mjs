@@ -498,6 +498,29 @@ for(const duplicate of ["function renderableElements(","function safeJsonForHtml
   if(storefrontProxy.includes(duplicate))fail(`P1.6k builder proxy retained extracted presentation metadata helper: ${duplicate}`);
 }
 
+const storefrontDesignTokens=fs.readFileSync(path.join(root,"app/storefront/designTokens.js"),"utf8");
+for(const marker of [
+  'return `${value}px`',
+  "value.desktop ??",
+  'primaryColor: node?.props?.primaryColor || "#008060"',
+  'accentColor: node?.props?.accentColor || node?.props?.primaryColor || "#008060"',
+  "headingScale: Math.max(1, Math.min(2",
+  "mobileBreakpoint: Math.max(320",
+  "tabletBreakpoint: Math.max(500",
+  "if (tokens.containerMd) out.containerMaxWidth = tokens.containerMd",
+  "if (tokens.spacingBase) out.spacingBase = Math.max(1",
+  "if (tokens.headingScale) out.headingScale = Math.max(1, Math.min(2",
+]){
+  if(!storefrontDesignTokens.includes(marker))fail(`P1.6l design-token boundary regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env","document.","window."]){
+  if(storefrontDesignTokens.includes(forbidden))fail(`P1.6l design-token boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/designTokens.js"'))fail("P1.6l builder proxy must consume extracted design-token boundary");
+for(const duplicate of ["function toCssSize(","function getGlobalStyles(","function mergeShopDesignTokens("]){
+  if(storefrontProxy.includes(duplicate))fail(`P1.6l builder proxy retained extracted design-token helper: ${duplicate}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
