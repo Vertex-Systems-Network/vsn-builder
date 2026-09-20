@@ -103,9 +103,7 @@ const metadataParseIndex = secureRoute.indexOf("JSON.parse(metadataRaw)");
 ok(metadataBoundIndex >= 0 && metadataParseIndex > metadataBoundIndex, "Experiment metadata is bounded before JSON.parse");
 
 ok(wishlistProxy.includes("STOREFRONT_WISHLIST_ITEMS_MAX_CHARS"), "Wishlist proxy consumes dedicated JSON parse cap");
-const wishlistBoundIndex = wishlistProxy.indexOf("boundedStorefrontText(");
-const wishlistParseIndex = wishlistProxy.indexOf("JSON.parse(");
-ok(wishlistBoundIndex >= 0 && wishlistParseIndex >= 0 && wishlistParseIndex < wishlistBoundIndex + 80, "Wishlist JSON parse is fed by bounded text");
+ok(wishlistProxy.includes("JSON.parse(boundedStorefrontText("), "Wishlist JSON parse is fed directly by bounded text");
 ok(wishlistProxy.includes("if (error instanceof Response) return error"), "Wishlist proxy preserves 413 Response from bounded text");
 
 for (const marker of [
