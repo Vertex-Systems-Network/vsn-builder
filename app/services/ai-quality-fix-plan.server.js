@@ -17,6 +17,7 @@ import { aiUsageStatus, reserveAiUsage } from "./ai-builder.server.js";
 const MAX_PAGE_ID_CHARS = 200;
 const MAX_GOAL_CHARS = 2000;
 const MAX_PROVIDER_INPUT_CHARS = 60000;
+const SYSTEM_NODE_TYPES = new Set(["template-settings", "global-styles"]);
 
 function qualityPlanError(code, message, status = 400) {
   const error = new Error(message);
@@ -37,6 +38,15 @@ function parsePageContent(value) {
     throw qualityPlanError("AI_QUALITY_PAGE_CORRUPT", "Builder page content must be an array.", 500);
   }
   return migrateBuilderContent(parsed);
+}
+
+function merchantQualityNodes(nodes = []) {
+  return (Array.isArray(nodes) ? nodes : [])
+    .filter((node) => !SYSTEM_NODE_TYPES.has(node?.type))
+    .map((node) => ({
+      ...node,
+      children: merchantQualityNodes(node?.children),
+    }));
 }
 
 async function loadPage(db, shop, pageId) {
@@ -106,7 +116,7 @@ export async function runAiQualityFixPlan({
 
   const page = await loadPage(db, shop, pageId);
   const content = parsePageContent(page.contentJson);
-  const report = buildQualityReport(content, { pageTemplate: page.template });
+  const report = buildQualityReport(merchantQualityNodes(content), { pageTemplate: page.template });
   const qualityInput = buildQualityFixPlanInput(report);
   const quality = publicQualitySummary(report, qualityInput);
 
