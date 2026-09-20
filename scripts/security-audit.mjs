@@ -347,6 +347,17 @@ for(const forbiddenAuthority of ["commandData.pageId","commandData.baseVersion",
   if(qualityExecutionService.includes(forbiddenAuthority))fail(`P1.5b-c commandInput must not accept client authority field: ${forbiddenAuthority}`);
 }
 
+const storefrontMetaobjects=fs.readFileSync(path.join(root,"app/storefront/dynamicMetaobjects.server.js"),"utf8");
+const storefrontProxy=fs.readFileSync(path.join(root,"app/routes/builder-proxy.$.jsx"),"utf8");
+for(const marker of ["STOREFRONT_METAOBJECT_BINDING_LIMIT","collectDynamicMetaobjectBindings","loadDynamicMetaobjects","metaobject(id:$id)","metaobjectByHandle","normalizeBindings"]){
+  if(!storefrontMetaobjects.includes(marker))fail(`P1.6b storefront metaobject boundary regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","authenticate.","builderPage.","renderBuilder","shopify.server"]){
+  if(storefrontMetaobjects.includes(forbidden))fail(`P1.6b storefront metaobject boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/dynamicMetaobjects.server.js"')||!storefrontProxy.includes("loadDynamicMetaobjects({ admin, elements: resolvedElements })"))fail("P1.6b builder proxy must consume the extracted metaobject boundary");
+if(storefrontProxy.includes("function collectDynamicMetaobjectBindings(")||storefrontProxy.includes("async function loadDynamicMetaobjects("))fail("P1.6b builder proxy must not retain extracted metaobject implementations");
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
