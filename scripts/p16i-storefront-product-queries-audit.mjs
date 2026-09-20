@@ -393,6 +393,9 @@ try {
 const route = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8");
 const moduleSource = fs.readFileSync("app/storefront/productQueries.server.js", "utf8");
 
+ok(moduleSource.includes('from "./productMapper.js"'), "Product-query boundary reuses shared product mapper");
+ok(moduleSource.includes('from "./productPagination.js"'), "Product-query boundary reuses shared pagination contract");
+
 ok(route.includes('from "../storefront/productQueries.server.js"'), "Builder proxy imports extracted product-query boundary");
 for (const call of [
   "getCollectionByHandle({",
