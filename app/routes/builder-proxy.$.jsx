@@ -37,6 +37,7 @@ import { applyVisualTemplateOverride } from "../builder/visualTemplate.js";
 import { serveGlobalCodeRuntime } from "../services/global-code-runtime.server.js";
 import { handleWishlistProxyAction, handleWishlistProxyLoader, proxyWishlistCustomer } from "../services/wishlist-proxy.server.js";
 import { loadDynamicMetaobjects } from "../storefront/dynamicMetaobjects.server.js";
+import { getArticleData, getBlogData, getSearchData } from "../storefront/contentQueries.server.js";
 import {
 	clampProductPageSize,
 	findCollectionProductPageSize,
@@ -1636,29 +1637,6 @@ async function getProductByHandle({ admin, handle }) {
 	}
 }
 
-async function safeAdminData(admin, query, variables, label) {
-	try { const response=await admin.graphql(query,{variables}); const result=await response.json(); if(result.errors?.length){console.error(`VSN ${label} GraphQL errors:`,result.errors);return null;} return result.data||null; } catch(error){ console.error(`VSN ${label} failed:`,error); return null; }
-}
-async function getSearchData({admin,query}){
-	const q=String(query||"").trim(); if(!q)return {query:"",count:0,items:[]};
-	const [productData, pageData, articleData] = await Promise.all([
-		safeAdminData(admin,`#graphql\nquery SearchProducts($query:String!){products(first:24,query:$query){nodes{id title handle description featuredImage{url altText} priceRangeV2{minVariantPrice{amount currencyCode}}}}}`,{query:q},"search products"),
-		safeAdminData(admin,`#graphql\nquery SearchPages($query:String!){pages(first:12,query:$query){nodes{id title handle bodySummary}}}`,{query:q},"search pages"),
-		safeAdminData(admin,`#graphql\nquery SearchArticles($query:String!){articles(first:12,query:$query){nodes{id title handle excerpt blog{handle} image{url altText}}}}`,{query:q},"search articles"),
-	]);
-	const products=(productData?.products?.nodes||[]).map(x=>({type:"Product",title:x.title,excerpt:x.description||"",url:`/products/${x.handle}`,image:x.featuredImage,price:x.priceRangeV2?.minVariantPrice||null}));
-	const pages=(pageData?.pages?.nodes||[]).map(x=>({type:"Page",title:x.title,excerpt:x.bodySummary||"",url:`/pages/${x.handle}`,image:null}));
-	const articles=(articleData?.articles?.nodes||[]).map(x=>({type:"Article",title:x.title,excerpt:x.excerpt||"",url:`/blogs/${x.blog?.handle||"news"}/${x.handle}`,image:x.image}));
-	return {query:q,count:products.length+pages.length+articles.length,items:[...products,...pages,...articles]};
-}
-async function getBlogData({admin,handle}){
-	const data=await safeAdminData(admin,`#graphql\nquery BlogData($handle:String!){blogByHandle(handle:$handle){id title handle articles(first:24,sortKey:PUBLISHED_AT,reverse:true){nodes{id title handle excerpt publishedAt author{name} image{url altText}}}}}`,{handle},"blog data");
-	const b=data?.blogByHandle; if(!b)return null; return {id:b.id,title:b.title,handle:b.handle,description:"",articles:(b.articles?.nodes||[]).map(a=>({...a,author:a.author?.name||"",url:`/blogs/${b.handle}/${a.handle}`}))};
-}
-async function getArticleData({admin,blogHandle,articleHandle}){
-	const data=await safeAdminData(admin,`#graphql\nquery ArticleData($blog:String!,$query:String!){blogByHandle(handle:$blog){title handle articles(first:50,query:$query){nodes{id title handle contentHtml excerpt publishedAt tags author{name} image{url altText}}} allArticles:articles(first:50,sortKey:PUBLISHED_AT,reverse:true){nodes{id title handle excerpt publishedAt image{url altText}}}}}`,{blog:blogHandle,query:`handle:${articleHandle}`},"article data");
-	const blog=data?.blogByHandle; const a=blog?.articles?.nodes?.[0]; if(!a)return null; const all=blog.allArticles?.nodes||[]; const index=all.findIndex(x=>x.handle===a.handle); const previous=index>=0&&index<all.length-1?all[index+1]:null; const next=index>0?all[index-1]:null; const related=all.filter(x=>x.handle!==a.handle).slice(0,3).map(x=>({...x,url:`/blogs/${blogHandle}/${x.handle}`})); return {...a,author:a.author?.name||"",blogHandle,previous:previous?{title:previous.title,url:`/blogs/${blogHandle}/${previous.handle}`}:null,next:next?{title:next.title,url:`/blogs/${blogHandle}/${next.handle}`}:null,related};
-}
 function getTemplateSettings(elements = []) {
 	const node = (Array.isArray(elements) ? elements : []).find((item) => item?.type === "template-settings");
 	return {
