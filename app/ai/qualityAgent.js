@@ -253,14 +253,15 @@ function emailFindings(emailDocument, emailMeta) {
 }
 
 function sortedFindings(rows) {
-  return [...rows].sort((a, b) =>
+  const sorted = [...rows].sort((a, b) =>
     (SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])
     || (CATEGORY_ORDER[a.category] - CATEGORY_ORDER[b.category])
     || a.elementId.localeCompare(b.elementId)
     || a.blockId.localeCompare(b.blockId)
     || a.code.localeCompare(b.code)
     || a.message.localeCompare(b.message)
-  ).slice(0, QUALITY_MAX_FINDINGS);
+  );
+  return { findings: sorted.slice(0, QUALITY_MAX_FINDINGS), truncated: sorted.length > QUALITY_MAX_FINDINGS };
 }
 
 function countsFor(findings) {
@@ -304,7 +305,7 @@ export function buildQualityReport(nodes = [], options = {}) {
   const inputNodes = Array.isArray(nodes) ? nodes : [];
   const { nodes: boundedNodes, rows, truncated } = boundedTree(inputNodes);
   const contextProvided = Object.prototype.hasOwnProperty.call(options, "bindingContext");
-  const findings = sortedFindings([
+  const sorted = sortedFindings([
     ...shopifyFindings(boundedNodes, rows, options.pageTemplate),
     ...scanAiAccessibility(boundedNodes).map((row) => normalizeScannerFinding("accessibility", row)),
     ...scanAiResponsive(boundedNodes).map((row) => normalizeScannerFinding("responsive", row)),
@@ -314,6 +315,7 @@ export function buildQualityReport(nodes = [], options = {}) {
     ...motionFindings(rows),
     ...emailFindings(options.emailDocument, options.emailMeta),
   ]);
+  const findings = sorted.findings;
   const counts = countsFor(findings);
   const score = scoreFor(counts);
   return Object.freeze({
@@ -323,7 +325,7 @@ export function buildQualityReport(nodes = [], options = {}) {
     scoreMethod: "100 - (15 × blockers + 5 × warnings + 1 × info), clamped to 0–100",
     deterministic: true,
     validatorsAuthoritative: true,
-    bounds: Object.freeze({ nodesScanned: rows.length, nodesTruncated: truncated, maxNodes: QUALITY_MAX_NODES, maxFindings: QUALITY_MAX_FINDINGS }),
+    bounds: Object.freeze({ nodesScanned: rows.length, nodesTruncated: truncated, findingsTruncated: sorted.truncated, maxNodes: QUALITY_MAX_NODES, maxFindings: QUALITY_MAX_FINDINGS }),
     counts,
     explanation: explanationFor(counts, findings),
     findings: Object.freeze(findings),
