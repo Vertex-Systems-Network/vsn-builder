@@ -33,6 +33,15 @@ Required protected security/quality checks are **not** deferred. They still run 
 | External Playwright E2E | protected-credential E2E on non-PR events | yes when executed | duplicate event cost |
 | CodeQL | JS/TS CodeQL workflow | yes | workflow/event duplication |
 
+## Observed baseline evidence
+
+### 2026-09-20 / P1.6m PR #78
+
+- The same commit head produced duplicate `verify` checks and duplicate JavaScript/TypeScript CodeQL analyses because both push and pull-request events fired.
+- One verify run may queue while the other executes, so duplicate event coverage can increase both runner minutes and protected-merge latency.
+- Release QA intentionally runs with `continue-on-error` so diagnostics can upload; the separate enforcement step is the real merge gate. Benchmark/reporting must use the release-QA **outcome**, not only the displayed step conclusion.
+- Browser installation remains a late, comparatively expensive runner phase; preserve the post-Playwright high-severity dependency audit when benchmarking browser/toolchain caching.
+
 ## Deferred benchmark backlog
 
 1. Measure total runner minutes for one protected merge, including duplicate push + pull_request runs.
