@@ -475,6 +475,29 @@ for(const duplicate of ["async function resolveReusableSections(","async functio
   if(storefrontProxy.includes(duplicate))fail(`P1.6j builder proxy retained extracted reusable-section helper: ${duplicate}`);
 }
 
+const storefrontPresentationMetadata=fs.readFileSync(path.join(root,"app/storefront/presentationMetadata.js"),"utf8");
+for(const marker of [
+  '["global-styles", "template-settings"]',
+  'replace(/</g, "\\\\u003c")',
+  "settings.seoTitle || dynamicTitle",
+  "settings.ogImage || product?.featuredImage?.url || article?.image?.url ||",
+  '"@context": "https://schema.org"',
+  '"@type": "Product"',
+  '"@type": "Article"',
+  "https://schema.org/InStock",
+  "https://schema.org/OutOfStock",
+  "safeJsonForHtml(item)",
+]){
+  if(!storefrontPresentationMetadata.includes(marker))fail(`P1.6k presentation metadata regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env","document.","window."]){
+  if(storefrontPresentationMetadata.includes(forbidden))fail(`P1.6k presentation metadata boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/presentationMetadata.js"'))fail("P1.6k builder proxy must consume presentation metadata boundary");
+for(const duplicate of ["function renderableElements(","function safeJsonForHtml(","function buildSeoPayload(","function buildSchemaMarkup("]){
+  if(storefrontProxy.includes(duplicate))fail(`P1.6k builder proxy retained extracted presentation metadata helper: ${duplicate}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
