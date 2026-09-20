@@ -3,6 +3,7 @@ import db from "../db.server.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/request-security.server.js";
 import { aiUsageStatus, runAiBuilder } from "../services/ai-builder.server.js";
+import { analyzeReferenceSource } from "../services/reference-analysis.server.js";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 
@@ -85,6 +86,7 @@ export async function action({ request }) {
     const currentPage = migrateBuilderContent(parseJson(field(form, "currentPage", MAX_CURRENT_PAGE_CHARS), []));
     const globalStyles = parseJson(field(form, "globalStyles", MAX_CONTEXT_CHARS), {});
     const commerceContext = parseJson(field(form, "commerceContext", MAX_CONTEXT_CHARS), {});
+    const featureFlags = getServerFeatureFlags();
     const result = await runAiBuilder({
       db,
       shop: session.shop,
@@ -98,6 +100,8 @@ export async function action({ request }) {
       sourceUrl: field(form, "sourceUrl", 2048),
       selectedElementId: field(form, "selectedElementId", 200),
       commerceContext,
+      referenceAnalysisEnabled: featureFlags.referenceFidelityV1 === true,
+      referenceAnalyzer: analyzeReferenceSource,
     });
     return Response.json(result);
   } catch (error) {
