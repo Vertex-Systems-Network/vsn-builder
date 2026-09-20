@@ -383,7 +383,10 @@ for(const source of [storefrontProductMapper,storefrontWidgetGrid]){
     if(source.includes(forbidden))fail(`P1.6d extracted storefront boundary gained unrelated authority: ${forbidden}`);
   }
 }
-if(!storefrontProxy.includes('from "../storefront/productMapper.js"')||!storefrontProxy.includes('from "../storefront/widgetGridData.server.js"'))fail("P1.6d builder proxy must consume extracted product mapper and widget-grid boundaries");
+if(!storefrontProxy.includes('from "../storefront/widgetGridData.server.js"'))fail("P1.6d builder proxy must consume extracted widget-grid boundary");
+const productMapperConsumedByRoute=storefrontProxy.includes('from "../storefront/productMapper.js"');
+const productQueriesForMapper=fs.readFileSync(path.join(root,"app/storefront/productQueries.server.js"),"utf8");
+if(!productMapperConsumedByRoute&&!productQueriesForMapper.includes('from "./productMapper.js"'))fail("P1.6d shared product mapper must remain consumed by a storefront query boundary");
 for(const duplicate of ["function mapProductNode(","function collectWidgetGridRequests(","async function loadWidgetGridData("]){
   if(storefrontProxy.includes(duplicate))fail(`P1.6d builder proxy retained extracted helper: ${duplicate}`);
 }
