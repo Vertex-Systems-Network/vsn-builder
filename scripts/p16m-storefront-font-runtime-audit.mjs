@@ -179,7 +179,7 @@ for (const marker of [
   "Current runner inventory",
   "Deferred benchmark backlog",
   "Required protected security/quality checks are **not** deferred",
-  "Audit post-Playwright dependency state",
+  "Post-Playwright audit",
   "duplicate push + pull_request runs",
   "Playwright browser cache reuse",
   "dedicated runner-optimization milestone",
