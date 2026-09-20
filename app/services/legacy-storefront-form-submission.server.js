@@ -1,17 +1,7 @@
 import { createHmac } from "node:crypto";
 import db from "../db.server.js";
 import { detectSpam, publicHttpsRequest } from "../utils/security.server.js";
-
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
-}
+import { jsonResponse } from "../storefront/responses.server.js";
 
 async function deliverLegacyWebhook(endpoint, payload) {
   const signature = endpoint.secret
