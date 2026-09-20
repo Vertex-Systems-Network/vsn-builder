@@ -429,6 +429,14 @@ if(!storefrontSecureProxy.includes("STOREFRONT_EXPERIMENT_METADATA_MAX_CHARS")||
 if(!storefrontSecureProxy.includes("if (error instanceof Response) return error;"))fail("P1.6g secure proxy must preserve fail-closed Response errors");
 if(!storefrontWishlistProxy.includes("STOREFRONT_WISHLIST_ITEMS_MAX_CHARS")||!storefrontWishlistProxy.includes("JSON.parse(boundedStorefrontText("))fail("P1.6g wishlist JSON must be bounded before parsing");
 
+const storefrontFormsService=fs.readFileSync(path.join(root,"app/services/storefront-form-submission.server.js"),"utf8");
+const storefrontLegacyFormsService=fs.readFileSync(path.join(root,"app/services/legacy-storefront-form-submission.server.js"),"utf8");
+for(const [label,source] of [["Forms 2",storefrontFormsService],["legacy forms",storefrontLegacyFormsService],["wishlist",storefrontWishlistProxy]]){
+  if(!source.includes("../storefront/responses.server.js"))fail(`P1.6h ${label} service must use shared hardened storefront responses`);
+  if(source.includes("new Response(JSON.stringify")||source.includes('"X-Content-Type-Options": "nosniff"'))fail(`P1.6h ${label} service regained a local partial-header JSON response helper`);
+}
+if(storefrontFormsService.includes("function jsonResponse(")||storefrontLegacyFormsService.includes("function jsonResponse(")||storefrontWishlistProxy.includes("function json("))fail("P1.6h public proxy services must not own local JSON response helpers");
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
