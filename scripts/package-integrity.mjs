@@ -99,6 +99,8 @@ const required = [
   "app/storefront/productMapper.js",
   "app/storefront/widgetGridData.server.js",
   "scripts/p16d-storefront-widget-grid-data-audit.mjs",
+  "app/storefront/templateSettings.js",
+  "scripts/p16e-storefront-template-settings-audit.mjs",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
