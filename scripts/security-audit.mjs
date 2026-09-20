@@ -452,6 +452,29 @@ for(const duplicate of ["async function getCollectionByHandle(","async function 
   if(storefrontProxy.includes(duplicate))fail(`P1.6i builder proxy retained extracted product-query helper: ${duplicate}`);
 }
 
+const storefrontReusableSections=fs.readFileSync(path.join(root,"app/storefront/reusableSections.server.js"),"utf8");
+for(const marker of [
+  'database.builderPage.findMany({ where: { shop, deletedAt: null, status: "published", template: "section" } })',
+  'database.builderLibraryItem.findMany({ where: { shop, syncMode: "global", deletedAt: null } })',
+  'stack.has(`library:${libraryId}`)',
+  "stack.has(componentKey)",
+  "stack.has(sectionId)",
+  'status: "published"',
+  "isDefault: true",
+  'orderBy: { publishedAt: "desc" }',
+  "resolveLocalizedPage",
+  "getTemplateSettings",
+]){
+  if(!storefrontReusableSections.includes(marker))fail(`P1.6j reusable-section boundary regression detected: ${marker}`);
+}
+for(const forbidden of ['from "../db.server.js"',"authenticate.","admin.graphql","fetch(","Response(","renderBuilder","shopify.server","process.env"]){
+  if(storefrontReusableSections.includes(forbidden))fail(`P1.6j reusable-section boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/reusableSections.server.js"'))fail("P1.6j builder proxy must consume extracted reusable-section boundary");
+for(const duplicate of ["async function resolveReusableSections(","async function getGlobalSection("]){
+  if(storefrontProxy.includes(duplicate))fail(`P1.6j builder proxy retained extracted reusable-section helper: ${duplicate}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
