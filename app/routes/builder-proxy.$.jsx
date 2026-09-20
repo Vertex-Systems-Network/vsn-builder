@@ -13,7 +13,7 @@ import { normalizeVideoWidgetProps, videoEmbedUrl } from "../builder/videoWidget
 import { normalizeSliderProps } from "../builder/sliderWidget.js";
 import { isNestedSliderType, normalizeNestedSliderProps } from "../builder/nestedCarouselWidget.js";
 import { normalizeStructuredItems } from "../builder/structuredItems.js";
-import { applyDynamicBindings, normalizeBindings } from "../builder/dynamicBindings.js";
+import { applyDynamicBindings } from "../builder/dynamicBindings.js";
 import { evaluateCommerceConditionRule } from "../builder/commerceConditions.js";
 import { normalizeContextImageProps, contextImageUrl, contextImageAlt } from "../builder/contextMediaWidget.js";
 import { normalizeGridProps, gridImageRatio } from "../builder/dataGridWidget.js";
@@ -36,6 +36,7 @@ import { loadStorefrontWidgetPlatform } from "../services/widget-studio.server.j
 import { applyVisualTemplateOverride } from "../builder/visualTemplate.js";
 import { serveGlobalCodeRuntime } from "../services/global-code-runtime.server.js";
 import { handleWishlistProxyAction, handleWishlistProxyLoader, proxyWishlistCustomer } from "../services/wishlist-proxy.server.js";
+import { loadDynamicMetaobjects } from "../storefront/dynamicMetaobjects.server.js";
 import {
 	clampProductPageSize,
 	findCollectionProductPageSize,
@@ -708,49 +709,6 @@ export async function loader({ request, params }) {
 		});
 
 	return htmlResponse(html, 200);
-}
-
-function collectDynamicMetaobjectBindings(elements = []) {
-	const out = [];
-	const walk = (nodes = []) => {
-		for (const node of Array.isArray(nodes) ? nodes : []) {
-			const d = node?.dynamicSource;
-			if (d?.enabled && d.source === "metaobject.field" && d.key && d.metaobjectId) {
-				const signature = `${d.metaobjectType || ""}|${d.metaobjectId}|${d.key}`;
-				if (!out.some((item) => item.signature === signature)) out.push({ signature, type: String(d.metaobjectType || ""), idOrHandle: String(d.metaobjectId || ""), key: String(d.key || "") });
-			}
-			for (const binding of Object.values(normalizeBindings(node?.bindings))) {
-				if (binding?.enabled && binding.source === "metaobject.field" && binding.key && binding.metaobjectId) {
-					const signature = `${binding.metaobjectType || ""}|${binding.metaobjectId}|${binding.key}`;
-					if (!out.some((item) => item.signature === signature)) out.push({ signature, type: String(binding.metaobjectType || ""), idOrHandle: String(binding.metaobjectId || ""), key: String(binding.key || "") });
-				}
-			}
-			walk(node?.children || []);
-		}
-	};
-	walk(elements);
-	return out.slice(0, 30);
-}
-
-async function loadDynamicMetaobjects({ admin, elements = [] }) {
-	const bindings = collectDynamicMetaobjectBindings(elements);
-	const values = {};
-	for (const binding of bindings) {
-		try {
-			const isGid = binding.idOrHandle.startsWith("gid://");
-			const query = isGid ? `#graphql\nquery VsnMetaobjectById($id: ID!){ metaobject(id:$id){ id handle type fields { key value } } }` : `#graphql\nquery VsnMetaobjectByHandle($handle: MetaobjectHandleInput!){ metaobjectByHandle(handle:$handle){ id handle type fields { key value } } }`;
-			const variables = isGid ? { id: binding.idOrHandle } : { handle: { type: binding.type, handle: binding.idOrHandle } };
-			if (!isGid && !binding.type) continue;
-			const response = await admin.graphql(query, { variables });
-			const json = await response.json();
-			const object = json.data?.metaobject || json.data?.metaobjectByHandle;
-			const field = object?.fields?.find((item) => item.key === binding.key);
-			if (field?.value != null) values[binding.signature] = field.value;
-		} catch (error) {
-			console.warn("VSN dynamic metaobject lookup failed", binding.signature, error?.message || error);
-		}
-	}
-	return values;
 }
 
 function collectWidgetGridRequests(elements = []) {
