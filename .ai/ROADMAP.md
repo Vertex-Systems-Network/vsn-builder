@@ -186,9 +186,9 @@ Unify deterministic scanners behind an explainable quality surface:
 
 The agent explains prioritized findings and can generate a reversible fix plan. Deterministic validators decide pass/fail.
 
-### P1.6 Incremental hotspot decomposition — P1.6b STOREFRONT DYNAMIC METAOBJECT BOUNDARY IMPLEMENTED
+### P1.6 Incremental hotspot decomposition — P1.6c STOREFRONT CONTENT QUERY BOUNDARY IMPLEMENTED
 
-**Status:** P1.6a extracted product pagination/sort helpers. P1.6b now extracts dynamic metaobject binding discovery and Admin API loading from the oversized `builder-proxy.$.jsx` route into `app/storefront/dynamicMetaobjects.server.js`. The extracted boundary preserves depth-first discovery, duplicate suppression, the existing 30-binding cap, GID-vs-handle lookup semantics, type-less handle skipping, and per-binding failure isolation. The proxy retains authentication, loader orchestration, persistence, rendering, and response ownership. Characterization plus security/package guards prevent this boundary from growing unrelated authority. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
+**Status:** P1.6a extracted product pagination/sort helpers and P1.6b extracted dynamic metaobject loading. P1.6c now extracts storefront search, blog, and article Admin API query/mapping behavior from the oversized `builder-proxy.$.jsx` route into `app/storefront/contentQueries.server.js`. The boundary preserves the current GraphQL query shapes and limits, soft-null error handling, search result ordering and URL fallbacks, blog author/URL mapping, and article previous/next/related semantics. The proxy retains authentication, page selection, persistence, rendering, and response ownership. Characterization plus security/package guards prevent unrelated authority from entering the content-query module. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
 
 While touching AI/storefront/editor integration, extract cohesive behavior from oversized hotspots such as `builder-proxy.$.jsx` and legacy editor mega-files.
 
