@@ -314,6 +314,22 @@ for(const executableField of ["propsJson","stylesJson","sourceGenerationId","bas
   if(qualityFixPlan.includes(executableField))fail(`P1.5b-a proposal contract must not accept executable command payload fields: ${executableField}`);
 }
 
+const qualityPlanService=fs.readFileSync(path.join(root,"app/services/ai-quality-fix-plan.server.js"),"utf8");
+const qualityAgentRoute=fs.readFileSync(path.join(root,"app/routes/app.ai-agent.jsx"),"utf8");
+for(const marker of ["buildQualityReport","buildQualityFixPlanInput","normalizeQualityFixPlan","QUALITY_FIX_PLAN_OUTPUT_SCHEMA","quality-fix-plan","pageTemplate"]){
+  if(!qualityPlanService.includes(marker))fail(`P1.5b-b quality planning integration regression detected: ${marker}`);
+}
+for(const forbidden of ["executeAiCommand","runBuilderCommand","builderPage.update","builderPage.create","admin.graphql","fetch("]){
+  if(qualityPlanService.includes(forbidden))fail(`P1.5b-b quality planning service must remain proposal-only and free of page/Shopify execution authority: ${forbidden}`);
+}
+for(const marker of ["qualityFixPlanningV1","VSN_FEATURE_AI_QUALITY_FIX_PLAN","defaultValue: false"]){
+  if(!featureFlagsContract.includes(marker))fail(`P1.5b-b default-off quality planning guard regression detected: ${marker}`);
+}
+for(const marker of ['intent === "quality-plan"',"qualityFixPlanningV1","runAiQualityFixPlan"]){
+  if(!qualityAgentRoute.includes(marker))fail(`P1.5b-b guarded route integration regression detected: ${marker}`);
+}
+if(qualityAgentRoute.includes("body.qualityReport")||qualityAgentRoute.includes("body.findings"))fail("P1.5b-b must rebuild deterministic findings server-side instead of trusting client quality data");
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
