@@ -186,9 +186,13 @@ Unify deterministic scanners behind an explainable quality surface:
 
 The agent explains prioritized findings and can generate a reversible fix plan. Deterministic validators decide pass/fail.
 
-### P1.6 Incremental hotspot decomposition — P1.6l STOREFRONT DESIGN TOKEN BOUNDARY IMPLEMENTED
+### P1.6 Incremental hotspot decomposition — P1.6m STOREFRONT FONT RUNTIME BOUNDARY IMPLEMENTED
 
-**Status:** P1.6a–P1.6k extracted major storefront data, response, mutation, query, reusable-section, and presentation-metadata boundaries. P1.6l now extracts the shared CSS-size normalizer, global style defaults, and shop design-token merge logic from `builder-proxy.$.jsx` into `app/storefront/designTokens.js`. Existing renderer call sites continue using the same `toCssSize` behavior, while global defaults, color/font/radius/shadow/container values, breakpoint minimums, heading-scale clamps, spacing-base normalization, and `containerMd` precedence remain unchanged. The module is pure and has no DB, auth/session, network, Response, rendering, browser-global, or environment authority. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the route.
+**Status:** P1.6a–P1.6l extracted major storefront data, response, mutation, query, reusable-section, presentation-metadata, and design-token boundaries. P1.6m now extracts storefront font-runtime assembly from `builder-proxy.$.jsx` into `app/storefront/fontRuntime.js`. The boundary preserves recursive font usage collection, body/heading weight sets, custom-font precedence, MIME-to-format mapping, URL-encoded custom font IDs, quoted family values, system-font exclusion, Google Fonts fallback/catalog resolution, and `display=swap`. DB/custom-font loading remains route-owned; the font runtime has no DB, auth/session, network fetch, Response, rendering, browser-global, or environment authority.
+
+### Runner benchmark — DEFERRED BATCH PLAN
+
+Runner/CI optimization tasks discovered during development are tracked in `.ai/RUNNER_BENCHMARK.md` and Issue #76. Required protected checks are never deferred before merge. Optimization candidates such as duplicate push/PR runs, Playwright browser caching, temporary tool installation, job splitting, artifact overhead, and external-E2E duplication should be measured and accumulated there, then executed together in a dedicated runner-optimization milestone after the current decomposition work rather than mixed into feature PRs.
 
 While touching AI/storefront/editor integration, extract cohesive behavior from oversized hotspots such as `builder-proxy.$.jsx` and legacy editor mega-files.
 

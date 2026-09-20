@@ -521,6 +521,30 @@ for(const duplicate of ["function toCssSize(","function getGlobalStyles(","funct
   if(storefrontProxy.includes(duplicate))fail(`P1.6l builder proxy retained extracted design-token helper: ${duplicate}`);
 }
 
+const storefrontFontRuntime=fs.readFileSync(path.join(root,"app/storefront/fontRuntime.js"),"utf8");
+for(const marker of [
+  'from "../utils/font-runtime.js"',
+  'from "../data/font-catalog.js"',
+  "collectFontUsages({ elements, globals })",
+  "mergeFontUsage(usages, globals.fontFamily",
+  "mergeFontUsage(usages, globals.headingFontFamily",
+  "JSON.stringify(custom.family)",
+  "encodeURIComponent(custom.id)",
+  "!SYSTEM_FONT_FAMILIES.has(key)",
+  "buildGoogleFontHref(googleUsages, FALLBACK_GOOGLE_FONTS)",
+]){
+  if(!storefrontFontRuntime.includes(marker))fail(`P1.6m font-runtime boundary regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env","document.","window."]){
+  if(storefrontFontRuntime.includes(forbidden))fail(`P1.6m font-runtime boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/fontRuntime.js"'))fail("P1.6m builder proxy must consume extracted font-runtime boundary");
+if(storefrontProxy.includes("function vsnFontRuntime("))fail("P1.6m builder proxy retained extracted font-runtime helper");
+const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
+for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
+  if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
