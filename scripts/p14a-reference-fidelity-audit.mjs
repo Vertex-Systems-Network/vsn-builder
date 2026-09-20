@@ -42,7 +42,7 @@ const normalized=normalizeReferenceAnalysis({
   fidelityPriorities:["Preserve hero hierarchy"],
   transformationNotes:["Do not copy logo artwork"],
 });
-ok(normalized.sourceType==="figma"&&normalized.sections[0].role==="products"&&normalized.sections[1].key==="hero-2","Reference normalization must sort sections and deduplicate keys deterministically");
+ok(normalized.sourceType==="figma"&&normalized.sections[0].role==="products"&&normalized.sections[0].key==="hero-2"&&normalized.sections[1].key==="hero","Reference normalization must sort sections while preserving deterministic input-order key deduplication");
 ok(normalized.tokens.colors.length===2&&normalized.tokens.colors[0]==="#aabbcc","Reference colors must normalize and deduplicate");
 ok(normalized.tokens.typography[0].scale===180&&normalized.tokens.typography[0].weight===900,"Typography tokens must be bounded");
 ok(normalized.tokens.spacing.includes(400)&&normalized.tokens.spacing.includes(0)&&normalized.tokens.radii.includes(200),"Spacing/radius tokens must be clamped");
