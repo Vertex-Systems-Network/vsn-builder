@@ -106,6 +106,8 @@ const required = [
   "app/storefront/mutationRequest.server.js",
   "scripts/p16g-storefront-mutation-bounds-audit.mjs",
   "scripts/p16h-storefront-json-response-audit.mjs",
+  "app/storefront/productQueries.server.js",
+  "scripts/p16i-storefront-product-queries-audit.mjs",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
