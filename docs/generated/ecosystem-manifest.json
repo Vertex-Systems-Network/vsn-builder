@@ -118,7 +118,7 @@
     "migrations": 36,
     "routeModules": 53,
     "userDocs": 25,
-    "developerDocs": 36,
+    "developerDocs": 37,
     "engineeringDocs": 16
   },
   "migrations": {
@@ -195,6 +195,7 @@
       "docs/developer/ai-context-tools.md",
       "docs/developer/ai-evals.md",
       "docs/developer/ai-provider-policy.md",
+      "docs/developer/ai-quality-agent.md",
       "docs/developer/architecture.md",
       "docs/developer/billing-lifecycle.md",
       "docs/developer/billing-production-qa.md",

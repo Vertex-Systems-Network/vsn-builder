@@ -295,6 +295,14 @@ for(const marker of ["shouldAnalyzeReference","meterUsage: false","context.refer
 }
 if(aiBuilderService.includes("builderPage.update")||aiBuilderService.includes("builderPage.create"))fail("P1.4b reference integration must not add Builder page persistence");
 
+const qualityAgent=fs.readFileSync(path.join(root,"app/ai/qualityAgent.js"),"utf8");
+for(const marker of ["validateAiVsnOutput","scanAiAccessibility","scanAiResponsive","inspectDynamicBindings","motionConflictWarnings","analyzeEmailCompatibility","validatorsAuthoritative","QUALITY_MAX_NODES","QUALITY_MAX_FINDINGS"]){
+  if(!qualityAgent.includes(marker))fail(`P1.5a deterministic quality contract regression detected: ${marker}`);
+}
+for(const forbidden of ["fetch(","generateStructuredAi","OPENAI_API_KEY","builderPage.update","builderPage.create","db.","admin.graphql","executeAiCommand"]){
+  if(qualityAgent.includes(forbidden))fail(`P1.5a quality foundation must remain read-only, network-free and provider-free: ${forbidden}`);
+}
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);
