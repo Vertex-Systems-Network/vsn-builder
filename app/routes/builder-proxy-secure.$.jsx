@@ -6,6 +6,11 @@ import { handleStorefrontFormSubmission } from "../services/storefront-form-subm
 import { handleLegacyStorefrontFormSubmission } from "../services/legacy-storefront-form-submission.server.js";
 import { handleWishlistProxyAction } from "../services/wishlist-proxy.server.js";
 import { jsonResponse } from "../storefront/responses.server.js";
+import {
+  boundedStorefrontFormData,
+  boundedStorefrontText,
+  STOREFRONT_EXPERIMENT_METADATA_MAX_CHARS,
+} from "../storefront/mutationRequest.server.js";
 
 export { loader } from "./builder-proxy.$.jsx";
 
@@ -14,7 +19,7 @@ export async function action({ request }) {
   if (!session?.shop) return jsonResponse({ ok: false, error: "Invalid storefront request." }, 401);
 
   try {
-    const formData = await request.formData();
+    const formData = await boundedStorefrontFormData(request);
     const proxyUrl = new URL(request.url);
     const wishlistAction = await handleWishlistProxyAction({ db, session, formData, url: proxyUrl });
     if (wishlistAction) return wishlistAction;
@@ -39,9 +44,14 @@ export async function action({ request }) {
         return jsonResponse({ ok: false, error: "Purchase events are server-attributed." }, 400);
       }
 
+      const metadataRaw = boundedStorefrontText(
+        formData.get("metadata") || "null",
+        STOREFRONT_EXPERIMENT_METADATA_MAX_CHARS,
+        "Experiment metadata is too large.",
+      );
       let metadata = null;
       try {
-        metadata = JSON.parse(String(formData.get("metadata") || "null"));
+        metadata = JSON.parse(metadataRaw);
       } catch {}
 
       const result = await recordExperimentEvent({
@@ -66,6 +76,7 @@ export async function action({ request }) {
 
     return handleLegacyStorefrontFormSubmission({ session, formData });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("VSN storefront mutation failed:", error);
     return jsonResponse({ ok: false, error: "The request could not be processed right now." }, 200);
   }
