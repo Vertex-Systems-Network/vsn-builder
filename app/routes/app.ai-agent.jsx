@@ -5,6 +5,7 @@ import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/request-security.server.js";
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { restoreEditorAgentCheckpoint, runEditorAgentTurn } from "../services/ai-agent.server.js";
+import { runAiQualityFixPlan } from "../services/ai-quality-fix-plan.server.js";
 
 const MAX_AGENT_BYTES = 128 * 1024;
 
@@ -45,6 +46,21 @@ export async function action({ request }) {
     const body = await boundedJson(request);
     const pageId = stringValue(body.pageId, 200);
     if (!pageId) return Response.json({ ok: false, code: "AI_AGENT_INVALID_INPUT", error: "pageId is required." }, { status: 400 });
+    const intent = stringValue(body.intent, 40);
+    const flags = getServerFeatureFlags();
+
+    if (intent === "quality-plan") {
+      if (flags.qualityFixPlanningV1 !== true) {
+        return Response.json({ ok: false, code: "AI_QUALITY_FIX_PLAN_DISABLED", error: "AI Quality planning is disabled." }, { status: 404 });
+      }
+      const result = await runAiQualityFixPlan({
+        db,
+        shop: session.shop,
+        pageId,
+        goal: stringValue(body.prompt, 2000),
+      });
+      return Response.json(result);
+    }
 
     const common = {
       db,
@@ -54,7 +70,7 @@ export async function action({ request }) {
       pageId,
     };
 
-    if (stringValue(body.intent, 40) === "revert") {
+    if (intent === "revert") {
       const revisionId = stringValue(body.revisionId, 200);
       if (!revisionId) return Response.json({ ok: false, code: "AI_AGENT_INVALID_INPUT", error: "revisionId is required." }, { status: 400 });
       const result = await restoreEditorAgentCheckpoint({ ...common, revisionId });
@@ -64,7 +80,7 @@ export async function action({ request }) {
     const result = await runEditorAgentTurn({
       ...common,
       admin,
-      contextToolsEnabled: getServerFeatureFlags().agentContextToolsV1 === true,
+      contextToolsEnabled: flags.agentContextToolsV1 === true,
       prompt: stringValue(body.prompt, 8000),
       breakpoint: stringValue(body.breakpoint, 40) || "desktop",
       selectedIds: Array.isArray(body.selectedIds) ? body.selectedIds : [],
