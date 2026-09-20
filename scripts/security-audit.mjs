@@ -213,6 +213,18 @@ for(const marker of ["AI_AGENT_MAX_STEPS = 6","AI_AGENT_MAX_CONVERSATION_TURNS =
 }
 if(aiAgentContract.includes('"page.publish"'))fail("Editor Agent executable contract must not include page.publish");
 
+const aiAgentContextContract=fs.readFileSync(path.join(root,"app/ai/agentContext.js"),"utf8");
+for(const marker of ["AI_AGENT_CONTEXT_REQUEST_SCHEMA","AI_CONTEXT_MAX_REQUESTS","AI_CONTEXT_TOOL_NAMES","normalizeAgentContextRequests"]){
+  if(!aiAgentContextContract.includes(marker))fail(`Agent context planner contract regression detected: ${marker}`);
+}
+for(const marker of ["agentContextToolsV1","VSN_FEATURE_AI_AGENT_CONTEXT_TOOLS","defaultValue: false"]){
+  if(!fs.readFileSync(path.join(root,"app/config/featureFlags.js"),"utf8").includes(marker))fail(`Agent context feature flag regression detected: ${marker}`);
+}
+for(const marker of ["AI_AGENT_CONTEXT_REQUEST_SCHEMA","runAiContextTools","vsn_editor_agent_context_requests","Server-authoritative read-only context results","contextToolsEnabled"]){
+  if(!aiAgent.includes(marker))fail(`Agent context orchestration regression detected: ${marker}`);
+}
+if(["executeDeveloperGraphql","page.publish","admin.graphql("].some((marker)=>aiAgent.includes(marker)))fail("Agent context orchestration must not bypass the sealed read-only context registry or publish boundary");
+
 const aiAgentRoute=fs.readFileSync(path.join(root,"app/routes/app.ai-agent.jsx"),"utf8");
 for(const marker of ["assertTrustedMutationRequest","authenticate.admin","canAccessBuilderEditor","MAX_AGENT_BYTES","runEditorAgentTurn","restoreEditorAgentCheckpoint"]){
   if(!aiAgentRoute.includes(marker))fail(`Editor Agent route security regression detected: ${marker}`);

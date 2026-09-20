@@ -9,6 +9,7 @@ export const FEATURE_FLAGS = Object.freeze({
   componentVariants: Object.freeze({ env: "VSN_FEATURE_COMPONENT_VARIANTS", defaultValue: false, phase: 4 }),
   responsiveEngineV2: Object.freeze({ env: "VSN_FEATURE_RESPONSIVE_V2", defaultValue: false, phase: 5 }),
   aiBuilderV1: Object.freeze({ env: "VSN_FEATURE_AI_BUILDER", defaultValue: false, phase: 9 }),
+  agentContextToolsV1: Object.freeze({ env: "VSN_FEATURE_AI_AGENT_CONTEXT_TOOLS", defaultValue: false, phase: 9 }),
   brandIntelligenceExtractionV1: Object.freeze({ env: "VSN_FEATURE_BRAND_INTELLIGENCE_EXTRACTION", defaultValue: false, phase: 13 }),
   collaborationReviewV1: Object.freeze({ env: "VSN_FEATURE_COLLABORATION_REVIEW", defaultValue: false, phase: 10 }),
   localizationMarketsV1: Object.freeze({ env: "VSN_FEATURE_LOCALIZATION_MARKETS", defaultValue: false, phase: 11 }),

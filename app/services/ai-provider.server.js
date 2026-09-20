@@ -34,6 +34,7 @@ export function getAiRuntimePolicy({ env = process.env } = {}) {
       page: String(env.VSN_AI_PAGE_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.page).trim(),
       email: String(env.VSN_AI_EMAIL_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.email).trim(),
       agent: String(env.VSN_AI_AGENT_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.agent).trim(),
+      agentContext: String(env.VSN_AI_AGENT_CONTEXT_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.agentContext).trim(),
       brand: String(env.VSN_AI_BRAND_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.brand).trim(),
     }),
   });

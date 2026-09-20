@@ -140,7 +140,7 @@ Allow AI-assisted brand extraction from an owned/authorized site, but transform 
 
 ### P1.3 Server-authoritative Shopify context — P1.3a IMPLEMENTED BASELINE
 
-**Status:** P1.3a adds an internal read-only allowlisted context registry with server-authoritative shop/page scoping, fixed Shopify GraphQL queries, bounded outputs and app-owned analytics/experiment context. It intentionally does not change the P1.1 Agent protocol yet. P1.3b will add a bounded model-requested context phase after this registry is sealed.
+**Status:** P1.3a adds an internal read-only allowlisted context registry with server-authoritative shop/page scoping, fixed Shopify GraphQL queries, bounded outputs and app-owned analytics/experiment context. P1.3b adds an optional default-off two-phase Agent flow: a strict planner may request up to four allowlisted read-only context tools, VSN executes them server-side, and the final Agent plan still uses the unchanged six-command P1.1 draft-edit allowlist.
 
 Create bounded context/tool services for:
 

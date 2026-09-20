@@ -102,12 +102,43 @@ The Agent uses the shared provider adapter and `reserveAiUsage` with operation `
 
 No provider credentials or transport live in the Agent service.
 
+## Server-authoritative context phase
+
+P1.3b adds an optional two-phase context-aware Agent path behind the independent default-off `VSN_FEATURE_AI_AGENT_CONTEXT_TOOLS` flag.
+
+When the flag is disabled, the original `agent-v1` single-provider-call path remains unchanged.
+
+When enabled, the Agent uses `agent-v2`:
+
+1. the first provider phase receives the normal bounded authoritative page/brand/quality context and may request up to four allowlisted P1.3a read-only context tools;
+2. VSN normalizes every requested tool/input through the sealed P1.3a registry;
+3. the server executes the bounded context batch using the authenticated shop and canonical current Builder page;
+4. normalized context results are appended to the second provider phase as explicitly untrusted data;
+5. the second provider phase must return the existing strict Agent edit-plan schema;
+6. edit execution still uses the same six reversible P1.1 draft commands and the same sequential server-derived `baseVersion` checks.
+
+Context data never becomes command authority. The model cannot supply GraphQL documents, page scope, Shopify credentials, or write operations.
+
+The browser receives only context-tool metadata (`tool` + success/failure), not raw Shopify context payloads.
+
+Planner and final-plan token usage is aggregated into the same `BuilderAiUsage` row for that Agent turn. A context lookup failure degrades to generic bounded metadata; raw exceptions and secrets are not reflected into the final provider phase.
+
+The context-aware path does not add persistence tables, background jobs, publish permissions, Shopify mutations, or additional Agent commands.
+
+### Context-aware configuration
+
+```bash
+VSN_FEATURE_AI_AGENT_CONTEXT_TOOLS=false
+VSN_AI_AGENT_CONTEXT_BEHAVIOR_VERSION=agent-v2
+```
+
 ## QA
 
 Run:
 
 ```bash
 npm run qa:p11-agent
+npm run qa:p13b-agent-context
 npm run qa:ai-evals
 npm run qa:release
 ```

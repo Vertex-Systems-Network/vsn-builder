@@ -81,7 +81,7 @@ Translation `digest` values are intentionally omitted because P1.3a is read-only
 
 P1.3a does **not** add context tools to `AI_AGENT_EXECUTABLE_COMMANDS` and does not change the Agent output schema.
 
-P1.3b can build a bounded model-requested context phase on top of this registry after P1.3a is independently sealed.
+P1.3b now integrates this registry into the Editor Agent behind an independent default-off feature flag. The model may request up to four allowlisted context tools in a planner phase; VSN executes them server-side and supplies normalized results to the final Agent edit-plan phase as untrusted data. The P1.1 executable command allowlist remains unchanged.
 
 ## QA
 
