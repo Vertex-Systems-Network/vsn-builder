@@ -5,19 +5,9 @@ import { recordExperimentEvent } from "../services/experiment-engine.server.js";
 import { handleStorefrontFormSubmission } from "../services/storefront-form-submission.server.js";
 import { handleLegacyStorefrontFormSubmission } from "../services/legacy-storefront-form-submission.server.js";
 import { handleWishlistProxyAction } from "../services/wishlist-proxy.server.js";
+import { jsonResponse } from "../storefront/responses.server.js";
 
 export { loader } from "./builder-proxy.$.jsx";
-
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
-}
 
 export async function action({ request }) {
   const { session } = await authenticate.public.appProxy(request);
