@@ -138,9 +138,12 @@ equal(zeroStrings.ogImage, "", "Falsy OG image keeps empty-string coercion");
 
 const route = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8");
 const moduleSource = fs.readFileSync("app/storefront/templateSettings.js", "utf8");
+const reusableSections = fs.readFileSync("app/storefront/reusableSections.server.js", "utf8");
 
 ok(route.includes('from "../storefront/templateSettings.js"'), "Builder proxy imports extracted template-settings boundary");
-equal((route.match(/getTemplateSettings\(/g) || []).length, 3, "Builder proxy keeps the three historical template-settings call sites");
+equal((route.match(/getTemplateSettings\(/g) || []).length, 2, "Builder proxy keeps its two direct template-settings call sites");
+ok(reusableSections.includes('from "./templateSettings.js"'), "Reusable-section boundary imports template-settings normalization");
+equal((reusableSections.match(/getTemplateSettings\(/g) || []).length, 1, "Reusable-section boundary owns the historical global-section template-settings call site");
 ok(!route.includes("function getTemplateSettings("), "Builder proxy no longer owns template-settings normalization");
 
 for (const marker of [

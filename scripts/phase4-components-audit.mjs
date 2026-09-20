@@ -35,9 +35,10 @@ check('PageEditor replaces source with instance',()=>assert.match(page,/componen
 const preview=fs.readFileSync('app/components/editor/PreviewRenderer.jsx','utf8');
 const canvas=fs.readFileSync('app/components/editor/Canvas.jsx','utf8');
 const storefront=fs.readFileSync('app/routes/builder-proxy.$.jsx','utf8');
+const storefrontReusableSections=fs.readFileSync('app/storefront/reusableSections.server.js','utf8');
 check('Canvas blocks component cycles',()=>assert.match(canvas,/Circular component dependency blocked/));
 check('Preview blocks component cycles',()=>assert.match(preview,/Circular component dependency blocked/));
-check('Storefront blocks component cycles',()=>assert.match(storefront,/stack\.has\(componentKey\)/));
+check('Storefront blocks component cycles',()=>{assert.match(storefront,/reusableSections\.server\.js/);assert.match(storefrontReusableSections,/stack\.has\(componentKey\)/);});
 check('Component usage graph loader present',()=>assert.match(fs.readFileSync('app/routes/app.builder.$id.jsx','utf8'),/componentUsage/));
 
 for(const [n,ok,msg] of checks) console.log(`${ok?'PASS':'FAIL'} ${n}${msg?`: ${msg}`:''}`);
