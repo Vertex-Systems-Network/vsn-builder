@@ -1,7 +1,5 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
-import { createHmac } from "node:crypto";
-import { detectSpam } from "../utils/security.server.js";
 import { buildNodeStyle } from "../builder/styleEngine.js";
 import { buildStyleBundleCss } from "../builder/stylePipeline.js";
 import { collectCustomJsGroups, validateCustomJs } from "../builder/customCode.js";
@@ -23,11 +21,11 @@ import { runShopifyLoopQuery } from "../services/query-engine.server.js";
 import { resolveComponentInstance } from "../builder/componentSystem.js";
 import { normalizeElementInteractions } from "../builder/interactionSchema.js";
 import { CAMPAIGN_TEMPLATE_TYPES, normalizeCampaignSettings, campaignScheduleState, campaignMatchesContext } from "../builder/campaignSystem.js";
-import { resolveExperimentRender, recordExperimentEvent } from "../services/experiment-engine.server.js";
+import { resolveExperimentRender } from "../services/experiment-engine.server.js";
 import { resolveLocalizedPage } from "../services/localization.server.js";
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { loadGoogleMapsApiKey, loadGoogleCaptchaSettings } from "../services/google-platform.server.js";
-import { handleStorefrontFormSubmission, loadRenderFormConfigs } from "../services/storefront-form-submission.server.js";
+import { loadRenderFormConfigs } from "../services/storefront-form-submission.server.js";
 import { renderVsnStorefrontWidget } from "../sdk/runtime.js";
 import { ensureBuiltinSdkPlugins } from "../sdk/builtinPlugins.js";
 import { parseEnterpriseSettings } from "../services/enterprise-hardening.server.js";
@@ -35,12 +33,13 @@ import { trackStorefrontVisitorRequest } from "../services/visitor-analytics.ser
 import { loadStorefrontWidgetPlatform } from "../services/widget-studio.server.js";
 import { applyVisualTemplateOverride } from "../builder/visualTemplate.js";
 import { serveGlobalCodeRuntime } from "../services/global-code-runtime.server.js";
-import { handleWishlistProxyAction, handleWishlistProxyLoader, proxyWishlistCustomer } from "../services/wishlist-proxy.server.js";
+import { handleWishlistProxyLoader, proxyWishlistCustomer } from "../services/wishlist-proxy.server.js";
 import { loadDynamicMetaobjects } from "../storefront/dynamicMetaobjects.server.js";
 import { getArticleData, getBlogData, getSearchData } from "../storefront/contentQueries.server.js";
 import { mapProductNode } from "../storefront/productMapper.js";
 import { loadWidgetGridData } from "../storefront/widgetGridData.server.js";
 import { getTemplateSettings } from "../storefront/templateSettings.js";
+import { htmlResponse, javascriptResponse, jsonResponse } from "../storefront/responses.server.js";
 import {
 	clampProductPageSize,
 	findCollectionProductPageSize,
@@ -57,89 +56,6 @@ const TEMPLATE_CACHE = new Map();
 const TEMPLATE_CACHE_TTL = 15_000;
 function cacheGet(key) { const item = TEMPLATE_CACHE.get(key); if (!item) return null; if (Date.now() - item.at > TEMPLATE_CACHE_TTL) { TEMPLATE_CACHE.delete(key); return null; } return item.value; }
 function cacheSet(key, value) { if (TEMPLATE_CACHE.size > 250) TEMPLATE_CACHE.clear(); TEMPLATE_CACHE.set(key, { at: Date.now(), value }); return value; }
-export async function action({ request }) {
-	const { session } = await authenticate.public.appProxy(request);
-	if (!session?.shop) return jsonResponse({ ok: false, error: "Invalid storefront request." }, 401);
-
-	try {
-		const formData = await request.formData();
-		const proxyUrl = new URL(request.url);
-		const wishlistAction=await handleWishlistProxyAction({db,session,formData,url:proxyUrl}); if(wishlistAction)return wishlistAction;
-		const isFormSubmission = proxyUrl.searchParams.get("formSubmit") === "1" || formData.has("formKey") || formData.has("formType");
-		if (getServerFeatureFlags().formsAutomationV2 === true && isFormSubmission && String(formData.get("_vsnAction") || "") !== "experiment-event") return handleStorefrontFormSubmission(request, session, formData);
-		if (String(formData.get("_vsnAction") || "") === "experiment-event") {
-			const eventType = String(formData.get("eventType") || "").trim();
-			if (eventType === "purchase") return jsonResponse({ ok:false, error:"Purchase events are server-attributed." }, 400);
-			let metadata = null; try { metadata = JSON.parse(String(formData.get("metadata") || "null")); } catch {}
-			const result = await recordExperimentEvent({
-				db, shop:session.shop, experimentId:String(formData.get("experimentId") || ""), variantId:String(formData.get("variantId") || ""),
-				visitorId:String(formData.get("visitorId") || ""), sessionId:String(formData.get("sessionId") || ""), eventType,
-				eventName:String(formData.get("eventName") || ""), value:formData.get("value"), metadata, dedupeKey:String(formData.get("eventId") || "") || null,
-			});
-			return jsonResponse({ ok:result.success, duplicate:Boolean(result.duplicate), error:result.error || null }, result.success ? 200 : 400);
-		}
-		const honeypot = String(formData.get("website") || "").trim();
-		if (honeypot) return jsonResponse({ ok: true });
-
-		const formType = String(formData.get("formType") || formData.get("formKey") || "contact").trim().slice(0, 80);
-		const pageUrl = String(formData.get("pageUrl") || "").trim().slice(0, 1500);
-		const productHandle = String(formData.get("productHandle") || "").trim().slice(0, 255);
-		const fields = {};
-		let customerEmail = "";
-
-		for (const [rawKey, rawValue] of formData.entries()) {
-			const key = String(rawKey || "").trim().slice(0, 120);
-			if (!key || ["website", "pageUrl", "productHandle", "formType", "formKey"].includes(key)) continue;
-			if (typeof rawValue === "string") {
-				const value = rawValue.trim().slice(0, 10000);
-				if (fields[key] === undefined) fields[key] = value;
-				else fields[key] = Array.isArray(fields[key]) ? [...fields[key], value] : [fields[key], value];
-				if (!customerEmail && /email/i.test(key) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) customerEmail = value.toLowerCase();
-			} else if (rawValue && typeof rawValue === "object") {
-				fields[key] = {
-					name: String(rawValue.name || "").slice(0, 255),
-					type: String(rawValue.type || "application/octet-stream").slice(0, 120),
-					size: Number(rawValue.size || 0),
-				};
-			}
-		}
-
-		if (formType === "newsletter") {
-			const email = String(fields.email || "").trim();
-			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResponse({ ok: false, error: "Enter a valid email address." }, 200);
-		}
-
-		const spamReason = detectSpam(fields);
-		const created = await db.builderFormSubmission.create({
-			data: {
-				shop: session.shop,
-				formKey: formType || "contact",
-				pageUrl: pageUrl || null,
-				productHandle: productHandle || null,
-				customerEmail: customerEmail || (typeof fields.email === "string" ? fields.email.slice(0, 254) : null),
-				fieldsJson: JSON.stringify(fields),
-				isSpam: Boolean(spamReason),
-				spamReason: spamReason || null,
-			},
-		});
-
-		if (!spamReason) {
-			const endpoints = await db.builderWebhookEndpoint.findMany({ where: { shop: session.shop, enabled: true } });
-			const payload = JSON.stringify({ id: created.id, shop: session.shop, formKey: created.formKey, pageUrl, productHandle, customerEmail: created.customerEmail, fields, createdAt: created.createdAt });
-			await Promise.allSettled(endpoints.filter((endpoint) => endpoint.formKey === "*" || endpoint.formKey === created.formKey).map(async (endpoint) => {
-				const signature = endpoint.secret ? createHmac("sha256", endpoint.secret).update(payload).digest("hex") : "";
-				const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 5000);
-				try { await fetch(endpoint.url, { method: "POST", headers: { "content-type": "application/json", ...(signature ? { "x-vsn-signature": signature } : {}) }, body: payload, signal: controller.signal }); } finally { clearTimeout(timer); }
-			}));
-		}
-
-		return jsonResponse({ ok: true, id: created.id });
-	} catch (error) {
-		console.error("VSN form submission failed:", error);
-		return jsonResponse({ ok: false, error: "The form could not be submitted right now." }, 200);
-	}
-}
-
 export async function loader({ request, params }) {
 	const { admin, session } =
 		await authenticate.public.appProxy(request);
@@ -1545,29 +1461,6 @@ async function getGlobalSection(database, shop, template, requestedId = null, { 
 	return { id: page.id, title: page.title, elements: localized.elements, settings: { ...getTemplateSettings(localized.elements), ...(localized.seo || {}) }, localization: { locale, marketKey, direction: localized.direction || "ltr" } };
 }
 
-function htmlResponse(html, status = 200) {
-	return new Response(html, {
-		status,
-		headers: {
-			"Content-Type": "text/html; charset=utf-8",
-			"Cache-Control": status === 200 ? "public, max-age=15, stale-while-revalidate=30" : "no-store",
-			"X-Content-Type-Options": "nosniff",
-			"Vary": "Accept-Encoding",
-		},
-	});
-}
-
-function javascriptResponse(source, status = 200) {
-	return new Response(String(source || ""), {
-		status,
-		headers: {
-			"Content-Type": "application/javascript; charset=utf-8",
-			"Cache-Control": "no-store",
-			"X-Content-Type-Options": "nosniff",
-		},
-	});
-}
-
 function toCssSize(value, fallback = "0px") {
 	if (value === null || value === undefined || value === "") {
 		return fallback;
@@ -1642,26 +1535,6 @@ function getNodeSpacing(styles = {}) {
 		margin: buildBox(margin, "margin"),
 		padding: buildBox(padding, "padding"),
 	};
-}
-
-function jsonResponse(
-	data,
-	status = 200,
-) {
-	return new Response(
-		JSON.stringify(data),
-		{
-			status,
-			headers: {
-				"Content-Type":
-					"application/json; charset=utf-8",
-
-				"Cache-Control":
-					"no-store",
-				"X-Content-Type-Options": "nosniff",
-			},
-		},
-	);
 }
 
 function safeParseJson(value, fallback) {
