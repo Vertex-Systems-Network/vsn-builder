@@ -186,9 +186,9 @@ Unify deterministic scanners behind an explainable quality surface:
 
 The agent explains prioritized findings and can generate a reversible fix plan. Deterministic validators decide pass/fail.
 
-### P1.6 Incremental hotspot decomposition — P1.6k STOREFRONT PRESENTATION METADATA BOUNDARY IMPLEMENTED
+### P1.6 Incremental hotspot decomposition — P1.6l STOREFRONT DESIGN TOKEN BOUNDARY IMPLEMENTED
 
-**Status:** P1.6a–P1.6j extracted major storefront data, response, mutation, query, and reusable-section boundaries. P1.6k now extracts pure presentation metadata helpers from `builder-proxy.$.jsx` into `app/storefront/presentationMetadata.js`: renderable-element filtering, safe JSON embedding, SEO fallback construction, and Product/Article JSON-LD schema generation. Historical fallback precedence and schema mappings remain unchanged. Embedded JSON continues escaping `<` before insertion into script tags, preventing merchant-controlled metadata from breaking out of JSON script contexts. The module has no DB, auth/session, network, Response, rendering, browser-global, or environment authority. P1.6 remains incremental; global style/token helpers stay in the route for a later cohesive slice because their size/unit utility dependency is broader.
+**Status:** P1.6a–P1.6k extracted major storefront data, response, mutation, query, reusable-section, and presentation-metadata boundaries. P1.6l now extracts the shared CSS-size normalizer, global style defaults, and shop design-token merge logic from `builder-proxy.$.jsx` into `app/storefront/designTokens.js`. Existing renderer call sites continue using the same `toCssSize` behavior, while global defaults, color/font/radius/shadow/container values, breakpoint minimums, heading-scale clamps, spacing-base normalization, and `containerMd` precedence remain unchanged. The module is pure and has no DB, auth/session, network, Response, rendering, browser-global, or environment authority. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the route.
 
 While touching AI/storefront/editor integration, extract cohesive behavior from oversized hotspots such as `builder-proxy.$.jsx` and legacy editor mega-files.
 
