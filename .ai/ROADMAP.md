@@ -186,9 +186,9 @@ Unify deterministic scanners behind an explainable quality surface:
 
 The agent explains prioritized findings and can generate a reversible fix plan. Deterministic validators decide pass/fail.
 
-### P1.6 Incremental hotspot decomposition — P1.6e STOREFRONT TEMPLATE SETTINGS BOUNDARY IMPLEMENTED
+### P1.6 Incremental hotspot decomposition — P1.6f STOREFRONT RESPONSE SECURITY BOUNDARY IMPLEMENTED
 
-**Status:** P1.6a–P1.6d extracted product pagination, dynamic metaobject loading, content queries, product mapping, and widget-grid data loading. P1.6e now extracts pure template-settings normalization from the oversized `builder-proxy.$.jsx` route into `app/storefront/templateSettings.js`. The boundary preserves the historical defaults, first-node selection, strict boolean semantics, string coercion, mobile breakpoint fallback/clamp, and even legacy non-numeric `NaN` behavior. Campaign, page, reusable-section, localization, persistence, rendering, and response orchestration remain in the proxy. Characterization plus security/package guards keep the normalization contract stable and authority-free. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
+**Status:** P1.6a–P1.6e extracted product pagination, dynamic metaobject loading, content queries, product mapping, widget-grid data loading, and template settings. P1.6f is security-first: it removes the dormant legacy mutation/webhook action (including its generic direct webhook fetch path) from the loader/render implementation file, leaving the manually bound `builder-proxy-secure.$.jsx` route as the sole storefront mutation owner. HTML, JavaScript, and JSON responses now use `app/storefront/responses.server.js`, which delegates to the shared security-header policy so `nosniff`, `Referrer-Policy`, and restrictive `Permissions-Policy` are applied consistently while preserving existing content types, cache semantics, status codes, bodies, and HTML `Vary`. No CSP is introduced until the merchant/runtime script surface is characterized. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
 
 While touching AI/storefront/editor integration, extract cohesive behavior from oversized hotspots such as `builder-proxy.$.jsx` and legacy editor mega-files.
 

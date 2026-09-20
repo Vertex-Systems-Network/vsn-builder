@@ -24,6 +24,7 @@ const formSettingsRoute=read("app/routes/app.form-settings.jsx");
 const panelHost=read("app/components/BuilderPanelHost.jsx");
 const properties=read("app/components/editor/PropertiesPanel.jsx");
 const proxy=read("app/routes/builder-proxy.$.jsx");
+const secureProxy=read("app/routes/builder-proxy-secure.$.jsx");
 const renderer=read("extensions/vsn-page-builder-theme/assets/vsn-page-renderer.js");
 const formSubmission=read("app/services/storefront-form-submission.server.js");
 const env=read(".env.example");
@@ -80,7 +81,7 @@ await check("Storefront proxy renders both Google captcha modes",()=>{assert.ok(
 await check("Storefront renderer loads Google captcha explicitly",()=>assert.ok(renderer.includes("render=explicit")&&renderer.includes("grecaptcha.render")));
 await check("v3 token is requested at submit time",()=>{const submit=renderer.indexOf('document.addEventListener("submit"');const execute=renderer.indexOf("api.execute(widgetId",submit);assert.ok(submit>=0&&execute>submit)});
 await check("Captcha tokens are excluded from persisted fields",()=>{assert.ok(formSubmission.includes('"g-recaptcha-response"'));assert.ok(formSubmission.includes('"recaptchaToken"'));assert.ok(formSubmission.includes('"recaptchaAction"'))});
-await check("Storefront form/security code is extracted server-side",()=>{assert.ok(proxy.includes("handleStorefrontFormSubmission"));assert.ok(formSubmission.includes("export async function handleStorefrontFormSubmission"))});
+await check("Storefront form/security code is extracted server-side",()=>{assert.ok(secureProxy.includes("handleStorefrontFormSubmission"));assert.doesNotMatch(proxy,/handleStorefrontFormSubmission\(/);assert.ok(formSubmission.includes("export async function handleStorefrontFormSubmission"))});
 
 await check("reCAPTCHA v2 server verification succeeds on Google success",async()=>{const prior=global.fetch;try{global.fetch=async()=>new Response(JSON.stringify({success:true}),{status:200,headers:{"content-type":"application/json"}});const result=await verifyGoogleRecaptcha("token",new Request("https://shop.test/"),{secretKey:"secret",version:"v2"});assert.equal(result.ok,true)}finally{global.fetch=prior}});
 await check("reCAPTCHA v3 enforces score threshold",async()=>{const prior=global.fetch;try{global.fetch=async()=>new Response(JSON.stringify({success:true,score:.2,action:"form_submit"}),{status:200,headers:{"content-type":"application/json"}});const result=await verifyGoogleRecaptcha("token",new Request("https://shop.test/"),{secretKey:"secret",version:"v3",threshold:.5,expectedAction:"form_submit"});assert.equal(result.ok,false);assert.match(result.error,/score/i)}finally{global.fetch=prior}});

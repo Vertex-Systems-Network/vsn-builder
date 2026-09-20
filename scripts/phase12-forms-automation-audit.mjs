@@ -18,6 +18,7 @@ function has(file, ...tokens) {
 
 const schema = read("prisma/schema.prisma");
 const proxy = read("app/routes/builder-proxy.$.jsx");
+const secureProxy = read("app/routes/builder-proxy-secure.$.jsx");
 const storefrontForms = read("app/services/storefront-form-submission.server.js");
 const sidebar = read("app/components/AppSidebar.jsx");
 const host = read("app/components/BuilderPanelHost.jsx");
@@ -36,8 +37,9 @@ check("Form submission delivery/retention fields", schema.includes("deliveryStat
 
 check("Forms 2 engine exists", has("app/builder/formEngine.js", "normalizeFormAutomationSettings", "formSuccessPayload", "fileAllowed"));
 check("Form automation service exists", has("app/services/form-automation.server.js", "verifyTurnstile", "verifyHcaptcha", "deliverFormAutomations"));
-check("Turnstile verification wired", storefrontForms.includes("verifyTurnstile") && proxy.includes("handleStorefrontFormSubmission"));
-check("hCaptcha verification wired", storefrontForms.includes("verifyHcaptcha") && proxy.includes("handleStorefrontFormSubmission"));
+check("Turnstile verification wired", storefrontForms.includes("verifyTurnstile") && secureProxy.includes("handleStorefrontFormSubmission"));
+check("hCaptcha verification wired", storefrontForms.includes("verifyHcaptcha") && secureProxy.includes("handleStorefrontFormSubmission"));
+check("Legacy loader has no Forms 2 mutation authority", !proxy.includes("handleStorefrontFormSubmission("));
 check("Honeypot and rate limiting wired", storefrontForms.includes("honeypot") && storefrontForms.includes("requesterHash"));
 check("File uploads persisted", storefrontForms.includes("builderFormUpload.create"));
 check("File scanning hook wired", has("app/services/form-automation.server.js", "VSN_FORM_FILE_SCAN_WEBHOOK"));
