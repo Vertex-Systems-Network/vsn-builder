@@ -79,6 +79,8 @@ const required = [
   "app/ai/referenceFidelity.js",
   "app/services/reference-analysis.server.js",
   "scripts/p14a-reference-fidelity-audit.mjs",
+  "scripts/p14b-reference-integration-audit.mjs",
+  "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
   "prisma/migrations/20260919151000_p12_brand_profile/migration.sql",
