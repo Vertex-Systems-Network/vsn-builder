@@ -1,4 +1,8 @@
 import { syncCustomerWishlist, wishlistResponse } from "./wishlist.server.js";
+import {
+  boundedStorefrontText,
+  STOREFRONT_WISHLIST_ITEMS_MAX_CHARS,
+} from "../storefront/mutationRequest.server.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
@@ -11,7 +15,7 @@ export async function handleWishlistProxyAction({ db, session, formData, url }) 
   if (String(formData.get("_vsnAction") || "") !== "wishlist-sync") return null;
   const { signedCustomerId } = proxyWishlistCustomer(url);
   if (!signedCustomerId) return json({ ok:false, authenticated:false, error:"Customer login required for server wishlist sync." }, 401);
-  let items=[]; try { items=JSON.parse(String(formData.get("items") || "[]")); } catch { return json({ok:false,error:"Invalid wishlist payload."},400); }
+  let items=[]; try { items=JSON.parse(boundedStorefrontText(formData.get("items") || "[]", STOREFRONT_WISHLIST_ITEMS_MAX_CHARS, "Wishlist payload is too large.")); } catch (error) { if (error instanceof Response) return error; return json({ok:false,error:"Invalid wishlist payload."},400); }
   const requestedMode=String(formData.get("mode")||""); const mode=["merge","replace","clear"].includes(requestedMode)?requestedMode:"merge";
   const saved=await syncCustomerWishlist(db,{shop:session.shop,customerId:signedCustomerId,items,mode});
   return json({ok:true,authenticated:true,items:saved,count:saved.length,mode});

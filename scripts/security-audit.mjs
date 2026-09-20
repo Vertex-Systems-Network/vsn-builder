@@ -419,6 +419,16 @@ for(const forbidden of ["export async function action({ request })","createHmac"
   if(storefrontProxy.includes(forbidden))fail(`P1.6f legacy loader regained dormant mutation/webhook authority: ${forbidden}`);
 }
 
+const storefrontMutationRequest=fs.readFileSync(path.join(root,"app/storefront/mutationRequest.server.js"),"utf8");
+const storefrontWishlistProxy=fs.readFileSync(path.join(root,"app/services/wishlist-proxy.server.js"),"utf8");
+for(const marker of ["STOREFRONT_MUTATION_MAX_BYTES = 32 * 1024 * 1024","STOREFRONT_EXPERIMENT_METADATA_MAX_CHARS = 16 * 1024","STOREFRONT_WISHLIST_ITEMS_MAX_CHARS = 2 * 1024 * 1024","request.body.getReader()","reader.cancel()","Buffer.concat(chunks)"]){
+  if(!storefrontMutationRequest.includes(marker))fail(`P1.6g storefront mutation-bound regression detected: ${marker}`);
+}
+if(!storefrontSecureProxy.includes("boundedStorefrontFormData(request)")||storefrontSecureProxy.includes("await request.formData()"))fail("P1.6g secure proxy must use bounded FormData parsing");
+if(!storefrontSecureProxy.includes("STOREFRONT_EXPERIMENT_METADATA_MAX_CHARS")||!storefrontSecureProxy.includes("JSON.parse(metadataRaw)"))fail("P1.6g experiment metadata must be bounded before parsing");
+if(!storefrontSecureProxy.includes("if (error instanceof Response) return error;"))fail("P1.6g secure proxy must preserve fail-closed Response errors");
+if(!storefrontWishlistProxy.includes("STOREFRONT_WISHLIST_ITEMS_MAX_CHARS")||!storefrontWishlistProxy.includes("JSON.parse(boundedStorefrontText("))fail("P1.6g wishlist JSON must be bounded before parsing");
+
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){
   if(!aiEvalHarness.includes(marker)&&!fs.readFileSync(path.join(root,".ai/evals/v1/config.json"),"utf8").includes(marker))fail(`AI eval artifact safety regression detected: ${marker}`);

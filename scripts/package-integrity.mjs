@@ -103,6 +103,8 @@ const required = [
   "scripts/p16e-storefront-template-settings-audit.mjs",
   "app/storefront/responses.server.js",
   "scripts/p16f-storefront-response-security-audit.mjs",
+  "app/storefront/mutationRequest.server.js",
+  "scripts/p16g-storefront-mutation-bounds-audit.mjs",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
   "docs/developer/brand-intelligence.md",
