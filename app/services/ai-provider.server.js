@@ -37,6 +37,7 @@ export function getAiRuntimePolicy({ env = process.env } = {}) {
       agentContext: String(env.VSN_AI_AGENT_CONTEXT_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.agentContext).trim(),
       reference: String(env.VSN_AI_REFERENCE_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.reference).trim(),
       brand: String(env.VSN_AI_BRAND_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.brand).trim(),
+      quality: String(env.VSN_AI_QUALITY_BEHAVIOR_VERSION || AI_BEHAVIOR_DEFAULTS.quality).trim(),
     }),
   });
 }
