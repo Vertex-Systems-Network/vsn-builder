@@ -19,6 +19,7 @@ const pageContent = [{
 const usageUpdates = [];
 let reserved = 0;
 let capturedInput = "";
+let selectedFindingId = "";
 const db = {
   builderPage: {
     async findFirst(query) {
@@ -54,16 +55,21 @@ const result = await runAiQualityFixPlan({
     ok(schemaName === "vsn_quality_fix_plan", "Quality planning must use the sealed fix-plan schema");
     ok(schema?.additionalProperties === false, "Provider output schema must remain strict");
     capturedInput = input?.[0]?.content?.[0]?.text || "";
+    const jsonStart = capturedInput.indexOf("{");
+    const projected = JSON.parse(capturedInput.slice(jsonStart));
+    const linkFinding = projected.findings.find((item) => item.code === "unsafe-link-protocol");
+    ok(Boolean(linkFinding), "Provider projection must contain the deterministic unsafe-link finding");
+    selectedFindingId = linkFinding.id;
     return {
       output: {
         status: "ready",
         summary: "One blocking link issue should be addressed first.",
         items: [{
-          findingId: "finding-1",
+          findingId: linkFinding.id,
           commandIntent: "element.update-props",
           explanation: "The deterministic validator rejected the link protocol.",
           proposedChange: "Replace the unsafe destination with a merchant-approved safe URL.",
-          elementId: "unsafe",
+          elementId: linkFinding.elementId,
           blockId: "",
           requiresMerchantInput: true,
         }],
@@ -82,7 +88,7 @@ ok(result.quality.validatorsAuthoritative === true, "Deterministic validators mu
 ok(result.quality.pass === false, "Deterministic blocker must remain visible in the quality summary");
 ok(result.plan.proposalOnly === true && result.plan.executable === false, "Provider output must normalize to proposal-only non-executable plan");
 ok(result.plan.requiresRevalidation === true, "Provider plan must require deterministic revalidation");
-ok(result.plan.items[0].findingId === "finding-1", "Provider proposal must stay bound to the deterministic finding");
+ok(result.plan.items[0].findingId === selectedFindingId, "Provider proposal must stay bound to the deterministic finding");
 ok(capturedInput.includes("unsafe-link-protocol"), "Provider must receive the compact deterministic finding projection");
 ok(!capturedInput.includes("PRIVATE_PAGE_COPY_SHOULD_NOT_REACH_PROVIDER"), "Provider must not receive raw Builder page copy");
 ok(!capturedInput.includes('"children"'), "Provider must not receive the raw Builder node tree");
