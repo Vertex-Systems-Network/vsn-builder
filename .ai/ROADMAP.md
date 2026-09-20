@@ -186,9 +186,9 @@ Unify deterministic scanners behind an explainable quality surface:
 
 The agent explains prioritized findings and can generate a reversible fix plan. Deterministic validators decide pass/fail.
 
-### P1.6 Incremental hotspot decomposition — P1.6i STOREFRONT PRODUCT QUERY BOUNDARY IMPLEMENTED
+### P1.6 Incremental hotspot decomposition — P1.6j STOREFRONT REUSABLE SECTION BOUNDARY IMPLEMENTED
 
-**Status:** P1.6a–P1.6h extracted major storefront boundaries and hardened public mutation/response handling. P1.6i now extracts collection lookup/pagination, all-products lookup/pagination, price-sort snapshot paging, and product-detail Admin GraphQL behavior from `builder-proxy.$.jsx` into `app/storefront/productQueries.server.js`. The module reuses the existing product mapper and pagination contracts, preserving page-size clamps, sort variables, Shopify cursor semantics, synthetic price-sort cursors, collection/product mapping, variant/inventory normalization, and fail-soft GraphQL/error behavior. Its only external authority is the injected Shopify Admin GraphQL client; DB, auth/session, network fetch, persistence, response, and rendering authority remain outside the boundary. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
+**Status:** P1.6a–P1.6i extracted major storefront data, response, mutation, and query boundaries. P1.6j now extracts reusable/global section resolution from `builder-proxy.$.jsx` into `app/storefront/reusableSections.server.js`. The boundary preserves shop-scoped published section reads, global-sync library refresh, component-instance expansion, global-section/component/library recursion-cycle blocking, malformed persisted JSON fallback, localization overlays, requested header/footer lookup, latest-default fallback, and template-settings/SEO derivation. Database access remains injected and read-oriented; auth/session, direct global DB imports, Admin GraphQL, network fetch, Response, and rendering authority stay outside the module. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
 
 While touching AI/storefront/editor integration, extract cohesive behavior from oversized hotspots such as `builder-proxy.$.jsx` and legacy editor mega-files.
 
