@@ -153,9 +153,9 @@ Create bounded context/tool services for:
 
 The model should request specific context through tools instead of receiving giant store dumps.
 
-### P1.4 Reference/Figma fidelity pipeline — P1.4a FOUNDATION IMPLEMENTED
+### P1.4 Reference/Figma fidelity pipeline — P1.4b GUARDED INTEGRATION IMPLEMENTED
 
-**Status:** P1.4a defines a strict bounded reference-analysis model for screenshot, URL-text and future structured Figma inputs, plus deterministic semantic/structural fidelity scoring. It is internal-only and does not change the current screenshot/URL Builder runtime. P1.4b will integrate the sealed analysis layer behind a default-off flag.
+**Status:** P1.4a defines the strict bounded reference-analysis model and deterministic semantic/structural fidelity scoring. P1.4b integrates that sealed layer into screenshot/URL AI Builder operations behind the independent default-off `VSN_FEATURE_REFERENCE_FIDELITY` flag. The enabled path performs bounded reference analysis first, supplies only normalized analysis to final page generation, aggregates both model phases into one Builder usage row, and returns non-pixel deterministic fidelity metadata. Structured/live Figma ingestion remains deferred.
 
 Upgrade screenshot/URL/reference workflows:
 
