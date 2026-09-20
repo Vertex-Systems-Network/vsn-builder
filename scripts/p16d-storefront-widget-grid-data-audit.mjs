@@ -213,8 +213,9 @@ equal(await loadWidgetGridData({ admin: null, elements: requestElements }), {}, 
 const route = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8");
 const mapperSource = fs.readFileSync("app/storefront/productMapper.js", "utf8");
 const widgetSource = fs.readFileSync("app/storefront/widgetGridData.server.js", "utf8");
+const querySource = fs.readFileSync("app/storefront/productQueries.server.js", "utf8");
 
-ok(route.includes('from "../storefront/productMapper.js"'), "Builder proxy imports shared product mapper");
+ok(querySource.includes('from "./productMapper.js"'), "Product query boundary imports shared product mapper");
 ok(route.includes('from "../storefront/widgetGridData.server.js"'), "Builder proxy imports widget-grid data boundary");
 ok(route.includes("loadWidgetGridData({ admin, elements: resolvedElements, collectionData, searchData })"), "Builder proxy keeps existing widget-grid call site");
 for (const duplicate of ["function mapProductNode(", "function collectWidgetGridRequests(", "async function loadWidgetGridData("]) {

@@ -383,7 +383,10 @@ for(const source of [storefrontProductMapper,storefrontWidgetGrid]){
     if(source.includes(forbidden))fail(`P1.6d extracted storefront boundary gained unrelated authority: ${forbidden}`);
   }
 }
-if(!storefrontProxy.includes('from "../storefront/productMapper.js"')||!storefrontProxy.includes('from "../storefront/widgetGridData.server.js"'))fail("P1.6d builder proxy must consume extracted product mapper and widget-grid boundaries");
+if(!storefrontProxy.includes('from "../storefront/widgetGridData.server.js"'))fail("P1.6d builder proxy must consume extracted widget-grid boundary");
+const productMapperConsumedByRoute=storefrontProxy.includes('from "../storefront/productMapper.js"');
+const productQueriesForMapper=fs.readFileSync(path.join(root,"app/storefront/productQueries.server.js"),"utf8");
+if(!productMapperConsumedByRoute&&!productQueriesForMapper.includes('from "./productMapper.js"'))fail("P1.6d shared product mapper must remain consumed by a storefront query boundary");
 for(const duplicate of ["function mapProductNode(","function collectWidgetGridRequests(","async function loadWidgetGridData("]){
   if(storefrontProxy.includes(duplicate))fail(`P1.6d builder proxy retained extracted helper: ${duplicate}`);
 }
@@ -436,6 +439,18 @@ for(const [label,source] of [["Forms 2",storefrontFormsService],["legacy forms",
   if(source.includes("new Response(JSON.stringify")||source.includes('"X-Content-Type-Options": "nosniff"'))fail(`P1.6h ${label} service regained a local partial-header JSON response helper`);
 }
 if(storefrontFormsService.includes("function jsonResponse(")||storefrontLegacyFormsService.includes("function jsonResponse(")||storefrontWishlistProxy.includes("function json("))fail("P1.6h public proxy services must not own local JSON response helpers");
+
+const storefrontProductQueries=fs.readFileSync(path.join(root,"app/storefront/productQueries.server.js"),"utf8");
+for(const marker of ["GetBuilderCollection","GetBuilderCollectionProductsPage","GetAllProductsPriceSnapshot","first: 250","GetBuilderAllProducts","GetBuilderAllProductsPage","BuilderProductByHandle","variants(first: 100)","metafields(first: 30)"]){
+  if(!storefrontProductQueries.includes(marker))fail(`P1.6i storefront product-query regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","authenticate.","session.","builderPage.","Response(","renderBuilder","shopify.server","process.env"]){
+  if(storefrontProductQueries.includes(forbidden))fail(`P1.6i product-query boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/productQueries.server.js"'))fail("P1.6i builder proxy must consume extracted product-query boundary");
+for(const duplicate of ["async function getCollectionByHandle(","async function getCollectionProductsPage(","async function fetchAllProductsForPriceSort(","async function getAllProducts(","async function getAllProductsPage(","async function getProductByHandle("]){
+  if(storefrontProxy.includes(duplicate))fail(`P1.6i builder proxy retained extracted product-query helper: ${duplicate}`);
+}
 
 const aiEvalHarness=fs.readFileSync(path.join(root,"app/ai/evalHarness.js"),"utf8");
 for(const marker of ["FORBIDDEN_ARTIFACT_KEYS","assertSafeEvalArtifact","storeRawPrompts","storeRawOutputs"]){

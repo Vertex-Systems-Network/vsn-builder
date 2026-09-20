@@ -85,18 +85,25 @@ equal(buildPriceSortPage(products, 2, "price:2"), {
 
 const route = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8");
 const helper = fs.readFileSync("app/storefront/productPagination.js", "utf8");
+const queryBoundary = fs.readFileSync("app/storefront/productQueries.server.js", "utf8");
 for (const marker of [
   'from "../storefront/productPagination.js"',
   "clampProductPageSize",
   "findCollectionProductPageSize",
   "findCollectionProductSort",
+  "normalizeProductSort",
+]) {
+  ok(route.includes(marker), `Builder proxy must consume route-level pagination helper: ${marker}`);
+}
+for (const marker of [
+  'from "./productPagination.js"',
   "getAllProductsSortConfig",
   "getCollectionSortConfig",
   "isPriceSort",
   "sortProductsByPrice",
   "buildPriceSortPage",
 ]) {
-  ok(route.includes(marker), `Builder proxy must consume extracted product pagination helper: ${marker}`);
+  ok(queryBoundary.includes(marker), `Product query boundary must consume extracted pagination helper: ${marker}`);
 }
 for (const duplicate of [
   "function clampProductPageSize(",
