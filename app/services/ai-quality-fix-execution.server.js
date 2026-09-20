@@ -138,13 +138,16 @@ export async function applyAiQualityFix({
   const afterPage = await loadPage(db, session.shop, page.id);
   const afterState = qualityState(afterPage);
   const remaining = findMatchingFinding(afterState.report, finding);
+  const revalidationComplete = afterState.report?.bounds?.findingsTruncated !== true;
+  const resolved = revalidationComplete && !remaining;
   const result = commandResult?.result || {};
 
   return Object.freeze({
     ok: true,
-    status: remaining ? "applied_unresolved" : "applied_resolved",
-    resolved: !remaining,
+    status: resolved ? "applied_resolved" : remaining ? "applied_unresolved" : "applied_revalidation_truncated",
+    resolved,
     revalidated: true,
+    revalidationComplete,
     validatorsAuthoritative: true,
     finding: Object.freeze({ id: finding.id, category: finding.category, code: finding.code, severity: finding.severity, elementId: finding.elementId, blockId: finding.blockId }),
     command: Object.freeze({ intent: safeCommandIntent, commandId: commandResult?.commandId || null, revisionId: result.revisionId || null, undoRevisionId: result.undo?.revisionId || null, pageVersion: Number(result.version || afterPage.version || page.version || 1), sourceGenerationId: cleanText(sourceGenerationId, 100) || null }),
