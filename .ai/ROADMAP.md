@@ -186,9 +186,9 @@ Unify deterministic scanners behind an explainable quality surface:
 
 The agent explains prioritized findings and can generate a reversible fix plan. Deterministic validators decide pass/fail.
 
-### P1.6 Incremental hotspot decomposition — P1.6h STOREFRONT JSON RESPONSE CONVERGENCE IMPLEMENTED
+### P1.6 Incremental hotspot decomposition — P1.6i STOREFRONT PRODUCT QUERY BOUNDARY IMPLEMENTED
 
-**Status:** P1.6a–P1.6g extracted major storefront boundaries and hardened proxy ownership, responses, and public mutation payload parsing. P1.6h closes the remaining service-level response-header gap by routing Forms 2, legacy form, and wishlist proxy JSON responses through `app/storefront/responses.server.js`. Success and error paths now consistently inherit `nosniff`, `Referrer-Policy`, and the restrictive `Permissions-Policy` while preserving historical status codes, JSON payloads, content type, and no-store semantics. Runtime characterization covers DB-free early-return paths for Forms 2, legacy forms, and wishlist action/loader flows, while static security guards prevent local partial-header response helpers from returning. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
+**Status:** P1.6a–P1.6h extracted major storefront boundaries and hardened public mutation/response handling. P1.6i now extracts collection lookup/pagination, all-products lookup/pagination, price-sort snapshot paging, and product-detail Admin GraphQL behavior from `builder-proxy.$.jsx` into `app/storefront/productQueries.server.js`. The module reuses the existing product mapper and pagination contracts, preserving page-size clamps, sort variables, Shopify cursor semantics, synthetic price-sort cursors, collection/product mapping, variant/inventory normalization, and fail-soft GraphQL/error behavior. Its only external authority is the injected Shopify Admin GraphQL client; DB, auth/session, network fetch, persistence, response, and rendering authority remain outside the boundary. P1.6 remains incremental; future slices should continue one cohesive domain at a time rather than rewriting the proxy.
 
 While touching AI/storefront/editor integration, extract cohesive behavior from oversized hotspots such as `builder-proxy.$.jsx` and legacy editor mega-files.
 
