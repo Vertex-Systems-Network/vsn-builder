@@ -36,7 +36,7 @@ export async function action({ request }) {
   assertTrustedMutationRequest(request);
   if (!aiEnabled()) return Response.json({ ok: false, code: "AI_DISABLED", error: "AI Builder is disabled." }, { status: 404 });
 
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) {
     return Response.json({ ok: false, code: "AI_AGENT_FORBIDDEN", error: "Your role cannot use the editor Agent." }, { status: 403 });
   }
@@ -63,6 +63,8 @@ export async function action({ request }) {
 
     const result = await runEditorAgentTurn({
       ...common,
+      admin,
+      contextToolsEnabled: getServerFeatureFlags().agentContextToolsV1 === true,
       prompt: stringValue(body.prompt, 8000),
       breakpoint: stringValue(body.breakpoint, 40) || "desktop",
       selectedIds: Array.isArray(body.selectedIds) ? body.selectedIds : [],
