@@ -78,7 +78,9 @@ jobs:
           VSN_E2E_PAGE_ID: ${{ secrets.VSN_E2E_PAGE_ID }}
           VSN_E2E_THEME_MATRIX: ${{ secrets.VSN_E2E_THEME_MATRIX }}
       - run: npm run performance:large-pages
-      - run: npm install --no-save --package-lock=false @playwright/test@1.55.0
+      - run: npm install --no-save --package-lock=false @playwright/test@1.63.0
+      - name: Audit post-Playwright dependency state
+        run: npm audit --include=dev --audit-level=high
       - run: npx playwright install --with-deps chromium firefox webkit
       - name: Run external Playwright E2E with protected credentials
         if: github.event_name != 'pull_request'
