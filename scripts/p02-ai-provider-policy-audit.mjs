@@ -19,6 +19,10 @@ const agent = resolveAiBehavior({ surface: "agent", operation: "edit", version: 
 ok(agent.version === "agent-v1", "Agent behavior v1 must remain selectable");
 ok(agent.instructions.includes("at most six commands") && agent.instructions.includes("Never publish") && agent.instructions.includes("untrusted application data"), "Agent behavior must retain bounded-command, publish and prompt-injection guardrails");
 
+const agentContext = resolveAiBehavior({ surface: "agent", operation: "edit", version: AI_BEHAVIOR_DEFAULTS.agentContext });
+ok(agentContext.version === "agent-v2", "Context-aware Agent behavior v2 must remain explicitly selectable");
+ok(agentContext.instructions.includes("read-only context") && agentContext.instructions.includes("Never publish") && agentContext.instructions.includes("untrusted data"), "Agent v2 must retain read-only, publish and prompt-injection guardrails");
+
 const brand = resolveAiBehavior({ surface: "brand", operation: "extract", version: AI_BEHAVIOR_DEFAULTS.brand });
 ok(brand.version === "brand-extract-v1", "Brand extraction behavior v1 must remain selectable");
 ok(brand.instructions.includes("untrusted source material") && brand.instructions.includes("do not copy long passages") && brand.instructions.includes("never saves or publishes"), "Brand extraction behavior must retain source-injection, transform-not-copy and preview-only guardrails");
@@ -26,7 +30,7 @@ ok(brand.instructions.includes("untrusted source material") && brand.instruction
 const policy = getAiRuntimePolicy({ env: {} });
 ok(policy.provider === "openai" && policy.model === "gpt-5-mini", "OpenAI/gpt-5-mini must remain the default provider/model");
 ok(policy.timeoutMs === 45000 && policy.maxRetries === 0 && policy.fallbackProvider === null, "AI timeout/retry/fallback defaults must be explicit and conservative");
-ok(policy.behaviorVersions.page === "page-v1" && policy.behaviorVersions.email === "email-v1" && policy.behaviorVersions.agent === "agent-v1" && policy.behaviorVersions.brand === "brand-extract-v1", "Default behavior versions must be explicit");
+ok(policy.behaviorVersions.page === "page-v1" && policy.behaviorVersions.email === "email-v1" && policy.behaviorVersions.agent === "agent-v1" && policy.behaviorVersions.agentContext === "agent-v2" && policy.behaviorVersions.brand === "brand-extract-v1", "Default behavior versions must be explicit");
 
 const bounded = getAiRuntimePolicy({ env: { VSN_AI_TIMEOUT_MS: "999999", VSN_AI_MAX_RETRIES: "99" } });
 ok(bounded.timeoutMs === 120000 && bounded.maxRetries === 2, "AI timeout/retries must be bounded");
@@ -57,7 +61,7 @@ for (const field of ["provider", "behaviorVersion", "generationId"]) ok(schema.i
 ok(fs.existsSync("prisma/migrations/20260919042500_p02_ai_provider_policy/migration.sql"), "P0.2 telemetry migration missing");
 
 const envExample = read(".env.example");
-for (const key of ["VSN_AI_PROVIDER", "VSN_AI_TIMEOUT_MS", "VSN_AI_MAX_RETRIES", "VSN_AI_PAGE_BEHAVIOR_VERSION", "VSN_AI_EMAIL_BEHAVIOR_VERSION", "VSN_AI_AGENT_BEHAVIOR_VERSION", "VSN_AI_BRAND_BEHAVIOR_VERSION"]) ok(envExample.includes(key), `Environment contract missing ${key}`);
+for (const key of ["VSN_AI_PROVIDER", "VSN_AI_TIMEOUT_MS", "VSN_AI_MAX_RETRIES", "VSN_AI_PAGE_BEHAVIOR_VERSION", "VSN_AI_EMAIL_BEHAVIOR_VERSION", "VSN_AI_AGENT_BEHAVIOR_VERSION", "VSN_AI_AGENT_CONTEXT_BEHAVIOR_VERSION", "VSN_AI_BRAND_BEHAVIOR_VERSION"]) ok(envExample.includes(key), `Environment contract missing ${key}`);
 
 const pkg = JSON.parse(read("package.json"));
 ok(pkg.scripts?.["qa:p02"] === "node scripts/p02-ai-provider-policy-audit.mjs", "P0.2 QA command missing");
