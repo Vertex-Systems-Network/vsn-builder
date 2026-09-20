@@ -170,9 +170,9 @@ Upgrade screenshot/URL/reference workflows:
 
 Figma should become a direct/structured ingestion path if a stable integration can preserve hierarchy better than screenshots.
 
-### P1.5 AI Quality Agent — P1.5a DETERMINISTIC REPORT FOUNDATION IMPLEMENTED
+### P1.5 AI Quality Agent — P1.5b-a BOUNDED FIX-PLAN CONTRACT IMPLEMENTED
 
-**Status:** P1.5a adds an internal-only, read-only Quality Report v1 that unifies bounded VSN validity, accessibility, responsive, dynamic-binding, link-syntax, Shopify resource-context, performance, motion/reduced-motion and optional email compatibility findings. Identical inputs produce identical prioritized findings; deterministic validators alone decide pass/fail. No provider call, route, persistence or fix execution is introduced. P1.5b remains the bounded explanation/reversible fix-plan layer.
+**Status:** P1.5a adds the internal deterministic Quality Report v1. P1.5b-a now adds a proposal-only Quality Fix Plan v1 contract: at most 40 deterministic findings are projected into stable bounded input, at most 12 remediation proposals may be returned, every proposal must bind to an existing finding/target, and only the six existing reversible Builder command intents (plus manual review) may be named. The contract accepts no executable command payloads and explicitly remains `executable: false`, `proposalOnly: true`, and `requiresRevalidation: true`. P1.5b-b remains the default-off provider-backed explanation/planning integration; P1.5b-c remains explicit reversible execution plus deterministic revalidation.
 
 Unify deterministic scanners behind an explainable quality surface:
 
