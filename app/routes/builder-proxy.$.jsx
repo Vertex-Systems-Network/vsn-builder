@@ -2,7 +2,6 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { buildNodeStyle } from "../builder/styleEngine.js";
 import { buildStyleBundleCss } from "../builder/stylePipeline.js";
-import { collectCustomJsGroups, validateCustomJs } from "../builder/customCode.js";
 import { normalizeImageWidgetProps, resolveImageSource, buildImageRenderUrl, imageResolutionDimensions, imageAltText, imageCaptionText, imageLinkHref, isShopifyHostedImageUrl } from "../builder/imageWidget.js";
 import { normalizeGalleryWidgetProps, galleryAspectRatio } from "../builder/galleryWidget.js";
 import { normalizeVideoWidgetProps, videoEmbedUrl } from "../builder/videoWidget.js";
@@ -55,6 +54,7 @@ import {
 	toCssSize,
 } from "../storefront/designTokens.js";
 import { vsnFontRuntime } from "../storefront/fontRuntime.js";
+import { buildCustomJsBundle } from "../storefront/customJsBundle.js";
 import { htmlResponse, javascriptResponse, jsonResponse } from "../storefront/responses.server.js";
 import {
 	clampProductPageSize,
@@ -689,29 +689,6 @@ function safeParseJson(value, fallback) {
 	} catch {
 		return fallback;
 	}
-}
-
-function buildCustomJsBundle(groups = []) {
-	const entries = collectCustomJsGroups(groups);
-	const valid = [];
-	const invalid = [];
-	for (const entry of entries) {
-		const check = validateCustomJs(entry.code);
-		if (check.valid) valid.push(entry);
-		else invalid.push({ id: entry.id, message: check.error });
-	}
-	const lines = [
-		"(function(){",
-		"var __vsnScript=document.currentScript;",
-		"var __vsnRoot=(__vsnScript&&__vsnScript.parentElement)||document;",
-		"function __vsnFind(id){var roots=[__vsnRoot,document];for(var r=0;r<roots.length;r++){var list=roots[r]&&roots[r].querySelectorAll?roots[r].querySelectorAll('[data-vsn-id]'):[];for(var i=0;i<list.length;i++){if(list[i].getAttribute('data-vsn-id')===id)return list[i];}}return null;}",
-	];
-	for (const entry of valid) {
-		lines.push(`try{var element=__vsnFind(${JSON.stringify(entry.id)});if(element){(function(element,document,window){"use strict";\n${entry.code}\n}).call(element,element,document,window);element.setAttribute('data-vsn-js-ready','1');}}catch(error){console.error('VSN custom JS failed for ${String(entry.id).replace(/['\\]/g, "")}:',error);}`);
-	}
-	for (const entry of invalid) lines.push(`console.warn(${JSON.stringify(`VSN custom JS skipped for ${entry.id}: ${entry.message}`)});`);
-	lines.push("})();");
-	return lines.join("\n");
 }
 
 function collectLoopNodes(elements = [], out = []) {
