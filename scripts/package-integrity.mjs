@@ -116,6 +116,8 @@ const required = [
   "scripts/p16l-storefront-design-tokens-audit.mjs",
   "app/storefront/fontRuntime.js",
   "scripts/p16m-storefront-font-runtime-audit.mjs",
+  "app/storefront/customJsBundle.js",
+  "scripts/p16n-storefront-custom-js-bundle-audit.mjs",
   ".ai/RUNNER_BENCHMARK.md",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
