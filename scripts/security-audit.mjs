@@ -540,6 +540,26 @@ for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Re
 }
 if(!storefrontProxy.includes('from "../storefront/fontRuntime.js"'))fail("P1.6m builder proxy must consume extracted font-runtime boundary");
 if(storefrontProxy.includes("function vsnFontRuntime("))fail("P1.6m builder proxy retained extracted font-runtime helper");
+
+const storefrontCustomJsBundle=fs.readFileSync(path.join(root,"app/storefront/customJsBundle.js"),"utf8");
+for(const marker of [
+  'from "../builder/customCode.js"',
+  "collectCustomJsGroups(groups)",
+  "validateCustomJs(entry.code)",
+  "JSON.stringify(entry.id)",
+  "JSON.stringify(`VSN custom JS failed for ${String(entry.id)}:`)",
+  '"use strict"',
+  "data-vsn-js-ready",
+]){
+  if(!storefrontCustomJsBundle.includes(marker))fail(`P1.6n custom-JS boundary regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontCustomJsBundle.includes(forbidden))fail(`P1.6n custom-JS boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/customJsBundle.js"'))fail("P1.6n builder proxy must consume extracted custom-JS boundary");
+if(storefrontProxy.includes('from "../builder/customCode.js"'))fail("P1.6n builder proxy must not retain direct custom-code collection/validation ownership");
+if(storefrontProxy.includes("function buildCustomJsBundle("))fail("P1.6n builder proxy retained extracted custom-JS helper");
+if(!storefrontProxy.includes('if (enterpriseSettings.safeMode) return javascriptResponse("/* VSN Safe Mode: custom JavaScript disabled. */");'))fail("P1.6n safe-mode custom-JS gate missing");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);

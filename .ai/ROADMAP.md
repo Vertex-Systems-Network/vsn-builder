@@ -186,9 +186,9 @@ Unify deterministic scanners behind an explainable quality surface:
 
 The agent explains prioritized findings and can generate a reversible fix plan. Deterministic validators decide pass/fail.
 
-### P1.6 Incremental hotspot decomposition — P1.6m STOREFRONT FONT RUNTIME BOUNDARY IMPLEMENTED
+### P1.6 Incremental hotspot decomposition — P1.6n STOREFRONT CUSTOM JAVASCRIPT BUNDLE BOUNDARY IMPLEMENTED
 
-**Status:** P1.6a–P1.6l extracted major storefront data, response, mutation, query, reusable-section, presentation-metadata, and design-token boundaries. P1.6m now extracts storefront font-runtime assembly from `builder-proxy.$.jsx` into `app/storefront/fontRuntime.js`. The boundary preserves recursive font usage collection, body/heading weight sets, custom-font precedence, MIME-to-format mapping, URL-encoded custom font IDs, quoted family values, system-font exclusion, Google Fonts fallback/catalog resolution, and `display=swap`. DB/custom-font loading remains route-owned; the font runtime has no DB, auth/session, network fetch, Response, rendering, browser-global, or environment authority.
+**Status:** P1.6a–P1.6m extracted major storefront data, response, mutation, query, reusable-section, presentation-metadata, design-token, and font-runtime boundaries. P1.6n now extracts storefront Custom JavaScript bundle assembly from `builder-proxy.$.jsx` into `app/storefront/customJsBundle.js`. The boundary reuses the existing bounded custom-code collector/validator, preserves target lookup, strict-mode execution, per-element runtime error containment, invalid-script skipping, and ready markers, while hardening diagnostic node-ID serialization so control characters cannot syntax-break the generated bundle. The route retains the enterprise safe-mode gate and response authority; the bundle builder has no DB, auth/session, network fetch, Response, rendering, or environment authority.
 
 ### Runner benchmark — DEFERRED BATCH PLAN
 
