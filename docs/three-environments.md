@@ -10,18 +10,18 @@ Builder currently uses Prisma **SQLite** across the application, SQLite migratio
 
 | Tier | Source | Shopify app | Config | Data / billing | Current operational status |
 | --- | --- | --- | --- | --- | --- |
-| Local/Dev | `development` | Dedicated **VSN Builder Dev** (new identity required) | `shopify.app.local.toml` | SQLite `prisma/dev.sqlite`; test | Template ready; dedicated Dev identity still required |
+| Local/Dev | `development` | Dedicated **VSN Builder Dev** (new identity required) | generated `shopify.app.local.toml` | SQLite `prisma/dev.sqlite`; test | Template ready; dedicated Dev identity still required |
 | Staging | accepted `development` SHA | Separate **VSN Builder Staging** | `shopify.app.staging.toml` | Target isolated Neon PostgreSQL; test | **Blocked** on app identity, database port, Worker port and infrastructure |
 | Production/Live | reviewed `main` SHA | Separate **VSN Builder** | generated `shopify.app.production.toml` from template | Target isolated Neon PostgreSQL; real billing | **Blocked** pending successful staging certification and production gates |
 
-**Never reuse** Shopify client IDs, API secrets, sessions, app installs, Shopify plan/billing configuration or databases between tiers. The existing Client ID in `shopify.app.toml` is unclassified and **must not** be assumed Dev or Live. The new Local config deliberately keeps `__SHOPIFY_LOCAL_CLIENT_ID__` until a separate app is verified. Staging and production TOML templates deliberately contain placeholder client IDs/URLs. They are not deployable configurations.
+**Never reuse** Shopify client IDs, API secrets, sessions, app installs, Shopify plan/billing configuration or databases between tiers. The existing Client ID in `shopify.app.toml` is unclassified and **must not** be assumed Dev or Live. The tracked Local **template** deliberately keeps `__SHOPIFY_LOCAL_CLIENT_ID__`; the runtime Local config is generated from gitignored `.env.local` with the separately verified Dev Client ID. Staging and production TOML templates deliberately contain placeholder client IDs/URLs. They are not deployable configurations.
 
 ### Local
 
-1. Register or identify a dedicated **VSN Builder Dev** Shopify app. Replace `__SHOPIFY_LOCAL_CLIENT_ID__` in `shopify.app.local.toml` with that verified Dev Client ID; do **not** reuse the existing unclassified default ID from `shopify.app.toml`.
+1. Register or identify a dedicated **VSN Builder Dev** Shopify app. Set that verified Dev Client ID and the dedicated secret in gitignored `.env.local` (copy `.env.local.example`). `npm run local:prepare` generates the local-only config from `shopify.app.local.template.toml`; do **not** reuse the existing unclassified default ID from `shopify.app.toml`.
 2. Use a dedicated development shop, `DATABASE_URL=file:./dev.sqlite`, `APP_ENV=development` and `SHOPIFY_BILLING_TEST_MODE=true`.
-3. Set Local Shopify credentials in `.env.local` or a local secrets store, not git.
-4. `npm ci`, `npm run db:prepare`, then `npm run dev` (now pins `--config local`).
+3. Set Local Shopify credentials in `.env.local`, not git. Hosted credentials are rejected by Local preflight.
+4. `npm ci`, `npm run local:prepare`, then `npm run dev` (preflight enforces the Dev identity, loads `.env.local`, and pins `--config local`).
 5. Run `npm run env:check` and `npm run env:local:check`; then execute real install, auth, page editing and app-pricing smoke tests.
 6. Record an exact source SHA and signed runtime evidence before promotion. CI alone cannot certify a Shopify Dev install.
 
@@ -45,9 +45,11 @@ Until phases 1–4 pass, **Staging is not deployed**. Until all phases pass, **L
 
 ## Deployment safety during migration
 
-Until approved exact-source release workflows are implemented, the legacy `npm run deploy`, `npm run deploy:production`, `npm run deploy:staging` and `npm run config:use` scripts intentionally exit with an error; **none can create or release Shopify app versions**. External direct use of the Shopify CLI is outside this npm-script guard and must be avoided. Only `npm run dev` with the dedicated Local config is intended for Shopify CLI runtime development.
+Until approved exact-source release workflows are implemented, the legacy `npm run deploy`, `npm run deploy:production`, `npm run deploy:staging` and `npm run config:use` scripts intentionally exit with an error; **none can create or release Shopify app versions**. External direct use of the Shopify CLI is outside this npm-script guard and must be avoided. Only `npm run dev` with the dedicated generated Local config is intended for Shopify CLI runtime development.
 
 CI security audits remain mandatory. As of 2026-10-12, Production Confidence on environment PR #94 failed at `npm audit --omit=dev --audit-level=high` with vulnerable transitive packages. Do not bypass these failures or claim full CI green because the narrower environment isolation workflow passes.
+
+The generated `shopify.app.local.toml` and `.env.local` are gitignored and must never be committed; `shopify.app.local.template.toml` is the tracked contract.
 
 ## CLI checks
 

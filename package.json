@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "node scripts/clean-dev-cache.mjs && react-router build",
-    "dev": "node scripts/clean-dev-cache.mjs && shopify app dev --config local",
+    "dev": "node scripts/local-development.mjs dev",
     "env:check": "node scripts/environment-contract.mjs --environment=repository",
     "env:test": "node --test tests/environment-contract.test.mjs",
     "env:local:check": "node scripts/environment-contract.mjs --environment=local",
@@ -192,7 +192,8 @@
     "qa:p16l-storefront-design-tokens": "node scripts/p16l-storefront-design-tokens-audit.mjs",
     "qa:p16m-storefront-font-runtime": "node scripts/p16m-storefront-font-runtime-audit.mjs",
     "qa:p16n-storefront-custom-js-bundle": "node scripts/p16n-storefront-custom-js-bundle-audit.mjs",
-    "deploy:staging": "node scripts/deployment-blocked.mjs staging"
+    "deploy:staging": "node scripts/deployment-blocked.mjs staging",
+    "local:prepare": "node scripts/local-development.mjs prepare"
   },
   "type": "module",
   "engines": {

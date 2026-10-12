@@ -49,3 +49,13 @@ test("no package script can directly deploy or switch to production Shopify conf
   assert.match(script.stderr, /BLOCKED|disabled/i);
   assert.match(pkg.scripts["release:production:check"], /env:production:check/);
 });
+
+test("local CLI entrypoint never deploys or runs against main", () => {
+  const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+  assert.equal(pkg.scripts.dev, "node scripts/local-development.mjs dev");
+  assert.equal(pkg.scripts["local:prepare"], "node scripts/local-development.mjs prepare");
+  const local = readFileSync("shopify.app.local.template.toml", "utf8");
+  assert.match(local, /client_id = "__SHOPIFY_LOCAL_CLIENT_ID__"/);
+  assert.match(readFileSync(".gitignore", "utf8"), /shopify\.app\.local\.toml/);
+  assert.match(readFileSync("scripts/local-development.mjs", "utf8"), /process\.loadEnvFile\(file\)/);
+});

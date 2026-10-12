@@ -8,12 +8,13 @@
   ],
   "local": {
     "source_branch": "development",
-    "shopify_configuration": "shopify.app.local.toml",
+    "shopify_configuration": "shopify.app.local.template.toml",
     "database_provider": "sqlite",
     "database_schema": "prisma/schema.prisma",
     "billing_test_mode": true,
     "hosting": "local Shopify CLI",
-    "status": "configuration_added_identity_requires_verification"
+    "status": "configuration_added_identity_requires_verification",
+    "generated_configuration": "shopify.app.local.toml"
   },
   "staging": {
     "source_branch": "development",

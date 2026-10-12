@@ -18,7 +18,7 @@ const parseValue = (content, key) => content.match(new RegExp("^" + key + '\\s*=
 const parseBool = (content, key) => content.match(new RegExp("^" + key + '\\s*=\\s*(true|false)', "m"))?.[1] || "";
 const rootConfig = read("shopify.app.toml");
 const configs = {
-  local: read("shopify.app.local.toml"),
+  local: read("shopify.app.local.template.toml"),
   staging: read("shopify.app.staging.toml"),
   production: read("shopify.app.production.template.toml"),
 };
@@ -29,7 +29,7 @@ const sourceClientId = parseValue(rootConfig, "client_id");
 assert(manifest.promotion_order?.join(",") === "local,staging,production", "Promotion order must be local -> staging -> production.");
 assert(manifest.local?.source_branch === "development" && manifest.staging?.source_branch === "development" && manifest.production?.source_branch === "main", "Branch-to-environment mapping is invalid.");
 assert(manifest.staging?.github_environment === "cloudflare-staging" && manifest.production?.github_environment === "cloudflare-production", "Environment scopes must be isolated.");
-assert(clientIds.local === "__SHOPIFY_LOCAL_CLIENT_ID__" || (/^[a-f0-9]{32}$/i.test(clientIds.local) && clientIds.local !== sourceClientId), "Local config must use a dedicated Dev identity, not the existing unclassified default identity.");
+assert(clientIds.local === "__SHOPIFY_LOCAL_CLIENT_ID__", "Tracked Local template must keep a non-deployable identity placeholder.");
 assert(clientIds.staging === "__SHOPIFY_STAGING_CLIENT_ID__", "Staging tracked config must keep a non-deployable client ID placeholder.");
 assert(clientIds.production === "__SHOPIFY_PRODUCTION_CLIENT_ID__", "Production template must keep a non-deployable client ID placeholder.");
 for (const [tier, content] of Object.entries(configs)) {
@@ -65,8 +65,12 @@ if (mode === "local") {
   assert(isTrue(required("SHOPIFY_BILLING_TEST_MODE")), "Local billing must be in test mode.");
   const url = String(process.env.DATABASE_URL || "");
   assert(!url || url.startsWith("file:"), "Local database must use SQLite; do not connect hosted databases.");
-  assert(clientIds.local !== "__SHOPIFY_LOCAL_CLIENT_ID__", "Configure a distinct verified Dev Client ID in the Local TOML before using Shopify CLI.");
-  assert(required("SHOPIFY_API_KEY") === clientIds.local, "Local SHOPIFY_API_KEY must match the dedicated Dev app.");
+  const runtimeConfig = exists("shopify.app.local.toml") ? read("shopify.app.local.toml") : "";
+  const runtimeClientId = parseValue(runtimeConfig, "client_id");
+  const configuredClientId = required("SHOPIFY_API_KEY");
+  assert(/^[a-f0-9]{32}$/i.test(runtimeClientId) && runtimeClientId !== sourceClientId,
+    "Generated Local Shopify app config must contain a distinct Dev Client ID.");
+  assert(configuredClientId === runtimeClientId, "Local SHOPIFY_API_KEY must match generated local Shopify app config.");
   required("SHOPIFY_API_SECRET");
 }
 
@@ -76,7 +80,7 @@ if (mode === "staging" || mode === "production") {
   assert(isTrue(required("SHOPIFY_BILLING_TEST_MODE")) === desiredTest, "Billing test mode does not match " + mode + ".");
   const clientId = required("SHOPIFY_API_KEY");
   required("SHOPIFY_API_SECRET");
-  assert(clientId !== sourceClientId && clientId !== clientIds.local, mode + " must use a dedicated non-Dev Shopify app.");
+  assert(clientId !== sourceClientId && (!exists("shopify.app.local.toml") || clientId !== parseValue(read("shopify.app.local.toml"), "client_id")), mode + " must use a dedicated non-Dev Shopify app.");
   assert(/^[a-f0-9]{32}$/i.test(clientId), mode + " Shopify client ID must be valid.");
   if (mode === "production") {
     assert(clientId === required("SHOPIFY_PRODUCTION_CLIENT_ID"), "Production Shopify identities do not match.");

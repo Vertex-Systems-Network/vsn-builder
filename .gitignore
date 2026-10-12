@@ -33,3 +33,8 @@ shopify.app.production.toml
 
 # Generated AI eval comparison/result artifacts
 /artifacts/ai-evals/
+
+# Locally generated, dedicated Dev Shopify registration (never commit)
+/shopify.app.local.toml
+# Public sample remains tracked
+!.env.local.example
