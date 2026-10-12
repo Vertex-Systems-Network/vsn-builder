@@ -2,7 +2,7 @@ name: VSN Environment Isolation
 
 on:
   push:
-    branches: [main, development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013]
+    branches: [main, development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013, feat/builder-postgres-schema-health-20261013]
   pull_request:
     branches: [main, development]
   workflow_dispatch:
@@ -29,3 +29,5 @@ jobs:
         run: node scripts/verify-prisma-environment-parity.mjs
       - name: Verify isolated cloud client generation contract
         run: node scripts/verify-prisma-client-isolation.mjs
+      - name: Test fail-closed PostgreSQL schema health contract (no DB connection)
+        run: node --test tests/postgres-schema-health.test.mjs

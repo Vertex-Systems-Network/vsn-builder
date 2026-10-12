@@ -2,7 +2,7 @@ name: VSN PostgreSQL Schema Certification (No Deploy)
 
 on:
   push:
-    branches: [development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013]
+    branches: [development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013, feat/builder-postgres-schema-health-20261013]
     paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, scripts/verify-prisma-client-isolation.mjs, .github/workflows/cloud-schema-validation.yml]
   pull_request:
     branches: [development, main]
