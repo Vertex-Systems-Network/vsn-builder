@@ -59,3 +59,24 @@ test("local CLI entrypoint never deploys or runs against main", () => {
   assert.match(readFileSync(".gitignore", "utf8"), /shopify\.app\.local\.toml/);
   assert.match(readFileSync("scripts/local-development.mjs", "utf8"), /process\.loadEnvFile\(file\)/);
 });
+
+test("staging is denied without exact Local/Dev acceptance evidence", () => {
+  const sha = "a".repeat(40);
+  const run = spawnSync(process.execPath,
+    ["scripts/verify-environment-promotion.mjs", "--target=staging", "--source=" + sha], {encoding:"utf8"});
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /Local\/Dev not accepted/);
+});
+test("production is denied without Staging merchant acceptance evidence", () => {
+  const sha = "b".repeat(40);
+  const run = spawnSync(process.execPath,
+    ["scripts/verify-environment-promotion.mjs", "--target=production", "--source=" + sha], {encoding:"utf8"});
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /Staging not accepted/);
+});
+test("unrecognized source SHA is denied before promotion", () => {
+  const run = spawnSync(process.execPath,
+    ["scripts/verify-environment-promotion.mjs", "--target=staging", "--source=main"], {encoding:"utf8"});
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /40-character/);
+});

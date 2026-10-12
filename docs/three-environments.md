@@ -47,6 +47,8 @@ Until phases 1–4 pass, **Staging is not deployed**. Until all phases pass, **L
 
 Until approved exact-source release workflows are implemented, the legacy `npm run deploy`, `npm run deploy:production`, `npm run deploy:staging` and `npm run config:use` scripts intentionally exit with an error; **none can create or release Shopify app versions**. External direct use of the Shopify CLI is outside this npm-script guard and must be avoided. Only `npm run dev` with the dedicated generated Local config is intended for Shopify CLI runtime development.
 
+Staging and Production readiness also execute `scripts/verify-environment-promotion.mjs` using `config/release/environment-gates.json`. That file records **not verified** for all tiers initially and must only be updated after an exact-source real runtime/merchant certification. A JSON declaration alone does not prove GitHub provenance; before hosted deploy, verify its referenced run and source on GitHub. Missing or stale acceptance blocks the next tier.
+
 CI security audits remain mandatory. As of 2026-10-12, Production Confidence on environment PR #94 failed at `npm audit --omit=dev --audit-level=high` with vulnerable transitive packages. Do not bypass these failures or claim full CI green because the narrower environment isolation workflow passes.
 
 The generated `shopify.app.local.toml` and `.env.local` are gitignored and must never be committed; `shopify.app.local.template.toml` is the tracked contract.

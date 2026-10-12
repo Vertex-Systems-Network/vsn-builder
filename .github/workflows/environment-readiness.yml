@@ -56,6 +56,8 @@ jobs:
           set -euo pipefail
           [[ "$EXPECTED_SOURCE_REF" =~ ^[a-f0-9]{40}$ ]] || { echo "Invalid exact source SHA"; exit 1; }
           test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_REF" || { echo "Branch HEAD differs from source_ref"; exit 1; }
+      - name: Require exact prior-environment acceptance (fail closed)
+        run: node scripts/verify-environment-promotion.mjs --target="$TARGET_ENVIRONMENT" --source="$EXPECTED_SOURCE_REF"
       - name: Validate repository configuration
         run: node scripts/environment-contract.mjs --environment=repository
       - name: Check tier secrets, identity, database and Worker implementation
