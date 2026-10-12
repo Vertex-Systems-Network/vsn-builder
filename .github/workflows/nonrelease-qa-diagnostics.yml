@@ -9,6 +9,7 @@ on:
       - integration/builder-cloud-qa-20261013
       - feat/builder-environment-branding-20261013
       - feat/builder-hosted-preflight-20261013
+      - feat/builder-cloud-baseline-migration-20261013
   workflow_dispatch:
 
 permissions:
@@ -44,6 +45,8 @@ jobs:
         run: node --test tests/environment-branding.test.mjs
       - name: Test hosted environment inventory without real credentials
         run: node --test tests/hosted-environment-inventory.test.mjs
+      - name: Verify local/cloud schema and offline migration contract
+        run: node scripts/verify-prisma-environment-parity.mjs && node scripts/validate-cloud-baseline.mjs && node --test tests/cloud-baseline-integrity.test.mjs
       - name: Source security audit
         run: npm run security:audit
       - name: Legacy webhook egress security audit

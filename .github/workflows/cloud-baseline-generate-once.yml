@@ -1,0 +1,59 @@
+name: One-Time Builder Offline Cloud Migration Generation (NO DB Access)
+on:
+  push:
+    branches: [feat/builder-cloud-baseline-migration-20261013]
+permissions:
+  contents: write
+concurrency:
+  group: builder-offline-postgres-baseline
+  cancel-in-progress: false
+jobs:
+  generate-proposed-baseline:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      DATABASE_URL: postgresql://proposal:unused@localhost:5432/proposal
+      DIRECT_URL: postgresql://proposal:unused@localhost:5432/proposal
+    steps:
+      - name: Assert isolated feature branch and repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "Vertex-Systems-Network/vsn-builder"
+          test "$GITHUB_REF" = "refs/heads/feat/builder-cloud-baseline-migration-20261013"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/builder-cloud-baseline-migration-20261013
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Install reproducible dependencies
+        run: npm ci
+      - name: Strict production security audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Verify cloud/local 51-model schema parity
+        run: node scripts/verify-prisma-environment-parity.mjs
+      - name: Validate hosted schema without database connection
+        run: npx prisma validate --schema prisma/cloud/schema.prisma
+      - name: Generate initial baseline SQL strictly offline
+        shell: bash
+        run: |
+          mkdir -p prisma/cloud/migrations/20261013_builder_cloud_baseline artifacts/cloud-schema
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/cloud/schema.prisma --script > artifacts/cloud-schema/proposed-initial-schema.sql
+          cp artifacts/cloud-schema/proposed-initial-schema.sql prisma/cloud/migrations/20261013_builder_cloud_baseline/migration.sql
+      - name: Verify migration is complete, additive, and byte-for-byte reproducible
+        run: node scripts/validate-cloud-baseline.mjs && node --test tests/cloud-baseline-integrity.test.mjs
+      - name: Commit SQL proposal only if all gates pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git diff --exit-code -- package.json package-lock.json
+          git add -- prisma/cloud/migrations/20261013_builder_cloud_baseline/migration.sql
+          test "$(git diff --cached --name-only)" = "prisma/cloud/migrations/20261013_builder_cloud_baseline/migration.sql"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat(database): record audited offline PostgreSQL baseline SQL (not applied)"
+          git push origin HEAD:refs/heads/feat/builder-cloud-baseline-migration-20261013
