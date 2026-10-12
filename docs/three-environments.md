@@ -84,3 +84,7 @@ GitHub Environment names are `cloudflare-staging` and `cloudflare-production`. T
 The checks require `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SHOPIFY_APP_URL`, `DATABASE_URL`, `DIRECT_URL`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and for Production `SHOPIFY_PRODUCTION_CLIENT_ID`. This is the expected configuration contract; an absent name is a blocker, not proof that no setting exists under another name. The workflow uses hosted `APP_ENV` and billing mode constants, not user-provided overrides. Passing inventory does not certify operational readiness.
 
 **Names:** Dev `VSN | Builder (Development)`, Staging `VSN | Builder (Staging)`, Live `VSN | Builder`. Header `v1.0.0` is a requested display version separate from internal `2.5.107`.
+
+### Secret-inventory run restrictions
+
+The first PR feature-branch inventory jobs were reported failed before any runner steps or readable job logs appeared. That result does **not** identify missing credentials. To avoid injecting Staging/Live secrets into feature branches, the inventory workflow is now **manual only** on `development`/`main` for Staging and only `main` for Live. GitHub Environment policies remain in force. The direct Cloudflare/Neon inventory shows dedicated resources exist, but **credential binding and deployed runtime have not yet been verified**.

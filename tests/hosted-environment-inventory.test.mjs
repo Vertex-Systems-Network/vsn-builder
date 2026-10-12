@@ -49,3 +49,15 @@ test("Production generator emits exact Live name without suggesting blocked depl
  assert.match(gen,/VSN \| Builder/);
  assert.doesNotMatch(gen,/then npm run deploy:production/);
 });
+
+test("protected source branches alone can run hosted secret inventory",()=>{
+ const wf=fs.readFileSync(".github/workflows/hosted-environment-secret-inventory.yml","utf8");
+ assert.match(wf,/github\.event_name == 'workflow_dispatch' && \(github\.ref == 'refs\/heads\/development' \|\| github\.ref == 'refs\/heads\/main'\)/);
+ assert.match(wf,/github\.event_name == 'workflow_dispatch' && github\.ref == 'refs\/heads\/main'/);
+ assert.doesNotMatch(wf,/pull_request:/);
+});
+test("Production app generator enforces exact app name",()=>{
+ const gen=fs.readFileSync("scripts/prepare-shopify-production-config.mjs","utf8");
+ assert.match(gen,/const appName = "VSN \| Builder";/);
+ assert.match(gen,/Production Shopify app name must be/);
+});
