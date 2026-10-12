@@ -41,3 +41,6 @@ shopify.app.production.toml
 
 # Prisma client generated for hosted PostgreSQL only; do not commit engines/types
 /generated/prisma-cloud/
+
+# Engine-less Cloudflare/Neon Prisma Worker Client (never commit generated code)
+/generated/prisma-worker/
