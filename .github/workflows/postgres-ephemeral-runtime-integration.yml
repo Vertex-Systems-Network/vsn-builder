@@ -1,7 +1,7 @@
 name: VSN PostgreSQL 18 Runtime Integration (Ephemeral CI Only)
 on:
   push:
-    branches: [feat/builder-postgres-container-integration-20261013, feat/builder-postgres-restore-drill-20261013]
+    branches: [feat/builder-postgres-container-integration-20261013, feat/builder-postgres-restore-drill-20261013, feat/builder-edge-prisma-generator-20261013]
   workflow_dispatch:
 permissions:
   contents: read
@@ -62,6 +62,8 @@ jobs:
         run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
       - name: Verify Local and Cloud generated clients stay separate
         run: node scripts/verify-prisma-client-isolation.mjs --generated
+      - name: Confirm Worker Client generator does not affect Node runtime
+        run: node scripts/verify-prisma-worker-client.mjs --generated && node --test tests/prisma-worker-client.test.mjs
 
       - name: Seed a disposable Shopify session before backup
         run: node scripts/seed-postgres-restore-fixture.mjs
