@@ -2,8 +2,8 @@ name: VSN PostgreSQL Schema Certification (No Deploy)
 
 on:
   push:
-    branches: [development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013, feat/builder-postgres-schema-health-20261013]
-    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, scripts/verify-prisma-client-isolation.mjs, .github/workflows/cloud-schema-validation.yml]
+    branches: [development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013, feat/builder-postgres-schema-health-20261013, feat/builder-cloud-baseline-migration-20261013]
+    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, scripts/verify-prisma-client-isolation.mjs, scripts/validate-cloud-baseline.mjs, .github/workflows/cloud-schema-validation.yml]
   pull_request:
     branches: [development, main]
     paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, .github/workflows/cloud-schema-validation.yml]
@@ -43,6 +43,8 @@ jobs:
           mkdir -p artifacts/cloud-schema
           npx prisma migrate diff --from-empty --to-schema-datamodel prisma/cloud/schema.prisma --script > artifacts/cloud-schema/proposed-initial-schema.sql
           test -s artifacts/cloud-schema/proposed-initial-schema.sql
+      - name: Verify checked-in baseline matches Prisma generated proposal
+        run: node scripts/validate-cloud-baseline.mjs && node --test tests/cloud-baseline-integrity.test.mjs
       - name: Upload SQL for manual migration design review only
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

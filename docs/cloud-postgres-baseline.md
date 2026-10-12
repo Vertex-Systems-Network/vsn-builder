@@ -6,3 +6,5 @@ This migration is a proposed **initial** migration for a verified empty *Staging
 Neon project inventory 2026-10-13: `vsn-builder-staging` (`shiny-violet-61219572`) and `vsn-builder-production` (`nameless-violet-68750490`) are distinct projects. Read-only table inventories returned empty arrays for both. Their default branches are named `production` by Neon, which is **not** evidence the VSN app is deployed or Live.
 
 Cloudflare `vsn-builder-staging` and `vsn-builder-production` exist as unpublished 503 placeholders, with public subdomains and previews disabled.
+
+Migration proposal generated and committed on feature branch as `migration.sql`. Its exact content is 51 `CREATE TABLE` statements with 0 `DROP` statements; no Neon connection or migration was executed. The temporary GitHub Actions workflow with `contents: write` has been removed after its successful one-time use. The permanent schema certification workflow remains read-only and now byte-compares the committed migration against a fresh Prisma diff.
