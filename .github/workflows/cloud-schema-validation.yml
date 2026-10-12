@@ -2,7 +2,7 @@ name: VSN PostgreSQL Schema Certification (No Deploy)
 
 on:
   push:
-    branches: [development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013, feat/builder-postgres-schema-health-20261013, feat/builder-cloud-baseline-migration-20261013, feat/builder-edge-prisma-generator-20261013]
+    branches: [development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013, feat/builder-postgres-schema-health-20261013, feat/builder-cloud-baseline-migration-20261013, feat/builder-edge-prisma-generator-20261013, feat/builder-neon-worker-adapter-20261013]
     paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, scripts/verify-prisma-client-isolation.mjs, scripts/validate-cloud-baseline.mjs, scripts/verify-prisma-worker-client.mjs, .github/workflows/cloud-schema-validation.yml]
   pull_request:
     branches: [development, main]
@@ -39,6 +39,8 @@ jobs:
         run: node scripts/verify-prisma-client-isolation.mjs --generated
       - name: Prove separately generated engine-less Worker Client
         run: node scripts/verify-prisma-worker-client.mjs --generated && node --test tests/prisma-worker-client.test.mjs
+      - name: Prove Worker-side Neon adapter binds only to matching environment identities
+        run: node --test tests/worker-neon-factory.test.mjs
       - name: Generate additive empty-to-schema SQL proposal (no DB connection)
         shell: bash
         run: |

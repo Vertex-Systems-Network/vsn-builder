@@ -1,0 +1,49 @@
+name: One-Time Worker Neon Adapter Lockfile (NO CLOUD ACCESS)
+on:
+  push:
+    branches: [feat/builder-neon-worker-adapter-20261013]
+permissions:
+  contents: write
+concurrency:
+  group: builder-neon-lockfile
+  cancel-in-progress: false
+jobs:
+  lockfile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      DATABASE_URL: postgresql://fake:unused@127.0.0.1:5432/nonexistent
+      DIRECT_URL: postgresql://fake:unused@127.0.0.1:5432/nonexistent
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Generate reproducible npm lockfile without package scripts
+        run: npm install --package-lock-only --ignore-scripts --no-fund --no-audit
+      - name: Reinstall exactly from generated lock
+        run: npm ci
+      - name: Block insecure production dependency graph
+        run: npm audit --omit=dev --audit-level=high
+      - name: Generate Worker Prisma Clients offline
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Verify pinned Neon adapter construction without external database
+        run: node scripts/verify-prisma-worker-client.mjs --generated && node --test tests/worker-neon-factory.test.mjs
+      - name: Verify lockfile-only change and commit to feature branch
+        env:
+          CI_PUSH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add package-lock.json
+          test "$(git diff --cached --name-only)" = "package-lock.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(lock): pin Prisma 6.19.3 Neon driver adapter"
+          header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$CI_PUSH_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=$header" push origin HEAD:refs/heads/feat/builder-neon-worker-adapter-20261013

@@ -1,0 +1,7 @@
+# Worker-side Neon Prisma adapter (not deployed)
+
+A separate `generated/prisma-worker/` (Prisma 6.19.3, `engineType = client`) is constructed with `@prisma/adapter-neon@6.19.3`. The `createWorkerNeonPrisma` factory is isolated from the Node/SQLite runtime and requires an injected Worker `env` with exact Staging/Production Worker name, known Neon project ID, tier billing mode, and a TLS-enabled Neon PostgreSQL URL. The function has no network activity on module import or Client construction; requests must explicitly invoke it and subsequently disconnect.
+
+Project identities are publicly named deployment contract metadata, not credentials. The Worker environment's `NEON_PROJECT_ID`, `VSN_WORKER_NAME`, `SHOPIFY_BILLING_TEST_MODE`, and `DATABASE_URL` must be set **separately per protected Cloudflare Worker** and verified against actual Neon endpoint evidence before any app runtime is enabled.
+
+This is an SDK/client foundation only. Real Neon connectivity, token/session correctness, Shopify's Node adapter replacement, server-side streaming, worker bundling, signed session acceptance, and recovery checks still require implementation. No Neon/Cloudflare worker secrets were read or deployed. A temporary write-enabled GitHub Actions workflow regenerates the pinned lockfile on the feature branch after prod npm audit and mocked constructor tests; remove that workflow immediately after successful execution.

@@ -27,7 +27,8 @@
     "status": "blocked_postgresql_schema_migrations_worker_runtime_and_cloud_resources",
     "app_name": "VSN | Builder (Staging)",
     "cloudflare_worker": "vsn-builder-staging",
-    "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed"
+    "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed",
+    "neon_project_id": "shiny-violet-61219572"
   },
   "production": {
     "source_branch": "main",
@@ -40,6 +41,7 @@
     "status": "blocked_staging_acceptance_postgresql_worker_runtime_live_identity_and_approval",
     "app_name": "VSN | Builder",
     "cloudflare_worker": "vsn-builder-production",
-    "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed"
+    "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed",
+    "neon_project_id": "nameless-violet-68750490"
   }
 }

@@ -1,0 +1,40 @@
+// Non-deploying Worker-side Prisma/Neon constructor.
+// Only the future certified Cloudflare runtime should import this module.
+// The app's existing Local SQLite Prisma client remains untouched.
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaClient } from "../../generated/prisma-worker/index.js";
+import manifests from "../../config/deployment/environments.json" with { type: "json" };
+
+const own=(record,name)=>Object.prototype.hasOwnProperty.call(record||{},name);
+export function inspectWorkerNeonEnvironment(env) {
+  const issues=[];
+  const tier=String(env?.APP_ENV||"");
+  if(!["staging","production"].includes(tier))
+    return {ready:false,issues:["APP_ENV must be staging or production"],tier:null};
+  const cfg=manifests[tier]||{};
+  if(env?.NEON_PROJECT_ID!==cfg.neon_project_id)issues.push("Neon project identity mismatch");
+  if(env?.VSN_WORKER_NAME!==cfg.cloudflare_worker)issues.push("Cloudflare Worker identity mismatch");
+  if(env?.SHOPIFY_BILLING_TEST_MODE!==(tier==="staging"?"true":"false"))issues.push("Billing environment mode mismatch");
+  const url=String(env?.DATABASE_URL||"");
+  if(!url)issues.push("DATABASE_URL binding missing");
+  else try {
+    const parsed=new URL(url);
+    if(!["postgres:","postgresql:"].includes(parsed.protocol))issues.push("Neon URL scheme invalid");
+    if(!parsed.hostname.endsWith(".neon.tech")||parsed.hostname==="neon.tech")issues.push("Neon host invalid");
+    if(!parsed.username||!parsed.password||!parsed.pathname||parsed.pathname==="/")issues.push("Neon database credentials incomplete");
+    if(parsed.searchParams.get("sslmode")!=="require")issues.push("Neon TLS policy missing");
+  }catch{issues.push("Neon URL malformed")}
+  return {ready:issues.length===0,issues,tier};
+}
+export function createWorkerNeonPrisma(env,{Adapter=PrismaNeon,Client=PrismaClient}={}) {
+  const validation=inspectWorkerNeonEnvironment(env);
+  if(!validation.ready) {
+    const error=new Error("VSN Worker PostgreSQL runtime blocked: "+validation.issues.join("; "));
+    error.code="VSN_WORKER_DATABASE_NOT_READY";
+    throw error;
+  }
+  // No URLs or tokens are included in errors/logs; never cache credentials globally.
+  const adapter=new Adapter({connectionString:env.DATABASE_URL});
+  const db=new Client({adapter});
+  return db;
+}
