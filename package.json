@@ -4,7 +4,12 @@
   "private": true,
   "scripts": {
     "build": "node scripts/clean-dev-cache.mjs && react-router build",
-    "dev": "node scripts/clean-dev-cache.mjs && shopify app dev",
+    "dev": "node scripts/clean-dev-cache.mjs && shopify app dev --config local",
+    "env:check": "node scripts/environment-contract.mjs --environment=repository",
+    "env:test": "node --test tests/environment-contract.test.mjs",
+    "env:local:check": "node scripts/environment-contract.mjs --environment=local",
+    "env:staging:check": "node scripts/environment-contract.mjs --environment=staging",
+    "env:production:check": "node scripts/environment-contract.mjs --environment=production",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",

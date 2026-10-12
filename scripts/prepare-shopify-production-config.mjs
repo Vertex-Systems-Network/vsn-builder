@@ -23,9 +23,10 @@ function cleanUrl(value) {
 const appUrl = cleanUrl(process.env.SHOPIFY_PRODUCTION_APP_URL);
 const explicitClientId = String(process.env.SHOPIFY_PRODUCTION_CLIENT_ID || "").trim();
 const sourceClientId = source.match(/^client_id\s*=\s*"([^"]+)"/m)?.[1] || "";
-const allowCurrentClientId = String(process.env.VSN_PRODUCTION_USE_CURRENT_CLIENT_ID || "") === "1";
-const clientId = explicitClientId || (allowCurrentClientId ? sourceClientId : "");
-if (!clientId) fail("Set SHOPIFY_PRODUCTION_CLIENT_ID, or explicitly set VSN_PRODUCTION_USE_CURRENT_CLIENT_ID=1 when production uses the same Shopify app.");
+if (String(process.env.VSN_PRODUCTION_USE_CURRENT_CLIENT_ID || "") === "1") fail("Production identity reuse is prohibited by the three-environment isolation policy.");
+const clientId = explicitClientId;
+if (!clientId) fail("Set the dedicated Live SHOPIFY_PRODUCTION_CLIENT_ID; never reuse the default/unclassified or Dev app.");
+if (clientId === sourceClientId) fail("Production client ID must differ from the default/unclassified Shopify app.");
 if (!/^[A-Za-z0-9_-]{16,}$/.test(clientId)) fail("SHOPIFY_PRODUCTION_CLIENT_ID does not look valid.");
 
 const appName = String(process.env.SHOPIFY_PRODUCTION_APP_NAME || "VSN Builder").trim() || "VSN Builder";

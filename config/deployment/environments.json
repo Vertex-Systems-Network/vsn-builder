@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "reference_repository": "Vertex-Systems-Network/vsn-stock-down-sort",
+  "promotion_order": [
+    "local",
+    "staging",
+    "production"
+  ],
+  "local": {
+    "source_branch": "development",
+    "shopify_configuration": "shopify.app.local.toml",
+    "database_provider": "sqlite",
+    "database_schema": "prisma/schema.prisma",
+    "billing_test_mode": true,
+    "hosting": "local Shopify CLI",
+    "status": "configuration_added_identity_requires_verification"
+  },
+  "staging": {
+    "source_branch": "development",
+    "github_environment": "cloudflare-staging",
+    "shopify_configuration": "shopify.app.staging.toml",
+    "database_provider": "postgresql",
+    "hosting": "Cloudflare Workers target (not implemented)",
+    "billing_test_mode": true,
+    "status": "blocked_postgresql_schema_migrations_worker_runtime_and_cloud_resources"
+  },
+  "production": {
+    "source_branch": "main",
+    "github_environment": "cloudflare-production",
+    "shopify_configuration": "shopify.app.production.template.toml",
+    "generated_configuration": "shopify.app.production.toml",
+    "database_provider": "postgresql",
+    "hosting": "Cloudflare Workers target (not implemented)",
+    "billing_test_mode": false,
+    "status": "blocked_staging_acceptance_postgresql_worker_runtime_live_identity_and_approval"
+  }
+}

@@ -1,0 +1,64 @@
+name: VSN Environment Readiness (No Deploy)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Environment to preflight (readiness only; never deploys)"
+        required: true
+        type: choice
+        options: [staging, production]
+      source_ref:
+        description: "Exact 40-character source SHA at branch HEAD"
+        required: true
+        type: string
+      confirm:
+        description: "Type VERIFY_ONLY_NO_DEPLOY"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vsn-builder-readiness-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: inputs.confirm == 'VERIFY_ONLY_NO_DEPLOY'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ inputs.target == 'staging' && 'cloudflare-staging' || 'cloudflare-production' }}
+    env:
+      APP_ENV: ${{ inputs.target }}
+      SHOPIFY_BILLING_TEST_MODE: ${{ inputs.target == 'staging' && 'true' || 'false' }}
+      SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+      SHOPIFY_API_SECRET: ${{ secrets.SHOPIFY_API_SECRET }}
+      SHOPIFY_APP_URL: ${{ secrets.SHOPIFY_APP_URL }}
+      SHOPIFY_PRODUCTION_CLIENT_ID: ${{ secrets.SHOPIFY_PRODUCTION_CLIENT_ID }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      EXPECTED_SOURCE_REF: ${{ inputs.source_ref }}
+      TARGET_ENVIRONMENT: ${{ inputs.target }}
+    steps:
+      - name: Checkout fixed environment source branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.target == 'staging' && 'development' || 'main' }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+      - name: Require exact HEAD source and no arbitrary refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SOURCE_REF" =~ ^[a-f0-9]{40}$ ]] || { echo "Invalid exact source SHA"; exit 1; }
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_REF" || { echo "Branch HEAD differs from source_ref"; exit 1; }
+      - name: Validate repository configuration
+        run: node scripts/environment-contract.mjs --environment=repository
+      - name: Check tier secrets, identity, database and Worker implementation
+        run: node scripts/environment-contract.mjs --environment="$TARGET_ENVIRONMENT"
+      - name: Boundary reminder
+        run: echo "This workflow performs NO deployment, Shopify version release or production cutover."
