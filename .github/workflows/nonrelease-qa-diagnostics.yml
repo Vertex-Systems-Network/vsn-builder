@@ -7,6 +7,7 @@ on:
     branches:
       - feat/builder-nonrelease-qa-diagnostics-20261013
       - integration/builder-cloud-qa-20261013
+      - feat/builder-environment-branding-20261013
   workflow_dispatch:
 
 permissions:
@@ -38,6 +39,8 @@ jobs:
         run: npm ci
       - name: Environment isolation and diagnostics workflow regression checks
         run: npm run env:check && npm run env:test && node --test tests/nonrelease-qa-diagnostics.test.mjs
+      - name: Validate brand names and environment badges
+        run: node --test tests/environment-branding.test.mjs
       - name: Source security audit
         run: npm run security:audit
       - name: Legacy webhook egress security audit
