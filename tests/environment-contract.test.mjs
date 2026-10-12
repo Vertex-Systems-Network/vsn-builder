@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 function verify(mode, extra = {}) {
   return spawnSync(process.execPath, ["scripts/environment-contract.mjs", "--environment=" + mode], {
@@ -36,4 +37,15 @@ test("production rejects billing-test mode and Dev identity", () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Billing test mode/);
   assert.match(result.stderr, /dedicated non-Dev Shopify app/);
+});
+
+test("no package script can directly deploy or switch to production Shopify config", () => {
+  const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+  for (const name of ["deploy", "deploy:staging", "deploy:production", "config:use"]) {
+    assert.match(pkg.scripts[name], /^node scripts\/deployment-blocked\.mjs /, name + " must fail closed");
+  }
+  const script = spawnSync(process.execPath, ["scripts/deployment-blocked.mjs", "production"], { encoding: "utf8" });
+  assert.equal(script.status, 1);
+  assert.match(script.stderr, /BLOCKED|disabled/i);
+  assert.match(pkg.scripts["release:production:check"], /env:production:check/);
 });

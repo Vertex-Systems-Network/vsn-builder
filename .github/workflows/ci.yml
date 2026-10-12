@@ -39,7 +39,7 @@ jobs:
         with:
           name: lint-report
           path: lint-report.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 1
       - run: npm run typecheck
       - run: npm run build
@@ -56,7 +56,7 @@ jobs:
         with:
           name: qa-release-log
           path: qa-release.log
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 1
       - name: Enforce release QA result
         if: steps.release_qa.outcome == 'failure'

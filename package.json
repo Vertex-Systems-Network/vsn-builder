@@ -12,8 +12,8 @@
     "env:production:check": "node scripts/environment-contract.mjs --environment=production",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
-    "deploy": "shopify app deploy",
-    "config:use": "shopify app config use",
+    "deploy": "node scripts/deployment-blocked.mjs deploy",
+    "config:use": "node scripts/deployment-blocked.mjs config-switch",
     "env": "shopify app env",
     "start": "node scripts/validate-production-runtime.mjs && react-router-serve ./build/server/index.js",
     "docker-start": "node scripts/validate-production-runtime.mjs && npm run setup && npm run start",
@@ -129,8 +129,8 @@
     "db:index-audit": "node scripts/q3-db-index-audit.mjs",
     "qa:milestone-q31": "node scripts/milestone-q31-database-bootstrap-audit.mjs",
     "config:production": "node scripts/prepare-shopify-production-config.mjs",
-    "release:production:check": "npm run data-topology:production && node scripts/shopify-production-readiness.mjs",
-    "deploy:production": "npm run release:production:check && shopify app deploy --config production",
+    "release:production:check": "npm run env:production:check && npm run data-topology:production && node scripts/shopify-production-readiness.mjs",
+    "deploy:production": "node scripts/deployment-blocked.mjs production",
     "qa:milestone-q4": "node scripts/milestone-q4-shopify-production-integration-audit.mjs",
     "prisma:verify": "node scripts/prisma-cli-verify.mjs",
     "qa:milestone-q41": "node scripts/milestone-q41-prisma-cli-resolution-audit.mjs",
@@ -191,7 +191,8 @@
     "qa:p16k-storefront-presentation-metadata": "node scripts/p16k-storefront-presentation-metadata-audit.mjs",
     "qa:p16l-storefront-design-tokens": "node scripts/p16l-storefront-design-tokens-audit.mjs",
     "qa:p16m-storefront-font-runtime": "node scripts/p16m-storefront-font-runtime-audit.mjs",
-    "qa:p16n-storefront-custom-js-bundle": "node scripts/p16n-storefront-custom-js-bundle-audit.mjs"
+    "qa:p16n-storefront-custom-js-bundle": "node scripts/p16n-storefront-custom-js-bundle-audit.mjs",
+    "deploy:staging": "node scripts/deployment-blocked.mjs staging"
   },
   "type": "module",
   "engines": {

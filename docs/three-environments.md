@@ -31,7 +31,7 @@ Use a dedicated Shopify app, separate Neon PostgreSQL project/branch/database, s
 
 ### Live / Production
 
-Use a separate Partner app, Neon database and Cloudflare Worker with non-test billing. Use protected `main` and GitHub Environment `cloudflare-production`. Keep the generated `shopify.app.production.toml` gitignored. Enforce staging acceptance for the exact release source before a reviewed promotion; perform migrations/backups, smoke, release approval, rollback and post-release merchant verification. **No workflow in this change publishes or deploys Production.**
+Use a separate Partner app, Neon database and Cloudflare Worker with non-test billing. Use protected `main` and GitHub Environment `cloudflare-production`. Keep the generated `shopify.app.production.toml` gitignored. Enforce staging acceptance for the exact release source before a reviewed promotion; perform migrations/backups, smoke, release approval, rollback and post-release merchant verification. **No workflow in this change publishes or deploys Production.** Existing direct Shopify CLI release shortcuts are blocked as an additional safeguard.
 
 ### Remaining implementation phases (must be evidence-based)
 
@@ -42,6 +42,12 @@ Use a separate Partner app, Neon database and Cloudflare Worker with non-test bi
 5. Add protected staging → `main` promotion, live secrets readiness, explicit live candidate authorization, manual production release and rollback/restore certification.
 
 Until phases 1–4 pass, **Staging is not deployed**. Until all phases pass, **Live must remain unchanged**. Never fabricate acceptance records in `config/deployment/environments.json`.
+
+## Deployment safety during migration
+
+Until approved exact-source release workflows are implemented, the legacy `npm run deploy`, `npm run deploy:production`, `npm run deploy:staging` and `npm run config:use` scripts intentionally exit with an error; **none can create or release Shopify app versions**. External direct use of the Shopify CLI is outside this npm-script guard and must be avoided. Only `npm run dev` with the dedicated Local config is intended for Shopify CLI runtime development.
+
+CI security audits remain mandatory. As of 2026-10-12, Production Confidence on environment PR #94 failed at `npm audit --omit=dev --audit-level=high` with vulnerable transitive packages. Do not bypass these failures or claim full CI green because the narrower environment isolation workflow passes.
 
 ## CLI checks
 
