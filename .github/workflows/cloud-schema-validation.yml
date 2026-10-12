@@ -3,7 +3,7 @@ name: VSN PostgreSQL Schema Certification (No Deploy)
 on:
   push:
     branches: [development, feat/builder-postgres-parity-20261012]
-    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, .github/workflows/cloud-schema-validation.yml]
+    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, scripts/verify-prisma-client-isolation.mjs, .github/workflows/cloud-schema-validation.yml]
   pull_request:
     branches: [development, main]
     paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, .github/workflows/cloud-schema-validation.yml]
@@ -33,6 +33,10 @@ jobs:
         run: npm ci
       - name: Validate PostgreSQL schema without connecting to a database
         run: npx prisma validate --schema prisma/cloud/schema.prisma
+      - name: Generate isolated PostgreSQL Prisma Client (no DB connection)
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Prove cloud generation did not clobber SQLite Client
+        run: node scripts/verify-prisma-client-isolation.mjs --generated
       - name: Generate additive empty-to-schema SQL proposal (no DB connection)
         shell: bash
         run: |

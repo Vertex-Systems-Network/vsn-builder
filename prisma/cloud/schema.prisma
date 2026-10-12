@@ -3,6 +3,8 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Dedicated hosted client: never overwrite the local SQLite Prisma Client.
+  output   = "../../generated/prisma-cloud"
 }
 
 // Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long

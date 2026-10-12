@@ -27,3 +27,5 @@ jobs:
         run: node --test tests/environment-contract.test.mjs
       - name: Verify SQLite and PostgreSQL data model parity
         run: node scripts/verify-prisma-environment-parity.mjs
+      - name: Verify isolated cloud client generation contract
+        run: node scripts/verify-prisma-client-isolation.mjs

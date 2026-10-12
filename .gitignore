@@ -38,3 +38,6 @@ shopify.app.production.toml
 /shopify.app.local.toml
 # Public sample remains tracked
 !.env.local.example
+
+# Prisma client generated for hosted PostgreSQL only; do not commit engines/types
+/generated/prisma-cloud/

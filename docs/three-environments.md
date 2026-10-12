@@ -4,7 +4,7 @@ This is an environment-separation **foundation** modeled on [VSN Stock Down Sort
 
 ## PostgreSQL schema foundation (not migrated)
 
-`prisma/cloud/schema.prisma` now mirrors the 51 Local Prisma models while using the PostgreSQL provider and separate `DIRECT_URL` for migrations. `scripts/verify-prisma-environment-parity.mjs` enforces exact model+enum body parity. A read-only schema-validation workflow validates the Prisma datamodel and generates **proposed** baseline SQL as an artifact, without connecting to any database. This does **not** mean runtime, PostgreSQL migrations or data conversion are completed; legacy SQLite introspection and stateful filesystem services still require review. No cloud migration should run until signed-off SQL/schema/restore tests.
+`prisma/cloud/schema.prisma` now mirrors the 51 Local Prisma models while using the PostgreSQL provider and separate `DIRECT_URL` for migrations. The Cloud generator targets the gitignored `generated/prisma-cloud/` directory, leaving the local SQLite `@prisma/client` untouched. CI generates both and explicitly checks that neither schema/client is overwritten. `scripts/verify-prisma-environment-parity.mjs` enforces exact model+enum body parity. A read-only schema-validation workflow validates the Prisma datamodel and generates **proposed** baseline SQL as an artifact, without connecting to any database. This does **not** mean runtime, PostgreSQL migrations or data conversion are completed; legacy SQLite introspection and stateful filesystem services still require review. No cloud migration should run until signed-off SQL/schema/restore tests.
 
 ## Why the stock app cannot be copied blindly
 
