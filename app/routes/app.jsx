@@ -21,6 +21,7 @@ import { getLocalMarketplaceCatalogCount } from "../services/marketplace.server.
 import { builtinMotionPresets } from "../services/motion-library.server.js";
 import { inspectThemeEmbedStatus } from "../services/theme-embed-status.server.js";
 import { VSN_BASELINE } from "../config/baseline.js";
+import { resolveBuilderBranding, VSN_BUILDER_DISPLAY_VERSION } from "../config/environment-branding.js";
 import { normalizeUiColorScheme, normalizeUiHex, resolveUiTheme } from "../config/ui-theme.js";
 import { applyVsnSecurityHeaders } from "../utils/request-security.server.js";
 
@@ -136,6 +137,8 @@ export const loader = async ({ request }) => {
   const featureFlags = getServerFeatureFlags();
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
+    brand: resolveBuilderBranding(process.env.APP_ENV),
+    displayVersion: VSN_BUILDER_DISPLAY_VERSION,
     isOwner: isBuilderOwner(session),
     builderAccess,
     builderRole,
@@ -177,7 +180,7 @@ export function shouldRevalidate({ formMethod, currentUrl, nextUrl, defaultShoul
 }
 
 export default function App() {
-  const { apiKey, builderAccess, builderRole, systemAccess, actionAccess, isOwner, ownerInfo, notificationCount, planName, widgetCount, navigationCounts, localizationEnabled, themeEmbed } = useLoaderData();
+  const { apiKey, brand, displayVersion, builderAccess, builderRole, systemAccess, actionAccess, isOwner, ownerInfo, notificationCount, planName, widgetCount, navigationCounts, localizationEnabled, themeEmbed } = useLoaderData();
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -303,6 +306,8 @@ export default function App() {
       />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: "100vh", overflow: "hidden" }}>
         <TopNav
+          brand={brand}
+          displayVersion={displayVersion}
           ownerImage={ownerInfo?.avatar || null}
           userName={fullName}
           darkMode={darkMode}

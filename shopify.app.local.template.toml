@@ -2,7 +2,7 @@
 
 # Local/Development only. A new dedicated Dev app ID is required; do not reuse the existing unclassified default app ID.
 client_id = "__SHOPIFY_LOCAL_CLIENT_ID__"
-name = "VSN Builder Dev"
+name = "VSN | Builder (Development)"
 application_url = "https://shopify.dev/apps/default-app-home"
 embedded = true
 

@@ -14,7 +14,8 @@
     "billing_test_mode": true,
     "hosting": "local Shopify CLI",
     "status": "configuration_added_identity_requires_verification",
-    "generated_configuration": "shopify.app.local.toml"
+    "generated_configuration": "shopify.app.local.toml",
+    "app_name": "VSN | Builder (Development)"
   },
   "staging": {
     "source_branch": "development",
@@ -23,7 +24,10 @@
     "database_provider": "postgresql",
     "hosting": "Cloudflare Workers target (not implemented)",
     "billing_test_mode": true,
-    "status": "blocked_postgresql_schema_migrations_worker_runtime_and_cloud_resources"
+    "status": "blocked_postgresql_schema_migrations_worker_runtime_and_cloud_resources",
+    "app_name": "VSN | Builder (Staging)",
+    "cloudflare_worker": "vsn-builder-staging",
+    "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed"
   },
   "production": {
     "source_branch": "main",
@@ -33,6 +37,9 @@
     "database_provider": "postgresql",
     "hosting": "Cloudflare Workers target (not implemented)",
     "billing_test_mode": false,
-    "status": "blocked_staging_acceptance_postgresql_worker_runtime_live_identity_and_approval"
+    "status": "blocked_staging_acceptance_postgresql_worker_runtime_live_identity_and_approval",
+    "app_name": "VSN | Builder",
+    "cloudflare_worker": "vsn-builder-production",
+    "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed"
   }
 }

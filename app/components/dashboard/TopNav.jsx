@@ -44,7 +44,7 @@ function useThemeEmbedStatus(serverStatus) {
   return { effective:{ ...(serverStatus || {}), ...(clientStatus || {}) }, checking:checking && !clientStatus };
 }
 
-export default function TopNav({ ownerImage, userName, darkMode, onToggleDark, onNavigate, notifCount, themeEmbed, searchQuery, onSearchChange, searchResults = [], onSearchSelect, isOwner = false }) {
+export default function TopNav({ brand, displayVersion, ownerImage, userName, darkMode, onToggleDark, onNavigate, notifCount, themeEmbed, searchQuery, onSearchChange, searchResults = [], onSearchSelect, isOwner = false }) {
   const bg = darkMode ? '#111827' : '#FFFFFF'; const border = darkMode ? '#1F2937' : '#E5E7EB'; const text = darkMode ? '#F9FAFB' : '#1A1F36'; const muted = darkMode ? '#9CA3AF' : '#6B7280';
   const searchRef = useRef(null);
   const profileRef = useRef(null);
@@ -84,7 +84,11 @@ export default function TopNav({ ownerImage, userName, darkMode, onToggleDark, o
         : <a href={editorUrl} target="_top" title="Theme status could not be verified automatically. Open Theme Editor to verify the VSN app embed." className="vsn-theme-status-badge is-unknown"><AlertTriangle size={13}/><span>Verify Theme</span></a>;
 
   return (<header style={{ height:60, background:bg, borderBottom:`1px solid ${border}`, display:'flex', alignItems:'center', padding:'0 24px', gap:12, position:'sticky', top:0, zIndex:90 }}>
-    <button type="button" onClick={() => onNavigate?.('home')} className="vsn-topbar-brand" title="VSN Builder dashboard"><strong>VSN Builder</strong></button>
+    <div style={{display:'flex',alignItems:'center',gap:7,flexShrink:0,flexWrap:'wrap'}} aria-label="Builder environment and release">
+      <button type="button" onClick={() => onNavigate?.('home')} className="vsn-topbar-brand" title="VSN Builder dashboard"><strong>{brand?.title || 'VSN | Builder (Development)'}</strong></button>
+      {brand?.badge ? <span aria-label={`Environment: ${brand.badge}`} style={{fontSize:10,fontWeight:800,padding:'3px 7px',borderRadius:6,background:brand.badge==='Staging'?'#FFF4DD':'#E7F0FF',color:brand.badge==='Staging'?'#874A08':'#184D91',border:'1px solid currentColor'}}>{brand.badge}</span>:null}
+      <span aria-label={`App version: ${displayVersion}`} style={{fontSize:10,fontWeight:700,padding:'3px 7px',borderRadius:6,border:`1px solid ${border}`,color:muted}}>{displayVersion || 'v1.0.0'}</span>
+    </div>
     <div style={{ flex:1, maxWidth:430, position:'relative' }}>
       <div style={{ display:'flex', alignItems:'center', gap:8, background:darkMode?'#1F2937':'#F9FAFB', border:`1px solid ${border}`, borderRadius:8, padding:'0 12px', height:36 }}><Search size={15} color={muted}/><input ref={searchRef} value={searchQuery} onChange={(e) => onSearchChange?.(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && searchResults[0]) { e.preventDefault(); onSearchSelect?.(searchResults[0]); } }} placeholder="Search VSN Builder... (⌘K)" style={{ border:'none', background:'transparent', outline:'none', fontSize:13, color:text, flex:1 }}/><kbd style={{ fontSize:9.5, color:muted, border:`1px solid ${border}`, borderRadius:4, padding:'2px 5px', background:bg }}>⌘K</kbd></div>
       {showResults ? <div className="dashboard-search-results" style={{ position:'absolute', left:0, right:0, top:43, background:bg, border:`1px solid ${border}`, borderRadius:10, boxShadow:'0 14px 36px rgba(0,0,0,.13)', overflow:'hidden', zIndex:120 }}>

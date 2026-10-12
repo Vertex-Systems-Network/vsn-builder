@@ -2,7 +2,7 @@
 
 # Template only; the actual production file is generated outside git with a distinct Live identity.
 client_id = "__SHOPIFY_PRODUCTION_CLIENT_ID__"
-name = "VSN Builder"
+name = "VSN | Builder"
 application_url = "https://vsn-builder-production.example.invalid"
 embedded = true
 

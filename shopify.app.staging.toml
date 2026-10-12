@@ -2,7 +2,7 @@
 
 # Staging identity supplied only by the cloudflare-staging GitHub Environment.
 client_id = "__SHOPIFY_STAGING_CLIENT_ID__"
-name = "VSN Builder Staging"
+name = "VSN | Builder (Staging)"
 application_url = "https://vsn-builder-staging.example.invalid"
 embedded = true
 
