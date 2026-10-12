@@ -37,7 +37,7 @@ function main() {
   if (key === defaultId) fail("Do not reuse the existing default/unclassified Shopify Client ID for Dev.");
   const template = read("shopify.app.local.template.toml");
   if (configField(template, "client_id") !== "__SHOPIFY_LOCAL_CLIENT_ID__") fail("Local template placeholder is missing.");
-  if (configField(template, "name") !== "VSN Builder Dev") fail("Unexpected Local Shopify app name.");
+  if (configField(template, "name") !== "VSN | Builder (Development)") fail("Unexpected Local Shopify app name.");
   if (!template.includes("automatically_update_urls_on_dev = true")) fail("Local URL updates must be enabled.");
   const scopes = configField(template, "scopes");
   if (process.env.SCOPES !== scopes) fail("Local SCOPES must match the dedicated app config exactly.");

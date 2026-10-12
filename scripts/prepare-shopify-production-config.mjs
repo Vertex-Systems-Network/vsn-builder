@@ -29,7 +29,7 @@ if (!clientId) fail("Set the dedicated Live SHOPIFY_PRODUCTION_CLIENT_ID; never 
 if (clientId === sourceClientId) fail("Production client ID must differ from the default/unclassified Shopify app.");
 if (!/^[A-Za-z0-9_-]{16,}$/.test(clientId)) fail("SHOPIFY_PRODUCTION_CLIENT_ID does not look valid.");
 
-const appName = String(process.env.SHOPIFY_PRODUCTION_APP_NAME || "VSN Builder").trim() || "VSN Builder";
+const appName = String(process.env.SHOPIFY_PRODUCTION_APP_NAME || "VSN | Builder").trim() || "VSN | Builder";
 const appHandle = String(process.env.SHOPIFY_PRODUCTION_APP_HANDLE || process.env.SHOPIFY_APP_HANDLE || "").trim().toLowerCase();
 if (appHandle && !/^[a-z0-9][a-z0-9_-]{0,79}$/.test(appHandle)) fail("SHOPIFY_PRODUCTION_APP_HANDLE must contain only letters, numbers, hyphens or underscores.");
 let output = source;
@@ -54,4 +54,4 @@ console.log(`VSN production Shopify config written: ${path.relative(process.cwd(
 console.log(`Application URL: ${appUrl}`);
 console.log(`OAuth callback: ${appUrl}/auth/callback`);
 if (appHandle) console.log(`App handle: ${appHandle}`);
-console.log("Next: npm run release:production:check, then npm run deploy:production");
+console.log("Production config generated for preflight only; direct deployment remains BLOCKED until approved release workflow and Staging acceptance.");

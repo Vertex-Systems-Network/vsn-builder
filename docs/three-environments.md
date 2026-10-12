@@ -18,15 +18,15 @@ Builder currently uses Prisma **SQLite** across the application, SQLite migratio
 
 | Tier | Source | Shopify app | Config | Data / billing | Current operational status |
 | --- | --- | --- | --- | --- | --- |
-| Local/Dev | `development` | Dedicated **VSN Builder Dev** (new identity required) | generated `shopify.app.local.toml` | SQLite `prisma/dev.sqlite`; test | Template ready; dedicated Dev identity still required |
-| Staging | accepted `development` SHA | Separate **VSN Builder Staging** | `shopify.app.staging.toml` | Target isolated Neon PostgreSQL; test | **Blocked** on app identity, database port, Worker port and infrastructure |
-| Production/Live | reviewed `main` SHA | Separate **VSN Builder** | generated `shopify.app.production.toml` from template | Target isolated Neon PostgreSQL; real billing | **Blocked** pending successful staging certification and production gates |
+| Local/Dev | `development` | Dedicated **VSN | Builder (Development)** (new identity required) | generated `shopify.app.local.toml` | SQLite `prisma/dev.sqlite`; test | Template ready; dedicated Dev identity still required |
+| Staging | accepted `development` SHA | Separate **VSN | Builder (Staging)** | `shopify.app.staging.toml` | Target isolated Neon PostgreSQL; test | **Blocked** on app identity, database port, Worker port and infrastructure |
+| Production/Live | reviewed `main` SHA | Separate **VSN | Builder** | generated `shopify.app.production.toml` from template | Target isolated Neon PostgreSQL; real billing | **Blocked** pending successful staging certification and production gates |
 
 **Never reuse** Shopify client IDs, API secrets, sessions, app installs, Shopify plan/billing configuration or databases between tiers. The existing Client ID in `shopify.app.toml` is unclassified and **must not** be assumed Dev or Live. The tracked Local **template** deliberately keeps `__SHOPIFY_LOCAL_CLIENT_ID__`; the runtime Local config is generated from gitignored `.env.local` with the separately verified Dev Client ID. Staging and production TOML templates deliberately contain placeholder client IDs/URLs. They are not deployable configurations.
 
 ### Local
 
-1. Register or identify a dedicated **VSN Builder Dev** Shopify app. Set that verified Dev Client ID and the dedicated secret in gitignored `.env.local` (copy `.env.local.example`). `npm run local:prepare` generates the local-only config from `shopify.app.local.template.toml`; do **not** reuse the existing unclassified default ID from `shopify.app.toml`.
+1. Register or identify a dedicated **VSN | Builder (Development)** Shopify app. Set that verified Dev Client ID and the dedicated secret in gitignored `.env.local` (copy `.env.local.example`). `npm run local:prepare` generates the local-only config from `shopify.app.local.template.toml`; do **not** reuse the existing unclassified default ID from `shopify.app.toml`.
 2. Use a dedicated development shop, `DATABASE_URL=file:./dev.sqlite`, `APP_ENV=development` and `SHOPIFY_BILLING_TEST_MODE=true`.
 3. Set Local Shopify credentials in `.env.local`, not git. Hosted credentials are rejected by Local preflight.
 4. `npm ci`, `npm run local:prepare`, then `npm run dev` (preflight enforces the Dev identity, loads `.env.local`, and pins `--config local`).
@@ -72,3 +72,15 @@ npm run env:production:check  # intentionally fails until PostgreSQL/Worker port
 ```
 
 The `VSN Production Confidence` workflow continues to test the existing SQLite implementation. Its green status does **not** certify PostgreSQL or Cloudflare.
+
+## Cloudflare infrastructure inventory (verified 2026-10-13)
+
+Isolated Workers `vsn-builder-staging` and `vsn-builder-production` have been created in the VSN Cloudflare account. Both currently contain **unavailable/503 placeholder code**, not a deployed Shopify application. Their `workers.dev` public subdomain and preview URL access are disabled; no merchant traffic should be pointed at them. Their presence does **not** satisfy the Worker application compatibility, database migration, Shopify auth, or signed session gates. Existing non-Builder Workers must not be reused or overwritten.
+
+## Environment secret inventory checks (read-only)
+
+GitHub Environment names are `cloudflare-staging` and `cloudflare-production`. The `VSN Hosted Environment Secret Inventory (No Deploy)` workflow checks the *presence/format only* of scoped credentials, with no DB/Shopify/Cloudflare external network calls. It never prints secret values, fetches cloud data, promotes a SHA, updates a Worker, or changes the strict `environment-contract.mjs` readiness requirement. Protected GitHub environments may require their usual approval before a check can execute.
+
+The checks require `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `SHOPIFY_APP_URL`, `DATABASE_URL`, `DIRECT_URL`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, and for Production `SHOPIFY_PRODUCTION_CLIENT_ID`. This is the expected configuration contract; an absent name is a blocker, not proof that no setting exists under another name. The workflow uses hosted `APP_ENV` and billing mode constants, not user-provided overrides. Passing inventory does not certify operational readiness.
+
+**Names:** Dev `VSN | Builder (Development)`, Staging `VSN | Builder (Staging)`, Live `VSN | Builder`. Header `v1.0.0` is a requested display version separate from internal `2.5.107`.
