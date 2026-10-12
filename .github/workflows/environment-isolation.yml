@@ -2,7 +2,7 @@ name: VSN Environment Isolation
 
 on:
   push:
-    branches: [main, development, feat/builder-postgres-parity-20261012]
+    branches: [main, development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013]
   pull_request:
     branches: [main, development]
   workflow_dispatch:
