@@ -3,10 +3,10 @@ name: VSN PostgreSQL Schema Certification (No Deploy)
 on:
   push:
     branches: [development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013, feat/builder-postgres-schema-health-20261013, feat/builder-cloud-baseline-migration-20261013, feat/builder-edge-prisma-generator-20261013, feat/builder-neon-worker-adapter-20261013]
-    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, scripts/verify-prisma-client-isolation.mjs, scripts/validate-cloud-baseline.mjs, scripts/verify-prisma-worker-client.mjs, .github/workflows/cloud-schema-validation.yml]
+    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, scripts/verify-prisma-client-isolation.mjs, scripts/validate-cloud-baseline.mjs, scripts/verify-prisma-worker-client.mjs, app/services/db-worker-neon.js, tests/worker-neon-factory.test.mjs, package.json, package-lock.json, .github/workflows/cloud-schema-validation.yml]
   pull_request:
     branches: [development, main]
-    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, .github/workflows/cloud-schema-validation.yml]
+    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, app/services/db-worker-neon.js, tests/worker-neon-factory.test.mjs, package.json, package-lock.json, .github/workflows/cloud-schema-validation.yml]
   workflow_dispatch:
 
 permissions:
