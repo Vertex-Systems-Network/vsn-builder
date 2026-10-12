@@ -1,7 +1,7 @@
 name: VSN PostgreSQL 18 Runtime Integration (Ephemeral CI Only)
 on:
   push:
-    branches: [feat/builder-postgres-container-integration-20261013]
+    branches: [feat/builder-postgres-container-integration-20261013, feat/builder-postgres-restore-drill-20261013]
   workflow_dispatch:
 permissions:
   contents: read
@@ -62,3 +62,34 @@ jobs:
         run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
       - name: Verify Local and Cloud generated clients stay separate
         run: node scripts/verify-prisma-client-isolation.mjs --generated
+
+      - name: Seed a disposable Shopify session before backup
+        run: node scripts/seed-postgres-restore-fixture.mjs
+      - name: Back up only disposable PostgreSQL database using PostgreSQL 18 pg_dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/vsn-pg-backup"
+          docker run --rm --network host \
+            -e PGPASSWORD=local_ephemeral_only \
+            -v "$RUNNER_TEMP/vsn-pg-backup:/backup" \
+            postgres:18 pg_dump --host=127.0.0.1 --username=builder_ci \
+              --dbname=builder_ci --format=custom --no-owner --no-acl \
+              --file=/backup/disposable-builder.dump
+          test -s "$RUNNER_TEMP/vsn-pg-backup/disposable-builder.dump"
+      - name: Create a second empty disposable database and restore backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm --network host -e PGPASSWORD=local_ephemeral_only \
+            postgres:18 createdb --host=127.0.0.1 --username=builder_ci builder_restore
+          docker run --rm --network host \
+            -e PGPASSWORD=local_ephemeral_only \
+            -v "$RUNNER_TEMP/vsn-pg-backup:/backup:ro" \
+            postgres:18 pg_restore --exit-on-error --no-owner --no-acl \
+              --host=127.0.0.1 --username=builder_ci --dbname=builder_restore \
+              /backup/disposable-builder.dump
+      - name: Verify restored schema, migration history, and seeded data
+        env:
+          RESTORE_DATABASE_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/builder_restore?schema=public
+        run: node --test tests/postgres-ephemeral-restore.test.mjs
