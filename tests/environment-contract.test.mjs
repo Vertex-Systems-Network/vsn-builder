@@ -26,7 +26,7 @@ test("staging denies current Dev app even with a PostgreSQL URL", () => {
     DIRECT_URL: "postgresql://test.invalid/direct" });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /dedicated non-Dev Shopify app/);
-  assert.match(result.stderr, /PostgreSQL Prisma schema is not implemented/);
+  assert.match(result.stderr, /Hosted PostgreSQL migrations are not implemented/);
 });
 test("production rejects billing-test mode and Dev identity", () => {
   const result = verify("production", { APP_ENV: "production", SHOPIFY_BILLING_TEST_MODE: "true",
