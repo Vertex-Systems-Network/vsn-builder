@@ -16,7 +16,14 @@ check("Q4 version sync",Number(pkg.version.split(".").at(-1))>=84&&baseline.incl
 check("Current stable Shopify API contract",config.includes('SHOPIFY_API_VERSION_HANDLE = "2026-07"')&&toml.includes('api_version = "2026-07"')&&server.includes("ApiVersion.July26"));
 check("Production config generator packaged",fs.existsSync("scripts/prepare-shopify-production-config.mjs")&&String(pkg.scripts?.["config:production"]||"").includes("prepare-shopify-production-config.mjs"));
 check("Production readiness command packaged",fs.existsSync("scripts/shopify-production-readiness.mjs")&&String(pkg.scripts?.["release:production:check"]||"").includes("shopify-production-readiness.mjs"));
-check("Production deploy targets named config",String(pkg.scripts?.["deploy:production"]||"").includes("--config production"));
+const threeTierMigration = fs.existsSync("config/deployment/environments.json");
+const productionDeploy = String(pkg.scripts?.["deploy:production"] || "");
+const safeBlock = productionDeploy === "node scripts/deployment-blocked.mjs production" &&
+  fs.existsSync("scripts/deployment-blocked.mjs") &&
+  read("scripts/deployment-blocked.mjs").includes("Direct Shopify CLI deployment/config switching is disabled") &&
+  String(pkg.scripts?.["release:production:check"] || "").includes("env:production:check");
+check("Production deploy targets named config, or is fail-closed during three-tier migration",
+  threeTierMigration ? safeBlock : productionDeploy.includes("--config production"));
 check("Production runtime env validation",fs.existsSync("scripts/validate-production-runtime.mjs")&&String(pkg.scripts?.start||"").includes("validate-production-runtime.mjs"));
 check("Development config remains tunnel-safe",toml.includes("automatically_update_urls_on_dev = true")&&toml.includes('application_url = "https://example.com"'));
 check("Production auth callback contract",config.includes('SHOPIFY_AUTH_CALLBACK_PATH = "/auth/callback"')&&read("scripts/prepare-shopify-production-config.mjs").includes('/auth/callback'));

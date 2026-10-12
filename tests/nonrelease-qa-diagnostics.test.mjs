@@ -11,3 +11,12 @@ test("non-release QA has read-only privileges, isolated test database, and no de
   assert.match(y,/npm run build/);
   assert.match(y,/npm run qa:release/);
 });
+
+test("Q4 audit requires safe blocked production deploy during three-tier transition",()=>{
+  const audit=readFileSync("scripts/milestone-q4-shopify-production-integration-audit.mjs","utf8");
+  assert.match(audit,/threeTierMigration \? safeBlock/);
+  assert.match(audit,/release:production:check/);
+  assert.match(audit,/scripts\/deployment-blocked\.mjs/);
+  const pkg=JSON.parse(readFileSync("package.json","utf8"));
+  assert.equal(pkg.scripts["deploy:production"],"node scripts/deployment-blocked.mjs production");
+});

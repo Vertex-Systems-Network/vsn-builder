@@ -35,8 +35,8 @@ jobs:
           cache: npm
       - name: Reproducible install
         run: npm ci
-      - name: Environment isolation regression checks
-        run: npm run env:check && npm run env:test
+      - name: Environment isolation and diagnostics workflow regression checks
+        run: npm run env:check && npm run env:test && node --test tests/nonrelease-qa-diagnostics.test.mjs
       - name: Source security audit
         run: npm run security:audit
       - name: Legacy webhook egress security audit

@@ -19,3 +19,7 @@ It uses **no Shopify API keys, Neon URLs, Cloudflare credentials, real merchant 
 ## Release gate
 
 Production Confidence, including both high-severity npm audits and the full runtime/merchant acceptance contract, remains authoritative and blocking. Never interpret a green diagnostic run as evidence of staging or production readiness.
+
+## Q4 legacy-audit alignment
+
+The first actual downstream diagnostic run [38295008279](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38295008279) passed installation, SQLite migrations, source security, typecheck, and build but identified a false incompatibility in the legacy Q4 audit: it expected `shopify app deploy --config production` even though three-tier migration explicitly blocks any direct release. The audit now requires the fail-closed deployment command and named production environment guard during migration. It cannot silently turn deployment on.
