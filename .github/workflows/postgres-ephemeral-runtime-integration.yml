@@ -1,0 +1,64 @@
+name: VSN PostgreSQL 18 Runtime Integration (Ephemeral CI Only)
+on:
+  push:
+    branches: [feat/builder-postgres-container-integration-20261013]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: builder-postgres-container-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ephemeral-postgres:
+    name: Verify PostgreSQL migration and Prisma runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: builder_ci
+          POSTGRES_PASSWORD: local_ephemeral_only
+          POSTGRES_DB: builder_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U builder_ci -d builder_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/builder_ci?schema=public
+      DIRECT_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/builder_ci?schema=public
+      NODE_ENV: test
+    steps:
+      - name: Check out exact source without write credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Install exact lockfile
+        run: npm ci
+      - name: Enforce production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Validate parity and baseline migration
+        run: |
+          node scripts/verify-prisma-environment-parity.mjs
+          node scripts/validate-cloud-baseline.mjs
+          npx prisma validate --schema prisma/cloud/schema.prisma
+      - name: Generate isolated PostgreSQL Prisma Client
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Apply initial SQL to ephemeral PostgreSQL 18 only
+        run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+      - name: Validate Prisma migration history
+        run: npx prisma migrate status --schema prisma/cloud/schema.prisma
+      - name: Real PostgreSQL and Prisma integration tests
+        run: node --test tests/postgres-ephemeral-integration.test.mjs
+      - name: Verify migration deployment is idempotent
+        run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+      - name: Verify Local and Cloud generated clients stay separate
+        run: node scripts/verify-prisma-client-isolation.mjs --generated
