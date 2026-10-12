@@ -25,3 +25,5 @@ jobs:
         run: node scripts/environment-contract.mjs --environment=repository
       - name: Execute fail-closed environment regression tests
         run: node --test tests/environment-contract.test.mjs
+      - name: Verify SQLite and PostgreSQL data model parity
+        run: node scripts/verify-prisma-environment-parity.mjs

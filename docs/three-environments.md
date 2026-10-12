@@ -2,9 +2,13 @@
 
 This is an environment-separation **foundation** modeled on [VSN Stock Down Sort](https://github.com/Vertex-Systems-Network/vsn-stock-down-sort/blob/main/docs/environments.md). It is **not** evidence of an operational Cloudflare/Neon deployment.
 
+## PostgreSQL schema foundation (not migrated)
+
+`prisma/cloud/schema.prisma` now mirrors the 51 Local Prisma models while using the PostgreSQL provider and separate `DIRECT_URL` for migrations. `scripts/verify-prisma-environment-parity.mjs` enforces exact model+enum body parity. A read-only schema-validation workflow validates the Prisma datamodel and generates **proposed** baseline SQL as an artifact, without connecting to any database. This does **not** mean runtime, PostgreSQL migrations or data conversion are completed; legacy SQLite introspection and stateful filesystem services still require review. No cloud migration should run until signed-off SQL/schema/restore tests.
+
 ## Why the stock app cannot be copied blindly
 
-Builder currently uses Prisma **SQLite** across the application, SQLite migration history, SQLite-specific database health queries, and an explicitly single-instance durable-volume production contract (see `prisma/schema.prisma`, `scripts/validate-production-runtime.mjs`, and `.ai/PRODUCTION_DATA_TOPOLOGY.json`). The Stock Down Sort cloud runtime uses a distinct PostgreSQL Prisma schema, migrations, adapter and Worker entry point. Builder does **not** currently have those assets. Switching a database URL from `file:` to `postgresql:` or deploying its Node server directly to Workers would break the app.
+Builder currently uses Prisma **SQLite** across the application, SQLite migration history, SQLite-specific database health queries, and an explicitly single-instance durable-volume production contract (see `prisma/schema.prisma`, `scripts/validate-production-runtime.mjs`, and `.ai/PRODUCTION_DATA_TOPOLOGY.json`). The Stock Down Sort cloud runtime uses a distinct PostgreSQL Prisma schema, migrations, adapter and Worker entry point. Builder now has a proposed PostgreSQL **schema only**, but still lacks reviewed cloud migrations, compatible runtime/data-health code and a Cloudflare Worker entry point. Switching a database URL from `file:` to `postgresql:` or deploying its Node server directly to Workers would break the app.
 
 ## Environment identities and flow
 
