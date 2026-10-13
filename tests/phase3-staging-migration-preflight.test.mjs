@@ -29,7 +29,7 @@ test("Migration cannot run from unprotected development or production branches",
     {SHOPIFY_BILLING_TEST_MODE:"false"},
     {STAGING_MIGRATION_APPROVED:""},
     {VSN_STAGING_BACKUP_EVIDENCE:""},
-    {VSN_STAGING_BACKUP_EVIDENCE:"br-wandering-queen-b3mmztjy"},
+    {VSN_STAGING_BACKUP_EVIDENCE:"br-square-mountain-b3ij6q2s"},
   ])assert.equal(inspectStagingMigrationGate(fake(overrides)).ready,false,JSON.stringify(overrides));
 });
 test("Migration cannot target production compute, weak TLS or pooled direct URL",()=>{
