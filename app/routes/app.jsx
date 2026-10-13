@@ -146,7 +146,7 @@ export const loader = async ({ request }) => {
     actionAccess,
     ownerInfo,
     notificationCount,
-    planName: plan?.name || "Free",
+    planName: plan?.name || "No active subscription",
     widgetCount: getWidgetDefinitions().length,
     navigationCounts: {
       pages: pageCount,
