@@ -75,6 +75,7 @@ try{
  assert.equal(check.checks.adminSdkShopIsolationGate,true,"Workerd Admin request gate allowed missing installation or cross-shop access");
  assert.equal(check.checks.adminMutationRequiresLockedSession,true,"Shopify Admin POST mutation bypassed locked installation generation");
  assert.equal(check.checks.adminFailedMutationRollback,true,"Admin POST error response was committed instead of rolled back");
+ assert.equal(check.checks.adminExpiredOfflineSessionDenied,true,"Expired Shopify offline session passed Workerd Admin authorization");
  assert.equal(check.checks.unsignedTimestampCannotDeleteMerchant,true,"Forged unsigned webhook timestamp authorized session deletion without trusted generation attestation");
  assert.equal(check.checks.realSignedWebhookAccepted,true,"Signed Shopify APP_UNINSTALLED webhook was not authenticated twice inside Workerd");
  assert.equal(check.checks.tamperedWebhookDeniedBeforeStorage,true,"Tampered Shopify webhook triggered SDK storage before signature rejection");
