@@ -297,11 +297,24 @@ export default {
         goodStream.status===200 && (await goodStream.text())==="done" &&
         goodStream.headers.get("cache-control")==="no-store" &&
         committed===2 && lockClaims===6 && closed===7;
+      let cancelled=false;
+      const stalled=await acceptWorkerShopifyAdminMutation(req,sdkEnv,{
+        createSdkContext:factory(),
+        async onAuthenticated(){return new Response(new ReadableStream({
+          start(controller){
+            controller.enqueue(new TextEncoder().encode("partial"));
+          },
+          cancel(){cancelled=true},
+        }),{status:200})},
+      });
+      checks.adminPostStreamDeadlineRollback=stalled.status===503 &&
+        cancelled && committed===2 && lockClaims===7 && closed===8;
     }catch{checks.adminMutationRequiresLockedSession=false;
       checks.adminFailedMutationRollback=false;
       checks.adminExpiredOfflineSessionDenied=false;
       checks.adminReturnedRedirectRollback=false;
-      checks.adminPostResponseStreamAtomic=false}
+      checks.adminPostResponseStreamAtomic=false;
+      checks.adminPostStreamDeadlineRollback=false}
     // The exact official PrismaSessionStorage implementation persists an
     // offline Shopify session and its installation generation in a single
     // synthetic transaction INSIDE workerd (no Neon query/merchant API).
