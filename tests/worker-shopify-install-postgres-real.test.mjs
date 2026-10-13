@@ -192,6 +192,34 @@ test("real PostgreSQL admin POST holds row lock and commits only authenticated m
  assert.equal(reverted.status,503);
  assert.equal((await db.session.findUnique({where:{id:"offline_"+adminShop}})).scope,"write_products");
 
+ // A callback can write successfully but return a validation/conflict/server
+ // HTTP error instead of throwing. Prisma would normally COMMIT such a
+ // callback; this regression requires full transactional rollback.
+ const preceding=await db.builderShopInstallation.findUnique({where:{shop:adminShop}});
+ for(const [status,expected] of [[409,409],[422,422],[500,503]]){
+  const refused=await acceptWorkerShopifyAdminMutation(req,e,{
+   ...options,
+   async onAuthenticated({transaction}){
+    await transaction.session.update({
+     where:{id:"offline_"+adminShop},
+     data:{scope:"must-rollback-http-"+status},
+    });
+    return new Response("synthetic business error",{status});
+   },
+  });
+  assert.equal(refused.status,expected);
+  const sessionAfter=await db.session.findUnique({
+   where:{id:"offline_"+adminShop},
+  });
+  const lifecycleAfter=await db.builderShopInstallation.findUnique({
+   where:{shop:adminShop},
+  });
+  assert.equal(sessionAfter.scope,"write_products","An error response cannot commit a mutation");
+  assert.equal(lifecycleAfter.updatedAt.getTime(),preceding.updatedAt.getTime(),
+   "Transaction row-lock update must also roll back on error response");
+  if(status===500)assert.equal(await refused.text(),"");
+ }
+
  // An uninstall transaction acquires this same row, revokes generation and
  // deletes session, while an authenticated POST attempts to enter. The POST
  // must not execute ANY merchant callback after the uninstall commits.
