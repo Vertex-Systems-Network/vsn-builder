@@ -37,7 +37,7 @@ async function stop(){
 try{
  let ready=false;
  for(let i=0;i<90;i++){
-  if(worker.exitCode!==null)throw Error("workerd exited (status="+worker.exitCode+")");
+  if(worker.exitCode!==null)throw Error("workerd exited (status="+worker.exitCode+"), diagnostics: "+log.replace(/(?:token|secret|password)\\s*[:=]\\s*\\S+/gi,"[redacted]").slice(-3200));
   try{
    const rsp=await probe("/__vsn_local_workerd_check__");
    if(rsp.status===200){ready=true;break}
