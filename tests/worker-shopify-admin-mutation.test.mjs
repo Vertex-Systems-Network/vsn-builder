@@ -188,6 +188,39 @@ test("stale token discovered under lock rolls back installation-row update",asyn
  assert(!fx.actions.includes("commit"));
  assert.equal(fx.closes,1);
 });
+test("expired persisted offline token cannot start POST transaction",async()=>{
+ const fx=fixture({beforeTransaction:({stored})=>{
+  stored.expires=new Date("2020-01-01T00:00:00Z");
+ }});
+ let reached=false;
+ const response=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated(){reached=true;return new Response(null,{status:204})},
+ });
+ assert.equal(response.status,403);
+ assert.equal(reached,false);
+ assert(fx.actions.includes("lock-install"));
+ assert(fx.actions.includes("locked-session"));
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+});
+test("online POST session without explicit future expiry is denied even with valid token",async()=>{
+ const fx=fixture();
+ const res=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:async()=>{
+   const ctx=await fx.createSdkContext();
+   return {...ctx,shopify:{authenticate:{async admin(){
+    return {session:{...session,isOnline:true}};
+   }}},database:{
+    ...ctx.database,
+    session:{async findUnique(){return {...session,isOnline:true}}},
+   }};
+  },
+  async onAuthenticated(){throw Error("should not mutate")},
+ });
+ assert.equal(res.status,403);
+ assert.equal(fx.closes,1);
+});
 test("missing transaction cannot authenticate a mutation callback",async()=>{
  const fx=fixture({missingTx:true});
  const response=await acceptWorkerShopifyAdminMutation(request(),env,{
