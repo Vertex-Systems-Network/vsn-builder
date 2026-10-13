@@ -10,7 +10,7 @@ function fake(overrides={}) {
     GITHUB_EVENT_NAME:"workflow_dispatch",APP_ENV:"staging",
     NEON_PROJECT_ID:"shiny-violet-61219572",
     SHOPIFY_BILLING_TEST_MODE:"true",STAGING_MIGRATION_APPROVED:"true",
-    VSN_STAGING_BACKUP_EVIDENCE:"br-synthetic-reviewed-backup-124",
+    VSN_STAGING_BACKUP_EVIDENCE:"snap-green-bar-b3m1btfb",
     DATABASE_URL:`postgresql://synthetic:ci-only@${pooled}/disposable?sslmode=require`,
     DIRECT_URL:`postgresql://synthetic:ci-only@${hosted}/disposable?sslmode=require`,
     ...overrides,
@@ -30,6 +30,7 @@ test("Migration cannot run from unprotected development or production branches",
     {STAGING_MIGRATION_APPROVED:""},
     {VSN_STAGING_BACKUP_EVIDENCE:""},
     {VSN_STAGING_BACKUP_EVIDENCE:"br-square-mountain-b3ij6q2s"},
+    {VSN_STAGING_BACKUP_EVIDENCE:"snap-synthetic-reviewed-backup"},
   ])assert.equal(inspectStagingMigrationGate(fake(overrides)).ready,false,JSON.stringify(overrides));
 });
 test("Migration cannot target production compute, weak TLS or pooled direct URL",()=>{
