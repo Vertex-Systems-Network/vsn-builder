@@ -3,12 +3,12 @@ import { Check, Layers3, Sparkles, FlaskConical, Building2, ArrowRight, HelpCirc
 import { COMMERCIAL_PLANS, PLAN_ORDER, quotaLabel } from '../../../config/commercialPlans.js';
 import { LicenseSummary } from './License.jsx';
 
-const icons = { core: Layers3, pro: Sparkles, cro: FlaskConical, agency: Building2 };
+const icons = { starter: Layers3, sliver: Sparkles, gold: FlaskConical, platinum: Building2 };
 const accents = {
-  core: { color:'#6B7280', bg:'rgba(107,114,128,.10)' },
-  pro: { color:'var(--vsn-green-dark)', bg:'rgba(var(--vsn-accent-rgb),.12)' },
-  cro: { color:'#5C6AC4', bg:'rgba(92,106,196,.11)' },
-  agency: { color:'#7C3AED', bg:'rgba(124,58,237,.10)' },
+  starter: { color:'#6B7280', bg:'rgba(107,114,128,.10)' },
+  sliver: { color:'var(--vsn-green-dark)', bg:'rgba(var(--vsn-accent-rgb),.12)' },
+  gold: { color:'#5C6AC4', bg:'rgba(92,106,196,.11)' },
+  platinum: { color:'#7C3AED', bg:'rgba(124,58,237,.10)' },
 };
 
 const faqs = [
@@ -39,8 +39,8 @@ export default function Pricing({ darkMode, currentPlan, entitlements, billingUr
 
   return <div className="page-fade" style={{ padding:'28px 32px', maxWidth:1480, margin:'0 auto' }}>
     <div style={{ textAlign:'center', marginBottom:38 }}>
-      <h1 style={{ margin:0, fontSize:28, fontWeight:800, color:text }}>Free, Silver, Gold & Platinum</h1>
-      <p style={{ margin:'8px auto 0', fontSize:14, color:muted, maxWidth:720 }}>Your Shopify plans map directly to VSN entitlements. Every plan keeps the same visual widget library; capacity and advanced systems increase from Free through Platinum.</p>
+      <h1 style={{ margin:0, fontSize:28, fontWeight:800, color:text }}>Starter, Sliver, Gold & Platinum</h1>
+      <p style={{ margin:'8px auto 0', fontSize:14, color:muted, maxWidth:720 }}>Your Shopify plans map directly to VSN entitlements. Every plan keeps the same visual widget library; capacity and advanced systems increase from Starter through Platinum.</p>
       <div style={{ marginTop:18, fontSize:12, color:muted }}>Prices, trials, billing periods, upgrades and downgrades are confirmed in Shopify Admin.</div>
     </div>
 
@@ -54,8 +54,8 @@ export default function Pricing({ darkMode, currentPlan, entitlements, billingUr
         const Icon = icons[key];
         const accent = accents[key];
         const active = currentPlan?.key === key;
-        const popular = key === 'pro';
-        const paid = key !== 'core';
+        const popular = key === 'sliver';
+        const paid = true;
         const href = billingUrl || '';
         const shopifyHandle = pricing?.planHandles?.[key] || key;
         return <article key={key} style={{
@@ -76,7 +76,7 @@ export default function Pricing({ darkMode, currentPlan, entitlements, billingUr
           <div style={{ fontSize:12, color:muted, lineHeight:1.55, minHeight:57, marginTop:4 }}>{plan.description}</div>
           <div style={{ fontSize:10.5, color:muted, marginTop:6 }}>Shopify handle: <code>{shopifyHandle}</code></div>
           <div style={{ margin:'18px 0 4px', color:text }}>
-            {paid ? <><span style={{ fontSize:23, fontWeight:800 }}>Shopify priced</span><div style={{ fontSize:11.5, color:muted, marginTop:3 }}>Authoritative price shown in Shopify Admin</div></> : <><span style={{ fontSize:36, fontWeight:800 }}>$0</span><span style={{ fontSize:13, color:muted }}>/mo</span><div style={{ fontSize:11.5, color:muted, marginTop:2 }}>Free entitlement profile</div></>}
+            <><span style={{ fontSize:28, fontWeight:800 }}>${"$"}{plan.monthlyUsd}</span><span style={{ fontSize:13, color:muted }}>/mo</span><div style={{ fontSize:11.5, color:muted, marginTop:3 }}>{plan.trialDays}-day free trial{plan.annualUsd ? ` · ${plan.annualUsd}/year` : ''}</div><div style={{ fontSize:11.5, color:muted, marginTop:3 }}>Shopify Admin confirms the actual charge</div></>
           </div>
           <div style={{ marginTop:18 }}>
             {active ? <div style={{ width:'100%', padding:'10px', borderRadius:9, border:`1px solid ${border}`, textAlign:'center', fontSize:12.5, fontWeight:700, color:muted }}>Current plan</div>
