@@ -4,6 +4,8 @@ import { createElement } from "react";
 import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "../app/services/shopify-worker-sdk-context.js";
+import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
+import { persistWorkerShopifySessionWithGeneration } from "../app/services/worker-shopify-install-session-storage.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
 import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
 import { renderWorkerDocument } from "../app/services/worker-ssr-webstream.js";
@@ -151,6 +153,63 @@ export default {
     }catch(error){
       checks.wrongProjectUrlDeniedBeforeSdkStorage=!touchedForbiddenStorage &&
         error?.code==="VSN_WORKER_SHOPIFY_BOOTSTRAP_BLOCKED";
+    }
+    // The exact official PrismaSessionStorage implementation persists an
+    // offline Shopify session and its installation generation in a single
+    // synthetic transaction INSIDE workerd (no Neon query/merchant API).
+    try {
+      let savedRow=null,savedInstall=null,transactionCommits=0;
+      const syntheticDb={
+        async $transaction(work) {
+          let row=savedRow?{...savedRow}:null;
+          let generation=savedInstall?{...savedInstall}:null;
+          const tx={
+            builderShopInstallation:{
+              async upsert({where,create,update}){
+                generation=generation?{...generation,...update}:{...create};
+                return {...generation};
+              },
+              async updateMany({where,data}){
+                if(!generation || generation.shop!==where.shop)return {count:0};
+                generation={...generation,...data};return {count:1};
+              },
+              async findUnique({where}){
+                return generation?.shop===where.shop?{...generation}:null;
+              },
+            },
+            session:{
+              async count(){return row?1:0},
+              async findUnique({where}){return row?.id===where.id?{...row}:null},
+              async upsert({where,update,create}){
+                row=row?.id===where.id?{...update}:{...create};
+                return {...row};
+              },
+            },
+          };
+          const result=await work(tx);
+          savedRow=row;savedInstall=generation;transactionCommits++;
+          return result;
+        },
+      };
+      const shop="ci-offline-install.myshopify.com";
+      const session={
+        id:"offline_"+shop,shop,state:"",isOnline:false,
+        scope:"read_products",accessToken:"synthetic-workerd-only-access-token",
+        toObject(){return {};},
+      };
+      const saved=await persistWorkerShopifySessionWithGeneration(
+        session,syntheticDb,{
+          SessionStorage:PrismaSessionStorage,
+          clock:()=>new Date("2026-10-13T10:00:00Z"),
+        }
+      );
+      checks.officialShopifyOfflineSessionFenced=saved===true &&
+        transactionCommits===1 && savedInstall?.shop===shop &&
+        savedInstall?.uninstalledAt===null &&
+        savedRow?.id===session.id &&
+        savedRow?.accessToken===session.accessToken;
+    }catch{
+      checks.officialShopifyOfflineSessionFenced=false;
     }
     // Synthetic signed webhook, verified by both WebCrypto and the actual
     // official Shopify SDK inside real Cloudflare Workerd. This never touches
