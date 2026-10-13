@@ -101,7 +101,7 @@ test("invalid environment fails before opening storage or parsing body",async()=
   initialized=true;return sdkContext(r,e,newStorage());
  }}).then(()=>null,e=>e);
  assert.equal(err.code,"VSN_WORKER_WEBHOOK_UNAVAILABLE");
- assert.equal(initialized,true,"The injected bootstrap is responsible for its own identity validation");
+ assert.equal(initialized,false,"Invalid hosted identity must not start session/database factory");
  assert(!err.message.includes(env.SHOPIFY_API_SECRET));
 });
 test("close executes on internal SDK rejection and sanitizes errors",async()=>{

@@ -2,6 +2,8 @@
 // Never roll custom HMAC verification, trust request headers as authentication,
 // or expose the Shopify Admin/session context after the database is closed.
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
+import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
+import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 
 export async function verifyWorkerShopifyWebhook(request, env, {
   createSdkContext = createWorkerShopifySdkContext,
@@ -9,6 +11,12 @@ export async function verifyWorkerShopifyWebhook(request, env, {
   if (!(request instanceof Request)) throw new TypeError("Shopify webhook requires a Web Request");
   let context;
   try {
+    // Validate both protected deployment identities before ANY injected
+    // session/database factory can be invoked, even in alternate adapters.
+    if (!inspectWorkerShopifyConfiguration(request, env).ready ||
+        !inspectWorkerNeonEnvironment(env).ready) {
+      throw new Error("Invalid Worker Shopify/Neon deployment identity");
+    }
     context = await createSdkContext(request, env);
     if (!context || typeof context.shopify?.authenticate?.webhook !== "function" ||
         typeof context.close !== "function") {
