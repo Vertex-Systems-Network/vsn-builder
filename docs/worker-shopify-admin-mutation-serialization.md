@@ -13,6 +13,14 @@
 
 The previous `acceptWorkerShopifyAdminRequest` function is now **GET-only**. A POST sent there returns 405 without opening the database; a GET sent to the mutation helper also returns 405. This prevents the common mistake of routing write requests through a read-only session-check path.
 
+## Failed HTTP responses must roll back
+
+A Prisma interactive transaction **commits on ordinary callback return**, even if the callback returns an HTTP 409 Conflict, 422 validation failure or 500 server-error `Response` after writing merchant data. Shopify authentication does not prevent that consistency failure.
+
+The mutation gateway now **awaits** the callback within the transaction and throws a private `RollbackResponse` for all HTTP `>=400` results. This makes Prisma roll back both merchant data changes and the installation-row lock/update. Expected 4xx business responses can be returned unchanged after rollback, with `no-store` and `nosniff` headers; 5xx responses are sanitized to a bodyless 503 to avoid leaking database error details. A callback returning a non-`Response` value also triggers rollback + generic 503. Stale/revoked generation or token checks use the same rollback path. The official SDK's thrown reauthentication redirects are still propagated unchanged, after rollback when necessary.
+
+The local PostgreSQL acceptance explicitly verifies that **actual Session fields and BuilderShopInstallation.updatedAt remain unmodified** following a callback that writes through Prisma but returns a 409, 422 or 500. In-memory unit tests and the local Cloudflare Workerd smoke test independently enforce the rule. Successful 2xx and intentional redirect responses remain valid commits where appropriate.
+
 ## Tests
 
 - `tests/worker-shopify-admin-mutation.test.mjs`: synthetic SDK and fake Prisma transactions, verifies required row lock and session recheck, token rotated after initial read, uninstall between initial read/transaction, missing transaction and sanitized errors, no cross-merchant writes.
