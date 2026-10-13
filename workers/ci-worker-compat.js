@@ -274,10 +274,34 @@ export default {
       });
       checks.adminReturnedRedirectRollback=deniedRedirect.status===503 &&
         performed===1 && committed===1 && lockClaims===4 && closed===5;
+      const broken=await acceptWorkerShopifyAdminMutation(req,sdkEnv,{
+        createSdkContext:factory(),
+        async onAuthenticated(){return new Response(new ReadableStream({
+          start(controller){
+            controller.enqueue(new TextEncoder().encode("partial"));
+            controller.error(new Error("stream-failed"));
+          },
+        }),{status:200})},
+      });
+      const afterBroken=committed===1 && broken.status===503;
+      const goodStream=await acceptWorkerShopifyAdminMutation(req,sdkEnv,{
+        createSdkContext:factory(),
+        async onAuthenticated(){return new Response(new ReadableStream({
+          start(controller){
+            controller.enqueue(new TextEncoder().encode("done"));
+            controller.close();
+          },
+        }),{status:200})},
+      });
+      checks.adminPostResponseStreamAtomic=afterBroken &&
+        goodStream.status===200 && (await goodStream.text())==="done" &&
+        goodStream.headers.get("cache-control")==="no-store" &&
+        committed===2 && lockClaims===6 && closed===7;
     }catch{checks.adminMutationRequiresLockedSession=false;
       checks.adminFailedMutationRollback=false;
       checks.adminExpiredOfflineSessionDenied=false;
-      checks.adminReturnedRedirectRollback=false}
+      checks.adminReturnedRedirectRollback=false;
+      checks.adminPostResponseStreamAtomic=false}
     // The exact official PrismaSessionStorage implementation persists an
     // offline Shopify session and its installation generation in a single
     // synthetic transaction INSIDE workerd (no Neon query/merchant API).
