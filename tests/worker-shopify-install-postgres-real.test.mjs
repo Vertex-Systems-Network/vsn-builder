@@ -266,6 +266,68 @@ test("real PostgreSQL admin POST holds row lock and commits only authenticated m
   where:{id:"offline_"+adminShop},
  })).scope,"immutable-response-committed");
 
+ // A callback can return a 200 Response whose body stream fails AFTER
+ // the callback returns. Always read/validate the body before DB COMMIT.
+ const failedBody=new ReadableStream({
+  start(controller){
+   controller.enqueue(new TextEncoder().encode("partial"));
+   controller.error(new Error("postgresql://secret-never-to-expose"));
+  },
+ });
+ const streamedFailure=await acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:"offline_"+adminShop},
+    data:{scope:"failed-stream-must-not-persist"},
+   });
+   return new Response(failedBody,{status:200});
+  },
+ });
+ assert.equal(streamedFailure.status,503);
+ assert.equal(await streamedFailure.text(),"");
+ assert.equal((await db.session.findUnique({
+  where:{id:"offline_"+adminShop},
+ })).scope,"immutable-response-committed");
+ const oversized=await acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:"offline_"+adminShop},
+    data:{scope:"large-stream-must-not-persist"},
+   });
+   return new Response(new Uint8Array(256*1024+1),{status:200});
+  },
+ });
+ assert.equal(oversized.status,503);
+ assert.equal((await db.session.findUnique({
+  where:{id:"offline_"+adminShop},
+ })).scope,"immutable-response-committed");
+
+ // A small POST success body must still commit cleanly with no-store
+ // headers, including when it originated as a streamed Fetch Response.
+ const small=await acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:"offline_"+adminShop},
+    data:{scope:"stream-success-committed"},
+   });
+   return new Response(new ReadableStream({
+    start(controller){
+     controller.enqueue(new TextEncoder().encode("saved"));
+     controller.close();
+    },
+   }),{status:200});
+  },
+ });
+ assert.equal(small.status,200);
+ assert.equal(await small.text(),"saved");
+ assert.equal(small.headers.get("cache-control"),"no-store");
+ assert.equal((await db.session.findUnique({
+  where:{id:"offline_"+adminShop},
+ })).scope,"stream-success-committed");
+
  // Expiring offline tokens are used by Shopify. The persisted token can
  // expire independently of the SDK-authenticated ID token, so a previously
  // valid session must immediately lose both GET and POST privileges.
