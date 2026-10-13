@@ -3,7 +3,7 @@ on:
   push:
     branches: [feat/builder-local-workerd-sdk-compat-20261013, fix/builder-workerd-runtime-probe-20261013, feat/builder-workerd-neon-client-lifecycle-20261013]
   pull_request:
-    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013]
+    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013, test/builder-workerd-signed-shopify-webhook-20261013]
     paths:
       - "workers/**"
       - "app/services/**"
@@ -12,6 +12,8 @@ on:
       - "tests/worker-real-shopify-sdk.test.mjs"
       - "tests/worker-shopify-webhook-gate.test.mjs"
       - "scripts/dev-local-workerd-smoke.mjs"
+      - "scripts/environment-contract.mjs"
+      - "tests/hosted-neon-url-policy.test.mjs"
       - ".github/workflows/workerd-local-compatibility.yml"
 permissions:
   contents: read
@@ -49,6 +51,7 @@ jobs:
         run: node scripts/verify-prisma-worker-client.mjs --generated
       - name: Recheck Shopify SDK and Neon factory Node compatibility
         run: |
+          node --test tests/hosted-neon-url-policy.test.mjs
           node --test tests/worker-neon-factory.test.mjs
           node --test tests/worker-real-shopify-sdk.test.mjs
           node --test tests/worker-shopify-webhook-gate.test.mjs
