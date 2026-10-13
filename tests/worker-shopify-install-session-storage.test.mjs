@@ -95,24 +95,39 @@ test("same-token offline refresh never advances install generation",async()=>{
  await persist(offline(),fx,date("2026-10-13T11:00:00.000Z"));
  assert.equal(fx.lifecycle.get(shop).installedAt.getTime(),first);
 });
-test("token rotation advances the generation atomically and preserves tenant isolation",async()=>{
+test("token rotation updates official token but DOES NOT counterfeit installation generation",async()=>{
  const fx=database();
  await persist(offline(),fx);
  await persist(offline("another-shop-token","two.myshopify.com"),fx);
  const previous=fx.lifecycle.get(shop).installedAt.getTime();
  await persist(offline("rotated-token"),fx,date("2026-10-13T12:00:00.000Z"));
- assert(fx.lifecycle.get(shop).installedAt.getTime()>previous);
+ assert.equal(fx.lifecycle.get(shop).installedAt.getTime(),previous);
  assert.equal(fx.sessions.get("offline_"+shop).accessToken,"rotated-token");
  assert.equal(fx.sessions.get("offline_two.myshopify.com").accessToken,"another-shop-token");
 });
-test("reinstall advances uninstalled shop generation even if offline token is unchanged",async()=>{
+test("old SDK storeSession cannot resurrect an uninstalled shop",async()=>{
  const fx=database();
  await persist(offline(),fx);
- fx.lifecycle.get(shop).uninstalledAt=date("2026-10-13T11:00:00.000Z");
- const prior=fx.lifecycle.get(shop).installedAt.getTime();
- await persist(offline(),fx,date("2026-10-13T12:00:00.000Z"));
- assert.equal(fx.lifecycle.get(shop).uninstalledAt,null);
- assert(fx.lifecycle.get(shop).installedAt.getTime()>prior);
+ const uninstallDate=date("2026-10-13T11:00:00.000Z");
+ fx.lifecycle.get(shop).uninstalledAt=uninstallDate;
+ const original=fx.lifecycle.get(shop).installedAt.getTime();
+ for(const token of ["synthetic-token-1","rotated-after-uninstall"]){
+  await assert.rejects(persist(offline(token),fx,date("2026-10-13T12:00:00.000Z")),
+   {code:"VSN_WORKER_INSTALL_SESSION_BLOCKED"});
+ }
+ assert.equal(fx.lifecycle.get(shop).uninstalledAt,uninstallDate);
+ assert.equal(fx.lifecycle.get(shop).installedAt.getTime(),original);
+ assert.equal(fx.sessions.get("offline_"+shop).accessToken,"synthetic-token-1");
+ assert.equal(fx.rollbackCount,2);
+});
+test("existing orphaned offline sessions require separately verified installation migration",async()=>{
+ const fx=database();
+ await persist(offline(),fx);
+ fx.lifecycle.delete(shop);
+ await assert.rejects(persist(offline("cannot-bootstrap-orphan"),fx),
+  {code:"VSN_WORKER_INSTALL_SESSION_BLOCKED"});
+ assert.equal(fx.lifecycle.size,0);
+ assert.equal(fx.sessions.get("offline_"+shop).accessToken,"synthetic-token-1");
 });
 test("official online session is blocked without an active installed shop row",async()=>{
  const fx=database();
@@ -150,6 +165,7 @@ test("session failures are blocked without a valid transactional installation mo
   {...data,shop:"invalid.example.net"},
   {...data,accessToken:""},
   {...data,isOnline:"no"},
+  {...online(),id:"offline_"+shop},
  ])await assert.rejects(
   persistWorkerShopifySessionWithGeneration(bad,database().client,{SessionStorage:PrismaSessionStorage}),
   {code:"VSN_WORKER_INSTALL_SESSION_BLOCKED"}
