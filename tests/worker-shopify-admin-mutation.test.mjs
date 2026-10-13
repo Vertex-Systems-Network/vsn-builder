@@ -135,6 +135,59 @@ test("token rotated after initial authentication but before lock is refused",asy
  assert(fx.actions.includes("locked-session"));
  assert(!fx.actions.includes("write"));
 });
+test("POST 422/409/500 callbacks roll back all staged writes instead of committing",async()=>{
+ for(const [status,expected] of [[422,422],[409,409],[500,503]]){
+  const fx=fixture();
+  const response=await acceptWorkerShopifyAdminMutation(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated({transaction}){
+    await transaction.session.update({
+     where:{id:session.id},data:{scope:"must-not-survive-"+status},
+    });
+    return new Response(status===500?"private-database-details":"Invalid edit",{
+     status,headers:{"content-type":"text/plain"},
+    });
+   },
+  });
+  assert.equal(response.status,expected);
+  assert.equal(response.headers.get("cache-control"),"no-store");
+  assert.equal(response.headers.get("x-content-type-options"),"nosniff");
+  assert.equal(fx.stored.scope,undefined,"HTTP error must roll back staged writes");
+  assert(!fx.actions.includes("commit"),"error response must never commit");
+  assert.equal(fx.closes,1);
+  if(status===500)assert.equal(await response.text(),"");
+  else assert.equal(await response.text(),"Invalid edit");
+ }
+});
+test("POST invalid callback result also rolls back and never leaks transaction",async()=>{
+ const fx=fixture();
+ const response=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"never-commit"},
+   });
+   return {status:200};
+  },
+ });
+ assert.equal(response.status,503);
+ assert.equal(fx.stored.scope,undefined);
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+});
+test("stale token discovered under lock rolls back installation-row update",async()=>{
+ const fx=fixture({beforeTransaction:({stored})=>{
+  stored.accessToken="rotated-in-another-transaction";
+ }});
+ const result=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated(){throw Error("must never write")},
+ });
+ assert.equal(result.status,403);
+ assert(fx.actions.includes("lock-install"));
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+});
 test("missing transaction cannot authenticate a mutation callback",async()=>{
  const fx=fixture({missingTx:true});
  const response=await acceptWorkerShopifyAdminMutation(request(),env,{
