@@ -10,6 +10,8 @@ on:
       - "app/config/**"
       - "app/routes/app.plans.jsx"
       - "tests/builder-four-paid-plans.test.mjs"
+      - "scripts/milestone-q5*-*.mjs"
+      - "scripts/phase16-commercialization-audit.mjs"
       - "config/deployment/environments.json"
       - "tests/worker-neon-factory.test.mjs"
       - "tests/worker-real-shopify-sdk.test.mjs"
@@ -117,6 +119,14 @@ jobs:
           node scripts/phase1-cloud-observation-check.mjs
           node scripts/phase-closure-check.mjs --format=markdown
           node scripts/verify-prisma-environment-parity.mjs
+      - name: Verify paid-only Q5 billing lifecycle and commercialization regressions
+        run: |
+          node scripts/milestone-q51-shopify-app-pricing-foundation-audit.mjs
+          node scripts/milestone-q52-shopify-subscription-sync-audit.mjs
+          node scripts/milestone-q53-entitlement-engine-audit.mjs
+          node scripts/milestone-q54-billing-lifecycle-ux-audit.mjs
+          node scripts/milestone-q55-billing-production-lifecycle-audit.mjs
+          node scripts/phase16-commercialization-audit.mjs
       - name: Certify actual Prisma SQLite install generation, rollback and stale-session denial
         env:
           DATABASE_URL: file:./worker-install-fence-ci.sqlite
