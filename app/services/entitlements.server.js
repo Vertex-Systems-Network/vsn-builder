@@ -1,4 +1,4 @@
-import { COMMERCIAL_PLANS, normalizePlanKey, planAtLeast } from "../config/commercialPlans.js";
+import { COMMERCIAL_PLANS, UNSUBSCRIBED_PLAN, normalizePlanKey, planAtLeast } from "../config/commercialPlans.js";
 import { ENTITLEMENT_FEATURES, ENTITLEMENT_QUOTAS, ENTITLEMENT_VERSION, getEntitlementFeatureDefinition, getEntitlementQuotaDefinition } from "../config/entitlements.js";
 import { subscriptionMirrorIsTrusted } from "./shopify-subscription.server.js";
 
@@ -55,28 +55,39 @@ export async function resolveEntitlementPlan(db, shop, { now = new Date() } = {}
   const mirrorTrusted = !developerMode && subscriptionMirrorIsTrusted(row, now);
   const verifiedPaidState = mirrorTrusted && ["active", "trialing", "canceling"].includes(String(row?.status || ""));
 
-  let key = "core";
-  let source = "production-core-fallback";
+  let key = "inactive";
+  let source = "production-no-subscription";
   let entitlementVerified = false;
 
   if (developerMode) {
-    key = developerActive ? normalizePlanKey(row.planKey) : (configuredDefault || "agency");
-    source = developerActive ? "developer-simulation" : configuredDefault ? "developer-default" : "developer-agency-default";
+    // Developer simulation has no merchant billing effects. Legacy keys are
+    // normalized to the public paid IDs, never to a public Free tier.
+    key = developerActive ? normalizePlanKey(row.planKey) : (configuredDefault || "platinum");
+    source = developerActive ? "developer-simulation" : configuredDefault ? "developer-default" : "developer-platinum-default";
     entitlementVerified = developerActive;
   } else if (verifiedPaidState) {
-    key = normalizePlanKey(row.planKey);
-    source = "shopify-verified";
-    entitlementVerified = true;
+    const candidate = normalizePlanKey(row.planKey);
+    // A verified subscription cannot convert an old Free or unknown handle
+    // into an authorized paid plan. Trust the actual handle, not only the row.
+    const validHandle = row?.planHandle && candidate !== "inactive";
+    const handleMatch = validHandle && (await import("./shopify-app-pricing.server.js"))
+      .resolveInternalPlanKeyFromHandle(row.planHandle) === candidate;
+    if (handleMatch) {
+      key = candidate;
+      source = "shopify-verified";
+      entitlementVerified = true;
+    } else {
+      source = "production-unrecognized-paid-contract";
+    }
   } else {
-    // Production must fail closed. VSN_DEFAULT_PLAN is intentionally ignored here;
-    // a server environment variable can never grant a paid merchant entitlement.
-    key = "core";
-    source = mirrorTrusted ? "shopify-verified-core" : "production-core-fallback";
+    // Without a verified paid Shopify contract, all features and quotas are
+    // disabled. Missing or canceled billing is NOT a Starter subscription.
+    source = mirrorTrusted ? "shopify-verified-inactive" : "production-no-subscription";
     entitlementVerified = mirrorTrusted;
   }
 
   return {
-    ...COMMERCIAL_PLANS[key],
+    ...(COMMERCIAL_PLANS[key] || UNSUBSCRIBED_PLAN),
     key,
     subscription: row || null,
     entitlementVerified,
@@ -127,8 +138,8 @@ export function getFeatureDecisionFromPlan(plan, featureKey) {
     allowed,
     code: allowed ? "VSN_ENTITLEMENT_ALLOWED" : "VSN_FEATURE_NOT_INCLUDED",
     requiredPlan: definition.requiredPlan,
-    planKey: plan?.key || "core",
-    planName: plan?.name || "Free",
+    planKey: plan?.key || "inactive",
+    planName: plan?.name || "No active subscription",
     source: plan?.entitlementSource || "unknown",
     verified: Boolean(plan?.entitlementVerified),
     message: allowed ? null : `${definition.label} is not included in the ${plan?.name || "current"} plan. Choose ${COMMERCIAL_PLANS[normalizePlanKey(definition.requiredPlan)]?.name || definition.requiredPlan} or higher in Plans & License.`,
@@ -144,7 +155,7 @@ export function getQuotaDecisionFromUsage(plan, quotaKey, used, { extra = 1, res
   const unlimited = limit < 0;
   const allowed = unlimited || normalizedUsed + normalizedExtra <= limit;
   const unavailable = limit === 0;
-  const planName = plan?.name || "Free";
+  const planName = plan?.name || "No active subscription";
   const requiredPlanName = COMMERCIAL_PLANS[normalizePlanKey(definition.requiredPlan)]?.name || definition.requiredPlan;
   const message = allowed ? null : unavailable
     ? `${definition.label.replace(/^./, (c) => c.toUpperCase())} are not included in the ${planName} plan. Choose ${requiredPlanName} or higher in Plans & License.`
@@ -156,7 +167,7 @@ export function getQuotaDecisionFromUsage(plan, quotaKey, used, { extra = 1, res
     allowed,
     code: allowed ? "VSN_ENTITLEMENT_ALLOWED" : unavailable ? "VSN_QUOTA_NOT_INCLUDED" : "VSN_QUOTA_EXCEEDED",
     requiredPlan: definition.requiredPlan,
-    planKey: plan?.key || "core",
+    planKey: plan?.key || "inactive",
     planName,
     source: plan?.entitlementSource || "unknown",
     verified: Boolean(plan?.entitlementVerified),
@@ -171,7 +182,7 @@ export function getQuotaDecisionFromUsage(plan, quotaKey, used, { extra = 1, res
   };
 }
 
-export function getMinimumPlanDecisionFromPlan(plan, requiredPlan = "core", { label = "This feature" } = {}) {
+export function getMinimumPlanDecisionFromPlan(plan, requiredPlan = "starter", { label = "This feature" } = {}) {
   const normalizedRequired = normalizePlanKey(requiredPlan);
   const allowed = planAtLeast(plan, normalizedRequired);
   const requiredPlanName = COMMERCIAL_PLANS[normalizedRequired]?.name || normalizedRequired;
@@ -182,15 +193,15 @@ export function getMinimumPlanDecisionFromPlan(plan, requiredPlan = "core", { la
     allowed,
     code: allowed ? "VSN_ENTITLEMENT_ALLOWED" : "VSN_PLAN_TIER_REQUIRED",
     requiredPlan: normalizedRequired,
-    planKey: plan?.key || "core",
-    planName: plan?.name || "Free",
+    planKey: plan?.key || "inactive",
+    planName: plan?.name || "No active subscription",
     source: plan?.entitlementSource || "unknown",
     verified: Boolean(plan?.entitlementVerified),
-    message: allowed ? null : `${label} requires ${requiredPlanName} or higher. Current plan: ${plan?.name || "Free"}.`,
+    message: allowed ? null : `${label} requires ${requiredPlanName} or higher. Current plan: ${plan?.name || "No active subscription"}.`,
   };
 }
 
-export async function getMinimumPlanDecision(db, shop, requiredPlan = "core", options = {}) {
+export async function getMinimumPlanDecision(db, shop, requiredPlan = "starter", options = {}) {
   const plan = options.plan || await resolveEntitlementPlan(db, shop, options);
   return getMinimumPlanDecisionFromPlan(plan, requiredPlan, options);
 }
