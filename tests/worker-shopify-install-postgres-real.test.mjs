@@ -5,7 +5,7 @@ import prismaCloud from "../generated/prisma-cloud/index.js";
 import {PrismaSessionStorage} from "@shopify/shopify-app-session-storage-prisma";
 import {persistWorkerShopifySessionWithGeneration} from "../app/services/worker-shopify-install-session-storage.js";
 import {revokeVerifiedWorkerShopifySessions} from "../app/services/worker-shopify-uninstall-session-revoke.js";
-import {acceptWorkerShopifyAdminRequest} from "../app/services/worker-shopify-admin-gate.js";
+import {acceptWorkerShopifyAdminRequest,acceptWorkerShopifyAdminMutation} from "../app/services/worker-shopify-admin-gate.js";
 import {SHOPIFY_EXPECTED_SCOPES} from "../app/config/shopifyIntegration.js";
 
 // This test is ONLY permitted against the disposable GitHub Actions postgres
@@ -24,7 +24,8 @@ const shop="vsn-pg-ci-first.myshopify.com";
 const other="vsn-pg-ci-other.myshopify.com";
 const rollback="vsn-pg-ci-rollback.myshopify.com";
 const race="vsn-pg-ci-race.myshopify.com";
-const shops=[shop,other,rollback,race];
+const adminShop="vsn-pg-ci-admin-mutation.myshopify.com";
+const shops=[shop,other,rollback,race,adminShop];
 const installedAt=new Date("2026-10-13T10:00:00.000Z");
 const uninstalledAt=new Date("2026-10-13T11:00:00.000Z");
 const offline=(name,accessToken="fake-ci-token")=>({
@@ -142,6 +143,93 @@ test("real PostgreSQL installation/session rows gate Shopify SDK authenticated a
   async onAuthenticated(){throw Error("stale token authorized")},
  });
  assert.equal(old.status,403);
+});
+test("real PostgreSQL admin POST holds row lock and commits only authenticated merchant session mutations",async()=>{
+ await persist(adminShop,"admin-atomic-token");
+ const e={
+  APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",
+  NEON_PROJECT_ID:"shiny-violet-61219572",SHOPIFY_BILLING_TEST_MODE:"true",
+  SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"synthetic-admin-ci-secret",
+  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+  SHOPIFY_APP_URL:"https://staging.builder.example.org",
+  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
+  DATABASE_URL:"postgresql://fake:test@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/fake?sslmode=require",
+ };
+ const req=new Request(e.SHOPIFY_APP_URL+"/app/pages?shop="+adminShop,{method:"POST"});
+ const auth={
+  id:"offline_"+adminShop,shop:adminShop,
+  isOnline:false,accessToken:"admin-atomic-token",
+ };
+ const connection=()=>({
+  database:db,
+  shopify:{authenticate:{async admin(){return {session:{...auth}}}}},
+  async close(){},
+ });
+ const options={
+  createSdkContext:async()=>connection(),
+  async onAuthenticated({shop:tenant,transaction,context}){
+   assert.equal(tenant,adminShop);
+   assert.equal(context,undefined);
+   await transaction.session.update({
+    where:{id:"offline_"+adminShop},data:{scope:"write_products"},
+   });
+   return new Response(null,{status:204});
+  },
+ };
+ const accepted=await acceptWorkerShopifyAdminMutation(req,e,options);
+ assert.equal(accepted.status,204);
+ assert.equal((await db.session.findUnique({where:{id:"offline_"+adminShop}})).scope,"write_products");
+
+ const reverted=await acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:"offline_"+adminShop},data:{scope:"rollback-should-not-commit"},
+   });
+   throw Error("private-neon-connection");
+  },
+ });
+ assert.equal(reverted.status,503);
+ assert.equal((await db.session.findUnique({where:{id:"offline_"+adminShop}})).scope,"write_products");
+
+ // An uninstall transaction acquires this same row, revokes generation and
+ // deletes session, while an authenticated POST attempts to enter. The POST
+ // must not execute ANY merchant callback after the uninstall commits.
+ let release,signal;
+ const acquired=new Promise(resolve=>{signal=resolve});
+ const held=db.$transaction(async transaction=>{
+  await transaction.builderShopInstallation.updateMany({
+   where:{shop:adminShop,uninstalledAt:null},
+   data:{updatedAt:new Date("2026-10-13T10:55:00Z")},
+  });
+  signal();
+  await new Promise(resolve=>{release=resolve});
+  await transaction.builderShopInstallation.updateMany({
+   where:{shop:adminShop,uninstalledAt:null},
+   data:{
+    uninstalledAt:new Date("2026-10-13T11:00:00Z"),
+    lastUninstallWebhookId:"ci-admin-mutation-uninstall",
+   },
+  });
+  await transaction.session.deleteMany({where:{shop:adminShop}});
+ },{timeout:8000,maxWait:5000});
+ await acquired;
+ let called=false,settled=false;
+ const pending=acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,
+  async onAuthenticated(){called=true;return new Response(null,{status:204})},
+ }).then(response=>{settled=true;return response});
+ try{
+  await sleep(150);
+  assert.equal(called,false);
+  assert.equal(settled,false);
+ }finally{
+  release();
+  await held;
+ }
+ assert.equal((await pending).status,403);
+ assert.equal(called,false,"Mutation after committed uninstall must never run");
+ assert.equal(await db.session.count({where:{shop:adminShop}}),0);
 });
 test("uninstall updateMany waits for real PostgreSQL row lock before deleting only target tenant",async()=>{
  let grantLock;
