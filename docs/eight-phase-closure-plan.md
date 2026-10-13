@@ -60,6 +60,10 @@ They require the tier's *actual* environment variables (never check secrets into
 
 Phase 1 stays **4/7 evidence-tracked; NOT closed**, until separately authenticated Shopify registration, GitHub secret bindings/protection and actual protected tier-specific preflight are verified. Code having an identity preflight does not make its real invocation passed.
 
+## Full-hosted versus Phase 1 identity-only parity (2026-10-14)
+
+A code review found that `environment-contract.mjs` enforced `NEON_PROJECT_ID` and `CLOUDFLARE_WORKER_NAME` **only for** `--identity-only`, so the nominally stricter full hosted preflight was actually weaker for endpoint resource identity. It also required neither all three Shopify app IDs nor their complete uniqueness (and used case-sensitive comparisons that could miss a hexadecimal uppercase alias). Both modes now apply the same exact target Neon/Worker and three-way Shopify Client ID isolation checks before returning success; the full mode additionally requires Phase 3/4 schema/runtime. Synthetic positive and negative regression tests prove this parity without accessing hosted accounts. No Partner ownership, GitHub Environment secret/policy source or actual credential-executed protected run is certified. **Phase 1 remains 4/7, IN PROGRESS.**
+
 ## Canonical hosted billing setting checked in both local and protected preflights (2026-10-14)
 
 A repository CLI audit found that its Production `isTrue(flag) === false` test also passed arbitrary non-true strings (e.g. `off`, `garbage`, `0`), despite the protected inline GitHub validator already requiring the exact string `false`. The repository Staging/Production `--identity-only` and full preflight now reject *all* noncanonical values: exactly `true` for Staging, exactly `false` for Production. Node regression fixtures exercise invalid/empty values for both tiers without any live Shopify/Neon/Cloudflare access. This strengthens Phase 1 configuration checks only; actual protected GitHub Environment credential execution and Shopify Partner ownership are still missing, so **Phase 1 remains 4/7 and OPEN**.
