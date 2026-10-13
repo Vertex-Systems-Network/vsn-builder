@@ -1,0 +1,67 @@
+name: One-Time GraphQL CVE Lockfile Remediation (No Deploy)
+on:
+  push:
+    branches: [fix/builder-dev-graphql-tools-cve-20261013]
+permissions:
+  contents: write
+concurrency:
+  group: builder-dev-graphql-security-lockfile
+  cancel-in-progress: false
+jobs:
+  regenerate-and-prove:
+    name: Patch GraphQL Tools safely on feature branch
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      APP_ENV: development
+      DATABASE_URL: file:./ci.sqlite
+      SHOPIFY_API_KEY: '0123456789abcdef0123456789abcdef'
+      SHOPIFY_API_SECRET: synthetic-ci-only-shopify-secret
+      SHOPIFY_APP_URL: http://127.0.0.1:3473
+    steps:
+      - name: Assert precise repository and disposable feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "Vertex-Systems-Network/vsn-builder"
+          test "$GITHUB_REF" = "refs/heads/fix/builder-dev-graphql-tools-cve-20261013"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Re-resolve only npm lock metadata without scripts
+        run: npm install --package-lock-only --ignore-scripts --no-fund --no-audit
+      - name: Clean reproducible dependency installation
+        run: npm ci
+      - name: Verify no vulnerable GraphQL Tools version remains
+        run: node scripts/check-patched-graphql-tools.mjs
+      - name: Verify real Shopify GraphQL codegen configuration compatibility
+        run: node scripts/check-shopify-graphql-codegen.mjs
+      - name: Preserve baseline source-security and app typecheck
+        run: |
+          node scripts/p11-runtime-parse-graphql-audit.mjs
+          npm run typecheck
+      - name: Block production dependency vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
+      - name: Build actual React Router server
+        run: npm run build
+      - name: Commit only audited lockfile to isolated feature branch
+        env:
+          CI_PUSH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add -- package-lock.json
+          test "$(git diff --cached --name-only)" = "package-lock.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(lock): pin patched GraphQL Tools utility across codegen"
+          header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$CI_PUSH_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=$header" push origin HEAD:refs/heads/fix/builder-dev-graphql-tools-cve-20261013
