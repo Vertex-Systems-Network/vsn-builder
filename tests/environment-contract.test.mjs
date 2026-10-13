@@ -57,7 +57,7 @@ function hostedFixture(tier, overrides={}) {
   SHOPIFY_BILLING_TEST_MODE:staging?"true":"false",
   SHOPIFY_API_KEY:id,
   SHOPIFY_API_SECRET:"ci-synthetic-not-a-real-shopify-secret",
-  SHOPIFY_APP_URL:staging?"https://staging.builder.example.org":"https://builder.example.org",
+  SHOPIFY_APP_URL:staging?"https://builder-staging.synthetic.dev":"https://builder-live.synthetic.dev",
   SHOPIFY_PRODUCTION_CLIENT_ID:staging?"c".repeat(32):id,
   DATABASE_URL:`postgresql://ci_user:ci_password@${pooled}/${databaseName}?sslmode=require`,
   DIRECT_URL:`postgresql://ci_user:ci_password@${endpoint}/${databaseName}?sslmode=require`,
@@ -78,6 +78,30 @@ test("Phase 1 Staging and Production synthetic identity-only preflight validates
   assert.match(result.stdout,/Phase 1 identity\/config/);
   assert.match(result.stdout,/no external identity ownership/);
  }
+});
+test("Phase 1 rejects non-origin URLs, reserved placeholder hosts and URL credentials",()=>{
+ const bad=[
+  "https://builder.example.org",
+  "https://staging.example.net",
+  "https://builder.test",
+  "https://shop.localhost",
+  "https://127.0.0.1",
+  "https://10.0.0.25",
+  "https://user:pass@builder-staging.synthetic.dev",
+  "https://builder-staging.synthetic.dev:8443",
+  "https://builder-staging.synthetic.dev/admin",
+  "https://builder-staging.synthetic.dev?token=fake",
+  "https://builder-staging.synthetic.dev/#fragment",
+  "http://builder-staging.synthetic.dev",
+  "https://builder-staging.synthetic.dev.evil.example.org",
+ ];
+ for(const url of bad){
+  const r=identityPreflight("staging",{SHOPIFY_APP_URL:url});
+  assert.equal(r.status,1,"Unsafe Staging origin incorrectly accepted: "+url);
+  assert.match(r.stderr,/stable HTTPS URL/);
+ }
+ const good=identityPreflight("staging");
+ assert.equal(good.status,0,good.stderr);
 });
 test("Phase 1 refuses wrong Neon project or Cloudflare Worker identity",()=>{
  for(const tier of ["staging","production"]){
