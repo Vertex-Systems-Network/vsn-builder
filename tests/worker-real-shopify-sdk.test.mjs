@@ -16,6 +16,7 @@ const tierEnv = (tier="staging") => ({
  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
  SHOPIFY_APP_URL:tier==="staging"?"https://staging.builder.example.org":"https://builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
+ DATABASE_URL:"postgresql://test-user:fake-ci-password@ep-ci-nonexistent.aws.neon.tech/no_real_db?sslmode=require",
 });
 const request=(env,shop)=>new Request(env.SHOPIFY_APP_URL+"/app"+(shop?"?shop="+encodeURIComponent(shop):""));
 const mockContext=()=>{
