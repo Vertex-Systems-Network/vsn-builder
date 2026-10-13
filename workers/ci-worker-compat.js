@@ -172,6 +172,7 @@ export default {
             "X-Shopify-Topic":"app/uninstalled",
             "X-Shopify-API-Version":"2026-07",
             "X-Shopify-Webhook-Id":"ci-workerd-webhook-1",
+            "X-Shopify-Triggered-At":"2026-10-13T09:00:00.000000Z",
             "X-Shopify-Hmac-Sha256":signature,
           },
           body:payload,
@@ -183,16 +184,37 @@ export default {
         {id:"ci-shop-two",shop:"ci-merchant.myshopify.com"},
         {id:"ci-other",shop:"other-merchant.myshopify.com"},
       ];
-      const ciDatabase={session:{
-        async deleteMany({where}){
-          deletes++;
-          const selected=sessions.filter(record=>record.shop===where.shop);
-          for(let i=sessions.length-1;i>=0;i--){
-            if(sessions[i].shop===where.shop)sessions.splice(i,1);
-          }
-          return {count:selected.length};
+      const installed={shop:"ci-merchant.myshopify.com",
+        installedAt:new Date("2026-10-13T08:00:00Z"),uninstalledAt:null,
+        lastUninstallWebhookId:null};
+      const ciDatabase={
+        async $transaction(callback){
+          return callback({
+            builderShopInstallation:{
+              async updateMany({where,data}){
+                if(installed.shop!==where.shop || installed.uninstalledAt ||
+                   installed.installedAt>where.installedAt.lte)return {count:0};
+                installed.uninstalledAt=data.uninstalledAt;
+                installed.lastUninstallWebhookId=data.lastUninstallWebhookId;
+                return {count:1};
+              },
+              async findUnique({where}){
+                return where.shop===installed.shop?installed:null;
+              },
+            },
+            session:{
+              async deleteMany({where}){
+                deletes++;
+                const selected=sessions.filter(record=>record.shop===where.shop);
+                for(let i=sessions.length-1;i>=0;i--){
+                  if(sessions[i].shop===where.shop)sessions.splice(i,1);
+                }
+                return {count:selected.length};
+              },
+            },
+          });
         },
-      }};
+      };
       const createSdkContext=(signedRequest,settings)=>
         createWorkerShopifySdkContext(signedRequest,settings,{
           async createSessionContext(){
@@ -203,11 +225,11 @@ export default {
       const accepted=await acceptWorkerShopifyUninstallWebhook(
         makeWebhook(),sdkEnv,{
           createSdkContext,
-          async onVerified({event,context}){
+          async onVerified({event,context,triggeredAt}){
             if(event.shop==="ci-merchant.myshopify.com" &&
               event.topic==="APP_UNINSTALLED" &&
               event.webhookId==="ci-workerd-webhook-1")verified++;
-            return revokeVerifiedWorkerShopifySessions({event,context});
+            return revokeVerifiedWorkerShopifySessions({event,context,triggeredAt});
           },
         }
       );
@@ -218,15 +240,33 @@ export default {
       const replay=await acceptWorkerShopifyUninstallWebhook(
         makeWebhook(),sdkEnv,{
           createSdkContext,
-          async onVerified({event,context}){
+          async onVerified({event,context,triggeredAt}){
             verified++;
-            return revokeVerifiedWorkerShopifySessions({event,context});
+            return revokeVerifiedWorkerShopifySessions({event,context,triggeredAt});
           },
         }
       );
       checks.uninstallReplayIsIdempotent=replay.status===204 &&
-        deletes===2 && opened===2 && closed===2 &&
+        deletes===1 && opened===2 && closed===2 &&
         sessions.length===1 && sessions[0].id==="ci-other";
+      // Simulate an authentic newer installation generation that commits
+      // before Shopify retries an older, still signed uninstall delivery.
+      installed.installedAt=new Date("2026-10-13T10:00:00Z");
+      installed.uninstalledAt=null;
+      installed.lastUninstallWebhookId=null;
+      sessions.push({id:"ci-new-install",shop:"ci-merchant.myshopify.com"});
+      const delayed=await acceptWorkerShopifyUninstallWebhook(
+        makeWebhook(),sdkEnv,{
+          createSdkContext,
+          async onVerified({event,context,triggeredAt}){
+            verified++;
+            return revokeVerifiedWorkerShopifySessions({event,context,triggeredAt});
+          },
+        }
+      );
+      checks.delayedOldUninstallCannotDeleteReinstall=delayed.status===204 &&
+        deletes===1 && opened===3 && closed===3 &&
+        sessions.some(record=>record.id==="ci-new-install");
       let tamperedStatus=0;
       try {
         await acceptWorkerShopifyUninstallWebhook(
@@ -239,12 +279,13 @@ export default {
         if(error instanceof Response)tamperedStatus=error.status;
       }
       checks.tamperedWebhookDeniedBeforeStorage=tamperedStatus===401 &&
-        verified===2 && deletes===2 && opened===2 && closed===2 &&
-        sessions.length===1;
+        verified===3 && deletes===1 && opened===3 && closed===3 &&
+        sessions.length===2;
     }catch{
       checks.realSignedWebhookAccepted=false;
       checks.uninstallRevokedOnlyMerchantSessions=false;
       checks.uninstallReplayIsIdempotent=false;
+      checks.delayedOldUninstallCannotDeleteReinstall=false;
       checks.tamperedWebhookDeniedBeforeStorage=false;
     }
     return new Response(JSON.stringify({
