@@ -218,14 +218,14 @@ export default {
       const req=new Request(sdkEnv.SHOPIFY_APP_URL+"/app/pages?shop="+merchant,{
         method:"POST"
       });
-      const factory=({revoked=false}={})=>async()=>({
+      const factory=({revoked=false,expired=false}={})=>async()=>({
         shopify:{authenticate:{async admin(){return {session:active}}}},
         database:{
           builderShopInstallation:{async findUnique(){
             return {shop:merchant,installedAt:new Date("2026-10-13T09:00:00Z"),
               uninstalledAt:null};
           }},
-          session:{async findUnique(){return active}},
+          session:{async findUnique(){return expired?{...active,expires:new Date("2020-01-01T00:00:00Z")}:active}},
           async $transaction(fn){
             const result=await fn({
               builderShopInstallation:{async updateMany(){
@@ -255,13 +255,20 @@ export default {
         createSdkContext:factory(),
         async onAuthenticated(){return new Response("no-change",{status:422})},
       });
+      const expired=await acceptWorkerShopifyAdminMutation(req,sdkEnv,{
+        createSdkContext:factory({expired:true}),
+        async onAuthenticated(){performed++;return new Response(null,{status:204})},
+      });
       checks.adminMutationRequiresLockedSession=good.status===204 &&
         stale.status===403 && performed===1 && lockClaims===3 &&
-        closed===3;
+        closed===4;
       checks.adminFailedMutationRollback=rejectedBusiness.status===422 &&
         committed===1;
+      checks.adminExpiredOfflineSessionDenied=expired.status===403 &&
+        performed===1 && committed===1;
     }catch{checks.adminMutationRequiresLockedSession=false;
-      checks.adminFailedMutationRollback=false}
+      checks.adminFailedMutationRollback=false;
+      checks.adminExpiredOfflineSessionDenied=false}
     // The exact official PrismaSessionStorage implementation persists an
     // offline Shopify session and its installation generation in a single
     // synthetic transaction INSIDE workerd (no Neon query/merchant API).
