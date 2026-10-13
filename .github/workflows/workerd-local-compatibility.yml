@@ -39,6 +39,8 @@ on:
       - ".github/workflows/hosted-environment-secret-inventory.yml"
       - "tests/phase34-hosted-worker-gate.test.mjs"
       - "tests/phase3-staging-migration-preflight.test.mjs"
+      - "tests/phase3-staging-neon-live-proof.test.mjs"
+      - "scripts/phase3-staging-neon-live-proof.mjs"
       - "scripts/phase3-staging-migration-preflight.mjs"
       - "scripts/phase3-staging-post-migrate-check.mjs"
       - ".github/workflows/phase3-staging-neon-migration.yml"
@@ -101,6 +103,7 @@ jobs:
         run: |
           node --test tests/phase34-hosted-worker-gate.test.mjs
           node --test tests/phase3-staging-migration-preflight.test.mjs
+          node --test tests/phase3-staging-neon-live-proof.test.mjs
           node --test tests/hosted-neon-url-policy.test.mjs
           node --test tests/ci-audit-gate-continuity.test.mjs
           node --test tests/worker-neon-factory.test.mjs
