@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -83,6 +84,7 @@ export async function loader({ request }) {
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   const form = await request.formData();
   if (String(form.get("intent")) !== "restore") return Response.json({ ok: false }, { status: 400 });
   const entitlement = await getFeatureDecision(db, session.shop, "backups");
