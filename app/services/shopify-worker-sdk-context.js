@@ -2,7 +2,8 @@
 // No bypass/own implementation of OAuth, session JWT, webhook verification or billing.
 // Connection lifecycle MUST be closed after the request (including streaming errors).
 import { AppDistribution, shopifyApp } from "@shopify/shopify-app-react-router/server";
-import { createShopifyWorkerSdk } from "./shopify-worker-configuration.js";
+import { createShopifyWorkerSdk, inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
+import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySessionContext } from "./shopify-worker-session-context.js";
 
 export async function createWorkerShopifySdkContext(request, env, {
@@ -12,6 +13,12 @@ export async function createWorkerShopifySdkContext(request, env, {
 } = {}) {
   let context;
   try {
+    // Fail closed before ANY storage/database factory call, including injected
+    // adapters. Cross-tier configuration must never trigger a DB connection.
+    if (!inspectWorkerShopifyConfiguration(request, env).ready ||
+        !inspectWorkerNeonEnvironment(env).ready) {
+      throw new Error("Invalid Worker runtime identity");
+    }
     context = await createSessionContext(request, env);
     if (!context || !context.sessionStorage || typeof context.close !== "function") {
       throw new Error("Missing request-scoped session context");
