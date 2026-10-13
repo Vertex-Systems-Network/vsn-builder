@@ -153,6 +153,29 @@ test("wrong environment, wrong Neon host, wrong app identity, billing mode all f
 function runUrl(host,pooled=false){
  return `postgresql://ci_user:ci_password@${pooled?host.replace(".","-pooler."):host}/builder_ci?sslmode=require`;
 }
+test("protected preflight refuses placeholder IP hosts, callback URL paths and URL credentials",()=>{
+ const invalid=[
+  "https://builder.example.org",
+  "https://staging.example.net",
+  "https://builder.test",
+  "https://shop.localhost",
+  "https://127.0.0.1",
+  "https://10.0.0.12",
+  "https://user:password@builder-staging.synthetic.dev",
+  "https://builder-staging.synthetic.dev:8443",
+  "https://builder-staging.synthetic.dev/app",
+  "https://builder-staging.synthetic.dev?token=fake",
+  "https://builder-staging.synthetic.dev/#frag",
+  "http://builder-staging.synthetic.dev",
+ ];
+ for(const url of invalid){
+  const r=run("staging",{SHOPIFY_APP_URL:url});
+  assert(fail(r),"Protected workflow must reject unsafe app origin "+url);
+  assert(!r.stdout.includes("ci_password"));
+ }
+ const good=run("staging");
+ assert.equal(good.status,0,good.stderr);
+});
 test("invalid URL/role/TLS, credentials, public origin must be rejected without leaks",()=>{
  const cases=[
   {DIRECT_URL:runUrl(endpoint.staging).replace("ci_user","other_user")},
