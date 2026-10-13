@@ -60,6 +60,14 @@ They require the tier's *actual* environment variables (never check secrets into
 
 Phase 1 stays **4/7 evidence-tracked; NOT closed**, until separately authenticated Shopify registration, GitHub secret bindings/protection and actual protected tier-specific preflight are verified. Code having an identity preflight does not make its real invocation passed.
 
+## Phase 1 secret-scope and three-app uniqueness fix (2026-10-13)
+
+The legacy `hosted-environment-secret-inventory.yml` formerly allowed `cloudflare-staging` environment secrets to be accessed on **either** protected `development` or protected `main`, violating the approved mapping. It now permits Staging access **only from protected `development`**; Production continues to permit **only protected `main`**. The required branch protection guard is not relaxed.
+
+The new protected identity-only workflow additionally requires `SHOPIFY_DEVELOPMENT_CLIENT_ID`, `SHOPIFY_STAGING_CLIENT_ID`, and `SHOPIFY_PRODUCTION_CLIENT_ID` to be securely supplied as **scoped references in both Staging and Production GitHub Environments**. Client IDs are non-secret public app identifiers but still must not be logged in CI. The validator checks all three are individually well-formed, mutually distinct, do not reuse the unclassified root app identity, and that `SHOPIFY_API_KEY` matches the correct hosted tier. All values are read from the selected environment; no cross-environment secret access or cloud API calls are needed. Real Partner account ownership still requires independent verification. Existing task 1.5 and 1.6 remain **pending** until this secret inventory and protection are actually verified.
+
+The CI unit tests extract and execute the exact inline validator with synthetic ID values and assert that wrong runtime identity, duplicates, missing identity, and unauthorized Staging-from-main workflow paths are denied. The `development` branch remains **unprotected** as of the last live read-only GitHub inspection; no actual protected run or merge has occurred.
+
 ## GitHub branch-protection verification (actual read-only GitHub, 2026-10-13)
 
 The GitHub repository read-only **`GET /repos/.../branches/{name}`** and active repository **rulesets** API returned the following:
