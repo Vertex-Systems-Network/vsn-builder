@@ -61,6 +61,48 @@ function securedResponse(result) {
   });
 }
 
+// Merchant POST responses must be fully resolved BEFORE the DB transaction
+// commits. Without this, a returned ReadableStream could fail only while the
+// client consumes it AFTER the row lock and Prisma client are gone.
+// Keep POST responses intentionally small; large editor data should be
+// fetched via authenticated GET, not streamed from a mutating transaction.
+const MAX_MUTATION_RESPONSE_BYTES=256*1024;
+async function securedMutationResponse(result) {
+  if(!(result instanceof Response))throw new TypeError("Missing HTTP Response");
+  const headers=new Headers(result.headers);
+  headers.set("cache-control","no-store");
+  headers.set("x-content-type-options","nosniff");
+  // Recomputed body length: immutable upstream response headers must not
+  // advertise an inaccurate content-length after materialization.
+  headers.delete("content-length");
+  if(result.body===null)return new Response(null,{
+    status:result.status,statusText:result.statusText,headers,
+  });
+  const reader=result.body.getReader();
+  const chunks=[];
+  let length=0;
+  try {
+    while(true) {
+      const {done,value}=await reader.read();
+      if(done)break;
+      if(!(value instanceof Uint8Array))throw new TypeError("Invalid HTTP body chunk");
+      length+=value.byteLength;
+      if(length>MAX_MUTATION_RESPONSE_BYTES)
+        throw new RangeError("Admin mutation response exceeds byte limit");
+      chunks.push(value);
+    }
+  }catch(error) {
+    try{await reader.cancel()}catch{ /* keep original stream failure */ }
+    throw error;
+  }finally{try{reader.releaseLock()}catch{}}
+  const bytes=new Uint8Array(length);
+  let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+  return new Response(bytes,{
+    status:result.status,statusText:result.statusText,headers,
+  });
+}
+
 async function guardedAdminRequest(request,env,{
   createSdkContext=createWorkerShopifySdkContext,onAuthenticated,
 }={},mutation=false) {
@@ -140,7 +182,7 @@ async function guardedAdminRequest(request,env,{
         // The response must be fully constructible and secured WHILE Prisma
         // can still roll back. Invalid/immutable source headers, a locked
         // stream or unsupported status cannot turn a committed write into 503.
-        const finalized=securedResponse(result);
+        const finalized=await securedMutationResponse(result);
         if(result.status>=400)throw new RollbackResponse(finalized);
         return finalized;
       },{maxWait:5000,timeout:12000});
