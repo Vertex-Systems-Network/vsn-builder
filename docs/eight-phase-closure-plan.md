@@ -4,7 +4,7 @@ Last audited: **2026-10-13**. Owner requested that phases be worked **one at a t
 
 | # | Phase | Evidence-tracked subtasks | Closure |
 | --- | --- | --- | --- |
-| 1 | Environment Setup | 3/7 | **IN PROGRESS — not closed** |
+| 1 | Environment Setup | 4/7 | **IN PROGRESS — not closed** |
 | 2 | Local Application & Browser | 2/4 | QUEUED, earlier synthetic CI only |
 | 3 | PostgreSQL / Neon Database | 3/5 | QUEUED, real Neon pending |
 | 4 | Cloudflare Worker Runtime | 1/4 | QUEUED, hosted Worker pending |
@@ -23,6 +23,12 @@ Numbers count entries in `config/project/phase-closure-sequence.json` that have 
 4. No external secret values, merchant tokens, account IDs or database connection strings belong in the phase manifest; it stores only task names, statuses and safe GitHub references.
 5. A phase-closeout operator must independently verify external evidence and exact-source GitHub CI, then update `config/project/phase-closure-sequence.json` and the relevant release gate. The automated script enforces order/traceability but **does not independently authenticate GitHub run status** or Shopify acceptance.
 6. Final release/staging/live deployment still requires the separately existing `config/release/environment-gates.json`, actual Shopify merchant E2E and mandatory security audits. Never use a green phase registry alone to deploy or merge.
+
+## Current read-only resource verification (2026-10-13)
+
+Connected Neon returned **two distinct organization-owned Builder projects**, `vsn-builder-staging` (project `shiny-violet-61219572`) and `vsn-builder-production` (project `nameless-violet-68750490`), in the same region but **different project IDs**. Connected Cloudflare account **Vertex Systems Network** returned the distinct Worker script identifiers `vsn-builder-staging` and `vsn-builder-production`. These findings are based on authorized account **read-only resource enumeration**, not configuration placeholders alone. The evidence has been recorded in this PR and its phase tracker. No credentials, connection URL passwords, secret contents, migrations, Worker deployments or Shopify merchant session data were read or changed.
+
+**What it does not establish:** Both scripts being listed is not proof that Builder application code is deployed; it remains placeholder-only pending actual runtime tests. Neither actual Shopify Partner app identity nor GitHub Environment secret binding/policy is proven by this inventory.
 
 ## Phase 1 outstanding environment closure work
 
