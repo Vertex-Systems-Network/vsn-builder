@@ -151,6 +151,69 @@ export default {
       checks.wrongProjectUrlDeniedBeforeSdkStorage=!touchedForbiddenStorage &&
         error?.code==="VSN_WORKER_SHOPIFY_BOOTSTRAP_BLOCKED";
     }
+    // Synthetic signed webhook, verified by both WebCrypto and the actual
+    // official Shopify SDK inside real Cloudflare Workerd. This never touches
+    // a Neon database or an actual merchant.
+    try {
+      const body=JSON.stringify({shop_domain:"ci-merchant.myshopify.com",id:12345});
+      const key=await crypto.subtle.importKey(
+        "raw",new TextEncoder().encode(sdkEnv.SHOPIFY_API_SECRET),
+        {name:"HMAC",hash:"SHA-256"},false,["sign"]
+      );
+      const signature= btoa(String.fromCharCode(
+        ...new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(body)))
+      ));
+      const makeWebhook=(payload=body)=>new Request(
+        sdkEnv.SHOPIFY_APP_URL+"/webhooks/app/uninstalled",{
+          method:"POST",
+          headers:{
+            "X-Shopify-Shop-Domain":"ci-merchant.myshopify.com",
+            "X-Shopify-Topic":"app/uninstalled",
+            "X-Shopify-API-Version":"2026-07",
+            "X-Shopify-Webhook-Id":"ci-workerd-webhook-1",
+            "X-Shopify-Hmac-Sha256":signature,
+          },
+          body:payload,
+        }
+      );
+      let opened=0,closed=0,verified=0;
+      const createSdkContext=(signedRequest,settings)=>
+        createWorkerShopifySdkContext(signedRequest,settings,{
+          async createSessionContext(){
+            opened++;
+            return {sessionStorage,async close(){closed++;}};
+          },
+        });
+      const accepted=await acceptWorkerShopifyUninstallWebhook(
+        makeWebhook(),sdkEnv,{
+          createSdkContext,
+          async onVerified({event}){
+            if(event.shop==="ci-merchant.myshopify.com" &&
+              event.topic==="APP_UNINSTALLED" &&
+              event.webhookId==="ci-workerd-webhook-1")verified++;
+            return new Response(null,{status:204});
+          },
+        }
+      );
+      checks.realSignedWebhookAccepted=accepted.status===204 && verified===1 &&
+        opened===1 && closed===1;
+      let tamperedStatus=0;
+      try {
+        await acceptWorkerShopifyUninstallWebhook(
+          makeWebhook(body+"tampered"),sdkEnv,{
+            createSdkContext,
+            async onVerified(){verified++;return new Response(null,{status:204});},
+          }
+        );
+      }catch(error){
+        if(error instanceof Response)tamperedStatus=error.status;
+      }
+      checks.tamperedWebhookDeniedBeforeStorage=tamperedStatus===401 &&
+        verified===1 && opened===1 && closed===1;
+    }catch{
+      checks.realSignedWebhookAccepted=false;
+      checks.tamperedWebhookDeniedBeforeStorage=false;
+    }
     return new Response(JSON.stringify({
       ciOnly:true,ready:false,modulesLoaded:Object.values(checks).every(Boolean),checks,
     }),{status:200,headers:LOCKED});
