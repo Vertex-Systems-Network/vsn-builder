@@ -266,9 +266,18 @@ export default {
         committed===1;
       checks.adminExpiredOfflineSessionDenied=expired.status===403 &&
         performed===1 && committed===1;
+      const deniedRedirect=await acceptWorkerShopifyAdminMutation(req,sdkEnv,{
+        createSdkContext:factory(),
+        async onAuthenticated(){return Response.redirect(
+          "https://admin.shopify.com/store/test/apps/vsn-builder",303);
+        },
+      });
+      checks.adminReturnedRedirectRollback=deniedRedirect.status===503 &&
+        performed===1 && committed===1 && lockClaims===4 && closed===5;
     }catch{checks.adminMutationRequiresLockedSession=false;
       checks.adminFailedMutationRollback=false;
-      checks.adminExpiredOfflineSessionDenied=false}
+      checks.adminExpiredOfflineSessionDenied=false;
+      checks.adminReturnedRedirectRollback=false}
     // The exact official PrismaSessionStorage implementation persists an
     // offline Shopify session and its installation generation in a single
     // synthetic transaction INSIDE workerd (no Neon query/merchant API).
