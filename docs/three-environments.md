@@ -73,6 +73,12 @@ npm run env:production:check  # intentionally fails until PostgreSQL/Worker port
 
 The `VSN Production Confidence` workflow continues to test the existing SQLite implementation. Its green status does **not** certify PostgreSQL or Cloudflare.
 
+## Migration URL / Worker URL pair guard (not migrated)
+
+Hosted `npm run env:staging:check` and `npm run env:production:check` now validate **both** `DATABASE_URL` and `DIRECT_URL` against the deployment manifest's exact target Neon compute endpoint **before** treating environment preflight as acceptable. `DATABASE_URL` can target the specific direct host or its exact `-pooler` variant, while `DIRECT_URL` **must** use the non-pooled host for the same tier, PostgreSQL database name and database role. Wrong-tier URLs, malformed URLs, empty credentials, unsupported port and TLS downgrade are rejected. Error messages contain **no** passwords, complete URLs or secret values. A bound `DIRECT_URL` is also checked by the Worker Prisma constructor; production Worker requests do not otherwise need a `DIRECT_URL` binding.
+
+This guard is independent of app readiness; it cannot certify that any remote credential works, that the database migration was applied or that the Worker app exists. A valid syntax check alone is not permission to execute `prisma migrate deploy`. No hosted Neon SQL is run by this change. Regression acceptance is in `tests/hosted-neon-url-policy.test.mjs` and the local Workerd CI.
+
 ## Verified Neon connection identity guard (not a deployed application)
 
 On 2026-10-13 the connected Neon account returned Staging endpoint `ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech` and separate Production endpoint `ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech`. These are publicly addressable database endpoint hostnames, **not database credentials**. The future Worker Prisma constructor now requires its `DATABASE_URL` host to equal its tier's exact endpoint hostname, or its corresponding `-pooler` variant. A caller-provided `NEON_PROJECT_ID` alone never proves database isolation. Existing staging/production SQL, schema migration and live Shopify access remain **unverified and unperformed**. Endpoint rotation must update the reviewed manifest and regression tests before a release, without weakening isolation.
