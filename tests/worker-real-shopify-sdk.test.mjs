@@ -35,6 +35,7 @@ test("official Shopify App Store SDK initializes from safe staging session conte
  const scoped=await createWorkerShopifySdkContext(request(env,"tenant.myshopify.com"),env,{createSessionContext:async()=>ctx});
  assert.equal(scoped.sessionStorage,ctx.sessionStorage);
  assert.equal(scoped.shopify.sessionStorage,ctx.sessionStorage);
+ assert.equal(scoped.verifyTrustedUninstallGeneration,undefined,"Ordinary Shopify SDK context cannot authorize destructive uninstall from unsigned event headers");
  assert.equal(typeof scoped.shopify.authenticate.admin,"function");
  assert.equal(typeof scoped.shopify.authenticate.webhook,"function");
  await scoped.close();
