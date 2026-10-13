@@ -28,7 +28,8 @@
     "app_name": "VSN | Builder (Staging)",
     "cloudflare_worker": "vsn-builder-staging",
     "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed",
-    "neon_project_id": "shiny-violet-61219572"
+    "neon_project_id": "shiny-violet-61219572",
+    "neon_endpoint_host": "ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech"
   },
   "production": {
     "source_branch": "main",
@@ -42,6 +43,7 @@
     "app_name": "VSN | Builder",
     "cloudflare_worker": "vsn-builder-production",
     "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed",
-    "neon_project_id": "nameless-violet-68750490"
+    "neon_project_id": "nameless-violet-68750490",
+    "neon_endpoint_host": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech"
   }
 }
