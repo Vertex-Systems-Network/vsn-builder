@@ -22,6 +22,11 @@ jobs:
       - run: npm ci
       - name: Verify Shopify Worker SDK config with dummy credentials
         run: node --test tests/shopify-worker-configuration.test.mjs
+      - name: Generate isolated Cloud/Worker Prisma clients offline for tests
+        env:
+          DATABASE_URL: postgresql://ci-unused:unused@127.0.0.1:5432/schema
+          DIRECT_URL: postgresql://ci-unused:unused@127.0.0.1:5432/schema
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
       - name: Verify Worker Shopify session lifecycle safety without cloud credentials
         run: node --test tests/shopify-worker-session-context.test.mjs
       - name: Revalidate Worker Web Streams and frame-ancestor CSP
