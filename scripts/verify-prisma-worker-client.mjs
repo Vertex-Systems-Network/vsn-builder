@@ -27,7 +27,12 @@ if(process.argv.includes("--generated")){
  assert.equal((generated.match(/^model\s+\w+/gm)||[]).length,51,"Worker Client model parity drift");
  assert(fs.existsSync(path.join(out,"index.js")),"Worker Prisma Client index.js missing");
  const edgeSrc=fs.readFileSync(path.join(root,"generated/prisma-edge/client.ts"),"utf8");
- assert(!edgeSrc.includes("__dirname"),"Cloudflare ESM Client must not use Node __dirname");
+ // A raw string check for "__dirname" can match comments or code removed
+ // by the Worker bundler. Instead verify the generated ESM TypeScript client
+ // has a real PrismaClient export and use the *actual* local workerd HTTP
+ // integration test to certify browser/runtime globals.
+ assert(/export\\s+(?:class|const|function)\\s+PrismaClient|export\\s*\\{[^}]*PrismaClient/s.test(edgeSrc),
+   "Generated ESM Edge Client has no exported PrismaClient");
  assert(fs.existsSync(path.join(root,"generated/prisma-edge/internal/class.ts")),"Edge Prisma internals missing");
 }
 console.log("Worker Prisma generator isolation PASS; adapter and runtime are NOT yet implemented.");

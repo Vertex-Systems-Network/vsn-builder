@@ -1,7 +1,7 @@
 name: VSN Cloudflare Workerd Local SDK Compatibility (No Deploy)
 on:
   push:
-    branches: [feat/builder-local-workerd-sdk-compat-20261013]
+    branches: [feat/builder-local-workerd-sdk-compat-20261013, fix/builder-workerd-runtime-probe-20261013]
 permissions:
   contents: read
 concurrency:

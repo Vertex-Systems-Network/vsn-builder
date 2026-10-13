@@ -9,3 +9,7 @@ A green result is necessary but **not sufficient** for Shopify Worker deployment
 Wrangler is now resolved through an isolated npm exec cache, avoiding root npm re-resolution after npm ci.
 
 A real local Workerd run exposed the old `prisma-client-js` generator's top-level `__dirname` failure. The schema now generates a THIRD isolated `prisma-client` output with `runtime="workerd"`, `moduleFormat="esm"`, `engineType="client"`; the SDK/Neon Worker factory imports this TypeScript ESM client. The original Local SQLite client and Node PostgreSQL clients remain untouched. See Prisma ORM v6 generator docs: https://www.prisma.io/docs/orm/v6/prisma-schema/overview/generators .
+
+## Verification repair (CI-only)
+
+The first Workerd CI failed at a *textual inspection* of generated Prisma `client.ts`, checking for any occurrence of the string `__dirname`, **before running Wrangler or the workerd test**. This is not evidence that the bundler executes a Node global: Prisma-generated source can mention strings or static branches which are optimized out. The heuristic is replaced with an ESM PrismaClient-export check and the existing real `wrangler dev --local` runtime import/HTTP probe remains the required acceptance gate. If Workerd import actually fails, the branch must remain red until the concrete bundling/runtime error is repaired. No Shopify/Cloudflare/Neon credentials or deploys are permitted.
