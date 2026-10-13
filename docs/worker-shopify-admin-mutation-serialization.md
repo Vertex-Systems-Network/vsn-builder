@@ -45,6 +45,12 @@ The POST path now fully reads the response body **within the interactive transac
 
 Unit tests cover stream read failures after partial output, a 256 KiB + 1 oversized stream, and a two-chunk successful JSON payload. **Actual local disposable PostgreSQL** tests verify failed/oversized streams cannot persist Session changes and a small successful stream does commit. An actual local Cloudflare Workerd test checks both failed and successful synthetic streamed responses. These tests do not use Neon, Shopify merchant credentials or deployed Workers.
 
+## Total response-read deadline
+
+A strict byte cap alone does not protect the shop-row-locked Prisma transaction from a `ReadableStream` that never emits a final chunk. Each merchant POST now has a **2-second total response-body read deadline**, shorter than the existing 12-second interactive transaction timeout. The reader's promise races the remaining deadline; each chunk does **not** reset the clock. If the body stalls, aborts or exceeds the deadline, the transaction rolls back before any merchant write commits and returns sanitized HTTP 503. A best-effort `reader.cancel()` is launched without awaiting a potentially hung cancel callback, so broken streams cannot prevent rollback.
+
+Unit tests, actual disposable PostgreSQL transactions, and local Workerd smoke tests deliberately return a partial HTTP 200 body that never closes and verify deadline refusal, rollback and that subsequent merchant operations can run. This is a defensive bound for the **future** Admin POST helper, not a deployed merchant route. Do not return long/streamed export files from a POST mutation; use read-only authenticated GET for larger response bodies.
+
 ## Tests
 
 - `tests/worker-shopify-admin-mutation.test.mjs`: synthetic SDK and fake Prisma transactions, verifies required row lock and session recheck, token rotated after initial read, uninstall between initial read/transaction, missing transaction and sanitized errors, no cross-merchant writes.
