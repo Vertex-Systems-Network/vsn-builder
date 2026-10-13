@@ -2,7 +2,7 @@
 
 The future Cloudflare Worker `/webhooks/app/uninstalled` path must invoke `acceptWorkerShopifyUninstallWebhook` and inject `revokeVerifiedWorkerShopifySessions` as its `onVerified` callback. **There is no production Worker router yet.** The gate validates the HMAC with native WebCrypto **before** initializing the SDK/database. The official Shopify React Router SDK independently verifies the HMAC, merchant, topic, webhook ID and payload before the revocation callback can run. The SDK owns the request-scoped Neon Prisma client and closes it in a `finally` block.
 
-The revocation module checks `event.shop` is a canonical `*.myshopify.com` domain, `event.topic` is `APP_UNINSTALLED`, `event.payload.shop_domain` matches `event.shop`, and the SDK request-scoped `context.database.session.deleteMany` exists. Its **only** database operation is:
+The revocation module checks `event.shop` is a canonical `*.myshopify.com` domain, `event.topic` is `APP_UNINSTALLED`, any optional `event.payload.shop_domain` and any non-null `event.payload.myshopify_domain` match the authenticated `event.shop`, and the SDK request-scoped `context.database.session.deleteMany` exists. Its **only** database operation is:
 
 ```js
 await context.database.session.deleteMany({where: {shop: event.shop}})
@@ -13,6 +13,8 @@ The Prisma query is tenant-scoped and atomic. Successful first cleanup and repea
 **Scope explicitly excludes deletion of merchant-authored Builder pages/templates/assets, subscriptions, billing records, backups, audit logs and customer data.** Retention and deletion compliance needs a separate reviewed workflow; uninstall alone must not silently erase merchant content. This session revocation is not itself proof of a complete GDPR/CCPA data deletion implementation.
 
 Acceptance: `tests/worker-uninstall-session-revoke.test.mjs` covers target-only deletion with two synthetic tenants, idempotent replay, malformed signed payload, unavailable storage and safe errors. The CI-only real Cloudflare Workerd probe additionally signs a synthetic Shopify uninstall body with WebCrypto, authenticates it through the official SDK, invokes request-scoped in-memory Prisma-like `deleteMany`, replays the webhook, verifies another merchant retains its sessions, and rejects a tampered body **before** any more session storage opens or deletes occur. Local loopback GET probe only; `/app` stays 503.
+
+Shopify's official `app/uninstalled` webhook sends a Shop object, where `shop_domain` may be absent and `myshopify_domain` can be null. The verified SDK shop/header remains authoritative. This is intentionally different from the `shop/redact` compliance webhook. See https://shopify.dev/docs/api/webhooks/latest .
 
 ## Connected infrastructure inspection — 2026-10-13
 
