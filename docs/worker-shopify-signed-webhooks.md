@@ -1,0 +1,7 @@
+# Official Shopify webhook HMAC verification (Development contract, NOT deployed)
+
+The `verifyWorkerShopifyWebhook` helper uses the **real official Shopify React Router SDK**, not self-written HMAC authentication. It passes the *unread* POST Request into `shopify.authenticate.webhook(request)`, preserves SDK-generated HTTP 400 (missing headers), 401 (bad or altered HMAC), and 405 (wrong method) responses, and returns only minimal verified claims after SDK verification. It always disconnects request-scoped Prisma session storage, including on exceptions.
+
+Dedicated `node --test tests/worker-shopify-signed-webhooks.test.mjs` in the existing read-only Shopify Worker CI generates **synthetic HMAC** using a fake Shopify secret and validates acceptance of a correctly signed APP_UNINSTALLED webhook, rejection of altered payload, invalid signature, missing required headers, wrong HTTP method, and sanitization/close behavior. No external Shopify/Neon/Cloudflare connections or real merchant identities are accessed. The real webhook entrypoint still uses Local Node/SQLite; this is a Worker authentication *building block* only.
+
+**Not yet proved:** real Shopify Delivery-to-Worker, cloud bundling compatibility, webhook retries/replay dedupe/persistence, GDPR lifecycle, real merchant install or Staging/Live acceptance. Existing cloud placeholders remain 503. This does not change the mandatory full Dev security audit (`braces` CVE remains unpatched upstream).
