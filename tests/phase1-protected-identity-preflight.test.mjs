@@ -121,6 +121,16 @@ test("protected runner verifies selected GitHub vars instead of comparing its ow
  assert.doesNotMatch(workflow,/APP_ENV:\s*\$\{\{\s*inputs\.target\s*\}\}/);
  assert.doesNotMatch(workflow,/SHOPIFY_BILLING_TEST_MODE:\s*\$\{\{\s*inputs\.target\s*==/);
 });
+test("configuration vars are resolved at runner step scope after protected environment declaration",()=>{
+ const start=workflow.indexOf("      - name: Validate secret presence");
+ const stepEnv=workflow.slice(start,workflow.indexOf("        shell: bash",start));
+ const jobEnv=workflow.slice(workflow.indexOf("    env:"),workflow.indexOf("    steps:"));
+ assert.match(workflow,/environment:.*cloudflare-staging.*cloudflare-production/);
+ for(const name of ["APP_ENV","SHOPIFY_BILLING_TEST_MODE","NEON_PROJECT_ID","CLOUDFLARE_WORKER_NAME"]){
+  assert.match(stepEnv,new RegExp(name+":\\s*\\$\\{\\{\\s*vars\\."+name+"\\s*\\}\\}"));
+  assert.doesNotMatch(jobEnv,new RegExp("vars\\."+name));
+ }
+});
 test("wrong or missing effective GitHub environment vars fail even with valid credentials",()=>{
  for(const [tier,overrides] of [
   ["staging",{APP_ENV:""}],
