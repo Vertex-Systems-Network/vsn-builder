@@ -37,6 +37,14 @@ The mutation gateway now **fully reads and materializes the POST Response body w
 
 Both a real disposable PostgreSQL 16 session row and in-memory Prisma fixtures are checked for **no write on failed/oversized body** and for **successful small body commit**. The actual local Cloudflare Workerd acceptance exercises failed and successful synthetic body streams, never contacting Shopify or Neon.
 
+## Bounded response streams are resolved before COMMIT
+
+Normal `Response` construction does not guarantee the body will complete. A callback can write merchant data inside Prisma, return HTTP 200 backed by an asynchronous `ReadableStream`, and then fail **after** the database transaction commits when the client reads the stream. That is a misleading success/failure boundary and may cause merchant retries.
+
+The POST path now fully reads the response body **within the interactive transaction**, with a strict 256 KiB maximum. The byte counter rejects oversized responses before allocating a final buffer, cancels failed or oversized streams, and only creates a new byte-backed `Response` with `cache-control: no-store` and `x-content-type-options: nosniff` before commit. Untrusted `content-length` is discarded and recomputed by the HTTP runtime. If the response body stream fails, is locked, returns a non-byte chunk or exceeds its byte limit, the transaction throws and rolls back all writes, returning a sanitized empty 503. Empty 204 responses remain valid. Large document data must use authenticated GET rather than being streamed from a mutation.
+
+Unit tests cover stream read failures after partial output, a 256 KiB + 1 oversized stream, and a two-chunk successful JSON payload. **Actual local disposable PostgreSQL** tests verify failed/oversized streams cannot persist Session changes and a small successful stream does commit. An actual local Cloudflare Workerd test checks both failed and successful synthetic streamed responses. These tests do not use Neon, Shopify merchant credentials or deployed Workers.
+
 ## Tests
 
 - `tests/worker-shopify-admin-mutation.test.mjs`: synthetic SDK and fake Prisma transactions, verifies required row lock and session recheck, token rotated after initial read, uninstall between initial read/transaction, missing transaction and sanitized errors, no cross-merchant writes.
