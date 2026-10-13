@@ -60,6 +60,16 @@ They require the tier's *actual* environment variables (never check secrets into
 
 Phase 1 stays **4/7 evidence-tracked; NOT closed**, until separately authenticated Shopify registration, GitHub secret bindings/protection and actual protected tier-specific preflight are verified. Code having an identity preflight does not make its real invocation passed.
 
+## Protected GitHub Environment secret-presence preflight (2026-10-13)
+
+New manual-only `.github/workflows/phase1-protected-identity-preflight.yml` verifies **one** Staging or Production environment in a deliberately isolated job. It permits Staging only from a **protected** `development` branch and Production only from a **protected** `main` branch. The job explicitly selects `cloudflare-staging` or `cloudflare-production` so GitHub's configured environment protection rules apply before scoped secrets are released. The source branch must have `github.ref_protected == true`. **Skipped jobs are not successful preflight evidence**: the run must show the credential-check step actually executed and passed.
+
+The job has **no checkout, no npm or third-party commands, no API calls**, and does not print, save or return secret values/hashes. A small, inlined standard-library Python validator checks: Shopify Client ID shape, unclassified default ID rejection, secret presence, Production Client ID equality, Staging-versus-Production mismatch when supplied, billing test mode, stable HTTPS-only app origin, Cloudflare account ID/token presence, and exact environment-specific Neon direct/runtime endpoint hosts, matching DB user/name and required TLS. All outputs use generic names and errors; no URL passwords or client IDs are emitted. Its code runs in **local CI with synthetic values**, including negative tests for cross-tier connection swapping, unexpected identities and malformed URLs. The legacy secret inventory workflow also has its feature-branch push trigger removed and both jobs now require a protected ref.
+
+**This new workflow is not yet executed against protected real secrets.** It can be manually dispatched only once the workflow exists on the proper protected branch and GitHub Environments are correctly configured. Available GitHub connection tools cannot inspect protected GitHub Environment policies/secret names or directly dispatch a workflow; do not invent evidence of them. The preflight is **configuration identity only**. GitHub Environment required-reviewer rules and Shopify Partner registration ownership need independent authenticated account verification, even if this validation passes. The existence of this code **does not** satisfy task 1.5/1.6/1.7 and does not authorize cloud deployments.
+
+For exact syntax and tests, see `tests/phase1-protected-identity-preflight.test.mjs`. Production Confidence's mandatory security audit #96 is still a separate release blocker; a green preflight must never be substituted for its pass.
+
 ## Phase 1 outstanding environment closure work
 
 - Independently verify three **distinct** Shopify Partner app identities for **Development**, **Staging** and **Live**; the original default `shopify.app.toml` client ID remains unclassified. Tracked config client IDs are placeholders, by design.
