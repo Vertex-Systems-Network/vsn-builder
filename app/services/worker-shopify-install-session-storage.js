@@ -20,7 +20,8 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
      typeof session?.isOnline!=="boolean" || typeof SessionStorage!=="function" ||
      typeof db?.$transaction!=="function" ||
      typeof session?.accessToken!=="string" || !session.accessToken ||
-     (!session.isOnline && session.id!==`offline_${session.shop}`))
+     (!session.isOnline && session.id!==`offline_${session.shop}`) ||
+     (session.isOnline && session.id.startsWith("offline_")))
     throw blocked();
   const now=clock();
   if(!isDate(now))throw blocked();
@@ -46,6 +47,13 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
       }else{
         // A no-op update deliberately locks this exact shop row; the uninstall
         // fence also updates the same row before Session.deleteMany.
+        // A normal SDK refresh is not proof of a new Shopify installation.
+        // In particular, an old token must NEVER resurrect sessions after
+        // APP_UNINSTALLED or silently migrate an existing orphaned session.
+        const previousInstall=await lifecycle.findUnique({where:{shop:session.shop}});
+        const prior=await tx.session.findUnique({where:{id:session.id}});
+        if((!previousInstall && prior) || previousInstall?.uninstalledAt!==null &&
+           previousInstall?.uninstalledAt!==undefined)throw blocked();
         const installation=await lifecycle.upsert({
           where:{shop:session.shop},
           create:{
@@ -54,25 +62,14 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
           },
           update:{updatedAt:now},
         });
-        const prior=await tx.session.findUnique({where:{id:session.id}});
-        const changed=prior?.accessToken!==session.accessToken;
-        // Keep installedAt stable across retries/identical token refreshes.
-        // Reinstalls following confirmed uninstall, or token replacement,
-        // advance the generation atomically with the SDK's Session.upsert.
-        if(!isDate(installation?.installedAt))throw blocked();
-        if(installation.uninstalledAt!==null || changed){
-          const next=new Date(Math.max(
-            now.getTime(),installation.installedAt.getTime()+1
-          ));
-          const updated=await lifecycle.updateMany({
-            where:{shop:session.shop},
-            data:{
-              installedAt:next,uninstalledAt:null,
-              lastUninstallWebhookId:null,
-            },
-          });
-          if(updated?.count!==1)throw blocked();
-        }
+        // upsert acquires the shop row lock. It is the authoritative state:
+        // an uninstall may have committed between findUnique and upsert.
+        if(!isDate(installation?.installedAt) ||
+           installation.uninstalledAt!==null)throw blocked();
+        // Same-token refresh and token rotation both belong to the *current*
+        // installation. Do NOT advance installedAt just because a token
+        // changed; reinstallation requires a separate authenticated flow.
+        // The real Shopify SDK still serializes the token via storeSession.
       }
       const inside=new SessionStorage(tx,options);
       if(await inside.storeSession(session)!==true)throw blocked();
