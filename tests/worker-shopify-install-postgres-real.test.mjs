@@ -220,6 +220,52 @@ test("real PostgreSQL admin POST holds row lock and commits only authenticated m
   if(status===500)assert.equal(await refused.text(),"");
  }
 
+ // An immutable Response.redirect used to be returned normally by Prisma,
+ // committing the writes, then crash on .headers.set AFTER COMMIT. Refuse
+ // callback-owned redirects and keep all merchant state unchanged.
+ const priorRedirect=await db.builderShopInstallation.findUnique({
+  where:{shop:adminShop},
+ });
+ const refusedRedirect=await acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:"offline_"+adminShop},
+    data:{scope:"redirect-must-rollback"},
+   });
+   return Response.redirect("https://admin.shopify.com/store/test/apps/builder",303);
+  },
+ });
+ assert.equal(refusedRedirect.status,503);
+ assert.equal((await db.session.findUnique({
+  where:{id:"offline_"+adminShop},
+ })).scope,"write_products");
+ assert.equal((await db.builderShopInstallation.findUnique({
+  where:{shop:adminShop},
+ })).updatedAt.getTime(),priorRedirect.updatedAt.getTime());
+
+ // fetch() Responses have immutable headers. Successful callbacks must
+ // receive no-store/nosniff BEFORE COMMIT, and may not report a 503 after
+ // persisting their writes merely due to the immutable source headers.
+ const immutable=await fetch("data:text/plain,postgres-mutation-success");
+ assert.throws(()=>immutable.headers.set("cache-control","no-store"),TypeError);
+ const acceptedImmutable=await acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:"offline_"+adminShop},data:{scope:"immutable-response-committed"},
+   });
+   return immutable;
+  },
+ });
+ assert.equal(acceptedImmutable.status,200);
+ assert.equal(await acceptedImmutable.text(),"postgres-mutation-success");
+ assert.equal(acceptedImmutable.headers.get("cache-control"),"no-store");
+ assert.equal(acceptedImmutable.headers.get("x-content-type-options"),"nosniff");
+ assert.equal((await db.session.findUnique({
+  where:{id:"offline_"+adminShop},
+ })).scope,"immutable-response-committed");
+
  // Expiring offline tokens are used by Shopify. The persisted token can
  // expire independently of the SDK-authenticated ID token, so a previously
  // valid session must immediately lose both GET and POST privileges.
