@@ -1,0 +1,45 @@
+name: VSN Phase 3 Staging Neon Migration — Protected Manual Only
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: vsn-builder-staging-neon-migrate
+  cancel-in-progress: false
+jobs:
+  migrate-staging:
+    # Development is currently NOT protected. Until its ruleset is corrected,
+    # this job deliberately skips rather than treating CI as Neon acceptance.
+    if: github.ref == 'refs/heads/development' && github.ref_protected == true
+    environment: cloudflare-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: staging
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+      SHOPIFY_BILLING_TEST_MODE: ${{ vars.SHOPIFY_BILLING_TEST_MODE }}
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+      STAGING_MIGRATION_APPROVED: ${{ vars.STAGING_MIGRATION_APPROVED }}
+      VSN_STAGING_BACKUP_EVIDENCE: ${{ vars.VSN_STAGING_BACKUP_EVIDENCE }}
+      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Validate protected tier, branch, snapshot evidence and Neon identity without exposing credentials
+        run: node scripts/phase3-staging-migration-preflight.mjs
+      - name: Install deterministic dependencies
+        run: npm ci
+      - name: Enforce mandatory development dependency security audit
+        run: npm audit --include=dev --audit-level=high
+      - name: Apply ONLY reviewed Staging Prisma cloud migrations
+        run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+      - name: Verify Staging migration history and required tables read-only
+        run: node scripts/phase3-staging-post-migrate-check.mjs
+      - name: Report evidence boundary
+        run: echo "Staging migration verified. Production remains untouched; recovery/rollback needs separate independently observed evidence."
