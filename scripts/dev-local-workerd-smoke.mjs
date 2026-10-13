@@ -17,7 +17,7 @@ const worker=spawn(binary,["exec","--yes","--package=wrangler@4.149.0","--","wra
   BROWSER:"none",CI:"true",WRANGLER_SEND_METRICS:"false",
   CLOUDFLARE_API_TOKEN:"",CLOUDFLARE_ACCOUNT_ID:"",
   DATABASE_URL:"",DIRECT_URL:"",SHOPIFY_API_SECRET:"",
- },stdio:["ignore","pipe","pipe"]
+ },stdio:["ignore","pipe","pipe"],detached:true
 });
 for(const stream of [worker.stdout,worker.stderr])stream.on("data",chunk=>{
  log=(log+chunk.toString()).slice(-9000);
@@ -29,10 +29,16 @@ async function probe(route,opts){
  return {status:resp.status,body,headers:resp.headers};
 }
 async function stop(){
- if(worker.exitCode!==null)return;
- worker.kill("SIGTERM");
- await Promise.race([new Promise(resolve=>worker.once("exit",resolve)),sleep(2400)]);
- if(worker.exitCode===null)worker.kill("SIGKILL");
+ // npm exec launches wrangler as a child; terminating only the npm parent
+ // leaves a workerd grandchild holding stdout and can hang GitHub CI.
+ const signalGroup=(signal)=>{
+  try{process.kill(-worker.pid,signal)}catch{try{worker.kill(signal)}catch{}}
+ };
+ signalGroup("SIGTERM");
+ if(worker.exitCode===null && worker.signalCode===null){
+  await Promise.race([new Promise(resolve=>worker.once("exit",resolve)),sleep(2400)]);
+ }
+ signalGroup("SIGKILL");
 }
 try{
  let ready=false;

@@ -4,6 +4,9 @@ on:
     branches: [feat/builder-local-workerd-sdk-compat-20261013]
 permissions:
   contents: read
+concurrency:
+  group: vsn-workerd-local-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   local-workerd:
     runs-on: ubuntu-latest
