@@ -44,6 +44,13 @@ test("protected GitHub preflight is exclusively manual, protected-branch and env
  assert.match(workflow,/set \+x/);
  assert.match(workflow,/contents: read/);
 });
+test("legacy secret inventory cannot run from PR or unprotected ref",()=>{
+ const legacy=readFileSync(".github/workflows/hosted-environment-secret-inventory.yml","utf8");
+ assert.match(legacy,/^  workflow_dispatch:/m);
+ assert.doesNotMatch(legacy,/^  push:|^  pull_request:|^  pull_request_target:/m);
+ assert.equal((legacy.match(/github\.ref_protected == true/g)||[]).length,2);
+ assert.doesNotMatch(legacy,/actions\/checkout|npm (?:install|ci|run)|curl |wget /);
+});
 test("actual inline workflow preflight accepts isolated CI-only Staging and Production shapes",()=>{
  for(const tier of ["staging","production"]){
   const r=run(tier);
