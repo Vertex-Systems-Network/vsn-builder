@@ -248,6 +248,30 @@ test("never-ending HTTP 200 stream times out and rolls back transaction",async()
  assert.equal(cancelled,true);
  assert(Date.now()-before<6000,"Rollback must not wait for stalled source forever");
 });
+test("slow trickle cannot extend the total mutation response deadline",async()=>{
+ const fx=fixture();
+ const trickle=new ReadableStream({
+  async pull(controller){
+   await new Promise(resolve=>setTimeout(resolve,120));
+   controller.enqueue(new Uint8Array([65]));
+  },
+ });
+ const started=Date.now();
+ const result=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"slow-trickle-must-rollback"},
+   });
+   return new Response(trickle,{status:200});
+  },
+ });
+ assert.equal(result.status,503);
+ assert.equal(fx.stored.scope,undefined);
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+ assert(Date.now()-started<6000,"Trickled bytes must not reset deadline");
+});
 test("oversized streamed POST response fails closed before transaction commit",async()=>{
  const fx=fixture();
  const r=await acceptWorkerShopifyAdminMutation(request(),env,{
