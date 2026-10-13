@@ -24,9 +24,9 @@ if(process.argv.includes("--generated")){
  const generated=fs.readFileSync(path.join(out,"schema.prisma"),"utf8");
  assert(/provider\s*=\s*"postgresql"/.test(generated),"Worker Client must use Postgres");
  assert(/generator\s+workerClient\s*\{[^}]*engineType\s*=\s*"client"/s.test(generated),"Worker generated schema lost engine-less setting");
- const sourceModels=(cloud.match(/^model\\s+\\w+/gm)||[]).length;
+ const sourceModels=(cloud.match(/^model\s+\w+/gm)||[]).length;
  assert(sourceModels>=52,"Worker source lost the Builder installation fence model");
- assert.equal((generated.match(/^model\\s+\\w+/gm)||[]).length,sourceModels,"Worker Client model parity drift");
+ assert.equal((generated.match(/^model\s+\w+/gm)||[]).length,sourceModels,"Worker Client model parity drift");
  assert(fs.existsSync(path.join(out,"index.js")),"Worker Prisma Client index.js missing");
  const edgeSrc=fs.readFileSync(path.join(root,"generated/prisma-edge/client.ts"),"utf8");
  // A raw string check for "__dirname" can match comments or code removed
