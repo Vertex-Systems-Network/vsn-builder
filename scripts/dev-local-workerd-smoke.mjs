@@ -72,6 +72,7 @@ try{
  console.log("PASS actual Shopify SDK merchant frame-ancestors and request-scoped cleanup in workerd");
  assert.equal(check.checks.officialShopifyOfflineSessionFenced,true,"Official Shopify SDK Prisma offline session was not persisted with an atomic installation generation");
  console.log("PASS actual Workerd offline Shopify SessionStorage persistence and installation transaction");
+ assert.equal(check.checks.unsignedTimestampCannotDeleteMerchant,true,"Forged unsigned webhook timestamp authorized session deletion without trusted generation attestation");
  assert.equal(check.checks.realSignedWebhookAccepted,true,"Signed Shopify APP_UNINSTALLED webhook was not authenticated twice inside Workerd");
  assert.equal(check.checks.tamperedWebhookDeniedBeforeStorage,true,"Tampered Shopify webhook triggered SDK storage before signature rejection");
  assert.equal(check.checks.uninstallRevokedOnlyMerchantSessions,true,"Uninstall deleted the wrong merchant session records");
