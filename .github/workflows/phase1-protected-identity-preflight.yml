@@ -59,6 +59,7 @@ jobs:
           python3 - <<'PY'
           import os
           import re
+          import ipaddress
           from urllib.parse import urlsplit, parse_qs
 
           tier = os.environ.get("APP_ENV", "")
@@ -120,11 +121,20 @@ jobs:
           try:
               parsed = urlsplit(app_url)
               host = (parsed.hostname or "").lower()
+              try:
+                  ipaddress.ip_address(host)
+                  problems.append("Shopify App URL cannot use an IP address")
+              except ValueError:
+                  pass
+              forbidden = (".example.com", ".example.org", ".example.net",
+                           ".example.invalid", ".invalid", ".test", ".localhost",
+                           ".local", ".trycloudflare.com", ".ngrok-free.app",
+                           ".ngrok.io", ".loca.lt")
               if parsed.scheme != "https" or not host or parsed.username or parsed.password or \
                  parsed.port is not None or parsed.path not in ("", "/") or parsed.query or \
-                 parsed.fragment or host in ("localhost", "127.0.0.1") or \
-                 host.endswith((".example.com", ".example.org", ".example.invalid",
-                                ".trycloudflare.com", ".ngrok.io", ".loca.lt")):
+                 parsed.fragment or host in ("localhost", "example.com", "example.org",
+                                             "example.net") or host.endswith(forbidden) or \
+                 not re.fullmatch(r"[a-z0-9-]+(?:\\.[a-z0-9-]+)+", host):
                   problems.append("Shopify App URL must be stable HTTPS origin")
           except ValueError:
               problems.append("Shopify App URL invalid")
