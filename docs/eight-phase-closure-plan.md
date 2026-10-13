@@ -30,6 +30,16 @@ Connected Neon returned **two distinct organization-owned Builder projects**, `v
 
 **What it does not establish:** Both scripts being listed is not proof that Builder application code is deployed; it remains placeholder-only pending actual runtime tests. Neither actual Shopify Partner app identity nor GitHub Environment secret binding/policy is proven by this inventory.
 
+## Read-only Cloudflare binding + Neon branch review (2026-10-13)
+
+The authorized Cloudflare API read-only script/secrets/settings/deployments lookup confirmed both `vsn-builder-staging` and `vsn-builder-production` Worker script records exist in the VSN Cloudflare account, with **one deployment record each**. Crucially, both list **zero bound secret names** and **zero script-settings bindings**. This does *not* establish that the Workers host the Builder application: both remain placeholder-only, and Shopify, DATABASE_URL and live session credentials cannot be assumed present. Script existence is NOT deployment readiness. The Cloudflare settings and secrets metadata was summarized by **name/count only**; no secret values or Worker code was read.
+
+Neon read-only project and branch listings again confirmed distinct staging/production projects, both on **PostgreSQL 18** in `aws-ap-southeast-1`. Each project's only primary branch is named `production` and currently reports `protected: false`. The word "production" is the *branch name* within each distinct Neon project, **not evidence of a cross-tier database mix-up**. Branch protection deserves review before production acceptance; none was changed.
+
+The reviewed, **historical, non-sensitive** snapshot is `config/project/phase1-cloud-observation.json`. CI runs `node scripts/phase1-cloud-observation-check.mjs` and its regression tests; this verifies the correct manifest-to-resource names and flags missing hosted bindings, but **does not re-query cloud accounts**. To require all listed hosted infrastructure prerequisites, run `node scripts/phase1-cloud-observation-check.mjs --require-hosted-ready`; it **currently fails deliberately**. Further changes must use new read-only live evidence and must not rewrite an old observation as if it were current.
+
+This metadata does not satisfy Phase 1 external Shopify Partner account ownership, protected GitHub Environment credential/policy review, or actual tier-specific preflight. **Phase 1 stays 4/7, IN PROGRESS**. GitHub Environment secret values were never read; their existence and protection remain unverified separately from these missing Cloudflare Worker runtime bindings. No hosted SQL, Worker deployment, Neon protection mutation, Shopify API call or merchant data write occurred.
+
 ## Phase 1 identity-only preflight (no Worker/DB deployment)
 
 A previously discovered **phase dependency deadlock** made a strict Staging/Production `env:*:check` require `workers/app.js` and Cloudflare release wiring, even though the approved execution sequence reserves actual hosted application setup for **Phase 4**. This would block legitimate Phase 1 identity verification until a later phase.
