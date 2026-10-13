@@ -10,13 +10,13 @@ The merchant-approved public tiers are **Starter ($30/mo), Sliver ($100/mo), Gol
 4. Pending cancellation retains the paid tier until the verified effective end, then transitions to `inactive`.
 5. Shopify pricing-return URL parameters remain untrusted.
 6. Historical local `core/pro/cro/agency` rows are migration aliases; remap and verify real Partner handles before using them.
-7. Sliver is the exact merchant-approved spelling; it is not `silver`. Platinum handle is `platinum`, not historical `platenium`.
+7. Sliver is the exact merchant-approved spelling and canonical Shopify plan ID `sliver`; it is not `silver`. Platinum handle is `platinum`, not historical `platenium`.
 
 ## Acceptance matrix
 
 Tests cover first install with no contract, verified Starter, Sliver, Gold, Platinum, trialing paid plan, Platinum yearly billing, upgrade/downgrade, cancellation scheduling/effective date, frozen/unfrozen, stale/unknown handles, Shopify shop identity mismatch, retryable 429/5xx errors, bounded retries and reinstall after session cleanup.
 
-The app-uninstalled lifecycle deletes VSN-owned merchant data and its local subscription mirror. On reinstall it must re-query Shopify; a cached row is never commercial authority.
+The app-uninstalled lifecycle deletes VSN-owned merchant data and its local `BuilderSubscription` mirror. On reinstall it must re-query Shopify; a cached row is never commercial authority.
 
 ```env
 SHOPIFY_PARTNER_API_TIMEOUT_MS=8000
