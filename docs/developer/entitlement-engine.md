@@ -16,8 +16,12 @@ Features live in `app/config/entitlements.js` under `ENTITLEMENT_FEATURES`. Capa
 
 Every decision includes a stable code, allowed flag, plan/source/verification metadata and a user-facing message when denied.
 
+## Paid-only storefront subscription contract (2026-10-14)
+
+There are four merchant-visible IDs: `starter`, `sliver`, `gold`, `platinum`. `Sliver` is the owner's spelling. The previous `core`, `pro`, `cro`, `agency` strings are read aliases for migration; they must never be written to new merchant subscriptions. The old Shopify `free` handle is **not** a paid Starter contract. Unknown or canceled/frozen/unverified subscriptions produce `UNSUBSCRIBED_PLAN` (`inactive`) with no features and zero quotas; a verified Shopify trial enables the purchased plan only. All server-side mutation routes must continue enforcing entitlement checks; a display-only lock does not secure a mutation endpoint. No live merchant acceptance has been performed.
+
 ## Production rule
-In production, only the trusted Shopify App Pricing mirror from Q5.2 may grant a paid plan. `VSN_DEFAULT_PLAN` is development-only. If verification is absent or no longer trusted, authority fails closed to Free (internal key `core`).
+In production, only the trusted Shopify App Pricing mirror from Q5.2 may grant a paid plan. `VSN_DEFAULT_PLAN` is development-only. If verification is absent or no longer trusted, authority fails closed to the no-access `inactive` sentinel. Starter must never be granted without an active, verified Shopify contract.
 
 ## Usage counters
 Usage must be stable commercial state, not transient UI/runtime activity. Collaboration seats therefore count the owner plus persisted role assignments, not browser presence rows. Monthly AI usage uses a UTC month boundary.
