@@ -33,6 +33,8 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 **Phase 1 preflight update:** `npm run env:staging:identity:check` and `npm run env:production:identity:check` verify real supplied identity/configuration variables without requiring the Phase 3 Neon schema or Phase 4 Worker application. The full `env:staging:check` / `env:production:check` stay strict and deployment-blocking. CI uses synthetic identities only; **actual GitHub Environment and Shopify Partner registrations remain unverified**, so Phase 1 is still 4/7 and IN PROGRESS. See [phase closeout rules](docs/eight-phase-closure-plan.md).
 
+**Phase 1 infrastructure recheck (2026-10-13):** Both dedicated Neon projects and Cloudflare Worker script names exist, but **Cloudflare currently lists zero Worker secret bindings for both Staging and Production**. Both Neon primary branches report `protected: false`; protections require review before release. This is an authenticated read-only historical observation, **not hosted app readiness or GitHub Environment secret verification**. See `config/project/phase1-cloud-observation.json` and `node scripts/phase1-cloud-observation-check.mjs`. Phase 1 remains **4/7 evidence-tracked, IN PROGRESS**.
+
 ## Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
