@@ -34,6 +34,15 @@ jobs:
           DATABASE_URL: postgresql://dummy:unused@localhost:5432/unused
           DIRECT_URL: postgresql://dummy:unused@localhost:5432/unused
         run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Verify Edge/Node Prisma Client isolation and actual generated models
+        run: node scripts/verify-prisma-worker-client.mjs --generated
+      - name: Recheck Shopify SDK and Neon factory Node compatibility
+        run: |
+          node --test tests/worker-neon-factory.test.mjs
+          node --test tests/worker-real-shopify-sdk.test.mjs
+          node --test tests/worker-shopify-webhook-gate.test.mjs
+      - name: Preserve TypeScript application compatibility with generated Edge code
+        run: npm run typecheck
       - name: Install isolated Wrangler 4.149.0 runner tooling, not tracked
         run: |
           npm exec --yes --package=wrangler@4.149.0 -- wrangler --version
