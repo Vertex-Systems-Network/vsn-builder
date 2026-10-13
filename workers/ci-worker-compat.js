@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "../app/services/shopify-worker-sdk-context.js";
+import { acceptWorkerShopifyAdminRequest } from "../app/services/worker-shopify-admin-gate.js";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { persistWorkerShopifySessionWithGeneration } from "../app/services/worker-shopify-install-session-storage.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
@@ -153,6 +154,58 @@ export default {
     }catch(error){
       checks.wrongProjectUrlDeniedBeforeSdkStorage=!touchedForbiddenStorage &&
         error?.code==="VSN_WORKER_SHOPIFY_BOOTSTRAP_BLOCKED";
+    }
+    // Package and exercise the future Admin request authorization gate in
+    // actual workerd. Authentication responses here are synthetic: the
+    // real Shopify SDK is separately probed for rejecting untrusted requests.
+    try {
+      const sdkSession={
+        id:"offline_ci-merchant.myshopify.com",
+        shop:"ci-merchant.myshopify.com",
+        isOnline:false,accessToken:"workerd-ci-fake-access",
+      };
+      const adminRequest=new Request(sdkEnv.SHOPIFY_APP_URL+
+        "/app?shop=ci-merchant.myshopify.com");
+      let privileged=0,closed=0;
+      const createAdminContext=async()=>({
+        shopify:{authenticate:{async admin(){
+          return {session:sdkSession};
+        }}},
+        database:{
+          builderShopInstallation:{async findUnique(){
+            return {shop:sdkSession.shop,installedAt:new Date("2026-10-13T10:00:00Z"),
+              uninstalledAt:null};
+          }},
+          session:{async findUnique(){return {...sdkSession};}},
+        },
+        async close(){closed++},
+      });
+      const accepted=await acceptWorkerShopifyAdminRequest(adminRequest,sdkEnv,{
+        createSdkContext:createAdminContext,
+        async onAuthenticated({shop}){
+          if(shop===sdkSession.shop)privileged++;
+          return new Response(null,{status:204});
+        },
+      });
+      const forged=await acceptWorkerShopifyAdminRequest(new Request(
+        sdkEnv.SHOPIFY_APP_URL+"/app?shop=other.myshopify.com"),sdkEnv,{
+        createSdkContext:createAdminContext,
+        async onAuthenticated(){privileged++;return new Response(null,{status:200})},
+      });
+      const missing=await acceptWorkerShopifyAdminRequest(adminRequest,sdkEnv,{
+        createSdkContext:async()=>({
+          ...(await createAdminContext()),
+          database:{
+            builderShopInstallation:{async findUnique(){return null}},
+            session:{async findUnique(){return sdkSession}},
+          },
+        }),
+        async onAuthenticated(){privileged++;return new Response(null,{status:200})},
+      });
+      checks.adminSdkShopIsolationGate=accepted.status===204 && forged.status===401 &&
+        missing.status===403 && privileged===1 && closed===3;
+    }catch{
+      checks.adminSdkShopIsolationGate=false;
     }
     // The exact official PrismaSessionStorage implementation persists an
     // offline Shopify session and its installation generation in a single
