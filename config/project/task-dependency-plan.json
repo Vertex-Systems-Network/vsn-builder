@@ -381,12 +381,14 @@
       "title": "Enforce paid-tier authorization across every server-side merchant mutation",
       "workstream": "Security",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [
         "T007"
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/164",
-      "evidence": [],
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/170"
+      ],
       "acceptance": "Create/save/publish/widgets/forms/AI protected by trusted paid trial/subscription; no Free fallback"
     },
     {
