@@ -66,6 +66,11 @@ try{
  assert.equal(check.checks.missingShopifyCspCallbackBlocked,true,"Workerd SSR accepted missing Shopify CSP provider");
  assert.equal(check.checks.missingFrameAncestorsBlocked,true,"Workerd SSR accepted CSP lacking frame-ancestors");
  console.log("PASS real Workerd React Web Streams HTML, CSP callback and frame-ancestors rejection");
+ assert.equal(check.checks.realShopifySdkCspRendered,true,"Official Shopify SDK failed merchant-scoped CSP inside real workerd");
+ assert.equal(check.checks.shopifySdkSessionClosed,true,"Official SDK synthetic session context was not closed");
+ assert.equal(check.checks.wrongProjectUrlDeniedBeforeSdkStorage,true,"Cross-tier Neon URL was not refused before Shopify SDK storage");
+ console.log("PASS actual Shopify SDK merchant frame-ancestors and request-scoped cleanup in workerd");
+
  const blocked=await probe("/app");
  assert.equal(blocked.status,503);
  assert(!blocked.body.includes("session"),"No authenticated app runtime should be exposed");
