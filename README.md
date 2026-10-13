@@ -14,6 +14,23 @@ VSN Builder is a Shopify page-builder application. This repository is being sepa
 
 Development and Staging UI should display **Dev** / **Staging** environment badges; the requested display-version badge is **v1.0.0**. The internal package version is tracked separately.
 
+## Mandatory eight-phase closure sequence (requested order)
+
+The tracked execution order below is enforced by `scripts/phase-closure-check.mjs`. **A historical CI pass does not close a phase**; real merchant and hosted evidence is still required. The status list is maintained at [eight-phase closeout plan](docs/eight-phase-closure-plan.md) and `config/project/phase-closure-sequence.json`.
+
+| # | Phase | Evidence-tracked subtasks | Current status |
+| --- | --- | --- | --- |
+| 1 | Environment Setup | 3/7 | **IN PROGRESS** — 3-tier Shopify identities/secrets still unverified |
+| 2 | Local Application & Browser | 2/4 | QUEUED — real Dev install/editor acceptance missing |
+| 3 | PostgreSQL / Neon Database | 3/5 | QUEUED — hosted Neon migrations unverified |
+| 4 | Cloudflare Worker Runtime | 1/4 | QUEUED — hosted Worker app missing |
+| 5 | Shopify Authentication & Sessions | 2/4 | QUEUED — real merchant OAuth/reinstall pending |
+| 6 | Webhooks & Mutation Security | 2/4 | QUEUED — trusted uninstall event provenance missing |
+| 7 | Application Features & E2E | 1/5 | QUEUED — merchant editor/billing E2E pending |
+| 8 | Security, CI & Deployment | 1/6 | QUEUED — development audit #96 still red |
+
+No phase is currently closed. This is an evidence-inventory count, **not a feature-completion estimate** or readiness to deploy. Phase 2 may become active only after Phase 1 passes all required identity, configuration and separation acceptance checks.
+
 ## Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
