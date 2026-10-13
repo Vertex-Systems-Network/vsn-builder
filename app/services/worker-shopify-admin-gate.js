@@ -46,6 +46,21 @@ class RollbackResponse extends Error {
 }
 const rollback=(status)=>{throw new RollbackResponse(denied(status))};
 
+// Normalize response headers BEFORE a successful mutation commits. Some
+// responses (Response.redirect(), fetch() results) expose immutable Headers:
+// modifying them after Prisma commits would otherwise return an HTTP 503
+// despite persisting merchant writes. Construct a new Response with a
+// mutable header copy while the transaction is still reversible.
+function securedResponse(result) {
+  if(!(result instanceof Response))throw new TypeError("Missing HTTP Response");
+  const headers=new Headers(result.headers);
+  headers.set("cache-control","no-store");
+  headers.set("x-content-type-options","nosniff");
+  return new Response(result.body,{
+    status:result.status,statusText:result.statusText,headers,
+  });
+}
+
 async function guardedAdminRequest(request,env,{
   createSdkContext=createWorkerShopifySdkContext,onAuthenticated,
 }={},mutation=false) {
@@ -117,8 +132,17 @@ async function guardedAdminRequest(request,env,{
           request,shop,session,admin:authenticated.admin,transaction
         });
         if(!(result instanceof Response))throw new TypeError("Mutation callback did not return Response");
-        if(result.status>=400)throw new RollbackResponse(result);
-        return result;
+        // A returned redirect is not the same as a Shopify SDK-THROWN
+        // reauth redirect. Refuse to commit writes on unreviewed 3xx or
+        // status-0 results; keep Shopify-thrown redirects untouched.
+        if(result.status<200 || result.status>=300 && result.status<400)
+          rollback(503);
+        // The response must be fully constructible and secured WHILE Prisma
+        // can still roll back. Invalid/immutable source headers, a locked
+        // stream or unsupported status cannot turn a committed write into 503.
+        const finalized=securedResponse(result);
+        if(result.status>=400)throw new RollbackResponse(finalized);
+        return finalized;
       },{maxWait:5000,timeout:12000});
     }else{
       // GET is for loaders/read-only data. Do not expose the mutable DB
@@ -128,16 +152,16 @@ async function guardedAdminRequest(request,env,{
       });
     }
     if(!(response instanceof Response))return denied(503);
-    response.headers.set("cache-control","no-store");
-    response.headers.set("x-content-type-options","nosniff");
-    return response;
+    // POST responses were already secured inside the still-open transaction.
+    // Do not perform any throwable processing after PostgreSQL COMMIT.
+    return mutation?response:securedResponse(response);
   } catch(error) {
     if(error instanceof RollbackResponse){
       // The database transaction has already been rolled back. Preserve
       // intentional client errors, never surface arbitrary server failures.
       if(error.response.status>=500)return denied(503);
-      error.response.headers.set("cache-control","no-store");
-      error.response.headers.set("x-content-type-options","nosniff");
+      // The transactional branch already finalized the safe response.
+      // Failures during finalization occurred BEFORE the rollback, not here.
       return error.response;
     }
     // Shopify SDK can throw a Response to start reauthentication. Forward it
