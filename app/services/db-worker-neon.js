@@ -4,6 +4,7 @@
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../../generated/prisma-edge/client.ts";
 import manifests from "../../config/deployment/environments.json" with { type: "json" };
+import { inspectHostedNeonUrlPair } from "./neon-target-policy.js";
 
 const own=(record,name)=>Object.prototype.hasOwnProperty.call(record||{},name);
 export function inspectWorkerNeonEnvironment(env) {
@@ -35,6 +36,13 @@ export function inspectWorkerNeonEnvironment(env) {
     if(!parsed.username||!parsed.password||!parsed.pathname||parsed.pathname==="/")issues.push("Neon database credentials incomplete");
     if(parsed.searchParams.get("sslmode")!=="require")issues.push("Neon TLS policy missing");
   }catch{issues.push("Neon URL malformed")}
+  // DIRECT_URL normally belongs to the migration runner, not the Worker.
+  // If mistakenly bound to a Worker, fail closed rather than silently accept
+  // a Production migration target in a Staging environment.
+  if (env?.DIRECT_URL) {
+    const identity=inspectHostedNeonUrlPair(tier,env);
+    issues.push(...identity.issues);
+  }
   return {ready:issues.length===0,issues,tier};
 }
 export function createWorkerNeonPrisma(env,{Adapter=PrismaNeon,Client=PrismaClient}={}) {
