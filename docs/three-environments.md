@@ -73,6 +73,10 @@ npm run env:production:check  # intentionally fails until PostgreSQL/Worker port
 
 The `VSN Production Confidence` workflow continues to test the existing SQLite implementation. Its green status does **not** certify PostgreSQL or Cloudflare.
 
+## Verified Neon connection identity guard (not a deployed application)
+
+On 2026-10-13 the connected Neon account returned Staging endpoint `ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech` and separate Production endpoint `ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech`. These are publicly addressable database endpoint hostnames, **not database credentials**. The future Worker Prisma constructor now requires its `DATABASE_URL` host to equal its tier's exact endpoint hostname, or its corresponding `-pooler` variant. A caller-provided `NEON_PROJECT_ID` alone never proves database isolation. Existing staging/production SQL, schema migration and live Shopify access remain **unverified and unperformed**. Endpoint rotation must update the reviewed manifest and regression tests before a release, without weakening isolation.
+
 ## Cloudflare infrastructure inventory (verified 2026-10-13)
 
 Isolated Workers `vsn-builder-staging` and `vsn-builder-production` have been created in the VSN Cloudflare account. Both currently contain **unavailable/503 placeholder code**, not a deployed Shopify application. Their `workers.dev` public subdomain and preview URL access are disabled; no merchant traffic should be pointed at them. Their presence does **not** satisfy the Worker application compatibility, database migration, Shopify auth, or signed session gates. Existing non-Builder Workers must not be reused or overwritten.
