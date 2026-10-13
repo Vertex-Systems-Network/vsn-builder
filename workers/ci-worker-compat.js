@@ -6,6 +6,7 @@ import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/ser
 import { createWorkerShopifySdkContext } from "../app/services/shopify-worker-sdk-context.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
 import { renderWorkerDocument } from "../app/services/worker-ssr-webstream.js";
+import { SHOPIFY_EXPECTED_SCOPES } from "../app/config/shopifyIntegration.js";
 
 const LOCKED={ "cache-control":"no-store", "content-type":"application/json; charset=utf-8", "x-content-type-options":"nosniff" };
 export default {
@@ -88,6 +89,67 @@ export default {
       checks.missingFrameAncestorsBlocked=false;
     } catch (error) {
       checks.missingFrameAncestorsBlocked=String(error?.message||"").includes("frame-ancestors is missing");
+    }
+    // Integration acceptance: let the real Shopify React Router SDK supply
+    // merchant-scoped CSP inside actual workerd, not a handwritten callback.
+    // All app credentials, session data, and rendered HTML are synthetic.
+    const sdkEnv={
+      ...fake,
+      SHOPIFY_API_KEY:"a".repeat(32),
+      SHOPIFY_API_SECRET:"synthetic-only-workerd-sdk-secret",
+      SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+      SHOPIFY_APP_URL:"https://staging.builder.example.org",
+      SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
+    };
+    const merchantRequest=new Request(sdkEnv.SHOPIFY_APP_URL+"/app?shop=ci-merchant.myshopify.com");
+    let storageOpened=false,storageClosed=false,scoped;
+    const sessionStorage={
+      async storeSession(){return true;},
+      async loadSession(){return undefined;},
+      async deleteSession(){return true;},
+      async deleteSessions(){return true;},
+      async findSessionsByShop(){return [];},
+    };
+    try {
+      scoped=await createWorkerShopifySdkContext(merchantRequest,sdkEnv,{
+        async createSessionContext(){
+          storageOpened=true;
+          return {sessionStorage,async close(){storageClosed=true;}};
+        },
+      });
+      const document=await renderWorkerDocument({
+        request:merchantRequest,
+        reactElement:createElement("main",null,"VSN official Shopify Workerd CSP probe"),
+        addShopifyHeaders:scoped.shopify.addDocumentResponseHeaders,
+      });
+      const html=await document.text();
+      const csp=document.headers.get("content-security-policy")||"";
+      checks.realShopifySdkCspRendered=storageOpened && document.status===200 &&
+        html.includes("VSN official Shopify Workerd CSP probe") &&
+        csp.includes("frame-ancestors https://ci-merchant.myshopify.com") &&
+        csp.includes("https://admin.shopify.com");
+    } catch {
+      checks.realShopifySdkCspRendered=false;
+    } finally {
+      if(scoped){
+        try{await scoped.close();}catch{storageClosed=false;}
+      }
+    }
+    checks.shopifySdkSessionClosed=storageOpened && storageClosed;
+    let touchedForbiddenStorage=false;
+    try {
+      await createWorkerShopifySdkContext(merchantRequest,{
+        ...sdkEnv,
+        DATABASE_URL:sdkEnv.DATABASE_URL.replace(
+          "ep-little-dream-b3g6puj2","ep-jolly-truth-b3xbibzp"
+        ),
+      },{
+        createSessionContext(){touchedForbiddenStorage=true;},
+      });
+      checks.wrongProjectUrlDeniedBeforeSdkStorage=false;
+    }catch(error){
+      checks.wrongProjectUrlDeniedBeforeSdkStorage=!touchedForbiddenStorage &&
+        error?.code==="VSN_WORKER_SHOPIFY_BOOTSTRAP_BLOCKED";
     }
     return new Response(JSON.stringify({
       ciOnly:true,ready:false,modulesLoaded:Object.values(checks).every(Boolean),checks,
