@@ -197,6 +197,71 @@ test("immutable fetch Response is normalized before transaction commit",async()=
  assert.equal(fx.actions.filter(x=>x==="commit").length,1);
  assert.equal(fx.closes,1);
 });
+test("failed streamed POST response rolls back all previously staged writes",async()=>{
+ const fx=fixture();
+ const errorStream=new ReadableStream({
+  start(controller){
+   controller.enqueue(new TextEncoder().encode("partial-json"));
+   controller.error(new Error("private-token-must-not-leak"));
+  },
+ });
+ const r=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"stream-error-must-roll-back"},
+   });
+   return new Response(errorStream,{status:200});
+  },
+ });
+ assert.equal(r.status,503);
+ assert.equal(await r.text(),"");
+ assert.equal(fx.stored.scope,undefined);
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+});
+test("oversized streamed POST response fails closed before transaction commit",async()=>{
+ const fx=fixture();
+ const r=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"oversized-stream-must-roll-back"},
+   });
+   return new Response(new Uint8Array(256*1024+1),{status:200});
+  },
+ });
+ assert.equal(r.status,503);
+ assert.equal(fx.stored.scope,undefined);
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+});
+test("successful streamed POST body is buffered before commit with security headers",async()=>{
+ const fx=fixture();
+ const stream=new ReadableStream({
+  start(controller){
+   controller.enqueue(new TextEncoder().encode('{"saved":'));
+   controller.enqueue(new TextEncoder().encode('true}'));
+   controller.close();
+  },
+ });
+ const r=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"short-stream-committed"},
+   });
+   return new Response(stream,{status:200,headers:{"content-type":"application/json"}});
+  },
+ });
+ assert.equal(r.status,200);
+ assert.equal(await r.text(),'{"saved":true}');
+ assert.equal(r.headers.get("cache-control"),"no-store");
+ assert.equal(r.headers.get("x-content-type-options"),"nosniff");
+ assert.equal(fx.stored.scope,"short-stream-committed");
+ assert.equal(fx.actions.filter(x=>x==="commit").length,1);
+ assert.equal(fx.closes,1);
+});
 test("unconstructible response cannot commit merchant writes",async()=>{
  const fx=fixture();
  const r=await acceptWorkerShopifyAdminMutation(request(),env,{
