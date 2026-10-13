@@ -26,6 +26,10 @@ test("unconfigured Shopify header callback is a hard failure, not a weak CSP",as
 test("a callback that forgets embedded Shopify CSP is rejected",async()=>{
  await assert.rejects(renderWorkerDocument({request:req(),reactElement:React.createElement("div"),addShopifyHeaders:()=>{}}),/Content-Security-Policy is missing/);
 });
+test("a weak CSP without frame-ancestors cannot be used for Shopify embedding",async()=>{
+ const weak=(request,headers)=>headers.set("Content-Security-Policy","default-src 'self'");
+ await assert.rejects(renderWorkerDocument({request:req(),reactElement:React.createElement("div"),addShopifyHeaders:weak}),/frame-ancestors is missing/);
+});
 test("callback errors propagate before any response is returned",async()=>{
  await assert.rejects(renderWorkerDocument({request:req(),reactElement:React.createElement("div"),addShopifyHeaders(){throw new Error("authentication not configured")}}),/authentication not configured/);
 });
