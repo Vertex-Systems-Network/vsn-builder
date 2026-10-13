@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useEffect, useRef } from "react";
 import {
 	isRouteErrorResponse,
@@ -565,6 +566,8 @@ export async function action({
 		await authenticate.admin(request);
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view the visual editor.", { status: 403 });
 
+	const paidDenial = await paidMutationDenied(db, session.shop);
+	if (paidDenial) return paidDenial;
 	const builderRole = getBuilderRole(session);
 	const builderActorName = builderActor(session);
 	const rebuildPublishedAssets = async () => {
