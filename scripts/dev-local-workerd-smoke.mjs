@@ -74,6 +74,7 @@ try{
  assert.equal(check.checks.tamperedWebhookDeniedBeforeStorage,true,"Tampered Shopify webhook triggered SDK storage before signature rejection");
  assert.equal(check.checks.uninstallRevokedOnlyMerchantSessions,true,"Uninstall deleted the wrong merchant session records");
  assert.equal(check.checks.uninstallReplayIsIdempotent,true,"Uninstall retry was not idempotent");
+ assert.equal(check.checks.delayedOldUninstallCannotDeleteReinstall,true,"Delayed uninstall revoked a newer reinstalled merchant session");
  console.log("PASS real Workerd signed Shopify uninstall revokes only target merchant sessions, retries safely and blocks tampering");
 
  const blocked=await probe("/app");
