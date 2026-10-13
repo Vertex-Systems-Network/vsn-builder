@@ -4,6 +4,10 @@ VSN Builder is a Shopify page-builder application. This repository is being sepa
 
 > **Deployment warning (13 Oct 2026):** The hosted Worker integration is **not functional or released**. The current engineering work is on **unmerged stacked PRs**, not the default branch. Staging/Live Workers are placeholders. **Do not point merchant traffic at them or submit the Shopify app for review.**
 
+## Owner-approved Shopify pricing contract (2026-10-14)
+
+**One public Shopify App: VSN | Builder. Four paid plans and no Free tier:** Starter (`starter`, $30/month), Sliver (`sliver`, $100/month), Gold (`gold`, $150/month), Platinum (`platinum`, $350/month or $3,000/year). **Each includes a 10-day Shopify free trial.** The names and public handles are the exact plan IDs. No active verified Shopify trial/subscription means **zero builder access**. Legacy internal keys are read aliases, not public billing IDs. Shopify Partner Dashboard pricing setup and real merchant verification are pending; this is source-code configuration in an unmerged PR, not published prices. Do not submit for Shopify review before all release gates are proven green.
+
 ## Environment identity and promotion
 
 | Tier | User-facing name | Code source | Storage | Worker | Verification |
