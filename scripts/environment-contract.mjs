@@ -8,7 +8,11 @@ const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 const exists = (p) => fs.existsSync(path.join(root, p));
 const mode = process.argv.find((arg) => arg.startsWith("--environment="))?.split("=")[1] || "repository";
 const modes = ["repository", "local", "staging", "production"];
-if (!modes.includes(mode)) {
+// Phase 1 identity-only checks must not depend on Phase 3 PostgreSQL
+// migrations or Phase 4 hosted Worker entry/deployment. The default
+// Staging/Production preflight stays strict and deployment-blocking.
+const identityOnly = process.argv.includes("--identity-only");
+if (!modes.includes(mode) || (identityOnly && mode === "repository")) {
   console.error("Usage: node scripts/environment-contract.mjs --environment=repository|local|staging|production");
   process.exit(2);
 }
@@ -81,6 +85,12 @@ if (mode === "staging" || mode === "production") {
   assert(isTrue(required("SHOPIFY_BILLING_TEST_MODE")) === desiredTest, "Billing test mode does not match " + mode + ".");
   const clientId = required("SHOPIFY_API_KEY");
   required("SHOPIFY_API_SECRET");
+  if (identityOnly) {
+    assert(String(process.env.NEON_PROJECT_ID || "") === manifest[mode].neon_project_id,
+      mode + " Neon project identity must match exact configured tier.");
+    assert(String(process.env.CLOUDFLARE_WORKER_NAME || "") === manifest[mode].cloudflare_worker,
+      mode + " Worker identity must match exact configured tier.");
+  }
   assert(clientId !== sourceClientId && (!exists("shopify.app.local.toml") || clientId !== parseValue(read("shopify.app.local.toml"), "client_id")), mode + " must use a dedicated non-Dev Shopify app.");
   assert(/^[a-f0-9]{32}$/i.test(clientId), mode + " Shopify client ID must be valid.");
   if (mode === "production") {
@@ -102,14 +112,18 @@ if (mode === "staging" || mode === "production") {
   for(const issue of connectionIdentity.issues)
     assert(false, mode + " Neon migration target blocked: " + issue);
 
-  // Fail closed until the required PostgreSQL schema, migrations and Worker entry point really exist.
-  const schema = read("prisma/schema.prisma");
-  assert(/datasource\s+db\s*\{[^}]*provider\s*=\s*"postgresql"/s.test(schema) ||
-    (exists("prisma/cloud/schema.prisma") && /provider\s*=\s*"postgresql"/.test(read("prisma/cloud/schema.prisma"))),
-    "PostgreSQL Prisma schema is not implemented; SQLite cannot run on Neon.");
-  assert(exists("prisma/cloud/migrations/migration_lock.toml"), "Hosted PostgreSQL migrations are not implemented.");
-  assert(exists("workers/app.js") && exists("wrangler." + mode + ".jsonc"),
-    "Cloudflare Worker entry point and configuration are not implemented.");
+  // Phase 3 schema/migration and Phase 4 hosted app readiness are NOT
+  // prerequisites for verifying Phase 1 credentials and tier identity.
+  // Crucially, normal env:staging:check/env:production:check keep all gates.
+  if (!identityOnly) {
+    const schema = read("prisma/schema.prisma");
+    assert(/datasource\s+db\s*\{[^}]*provider\s*=\s*"postgresql"/s.test(schema) ||
+      (exists("prisma/cloud/schema.prisma") && /provider\s*=\s*"postgresql"/.test(read("prisma/cloud/schema.prisma"))),
+      "PostgreSQL Prisma schema is not implemented; SQLite cannot run on Neon.");
+    assert(exists("prisma/cloud/migrations/migration_lock.toml"), "Hosted PostgreSQL migrations are not implemented.");
+    assert(exists("workers/app.js") && exists("wrangler." + mode + ".jsonc"),
+      "Cloudflare Worker entry point and configuration are not implemented.");
+  }
 }
 
 if (failures.length) {
@@ -117,5 +131,7 @@ if (failures.length) {
   console.error("Environment " + mode + ": BLOCKED (" + failures.length + " contract violation(s)).");
   process.exitCode = 1;
 } else {
-  console.log("Environment " + mode + ": PASS (configuration contract only; no deployment/merchant acceptance implied).");
+  console.log("Environment " + mode + ": PASS (" +
+    (identityOnly ? "Phase 1 identity/config" : "full configuration contract") +
+    " only; no external identity ownership, database connectivity, Shopify authentication or deployment verified).");
 }
