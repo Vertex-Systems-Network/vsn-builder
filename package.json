@@ -10,6 +10,8 @@
     "env:local:check": "node scripts/environment-contract.mjs --environment=local",
     "env:staging:check": "node scripts/environment-contract.mjs --environment=staging",
     "env:production:check": "node scripts/environment-contract.mjs --environment=production",
+    "env:staging:identity:check": "node scripts/environment-contract.mjs --environment=staging --identity-only",
+    "env:production:identity:check": "node scripts/environment-contract.mjs --environment=production --identity-only",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "node scripts/deployment-blocked.mjs deploy",
