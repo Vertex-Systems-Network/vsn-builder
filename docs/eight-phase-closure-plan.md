@@ -30,6 +30,23 @@ Connected Neon returned **two distinct organization-owned Builder projects**, `v
 
 **What it does not establish:** Both scripts being listed is not proof that Builder application code is deployed; it remains placeholder-only pending actual runtime tests. Neither actual Shopify Partner app identity nor GitHub Environment secret binding/policy is proven by this inventory.
 
+## Phase 1 identity-only preflight (no Worker/DB deployment)
+
+A previously discovered **phase dependency deadlock** made a strict Staging/Production `env:*:check` require `workers/app.js` and Cloudflare release wiring, even though the approved execution sequence reserves actual hosted application setup for **Phase 4**. This would block legitimate Phase 1 identity verification until a later phase.
+
+Two new **configuration-only** commands separate that concern without changing existing deployment gates:
+
+```bash
+npm run env:staging:identity:check
+npm run env:production:identity:check
+```
+
+They require the tier's *actual* environment variables (never check secrets into Git). Both validate the Shopify Client ID and secret presence, tier-specific billing test mode, HTTPS app URL, exact independent `NEON_PROJECT_ID` and `CLOUDFLARE_WORKER_NAME`, and pinned Neon direct/pooled hosts, matching database name/role and TLS. Production must use the explicit matching `SHOPIFY_PRODUCTION_CLIENT_ID`; Staging must not reuse the supplied Production identity. The Local preflight still checks the unique runtime `shopify.app.local.toml` Dev app and SQLite. No mode prints credentials or accesses remote services.
+
+**Security distinction:** Existing `npm run env:staging:check` and `npm run env:production:check` continue to require Phase 3 schemas/migrations and Phase 4 real Worker entry/configuration, and remain FAIL-CLOSED. An identity-only result proves **syntax and cross-tier mapping only**, not that Shopify owns the Client ID, GitHub scoped secrets exist, Neon credentials work, or the Workers serve app code. GitHub Environments and real credential preflight require separate authorized, protected execution on the appropriate branches. CI tests use fake credentials solely to validate these checks and their rejection cases.
+
+Phase 1 stays **4/7 evidence-tracked; NOT closed**, until separately authenticated Shopify registration, GitHub secret bindings/protection and actual protected tier-specific preflight are verified. Code having an identity preflight does not make its real invocation passed.
+
 ## Phase 1 outstanding environment closure work
 
 - Independently verify three **distinct** Shopify Partner app identities for **Development**, **Staging** and **Live**; the original default `shopify.app.toml` client ID remains unclassified. Tracked config client IDs are placeholders, by design.
