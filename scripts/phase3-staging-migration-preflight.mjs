@@ -16,7 +16,7 @@ export function inspectStagingMigrationGate(env={}) {
     issues.push("Migration approval has not been attested");
   const backup=String(env.VSN_STAGING_BACKUP_EVIDENCE||"");
   if(!/^br-[a-z0-9-]{8,90}$/.test(backup) ||
-     backup==="br-wandering-queen-b3mmztjy")
+     backup==="br-square-mountain-b3ij6q2s")
     issues.push("Independent, tested Staging backup/restore branch evidence missing");
   // Validate secrets by shape and identical DB user/name; do not print them.
   const pair=inspectHostedNeonUrlPair("staging",{
