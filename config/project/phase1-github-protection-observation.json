@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "observed_on": "2026-10-13",
+  "source": "authorized_read_only_github_repository_branch_and_ruleset_endpoints",
+  "scope": "historical_repository_branch_ruleset_metadata_not_environment_policy_or_secret_attestation",
+  "repository": "Vertex-Systems-Network/vsn-builder",
+  "branches": {
+    "main": {
+      "protected": true,
+      "head_sha": "d7049b55c0ffd3a9ff7eb90480c6d7ce3284dbcd"
+    },
+    "development": {
+      "protected": false,
+      "head_sha": "d7049b55c0ffd3a9ff7eb90480c6d7ce3284dbcd"
+    }
+  },
+  "rulesets": [
+    {
+      "id": 23685287,
+      "name": "Protect main",
+      "enforcement": "active",
+      "branch_refs": [
+        "~DEFAULT_BRANCH",
+        "refs/heads/main"
+      ],
+      "rules": [
+        "non_fast_forward",
+        "required_status_checks",
+        "pull_request",
+        "deletion"
+      ],
+      "required_status_checks": [
+        "Analyze JavaScript and TypeScript",
+        "verify"
+      ],
+      "strict_required_status_checks_policy": true,
+      "pull_request_review_count": 0,
+      "require_review_thread_resolution": true
+    }
+  ],
+  "preflight_implications": {
+    "staging_protected_source": "development",
+    "staging_can_dispatch_now": false,
+    "staging_reason": "development branch reports protected:false; protected GitHub Environment preflight fail-closes",
+    "production_protected_source": "main",
+    "production_protected_source_available": true,
+    "production_real_environment_secrets_verified": false
+  },
+  "not_verified": [
+    "GitHub Environment cloudflare-staging reviewer and deployment branch policies",
+    "GitHub Environment cloudflare-production reviewer and deployment branch policies",
+    "Presence or values of GitHub Environment scoped secrets",
+    "Shopify Partner ownership of development, staging and production app identities",
+    "Actual protected branch preflight execution"
+  ]
+}
