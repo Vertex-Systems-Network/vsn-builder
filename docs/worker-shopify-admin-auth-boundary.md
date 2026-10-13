@@ -10,6 +10,12 @@
 4. Resolve exactly this shop's active `BuilderShopInstallation` row and exact SDK session ID from the same request-scoped Prisma database. Require a valid installedAt, null uninstalledAt, matching shop, online/offline mode and identical persisted token before `onAuthenticated` is allowed.
 5. Return only a real `Response`, with no-store/nosniff response headers. The callback must finish its DB work before returning: session/Prisma context is **always closed** in `finally`. Return Shopify-SDK-thrown reauth `Response` unchanged, preserving redirect and Set-Cookie headers. Unexpected SDK/Prisma errors return empty sanitized HTTP 503 without URLs or tokens.
 
+## Expiring Shopify access sessions
+
+The Shopify SDK's authenticated request is authoritative for verifying the incoming browser ID token, but an ID token remaining valid does **not** make the previously stored Admin API access token unexpired. VSN Builder enables `future.expiringOfflineAccessTokens` and uses user-bound online sessions, so the Admin gate checks `Session.expires` on **both** the SDK-returned session and its currently persisted Prisma session, independently. Any non-null invalid, non-Date, non-finite or expired value fails with HTTP 403. Online sessions must have explicit finite, future expiration in both objects; offline sessions with no expiry remain supported for nonexpiring token modes. Invalid expiration never authorizes either GET or POST, and POST rechecks expiration within its row-locked Prisma transaction.
+
+This check is a defense-in-depth **application access decision**. It does not refresh Shopify tokens, perform OAuth/token exchange, or override the SDK's own authentication. Browser session token expiration and Admin API access-token expiration are distinct; merchant reinstallation still requires a separate verified flow. Actual disposable PostgreSQL testing demonstrates that an expired saved offline token blocks GET and POST while leaving installation state unchanged. Real local Workerd also denies an expired merchant token in a synthetic fixture.
+
 ## Verification
 
 `tests/worker-shopify-admin-gate.test.mjs` covers real Shopify SDK rejection of unauthenticated requests, synthetic authenticated-context acceptance, SDK-owned redirect preservation, forged shop query/bearer denial, wrong database tier, inactive installation and invalid/stale token, missing DB table, generic error sanitization and cleanup.
