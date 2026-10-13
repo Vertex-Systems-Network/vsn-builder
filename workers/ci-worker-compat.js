@@ -214,7 +214,7 @@ export default {
       const merchant="ci-mutating.myshopify.com";
       const active={id:"offline_"+merchant,shop:merchant,
         isOnline:false,accessToken:"synthetic-locked-session"};
-      let lockClaims=0,performed=0,closed=0;
+      let lockClaims=0,performed=0,closed=0,committed=0;
       const req=new Request(sdkEnv.SHOPIFY_APP_URL+"/app/pages?shop="+merchant,{
         method:"POST"
       });
@@ -227,13 +227,15 @@ export default {
           }},
           session:{async findUnique(){return active}},
           async $transaction(fn){
-            return fn({
+            const result=await fn({
               builderShopInstallation:{async updateMany(){
                 lockClaims++;
                 return {count:revoked?0:1};
               }},
               session:{async findUnique(){return active}},
             });
+            committed++;
+            return result;
           },
         },
         async close(){closed++},
@@ -249,10 +251,17 @@ export default {
         createSdkContext:factory({revoked:true}),
         async onAuthenticated(){performed++;return new Response(null,{status:204})},
       });
+      const rejectedBusiness=await acceptWorkerShopifyAdminMutation(req,sdkEnv,{
+        createSdkContext:factory(),
+        async onAuthenticated(){return new Response("no-change",{status:422})},
+      });
       checks.adminMutationRequiresLockedSession=good.status===204 &&
-        stale.status===403 && performed===1 && lockClaims===2 &&
-        closed===2;
-    }catch{checks.adminMutationRequiresLockedSession=false}
+        stale.status===403 && performed===1 && lockClaims===3 &&
+        closed===3;
+      checks.adminFailedMutationRollback=rejectedBusiness.status===422 &&
+        committed===1;
+    }catch{checks.adminMutationRequiresLockedSession=false;
+      checks.adminFailedMutationRollback=false}
     // The exact official PrismaSessionStorage implementation persists an
     // offline Shopify session and its installation generation in a single
     // synthetic transaction INSIDE workerd (no Neon query/merchant API).
