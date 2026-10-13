@@ -220,6 +220,36 @@ test("real PostgreSQL admin POST holds row lock and commits only authenticated m
   if(status===500)assert.equal(await refused.text(),"");
  }
 
+ // Expiring offline tokens are used by Shopify. The persisted token can
+ // expire independently of the SDK-authenticated ID token, so a previously
+ // valid session must immediately lose both GET and POST privileges.
+ await db.session.update({
+  where:{id:"offline_"+adminShop},
+  data:{expires:new Date("2020-01-01T00:00:00Z")},
+ });
+ let executedExpired=false;
+ const expiredPost=await acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,async onAuthenticated(){
+   executedExpired=true;return new Response(null,{status:204});
+  },
+ });
+ const expiredGet=await acceptWorkerShopifyAdminRequest(
+  new Request(e.SHOPIFY_APP_URL+"/app?shop="+adminShop),e,{
+   ...options,async onAuthenticated(){
+    executedExpired=true;return new Response(null,{status:200});
+   },
+  });
+ assert.equal(expiredPost.status,403);
+ assert.equal(expiredGet.status,403);
+ assert.equal(executedExpired,false);
+ assert.equal((await db.builderShopInstallation.findUnique({
+  where:{shop:adminShop},
+ })).uninstalledAt,null);
+ await db.session.update({
+  where:{id:"offline_"+adminShop},
+  data:{expires:null},
+ });
+
  // An uninstall transaction acquires this same row, revokes generation and
  // deletes session, while an authenticated POST attempts to enter. The POST
  // must not execute ANY merchant callback after the uninstall commits.
