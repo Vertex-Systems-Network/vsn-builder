@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { BUILDER_PANEL_SYSTEM_MAP } from "../utils/builder-permissions.js";
@@ -54,6 +55,7 @@ export async function action({request, params}) {
   assertTrustedMutationRequest(request);
   const panel=String(params.panel||"");
   const {session}=await authenticate.admin(request.clone());
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   const system=BUILDER_PANEL_SYSTEM_MAP[panel];
   if(system && !(await canAccessBuilderSystem(db,session,system))) return panelResponse({error:"VSN role permission denied.",status:403},panel,403);
   try{
