@@ -20,7 +20,7 @@ The tracked execution order below is enforced by `scripts/phase-closure-check.mj
 
 | # | Phase | Evidence-tracked subtasks | Current status |
 | --- | --- | --- | --- |
-| 1 | Environment Setup | 3/7 | **IN PROGRESS** — 3-tier Shopify identities/secrets still unverified |
+| 1 | Environment Setup | 4/7 | **IN PROGRESS** — 3-tier Shopify identities/secrets and real preflight still unverified |
 | 2 | Local Application & Browser | 2/4 | QUEUED — real Dev install/editor acceptance missing |
 | 3 | PostgreSQL / Neon Database | 3/5 | QUEUED — hosted Neon migrations unverified |
 | 4 | Cloudflare Worker Runtime | 1/4 | QUEUED — hosted Worker app missing |
