@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -23,6 +24,8 @@ export async function loader({ request }) {
 export async function action({ request }) {
   const { session } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) throw new Response("Your role does not have access to the visual editor.", { status: 403 });
+  const paidDenial = await paidMutationDenied(db, session.shop);
+  if (paidDenial) return paidDenial;
   const role = getBuilderRole(session);
   if (!canBuilder(role, "edit")) return Response.json({ ok: false, error: "Your role cannot edit the library." }, { status: 403 });
   const form = await request.formData();
