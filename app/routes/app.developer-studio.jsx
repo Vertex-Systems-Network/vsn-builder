@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useEffect, useMemo, useState } from "react";
 import { useFetcher, useLoaderData } from "react-router";
 import { Code2, Play, Save, Star, Trash2, RotateCcw, Copy, ShieldAlert } from "lucide-react";
@@ -61,6 +62,7 @@ export async function loader({request}) {
 export async function action({request}) {
   assertTrustedMutationRequest(request);
   const {admin,session}=await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   if(!(await canAccessBuilderSystem(db,session,"developerStudio"))) return Response.json({ok:false,error:"Developer Studio access denied."},{status:403});
   const form=await request.formData(); const intent=String(form.get("intent")||"");
   const deny=(message)=>Response.json({ok:false,intent,error:message},{status:403});
