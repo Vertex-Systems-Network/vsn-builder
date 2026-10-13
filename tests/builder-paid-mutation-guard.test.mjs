@@ -78,14 +78,14 @@ test("merchant mutation entry points each invoke server paid guard inside action
   const contents=readFileSync("app/routes/"+file,"utf8");
   const i=contents.indexOf("export async function action");
   assert(i>0,"Missing action "+file);
-  assert.match(contents.slice(i),/paidMutationDenied\(db,session\.shop\)/,
+  assert.match(contents.slice(i),/paidMutationDenied\(db,\s*session\.shop\)/,
     "Unprotected merchant mutation entrypoint "+file);
  }
  const dashboard=readFileSync("app/services/dashboard-actions.server.js","utf8");
  const idx=dashboard.indexOf("export async function handleDashboardAction");
  assert(idx>=0);
  assert.match(dashboard.slice(idx),/isUnpaidDashboardExempt\(intent\)/);
- assert.match(dashboard.slice(idx),/paidMutationDenied\(db,session\.shop\)/);
+ assert.match(dashboard.slice(idx),/paidMutationDenied\(db,\s*session\.shop\)/);
 });
 test("Shopify plan selection and support stay outside paid merchant action guard",()=>{
  const pricing=readFileSync("app/routes/app.plans.jsx","utf8");
