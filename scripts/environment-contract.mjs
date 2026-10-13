@@ -98,20 +98,47 @@ if (mode === "staging" || mode === "production") {
     "Billing test mode must be exactly " + (desiredTest ? "true" : "false") + " for " + mode + ".");
   const clientId = required("SHOPIFY_API_KEY");
   required("SHOPIFY_API_SECRET");
-  if (identityOnly) {
-    assert(String(process.env.NEON_PROJECT_ID || "") === manifest[mode].neon_project_id,
-      mode + " Neon project identity must match exact configured tier.");
-    assert(String(process.env.CLOUDFLARE_WORKER_NAME || "") === manifest[mode].cloudflare_worker,
-      mode + " Worker identity must match exact configured tier.");
+
+  // Both identity-only and FULL hosted checks must validate the same exact
+  // destination identities. A full preflight must never be weaker than the
+  // Phase 1 check merely because later Worker/DB requirements are present.
+  assert(required("NEON_PROJECT_ID") === manifest[mode].neon_project_id,
+    mode + " Neon project identity must match exact configured tier.");
+  assert(required("CLOUDFLARE_WORKER_NAME") === manifest[mode].cloudflare_worker,
+    mode + " Worker identity must match exact configured tier.");
+
+  // Match the protected GitHub workflow's three-way app isolation policy.
+  // Client IDs are hex, so case must not allow aliases of the root or a
+  // second environment's Shopify app. Never print any client IDs.
+  const ids = {
+    development: required("SHOPIFY_DEVELOPMENT_CLIENT_ID"),
+    staging: required("SHOPIFY_STAGING_CLIENT_ID"),
+    production: required("SHOPIFY_PRODUCTION_CLIENT_ID"),
+  };
+  const canonicalIds = Object.fromEntries(
+    Object.entries(ids).map(([tier, id]) => [tier, id.toLowerCase()]),
+  );
+  for (const [tier, id] of Object.entries(ids)) {
+    assert(/^[a-f0-9]{32}$/i.test(id), tier + " Shopify Client ID format is invalid.");
+    assert(canonicalIds[tier] !== sourceClientId.toLowerCase(),
+      tier + " Shopify Client ID reuses the unclassified default app.");
   }
-  assert(clientId !== sourceClientId && (!exists("shopify.app.local.toml") || clientId !== parseValue(read("shopify.app.local.toml"), "client_id")), mode + " must use a dedicated non-Dev Shopify app.");
+  assert(new Set(Object.values(canonicalIds)).size === 3,
+    "Development, Staging and Production Shopify Client IDs must be distinct.");
   assert(/^[a-f0-9]{32}$/i.test(clientId), mode + " Shopify client ID must be valid.");
+  assert(clientId.toLowerCase() === canonicalIds[mode],
+    mode + " SHOPIFY_API_KEY does not match scoped Shopify Client ID.");
+  const localClientId = exists("shopify.app.local.toml") ?
+    parseValue(read("shopify.app.local.toml"), "client_id") : "";
+  assert(clientId.toLowerCase() !== sourceClientId.toLowerCase() &&
+    (!localClientId || clientId.toLowerCase() !== localClientId.toLowerCase()),
+    mode + " must use a dedicated non-Dev Shopify app.");
+
   if (mode === "production") {
-    assert(clientId === required("SHOPIFY_PRODUCTION_CLIENT_ID"), "Production Shopify identities do not match.");
-    assert(!String(process.env.VSN_DEFAULT_PLAN || "").trim(), "Developer plan overrides cannot be set in Production.");
-    assert(!isTrue(process.env.VSN_PRODUCTION_USE_CURRENT_CLIENT_ID), "Production may not reuse the Local app identity.");
-  } else if (process.env.SHOPIFY_PRODUCTION_CLIENT_ID) {
-    assert(clientId !== process.env.SHOPIFY_PRODUCTION_CLIENT_ID, "Staging must not reuse the Production Shopify app.");
+    assert(!String(process.env.VSN_DEFAULT_PLAN || "").trim(),
+      "Developer plan overrides cannot be set in Production.");
+    assert(!isTrue(process.env.VSN_PRODUCTION_USE_CURRENT_CLIENT_ID),
+      "Production may not reuse the Local app identity.");
   }
   assert(stableHttps(required("SHOPIFY_APP_URL")), "Hosted Shopify origin must be a stable HTTPS URL.");
   // Credential presence is necessary but cannot certify database identity.
