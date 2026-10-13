@@ -3,7 +3,7 @@ on:
   push:
     branches: [feat/builder-local-workerd-sdk-compat-20261013, fix/builder-workerd-runtime-probe-20261013, feat/builder-workerd-neon-client-lifecycle-20261013]
   pull_request:
-    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013, test/builder-workerd-signed-shopify-webhook-20261013, security/builder-neon-direct-migration-tier-guard-20261013, ci/builder-audit-gate-qa-continuity-20261013, feat/builder-workerd-uninstall-session-revoke-20261013, security/builder-uninstall-reinstall-fence-20261013, feat/builder-install-generation-schema-20261013, feat/builder-transactional-install-session-storage-20261013, security/builder-session-resurrection-hardening-20261013, test/builder-real-sqlite-install-rollback-20261013]
+    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013, test/builder-workerd-signed-shopify-webhook-20261013, security/builder-neon-direct-migration-tier-guard-20261013, ci/builder-audit-gate-qa-continuity-20261013, feat/builder-workerd-uninstall-session-revoke-20261013, security/builder-uninstall-reinstall-fence-20261013, feat/builder-install-generation-schema-20261013, feat/builder-transactional-install-session-storage-20261013, security/builder-session-resurrection-hardening-20261013, test/builder-real-sqlite-install-rollback-20261013, test/builder-ephemeral-postgres-transaction-20261013]
     paths:
       - "workers/**"
       - "app/services/**"
