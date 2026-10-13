@@ -39,7 +39,10 @@ Two new **configuration-only** commands separate that concern without changing e
 ```bash
 npm run env:staging:identity:check
 npm run env:production:identity:check
+npm run env:shopify:identity:distinct:check
 ```
+
+The three-tier uniqueness command additionally requires `SHOPIFY_DEVELOPMENT_CLIENT_ID`, `SHOPIFY_STAGING_CLIENT_ID` and `SHOPIFY_PRODUCTION_CLIENT_ID` supplied securely together; it refuses repeated IDs and the unclassified default app without printing values. Real Shopify Partner ownership still needs separate verification.
 
 They require the tier's *actual* environment variables (never check secrets into Git). Both validate the Shopify Client ID and secret presence, tier-specific billing test mode, HTTPS app URL, exact independent `NEON_PROJECT_ID` and `CLOUDFLARE_WORKER_NAME`, and pinned Neon direct/pooled hosts, matching database name/role and TLS. Production must use the explicit matching `SHOPIFY_PRODUCTION_CLIENT_ID`; Staging must not reuse the supplied Production identity. The Local preflight still checks the unique runtime `shopify.app.local.toml` Dev app and SQLite. No mode prints credentials or accesses remote services.
 
