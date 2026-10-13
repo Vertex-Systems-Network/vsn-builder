@@ -1,6 +1,7 @@
 // Run on a protected GitHub Environment, never in ordinary PR CI.
 // Pure policy check; does not connect, migrate, back up, or print secrets.
 import { inspectHostedNeonUrlPair } from "../app/services/neon-target-policy.js";
+import targets from "../config/deployment/environments.json" with { type: "json" };
 
 export function inspectStagingMigrationGate(env={}) {
   const issues=[];
@@ -14,10 +15,13 @@ export function inspectStagingMigrationGate(env={}) {
     issues.push("Staging must use Shopify test billing");
   if(env.STAGING_MIGRATION_APPROVED!=="true")
     issues.push("Migration approval has not been attested");
+  // A branch name/id is NOT evidence that a recoverable backup exists.
+  // Match a pinned Neon SNAPSHOT ID, then verify its real project ownership,
+  // source branch and restored default via the read-only Neon control-plane API.
   const backup=String(env.VSN_STAGING_BACKUP_EVIDENCE||"");
-  if(!/^br-[a-z0-9-]{8,90}$/.test(backup) ||
-     backup==="br-square-mountain-b3ij6q2s")
-    issues.push("Independent, tested Staging backup/restore branch evidence missing");
+  if(!/^snap-[a-z0-9-]{8,90}$/.test(backup) ||
+     backup!==targets.staging.neon_pre_migration_snapshot_id)
+    issues.push("Verified Staging backup snapshot identifier missing or mismatched");
   // Validate secrets by shape and identical DB user/name; do not print them.
   const pair=inspectHostedNeonUrlPair("staging",{
     DATABASE_URL:env.DATABASE_URL,DIRECT_URL:env.DIRECT_URL,
