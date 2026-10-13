@@ -27,13 +27,13 @@ export default {
       workerRuntime:typeof caches!=="undefined" && typeof crypto.subtle?.verify==="function",
     };
     // Run an actual engine-less Prisma-Neon *construction* on workerd without
-    // issuing any query, fetch, connect or migration. This synthetic non-existent
-    // endpoint must never be replaced by a hosted credential.
+    // issuing any query, fetch, connect or migration. The public expected
+    // hostname is used with fake credentials; no network request is made.
     const fake={
       APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",
       NEON_PROJECT_ID:"shiny-violet-61219572",
       SHOPIFY_BILLING_TEST_MODE:"true",
-      DATABASE_URL:"postgresql://ci-no-network:synthetic-only@ep-invalid-no-network.aws.neon.tech/disposable?sslmode=require"
+      DATABASE_URL:"postgresql://ci-no-network:synthetic-only@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/disposable?sslmode=require"
     };
     let prisma;
     try {
