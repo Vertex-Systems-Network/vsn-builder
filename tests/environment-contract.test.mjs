@@ -58,7 +58,9 @@ function hostedFixture(tier, overrides={}) {
   SHOPIFY_API_KEY:id,
   SHOPIFY_API_SECRET:"ci-synthetic-not-a-real-shopify-secret",
   SHOPIFY_APP_URL:staging?"https://builder-staging.synthetic.dev":"https://builder-live.synthetic.dev",
-  SHOPIFY_PRODUCTION_CLIENT_ID:staging?"c".repeat(32):id,
+  SHOPIFY_DEVELOPMENT_CLIENT_ID:"a".repeat(32),
+  SHOPIFY_STAGING_CLIENT_ID:"b".repeat(32),
+  SHOPIFY_PRODUCTION_CLIENT_ID:"c".repeat(32),
   DATABASE_URL:`postgresql://ci_user:ci_password@${pooled}/${databaseName}?sslmode=require`,
   DIRECT_URL:`postgresql://ci_user:ci_password@${endpoint}/${databaseName}?sslmode=require`,
   NEON_PROJECT_ID:staging?"shiny-violet-61219572":"nameless-violet-68750490",
@@ -79,6 +81,62 @@ test("Phase 1 Staging and Production synthetic identity-only preflight validates
   assert.match(result.stdout,/no external identity ownership/);
  }
 });
+test("every hosted preflight rejects missing, reused and malformed Shopify IDs",()=>{
+ for(const tier of ["staging","production"]){
+  for(const overrides of [
+   {SHOPIFY_DEVELOPMENT_CLIENT_ID:""}, {SHOPIFY_STAGING_CLIENT_ID:""},
+   {SHOPIFY_PRODUCTION_CLIENT_ID:""}, {SHOPIFY_DEVELOPMENT_CLIENT_ID:"g".repeat(32)},
+   {SHOPIFY_STAGING_CLIENT_ID:"a".repeat(32)},
+   {SHOPIFY_PRODUCTION_CLIENT_ID:"B".repeat(32)},
+   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"c".repeat(32)},
+   {SHOPIFY_API_KEY:"d".repeat(32)}
+  ]){
+   const r=identityPreflight(tier,overrides);
+   assert.equal(r.status,1,tier+" must reject "+Object.keys(overrides)[0]);
+   assert.match(r.stderr,/Shopify Client ID|SHOPIFY_API_KEY|distinct/);
+   assert(!r.stderr.includes("ci_password"));
+  }
+ }
+});
+test("case-variant unclassified root Shopify Client ID always fails",()=>{
+ const rootId="997eae5a9961f21d131e5f31bbbe31d3".toUpperCase();
+ for(const tier of ["staging","production"]){
+  for(const overrides of [
+   {[tier==="staging"?"SHOPIFY_STAGING_CLIENT_ID":"SHOPIFY_PRODUCTION_CLIENT_ID"]:rootId,SHOPIFY_API_KEY:rootId},
+   {SHOPIFY_DEVELOPMENT_CLIENT_ID:rootId}
+  ]){
+   const r=identityPreflight(tier,overrides);
+   assert.equal(r.status,1);
+   assert.match(r.stderr,/unclassified default|non-Dev Shopify app/);
+   assert(!r.stderr.includes(rootId));
+  }
+ }
+});
+test("case-variant valid hex IDs match same tier without allowing cross-tier reuse",()=>{
+ for(const [tier,overrides] of [
+  ["staging",{SHOPIFY_API_KEY:"B".repeat(32)}],
+  ["production",{SHOPIFY_API_KEY:"C".repeat(32)}]
+ ]){
+  const r=identityPreflight(tier,overrides);
+  assert.equal(r.status,0,r.stderr);
+ }
+});
+test("full hosted preflight enforces the same Neon, Worker and Shopify identity policy",()=>{
+ for(const tier of ["staging","production"]){
+  for(const [overrides,pattern] of [
+   [{NEON_PROJECT_ID:"other-project"},/Neon project identity/],
+   [{CLOUDFLARE_WORKER_NAME:"wrong-worker"},/Worker identity/],
+   [{SHOPIFY_DEVELOPMENT_CLIENT_ID:""},/Shopify Client ID/],
+   [{SHOPIFY_STAGING_CLIENT_ID:"c".repeat(32)},/must be distinct/],
+  ]){
+   const r=verify(tier,hostedFixture(tier,overrides));
+   assert.equal(r.status,1);
+   assert.match(r.stderr,pattern);
+   assert.match(r.stderr,/Cloudflare Worker entry point and configuration are not implemented/);
+  }
+ }
+});
+
 test("Phase 1 rejects missing and noncanonical hosted billing flags, including Production false-like values",()=>{
  for(const tier of ["staging","production"]){
   const invalid=["", "0", "1", "off", "on", "no", "yes", "FALSE", "TRUE", "False", "True",
