@@ -11,9 +11,28 @@ const denied=status=>new Response(null,{
   status,headers:{"cache-control":"no-store","x-content-type-options":"nosniff"}
 });
 const isDate=value=>value instanceof Date && Number.isFinite(value.getTime());
-const matches=(stored,session,shop)=>!!stored &&
-  stored.shop===shop && stored.isOnline===session.isOnline &&
-  stored.accessToken===session.accessToken;
+// The official Shopify SDK authenticates the request, but its returned
+// Session is not a substitute for the currently persisted token's expiry.
+// With expiring offline tokens enabled, a DB token can expire independently
+// of a still-valid App Bridge ID token. Never expose app data or mutations
+// through an expired, malformed or missing online-session expiration.
+const validExpiry=(value,now)=>{
+  if(value==null)return true;
+  return value instanceof Date && Number.isFinite(value.getTime()) &&
+    value.getTime()>now;
+};
+const matches=(stored,session,shop)=>{
+  if(!stored || stored.shop!==shop || stored.isOnline!==session.isOnline ||
+     stored.accessToken!==session.accessToken)return false;
+  const now=Date.now();
+  if(!validExpiry(stored.expires,now) ||
+     !validExpiry(session.expires,now))return false;
+  // Online sessions are user-bound and must have an explicit finite expiry
+  // in both the verified SDK session and persisted record.
+  if(session.isOnline && (stored.expires==null || session.expires==null))
+    return false;
+  return true;
+};
 
 // Throw within the Prisma transaction, rather than returning an HTTP error
 // as a successful transaction result. Prisma commits on normal return,
