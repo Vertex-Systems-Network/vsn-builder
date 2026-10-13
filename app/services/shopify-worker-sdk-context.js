@@ -36,6 +36,9 @@ export async function createWorkerShopifySdkContext(request, env, {
     return {
       shopify,
       sessionStorage: context.sessionStorage,
+      // Internal-only request-scoped Prisma handle, never serialized to HTTP.
+      // Verified webhook cleanup may use it for a single shop-scoped delete.
+      database: context.database,
       close: context.close,
     };
   } catch {
