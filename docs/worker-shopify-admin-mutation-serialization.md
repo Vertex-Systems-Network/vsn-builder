@@ -29,6 +29,14 @@ The gateway now builds a **new Response** with copied headers and mandatory `cac
 
 New unit and actual disposable PostgreSQL tests cover `Response.redirect(303)` after a staged write (must rollback), an immutable successful `fetch("data:...")` Response (must be normalized and committed with headers intact), and `Response.error()` (must rollback). The real Cloudflare Workerd synthetic test asserts returned POST redirect does not commit.
 
+## Bounded response-stream completion before commit
+
+A merchant POST can return HTTP 200 with a `ReadableStream` that only emits an error when the browser starts reading the body. Merely cloning the Response/headers inside Prisma does not make its body safe: PostgreSQL could commit first, and then the client would see a broken 200 while the write has persisted.
+
+The mutation gateway now **fully reads and materializes the POST Response body while the PostgreSQL row-lock transaction is still open**, with an explicit **256 KiB maximum**. A failed stream read, oversized stream, malformed chunk or nonconstructible final Response throws *inside* Prisma, forcing rollback of all staged merchant writes and installation-row changes; the public response becomes an empty sanitized 503. Small successful JSON/text bodies get rebuilt with copied mutable headers, corrected `Content-Length` handling, `no-store` and `nosniff` before COMMIT. Merchant GET loaders may stream normally; large exports must use authenticated GET, not a streamed POST result. The 12-second interactive transaction timeout remains a separate resource bound.
+
+Both a real disposable PostgreSQL 16 session row and in-memory Prisma fixtures are checked for **no write on failed/oversized body** and for **successful small body commit**. The actual local Cloudflare Workerd acceptance exercises failed and successful synthetic body streams, never contacting Shopify or Neon.
+
 ## Tests
 
 - `tests/worker-shopify-admin-mutation.test.mjs`: synthetic SDK and fake Prisma transactions, verifies required row lock and session recheck, token rotated after initial read, uninstall between initial read/transaction, missing transaction and sanitized errors, no cross-merchant writes.
