@@ -25,6 +25,9 @@ export async function renderWorkerDocument({
   // frame-ancestor/CSP checks for an embedded Shopify app.
   await addShopifyHeaders(request, headers);
   const csp = headers.get("content-security-policy") || "";
+  if (!csp) {
+    throw new Error("Shopify document Content-Security-Policy is missing");
+  }
   // A generic CSP is not enough to safely frame an embedded Shopify app.
   if (!/(?:^|;)\s*frame-ancestors\s+[^;]+/i.test(csp)) {
     throw new Error("Shopify document Content-Security-Policy frame-ancestors is missing");
