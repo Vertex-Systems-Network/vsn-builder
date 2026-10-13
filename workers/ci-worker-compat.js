@@ -281,6 +281,26 @@ export default {
             return {sessionStorage,database:ciDatabase,async close(){closed++;}};
           },
         });
+      // The real hosted SDK does NOT offer any independent event-generation
+      // attestor. Forge a signed-body event plus a future unsigned header:
+      // it must be refused BEFORE a destructive transaction starts.
+      const unsafe=await revokeVerifiedWorkerShopifySessions({
+        event:{
+          shop:"ci-merchant.myshopify.com",topic:"APP_UNINSTALLED",
+          webhookId:"ci-workerd-webhook-1",payload:JSON.parse(body),
+        },
+        context:{database:ciDatabase},
+        triggeredAt:new Date("2030-01-01T00:00:00Z"),
+      });
+      checks.unsignedTimestampCannotDeleteMerchant=unsafe.status===503 &&
+        deletes===0 && sessions.length===3;
+      // All below are CI-only synthetic attestations, deliberately NOT a
+      // hosted Shopify App SDK feature or proof of genuine event provenance.
+      const withSyntheticCiAttestation=context=>({
+        ...context,
+        verifyTrustedUninstallGeneration:async({shop})=>
+          shop==="ci-merchant.myshopify.com",
+      });
       const accepted=await acceptWorkerShopifyUninstallWebhook(
         makeWebhook(),sdkEnv,{
           createSdkContext,
@@ -288,7 +308,7 @@ export default {
             if(event.shop==="ci-merchant.myshopify.com" &&
               event.topic==="APP_UNINSTALLED" &&
               event.webhookId==="ci-workerd-webhook-1")verified++;
-            return revokeVerifiedWorkerShopifySessions({event,context,triggeredAt});
+            return revokeVerifiedWorkerShopifySessions({event,context:withSyntheticCiAttestation(context),triggeredAt});
           },
         }
       );
@@ -301,7 +321,7 @@ export default {
           createSdkContext,
           async onVerified({event,context,triggeredAt}){
             verified++;
-            return revokeVerifiedWorkerShopifySessions({event,context,triggeredAt});
+            return revokeVerifiedWorkerShopifySessions({event,context:withSyntheticCiAttestation(context),triggeredAt});
           },
         }
       );
@@ -319,7 +339,7 @@ export default {
           createSdkContext,
           async onVerified({event,context,triggeredAt}){
             verified++;
-            return revokeVerifiedWorkerShopifySessions({event,context,triggeredAt});
+            return revokeVerifiedWorkerShopifySessions({event,context:withSyntheticCiAttestation(context),triggeredAt});
           },
         }
       );
@@ -341,6 +361,7 @@ export default {
         verified===3 && deletes===1 && opened===3 && closed===3 &&
         sessions.length===2;
     }catch{
+      checks.unsignedTimestampCannotDeleteMerchant=false;
       checks.realSignedWebhookAccepted=false;
       checks.uninstallRevokedOnlyMerchantSessions=false;
       checks.uninstallReplayIsIdempotent=false;
