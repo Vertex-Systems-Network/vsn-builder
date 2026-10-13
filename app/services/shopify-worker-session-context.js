@@ -31,10 +31,15 @@ export async function createWorkerShopifySessionContext(request, env, {
     // Probe before constructing Shopify storage. That package retries and
     // logs raw Prisma errors on missing tables; do not expose DB URLs/tokens.
     if (!db || typeof db.session?.count !== "function" ||
+        typeof db.builderShopInstallation?.count !== "function" ||
         typeof db.$disconnect !== "function") {
-      throw new Error("Prisma session model is unavailable");
+      throw new Error("Prisma session/installation models are unavailable");
     }
+    // Explicitly query both real models BEFORE SDK initialization. An
+    // unmigrated/partially migrated Neon database must fail closed, rather
+    // than allowing Shopify to issue a token which cannot be durably saved.
     await db.session.count();
+    await db.builderShopInstallation.count();
     const storage = new SessionStorage(db, {
       connectionRetries: 1,
       connectionRetryIntervalMs: 0,
