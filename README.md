@@ -4,6 +4,8 @@ VSN Builder is a Shopify page-builder application. This repository is being sepa
 
 > **Deployment warning (13 Oct 2026):** The hosted Worker integration is **not functional or released**. The current engineering work is on **unmerged stacked PRs**, not the default branch. Staging/Live Workers are placeholders. **Do not point merchant traffic at them or submit the Shopify app for review.**
 
+**Phase 3 + 4 targeted audit (2026-10-14):** Real Neon Staging *shadow branch* SQL dry-run applied 171 schema statements (52 tables, 168 indexes, 477 constraints) and proved a synthetic Session/install savepoint rollback. The Staging primary/Production database is still empty; `_prisma_migrations` was not applied. A gated hosted Worker entry and tier-separated Wrangler manifests now exist in code, but the merchant app/Shopify OAuth runtime remains locked and **no Worker was deployed**. Manual Staging migration requires a protected branch, real backup proof and mandatory security audit; release readiness is still blocked. Evidence: [Phase 3/4 acceptance record](docs/phase3-4-hosted-acceptance-20261014.md). Closure tracker is unchanged.
+
 ## Environment identity and promotion
 
 | Tier | User-facing name | Code source | Storage | Worker | Verification |
