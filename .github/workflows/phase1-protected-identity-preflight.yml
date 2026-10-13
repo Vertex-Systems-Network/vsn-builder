@@ -33,9 +33,7 @@ jobs:
     environment: ${{  inputs.target == 'staging' && 'cloudflare-staging' || 'cloudflare-production'  }}
     env:
       REQUESTED_TIER: ${{  inputs.target  }}
-      APP_ENV: ${{  vars.APP_ENV  }}
       SOURCE_BRANCH_PROTECTED: ${{  github.ref_protected  }}
-      SHOPIFY_BILLING_TEST_MODE: ${{  vars.SHOPIFY_BILLING_TEST_MODE  }}
       SHOPIFY_API_KEY: ${{  secrets.SHOPIFY_API_KEY  }}
       SHOPIFY_API_SECRET: ${{  secrets.SHOPIFY_API_SECRET  }}
       SHOPIFY_DEVELOPMENT_CLIENT_ID: ${{  secrets.SHOPIFY_DEVELOPMENT_CLIENT_ID  }}
@@ -43,14 +41,19 @@ jobs:
       SHOPIFY_PRODUCTION_CLIENT_ID: ${{  secrets.SHOPIFY_PRODUCTION_CLIENT_ID  }}
       SHOPIFY_APP_URL: ${{  secrets.SHOPIFY_APP_URL  }}
       # GitHub Environment-scoped non-secret identifiers, never hardcoded in credentials.
-      NEON_PROJECT_ID: ${{  vars.NEON_PROJECT_ID  }}
-      CLOUDFLARE_WORKER_NAME: ${{  vars.CLOUDFLARE_WORKER_NAME  }}
       DATABASE_URL: ${{  secrets.DATABASE_URL  }}
       DIRECT_URL: ${{  secrets.DIRECT_URL  }}
       CLOUDFLARE_ACCOUNT_ID: ${{  secrets.CLOUDFLARE_ACCOUNT_ID  }}
       CLOUDFLARE_API_TOKEN: ${{  secrets.CLOUDFLARE_API_TOKEN  }}
     steps:
       - name: Validate secret presence, exact Neon tier and Shopify identity without printing values
+        # GitHub Environment vars become available after the runner declares
+        # its environment. Resolve effective values at STEP scope, not job scope.
+        env:
+          APP_ENV: ${{ vars.APP_ENV }}
+          SHOPIFY_BILLING_TEST_MODE: ${{ vars.SHOPIFY_BILLING_TEST_MODE }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+          CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
         # Inline system Python only. No checkout / npm / third-party code / API calls
         # while credentials exist in the runner's environment.
         shell: bash
