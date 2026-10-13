@@ -1,0 +1,30 @@
+name: VSN Phase 4 Cloudflare Staging Bindings — Read-Only Protected Audit
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-staging-worker:
+    # Runs only from protected development, never PR branches or Live.
+    if: github.ref == 'refs/heads/development' && github.ref_protected == true
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    timeout-minutes: 8
+    env:
+      APP_ENV: staging
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+      - name: Verify real Staging Worker scoped secret NAMES and nonsecret tier bindings
+        run: node scripts/phase4-staging-cloudflare-readiness.mjs
+      - name: Confirm inspection performed no deployment
+        run: echo "Cloudflare Worker metadata GET only; no secret values read and no deploy attempted."
