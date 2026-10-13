@@ -1,0 +1,50 @@
+name: VSN Builder Development Localhost Smoke (No Deploy)
+on:
+  push:
+    branches: [feat/builder-dev-loopback-smoke-20261013]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: builder-local-smoke-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  local-development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      APP_ENV: development
+      SHOPIFY_BILLING_TEST_MODE: 'true'
+      SHOPIFY_API_KEY: '0123456789abcdef0123456789abcdef'
+      SHOPIFY_API_SECRET: 'synthetic-ci-only-shopify-secret'
+      SHOPIFY_APP_URL: http://127.0.0.1:3473
+      DATABASE_URL: file:./ci.sqlite
+    steps:
+      - name: Checkout feature branch without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup reproducible Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Clean dependency install
+        run: npm ci
+      - name: Enforce safe Local/Dev configuration and prod dependency audit
+        run: npm run env:check && npm run env:test && npm audit --omit=dev --audit-level=high
+      - name: Create disposable Local SQLite schema
+        run: |
+          npm run prisma -- generate
+          npm run prisma -- migrate deploy
+      - name: Build the real React Router application
+        run: npm run build
+      - name: Boot isolated localhost development app and probe authenticated boundary
+        run: node scripts/dev-loopback-smoke.mjs
+      - name: Never generate or publish hosted deployment configuration
+        run: |
+          test ! -e wrangler.staging.jsonc
+          test ! -e wrangler.production.jsonc
+          test ! -e workers/app.js
