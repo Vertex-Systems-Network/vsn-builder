@@ -33,7 +33,7 @@
           "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/142"
         },
         {
-          "name": "Three distinct Shopify app registrations and identity ownership",
+          "name": "Single VSN Builder Live Shopify app ownership and isolated Dev/Staging test identities",
           "evidence_type": "external",
           "status": "unverified",
           "evidence": null
