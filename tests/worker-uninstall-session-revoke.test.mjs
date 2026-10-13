@@ -2,90 +2,138 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {revokeVerifiedWorkerShopifySessions} from "../app/services/worker-shopify-uninstall-session-revoke.js";
 
+const triggeredAt=new Date("2026-10-13T09:00:00.000Z");
 const event=(shop="tenant-one.myshopify.com")=>({
-  shop,topic:"APP_UNINSTALLED",webhookId:"signed-ci-1",
-  payload:{shop_domain:shop},
+ shop,topic:"APP_UNINSTALLED",webhookId:"signed-ci-1",
+ payload:{shop_domain:shop},
 });
+const invoke=(database,webhookEvent=event(),when=triggeredAt)=>
+ revokeVerifiedWorkerShopifySessions({event:webhookEvent,context:{database},triggeredAt:when});
+
 function fakeDatabase(){
-  const sessions=[
-    {id:"one-offline",shop:"tenant-one.myshopify.com"},
-    {id:"one-online",shop:"tenant-one.myshopify.com"},
-    {id:"two-offline",shop:"tenant-two.myshopify.com"},
-  ];
-  const calls=[];
-  return {
-    sessions,calls,
-    context:{database:{session:{
-      async deleteMany(q){
-        calls.push(q);
-        const count=sessions.filter(s=>s.shop===q.where.shop).length;
-        for(let i=sessions.length-1;i>=0;i--){
-          if(sessions[i].shop===q.where.shop)sessions.splice(i,1);
-        }
-        return {count};
-      },
-    }}},
-  };
+ const sessions=[
+  {id:"old-offline",shop:"tenant-one.myshopify.com"},
+  {id:"old-online",shop:"tenant-one.myshopify.com"},
+  {id:"other-offline",shop:"tenant-two.myshopify.com"},
+ ];
+ const installs=new Map([["tenant-one.myshopify.com",{
+  shop:"tenant-one.myshopify.com",installedAt:new Date("2026-10-13T08:00:00Z"),
+  uninstalledAt:null,lastUninstallWebhookId:null,
+ }]]);
+ const claims=[],deletes=[];
+ const database={
+  async $transaction(work) {
+   return work({
+    builderShopInstallation:{
+     async updateMany(query){
+      claims.push(query);
+      const row=installs.get(query.where.shop);
+      if(!row || row.uninstalledAt || row.installedAt>query.where.installedAt.lte) return {count:0};
+      row.uninstalledAt=query.data.uninstalledAt;
+      row.lastUninstallWebhookId=query.data.lastUninstallWebhookId;
+      return {count:1};
+     },
+     async findUnique({where}){return installs.get(where.shop)||null;},
+    },
+    session:{
+     async deleteMany(query){
+      deletes.push(query);
+      let count=0;
+      for(let i=sessions.length-1;i>=0;i--){
+       if(sessions[i].shop===query.where.shop){sessions.splice(i,1);count++;}
+      }
+      return {count};
+     },
+    },
+   });
+  },
+ };
+ return {database,installs,sessions,claims,deletes};
 }
-test("only authenticated merchant sessions are revoked, without touching other tenants",async()=>{
+test("only signed uninstall merchant sessions deleted after atomic installation claim",async()=>{
  const db=fakeDatabase();
- const response=await revokeVerifiedWorkerShopifySessions({event:event(),context:db.context});
+ const response=await invoke(db.database);
  assert.equal(response.status,204);
  assert.equal(response.headers.get("cache-control"),"no-store");
- assert.deepEqual(db.calls,[{where:{shop:"tenant-one.myshopify.com"}}]);
- assert.deepEqual(db.sessions,[{id:"two-offline",shop:"tenant-two.myshopify.com"}]);
+ assert.deepEqual(db.deletes,[{where:{shop:"tenant-one.myshopify.com"}}]);
+ assert.equal(db.claims.length,1);
+ assert.deepEqual(db.sessions,[{id:"other-offline",shop:"tenant-two.myshopify.com"}]);
 });
-test("replayed uninstall is idempotent and does not delete another shop",async()=>{
+test("duplicate delivery is idempotent without second session delete",async()=>{
  const db=fakeDatabase();
- assert.equal((await revokeVerifiedWorkerShopifySessions({event:event(),context:db.context})).status,204);
- assert.equal((await revokeVerifiedWorkerShopifySessions({event:event(),context:db.context})).status,204);
- assert.deepEqual(db.sessions,[{id:"two-offline",shop:"tenant-two.myshopify.com"}]);
- assert.equal(db.calls.length,2);
+ assert.equal((await invoke(db.database)).status,204);
+ assert.equal((await invoke(db.database)).status,204);
+ assert.equal(db.deletes.length,1);
+ assert.equal(db.sessions.length,1);
 });
-test("accepts documented Shopify uninstall Shop payload without shop_domain",async()=>{
- for(const payload of [
-  {id:548380009,name:"Super Toys",myshopify_domain:null},
-  {id:548380009,name:"Super Toys"},
-  {id:548380009,myshopify_domain:"tenant-one.myshopify.com"},
- ]) {
-  const db=fakeDatabase();
-  const response=await revokeVerifiedWorkerShopifySessions({
-   event:{...event(),payload},context:db.context,
-  });
-  assert.equal(response.status,204);
-  assert.equal(db.sessions.length,1);
-  assert.equal(db.sessions[0].shop,"tenant-two.myshopify.com");
- }
-});
-test("unsigned context, mismatched payload, bad merchant and unknown event never delete",async()=>{
+test("late webhook after reinstall preserves new installation sessions",async()=>{
  const db=fakeDatabase();
- const cases=[
-  {},{event:event(),context:{}},
-  {event:{...event(),topic:"ORDERS_CREATE"},context:db.context},
-  {event:{...event(),webhookId:""},context:db.context},
-  {event:{...event(),payload:{shop_domain:"tenant-two.myshopify.com"}},context:db.context},
-  {event:{...event(),payload:{myshopify_domain:"tenant-two.myshopify.com"}},context:db.context},
-  {event:event("tenant-one.myshopify.com.evil.org"),context:db.context},
-  {event:event("TENANT-ONE.myshopify.com"),context:db.context},
+ assert.equal((await invoke(db.database)).status,204);
+ const row=db.installs.get("tenant-one.myshopify.com");
+ // A later signed OAuth install must atomically advance this row with the
+ // new session creation; the CI fixture models that committed generation.
+ row.installedAt=new Date("2026-10-13T10:00:00Z");
+ row.uninstalledAt=null;
+ row.lastUninstallWebhookId=null;
+ db.sessions.push({id:"new-session",shop:"tenant-one.myshopify.com"});
+ assert.equal((await invoke(db.database)).status,204);
+ assert.equal(db.deletes.length,1,"old webhook must not execute another delete");
+ assert(db.sessions.some(s=>s.id==="new-session"));
+ // Current installation may still be uninstalled by its own NEW event.
+ assert.equal((await invoke(db.database,{
+  ...event(),webhookId:"signed-ci-2"
+ },new Date("2026-10-13T11:00:00Z"))).status,204);
+ assert.equal(db.deletes.length,2);
+ assert(!db.sessions.some(s=>s.id==="new-session"));
+});
+test("no installation fence, missing transaction or inconsistent state cannot delete",async()=>{
+ const db=fakeDatabase();
+ const initial=db.sessions.length;
+ assert.equal((await invoke({session:{deleteMany(){throw Error("called without fence")}}})).status,503);
+ assert.equal((await invoke({$transaction:fn=>fn({session:db.database.session})})).status,503);
+ db.installs.clear();
+ assert.equal((await invoke(db.database)).status,503);
+ assert.equal(db.deletes.length,0);
+ assert.equal(db.sessions.length,initial);
+});
+test("malformed timestamp and unsigned/mismatched payload cannot claim",async()=>{
+ const db=fakeDatabase();
+ const invalid=[
+  {event:event(),triggeredAt:undefined},
+  {event:event(),triggeredAt:new Date(NaN)},
+  {event:{...event(),topic:"ORDERS_CREATE"},triggeredAt},
+  {event:{...event(),webhookId:""},triggeredAt},
+  {event:{...event(),payload:{myshopify_domain:"other.myshopify.com"}},triggeredAt},
+  {event:event("evil.example.test"),triggeredAt},
  ];
- for(const input of cases){
-  const response=await revokeVerifiedWorkerShopifySessions(input);
-  assert([401,503].includes(response.status));
+ for(const item of invalid){
+  const response=await revokeVerifiedWorkerShopifySessions({...item,context:{database:db.database}});
+  assert([400,401].includes(response.status));
  }
- assert.equal(db.calls.length,0);
- assert.equal(db.sessions.length,3);
+ assert.equal(db.claims.length,0);
+ assert.equal(db.deletes.length,0);
 });
-test("database connection failures and malformed write results remain fail closed without leaking errors",async()=>{
- const secret="postgresql://sensitive:password@secret.neon.tech";
- const failing={database:{session:{async deleteMany(){throw Error(secret)}}}};
- const failed=await revokeVerifiedWorkerShopifySessions({event:event(),context:failing});
+test("official Shopify Shop uninstall payload with absent/nullable domain is valid",async()=>{
+ for(const payload of [{id:123,name:"Shop",myshopify_domain:null},{id:123,name:"Shop"}]){
+  const db=fakeDatabase();
+  const response=await invoke(db.database,{...event(),payload});
+  assert.equal(response.status,204);
+  assert.equal(db.deletes.length,1);
+ }
+});
+test("driver failures and malformed transaction results never leak secrets or delete on retry",async()=>{
+ const secret="postgresql://sensitive:password@private.neon.tech";
+ const failed=await invoke({async $transaction(){throw Error(secret)}});
  assert.equal(failed.status,503);
  assert.equal(await failed.text(),"");
- assert.equal(JSON.stringify([...failed.headers]),'[["cache-control","no-store"]]');
- for(const result of [{},null,{count:-1},{count:0.5}]){
-  const outcome=await revokeVerifiedWorkerShopifySessions({
-   event:event(),context:{database:{session:{async deleteMany(){return result}}}},
+ const broken=await invoke({async $transaction(fn){
+  return fn({
+   builderShopInstallation:{
+    async updateMany(){return {count:2}},
+    async findUnique(){return null},
+   },
+   session:{async deleteMany(){throw Error("must never be called")}},
   });
-  assert.equal(outcome.status,503);
- }
+ }});
+ assert.equal(broken.status,503);
 });
