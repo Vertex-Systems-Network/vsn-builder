@@ -49,7 +49,8 @@ test("legacy secret inventory cannot run from PR or unprotected ref",()=>{
  assert.match(legacy,/^  workflow_dispatch:/m);
  assert.doesNotMatch(legacy,/^  push:|^  pull_request:|^  pull_request_target:/m);
  assert.equal((legacy.match(/github\.ref_protected == true/g)||[]).length,2);
- assert.doesNotMatch(legacy,/actions\/checkout|npm (?:install|ci|run)|curl |wget /);
+ const executable=legacy.split("\n").filter(line=>!/^\s*#/.test(line)).join("\n");
+ assert.doesNotMatch(executable,/actions\/checkout|npm (?:install|ci|run)|curl |wget /);
 });
 test("actual inline workflow preflight accepts isolated CI-only Staging and Production shapes",()=>{
  for(const tier of ["staging","production"]){
