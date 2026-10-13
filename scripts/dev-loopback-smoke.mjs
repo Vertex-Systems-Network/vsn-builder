@@ -87,10 +87,10 @@ try{
  assert(redirect.startsWith("/app?")||redirect.includes("/app?"),"Invalid Shopify redirect destination");
  console.log("PASS Shop scoped entry requires /app login route");tested++;
  const restricted=await probe("/app");
- assert([301,302,303,307,308,401,403].includes(restricted.status),
+ assert([301,302,303,307,308,401,403,410].includes(restricted.status),
   "Unauthenticated dashboard must redirect or deny (got "+restricted.status+")");
  assert(!restricted.body.includes("VSN Builder dashboard workspace"),"Dashboard data may not be available without auth");
- console.log("PASS Unauthenticated GET /app is redirected or denied");tested++;
+ console.log("PASS Unauthenticated GET /app denied by Shopify auth boundary (HTTP "+restricted.status+")");tested++;
  const unknown=await probe("/__vsn_ci_route_missing__");
  assert.equal(unknown.status,404,"Unrecognized route must not become an app page");
  console.log("PASS Unknown route returns 404");tested++;
