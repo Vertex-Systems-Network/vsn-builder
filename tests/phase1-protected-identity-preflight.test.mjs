@@ -16,7 +16,7 @@ function run(tier,overrides={}){
  const direct=endpoint[tier];
  const pooled=direct.replace(".","-pooler.");
  const keys={
-  APP_ENV:tier,SOURCE_BRANCH_PROTECTED:"true",
+  REQUESTED_TIER:tier,APP_ENV:tier,SOURCE_BRANCH_PROTECTED:"true",
   SHOPIFY_BILLING_TEST_MODE:tier==="staging"?"true":"false",
   SHOPIFY_API_KEY:tier==="staging"?"b".repeat(32):"c".repeat(32),
   SHOPIFY_API_SECRET:"ci-do-not-use-merchant-secret",
@@ -112,6 +112,34 @@ test("scoped Staging/Production validator requires three real distinct Shopify C
    assert(!result.stdout.includes("ci_password"));
    assert(!result.stdout.includes("ci-do-not-use-merchant-secret"));
   }
+ }
+});
+test("protected runner verifies selected GitHub vars instead of comparing its own expected constants",()=>{
+ assert.match(workflow,/REQUESTED_TIER:\s*\$\{\{\s*inputs\.target\s*\}\}/);
+ assert.match(workflow,/APP_ENV:\s*\$\{\{\s*vars\.APP_ENV\s*\}\}/);
+ assert.match(workflow,/SHOPIFY_BILLING_TEST_MODE:\s*\$\{\{\s*vars\.SHOPIFY_BILLING_TEST_MODE\s*\}\}/);
+ assert.doesNotMatch(workflow,/APP_ENV:\s*\$\{\{\s*inputs\.target\s*\}\}/);
+ assert.doesNotMatch(workflow,/SHOPIFY_BILLING_TEST_MODE:\s*\$\{\{\s*inputs\.target\s*==/);
+});
+test("wrong or missing effective GitHub environment vars fail even with valid credentials",()=>{
+ for(const [tier,overrides] of [
+  ["staging",{APP_ENV:""}],
+  ["staging",{APP_ENV:"production"}],
+  ["staging",{REQUESTED_TIER:"production"}],
+  ["production",{REQUESTED_TIER:"staging"}],
+  ["production",{APP_ENV:"staging"}],
+  ["production",{APP_ENV:""}],
+  ["staging",{SHOPIFY_BILLING_TEST_MODE:""}],
+  ["staging",{SHOPIFY_BILLING_TEST_MODE:"false"}],
+  ["staging",{SHOPIFY_BILLING_TEST_MODE:"yes"}],
+  ["production",{SHOPIFY_BILLING_TEST_MODE:""}],
+  ["production",{SHOPIFY_BILLING_TEST_MODE:"true"}],
+  ["production",{SHOPIFY_BILLING_TEST_MODE:"0"}],
+ ]){
+  const r=run(tier,overrides);
+  assert(fail(r),"Mismatched scoped variables should be rejected: "+tier);
+  assert.match(r.stdout,/Configured APP_ENV|Configured SHOPIFY_BILLING_TEST_MODE|Invalid target tier/);
+  assert(!r.stdout.includes("ci_password"));
  }
 });
 test("scoped Client ID and SDK runtime Client ID must match the exact hosted tier",()=>{
