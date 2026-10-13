@@ -6,7 +6,7 @@ const mk=(tier)=>({
  NEON_PROJECT_ID:tier==="staging"?"shiny-violet-61219572":"nameless-violet-68750490",
  VSN_WORKER_NAME:tier==="staging"?"vsn-builder-staging":"vsn-builder-production",
  SHOPIFY_BILLING_TEST_MODE:tier==="staging"?"true":"false",
- DATABASE_URL:"postgresql://ci-user:fake-ci-password@ep-ci-writer.aws-ap-southeast-1.neon.tech/builder_ci?sslmode=require",
+ DATABASE_URL:"postgresql://ci-user:fake-ci-password@"+(tier==="staging"?"ep-little-dream-b3g6puj2":"ep-jolly-truth-b3xbibzp")+".c-4.ap-southeast-1.aws.neon.tech/builder_ci?sslmode=require",
 });
 test("missing Worker secrets cannot initialize a Prisma Client",()=>{
  assert.equal(inspectWorkerNeonEnvironment({}).ready,false);
@@ -37,6 +37,36 @@ test("local host, insecure Neon URL and malformed URI cannot pass",()=>{
  const settings=mk("staging");
  for(const url of ["postgresql://a:b@127.0.0.1/local","postgresql://a:b@ep-neon.neon.tech/db","file:dev.sqlite","not-url"]){
   assert.equal(inspectWorkerNeonEnvironment({...settings,DATABASE_URL:url}).ready,false);
+ }
+});
+test("a URL pointing to the other tier is blocked even with apparently valid Worker/project variables",()=>{
+ for(const tier of ["staging","production"]){
+  const other=tier==="staging"?"production":"staging";
+  const env={...mk(tier),DATABASE_URL:mk(other).DATABASE_URL};
+  const report=inspectWorkerNeonEnvironment(env);
+  assert.equal(report.ready,false);
+  assert(report.issues.includes("Neon endpoint identity mismatch"));
+  assert.throws(()=>createWorkerNeonPrisma(env),{code:"VSN_WORKER_DATABASE_NOT_READY"});
+ }
+});
+test("Neon hostname lookalikes, unknown endpoints and unexpected ports fail closed",()=>{
+ const env=mk("staging");
+ const tests=[
+  env.DATABASE_URL.replace(".c-4.",".attacker.c-4."),
+  env.DATABASE_URL.replace("ep-little-dream-b3g6puj2","ep-unknown-project"),
+  env.DATABASE_URL.replace(".neon.tech",".neon.tech.attacker.test"),
+  env.DATABASE_URL.replace("/builder_ci",":6543/builder_ci"),
+ ];
+ for(const DATABASE_URL of tests){
+  assert.equal(inspectWorkerNeonEnvironment({...env,DATABASE_URL}).ready,false,DATABASE_URL.split("@")[1]);
+ }
+});
+test("expected direct and pooled Neon endpoint variants are admitted without opening a connection",()=>{
+ for(const tier of ["staging","production"]){
+  const env=mk(tier);
+  assert.equal(inspectWorkerNeonEnvironment(env).ready,true);
+  const DATABASE_URL=env.DATABASE_URL.replace(".c-4.", "-pooler.c-4.");
+  assert.equal(inspectWorkerNeonEnvironment({...env,DATABASE_URL}).ready,true);
  }
 });
 test("real Prisma Worker adapter constructs client without making a Neon network call",async()=>{
