@@ -4,6 +4,7 @@
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { createWorkerNeonPrisma, inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
+import { createWorkerGenerationSessionStorage } from "./worker-shopify-install-session-storage.js";
 
 export async function createWorkerShopifySessionContext(request, env, {
   createDatabase = createWorkerNeonPrisma,
@@ -46,7 +47,12 @@ export async function createWorkerShopifySessionContext(request, env, {
         await storage.isReady() !== true) {
       throw new Error("Shopify persistent session storage is not ready");
     }
-    return { database: db, sessionStorage: storage, close };
+    // Guard ALL Shopify SDK session writes with an installation-generation
+    // transaction, while reads and deletes still use the official adapter.
+    const fenced = createWorkerGenerationSessionStorage(db,storage,{
+      SessionStorage,
+    });
+    return { database: db, sessionStorage: fenced, close };
   } catch {
     try { await close(); } catch { /* do not disclose driver error */ }
     const err = new Error("Worker Shopify session store unavailable");
