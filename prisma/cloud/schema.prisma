@@ -945,3 +945,14 @@ model BuilderEmailTemplate {
   @@index([shop, deletedAt, updatedAt])
   @@index([shop, category, status])
 }
+
+// Durable shop installation generation required by signed uninstall/reinstall
+// safety fence. New authenticated installs must advance installedAt while
+// storing their new session inside the SAME database transaction.
+model BuilderShopInstallation {
+  shop                    String    @id
+  installedAt             DateTime
+  uninstalledAt           DateTime?
+  lastUninstallWebhookId  String?
+  updatedAt               DateTime  @updatedAt
+}
