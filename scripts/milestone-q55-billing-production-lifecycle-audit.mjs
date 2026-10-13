@@ -56,13 +56,13 @@ await check("HTTP 401 is not retryable",()=>assert.equal(isRetryablePartnerStatu
 await check("Retry count is capped to three",()=>withEnv({...baseEnv,SHOPIFY_PARTNER_API_RETRY_COUNT:"99"},()=>assert.equal(getShopifySubscriptionSyncConfig().retryCount,3)));
 
 await check("First install without a contract fails closed to Inactive",async()=>{const state=await stateFor(null);assert.equal(state.planKey,"inactive");assert.equal(state.status,"inactive")});
-await check("Verified Inactive contract stays Inactive and active",async()=>{const state=await stateFor(active("starter"),event("CREATED","starter"));assert.equal(state.planKey,"starter");assert.equal(state.planHandle,"starter");assert.equal(state.status,"active")});
+await check("Verified Starter contract stays Starter and active",async()=>{const state=await stateFor(active("starter"),event("CREATED","starter"));assert.equal(state.planKey,"starter");assert.equal(state.planHandle,"starter");assert.equal(state.status,"active")});
 await check("Sliver Shopify key maps to internal Pro",async()=>{const state=await stateFor(active("sliver"),event("CREATED","sliver"));assert.equal(state.planKey,"sliver");assert.equal(state.planHandle,"sliver")});
 await check("Gold Shopify key maps to internal CRO",async()=>{const state=await stateFor(active("gold"),event("CREATED","gold"));assert.equal(state.planKey,"gold");assert.equal(state.planHandle,"gold")});
 await check("Platinum Shopify key maps to internal Agency",async()=>{const state=await stateFor(active("platinum"),event("CREATED","platinum"));assert.equal(state.planKey,"platinum");assert.equal(state.planHandle,"platinum")});
 await check("Active Gold overrides stale Sliver history after immediate upgrade",async()=>{const state=await stateFor(active("gold"),event("UPDATED","sliver"));assert.equal(state.planKey,"gold");assert.equal(state.planHandle,"gold");assert.equal(state.diagnostics.historicalPlanHandle,"sliver")});
 await check("Active Gold ignores stale canceled history for plan authority",async()=>{const state=await stateFor(active("gold"),event("CANCELED","sliver"));assert.equal(state.status,"active");assert.equal(state.planKey,"gold")});
-await check("Active Inactive can follow a canceled paid history",async()=>{const state=await stateFor(active("starter"),event("CANCELED","sliver"));assert.equal(state.status,"active");assert.equal(state.planKey,"starter");assert.equal(state.planHandle,"starter")});
+await check("Active Starter can follow a canceled paid history",async()=>{const state=await stateFor(active("starter"),event("CANCELED","sliver"));assert.equal(state.status,"active");assert.equal(state.planKey,"starter");assert.equal(state.planHandle,"starter")});
 await check("Pending Platinum to Gold change is exposed as Gold",async()=>{const current=active("platinum",{pendingUpdate:{billingPeriod:"EVERY_30_DAYS",items:[{handle:"gold"}],legacySubscriptionId:null}});const state=await stateFor(current,event("UPDATED","platinum"));assert.equal(state.planKey,"platinum");assert.equal(state.pendingPlanKey,"gold");assert.equal(state.pendingPlanHandle,"gold")});
 await check("Pending Sliver to Platinum upgrade is exposed",async()=>{const current=active("sliver",{pendingUpdate:{billingPeriod:"EVERY_30_DAYS",items:[{handle:"platinum"}],legacySubscriptionId:null}});const state=await stateFor(current,event("UPDATED","sliver"));assert.equal(state.planKey,"sliver");assert.equal(state.pendingPlanKey,"platinum")});
 await check("Billing-period-only pending update preserves current plan",async()=>{const current=active("sliver",{pendingUpdate:{billingPeriod:"ANNUAL",items:[{handle:"sliver"}],legacySubscriptionId:null}});const state=await stateFor(current,event("UPDATED","sliver"));assert.equal(state.planKey,"sliver");assert.equal(state.pendingPlanKey,"sliver");assert.equal(state.pendingBillingPeriod,"ANNUAL")});
@@ -125,7 +125,7 @@ await check("GraphQL throttling retries and then recovers",()=>withEnv(baseEnv,a
         : response(payload(active("starter"),event("UPDATED","starter")));
     },
   });
-  assert.equal(attempts,2);assert.equal(state.planKey,"inactive");
+  assert.equal(attempts,2);assert.equal(state.planKey,"starter");
 }));
 await check("GraphQL permission failure is not retried",()=>withEnv(baseEnv,async()=>{
   let attempts=0;
@@ -161,7 +161,7 @@ await check("Successful verification stores authority diagnostics snapshot",()=>
 await check("Environment documents Partner retry count",()=>assert.ok(env.includes("SHOPIFY_PARTNER_API_RETRY_COUNT=2")));
 await check("Environment documents Partner retry backoff",()=>assert.ok(env.includes("SHOPIFY_PARTNER_API_RETRY_BASE_MS=250")));
 await check("Production QA docs preserve exact sliver spelling",()=>assert.ok(docs.includes("`sliver`")));
-await check("Production QA docs preserve exact platenium spelling",()=>assert.ok(docs.includes("`platinum`")));
+await check("Production QA docs preserve exact platinum spelling",()=>assert.ok(docs.includes("`platinum`")));
 await check("Production QA docs cover reinstall",()=>assert.ok(/reinstall/i.test(docs)&&/local `BuilderSubscription` mirror/i.test(docs)));
 await check("Active subscription is explicitly documented as canonical authority",()=>assert.ok(service.includes("activeSubscription is the canonical current contract")));
 await check("Historical plan cannot override active item in implementation",()=>assert.ok(service.includes("let planKey=active?activePlan.key:eventKey")));
