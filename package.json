@@ -12,6 +12,7 @@
     "env:production:check": "node scripts/environment-contract.mjs --environment=production",
     "env:staging:identity:check": "node scripts/environment-contract.mjs --environment=staging --identity-only",
     "env:production:identity:check": "node scripts/environment-contract.mjs --environment=production --identity-only",
+    "env:shopify:identity:distinct:check": "node scripts/shopify-three-tier-identity-check.mjs",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "node scripts/deployment-blocked.mjs deploy",
