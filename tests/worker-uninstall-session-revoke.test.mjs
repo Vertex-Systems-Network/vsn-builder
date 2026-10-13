@@ -42,6 +42,21 @@ test("replayed uninstall is idempotent and does not delete another shop",async()
  assert.deepEqual(db.sessions,[{id:"two-offline",shop:"tenant-two.myshopify.com"}]);
  assert.equal(db.calls.length,2);
 });
+test("accepts documented Shopify uninstall Shop payload without shop_domain",async()=>{
+ for(const payload of [
+  {id:548380009,name:"Super Toys",myshopify_domain:null},
+  {id:548380009,name:"Super Toys"},
+  {id:548380009,myshopify_domain:"tenant-one.myshopify.com"},
+ ]) {
+  const db=fakeDatabase();
+  const response=await revokeVerifiedWorkerShopifySessions({
+   event:{...event(),payload},context:db.context,
+  });
+  assert.equal(response.status,204);
+  assert.equal(db.sessions.length,1);
+  assert.equal(db.sessions[0].shop,"tenant-two.myshopify.com");
+ }
+});
 test("unsigned context, mismatched payload, bad merchant and unknown event never delete",async()=>{
  const db=fakeDatabase();
  const cases=[
@@ -49,6 +64,7 @@ test("unsigned context, mismatched payload, bad merchant and unknown event never
   {event:{...event(),topic:"ORDERS_CREATE"},context:db.context},
   {event:{...event(),webhookId:""},context:db.context},
   {event:{...event(),payload:{shop_domain:"tenant-two.myshopify.com"}},context:db.context},
+  {event:{...event(),payload:{myshopify_domain:"tenant-two.myshopify.com"}},context:db.context},
   {event:event("tenant-one.myshopify.com.evil.org"),context:db.context},
   {event:event("TENANT-ONE.myshopify.com"),context:db.context},
  ];
