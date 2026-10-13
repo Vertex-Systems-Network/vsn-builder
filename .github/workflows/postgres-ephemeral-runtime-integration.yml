@@ -1,7 +1,7 @@
 name: VSN PostgreSQL 18 Runtime Integration (Ephemeral CI Only)
 on:
   push:
-    branches: [feat/builder-postgres-container-integration-20261013, feat/builder-postgres-restore-drill-20261013, feat/builder-edge-prisma-generator-20261013, feat/builder-neon-worker-adapter-20261013, feat/builder-worker-prisma-sessions-20261013]
+    branches: [feat/builder-postgres-container-integration-20261013, feat/builder-postgres-restore-drill-20261013, feat/builder-edge-prisma-generator-20261013, feat/builder-neon-worker-adapter-20261013, feat/builder-worker-prisma-sessions-20261013, feat/builder-worker-real-shopify-sdk-20261013]
   workflow_dispatch:
 permissions:
   contents: read
@@ -69,6 +69,8 @@ jobs:
         run: node --test tests/worker-neon-factory.test.mjs
       - name: Real Shopify Prisma SessionStorage persistence in disposable PostgreSQL
         run: node --test tests/shopify-prisma-storage-postgres.test.mjs
+      - name: Official Shopify SDK with actual PostgreSQL Prisma session storage
+        run: node --test tests/worker-real-shopify-sdk-postgres.test.mjs
       - name: Seed a disposable Shopify session before backup
         run: node scripts/seed-postgres-restore-fixture.mjs
       - name: Back up only disposable PostgreSQL database using PostgreSQL 18 pg_dump

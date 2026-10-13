@@ -1,7 +1,7 @@
 name: VSN Shopify Worker SDK Configuration (No Deploy)
 on:
   push:
-    branches: [feat/builder-worker-shopify-auth-contract-20261013, feat/builder-worker-prisma-sessions-20261013]
+    branches: [feat/builder-worker-shopify-auth-contract-20261013, feat/builder-worker-prisma-sessions-20261013, feat/builder-worker-real-shopify-sdk-20261013]
 permissions:
   contents: read
 jobs:
@@ -29,6 +29,8 @@ jobs:
         run: npx prisma generate --schema prisma/cloud/schema.prisma
       - name: Verify Worker Shopify session lifecycle safety without cloud credentials
         run: node --test tests/shopify-worker-session-context.test.mjs
+      - name: Initialize official Shopify SDK against fake request-scoped session context
+        run: node --test tests/worker-real-shopify-sdk.test.mjs
       - name: Revalidate Worker Web Streams and frame-ancestor CSP
         run: node --test tests/worker-ssr-webstream.test.mjs
       - name: Enforce configuration isolation and production dependency audit
