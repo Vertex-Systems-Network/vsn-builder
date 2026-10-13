@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { getFontCatalog, getCustomFontCatalog } from "../services/font-registry.server.js";
@@ -29,7 +30,7 @@ export async function loader({request}){
 }
 export async function action({request}){
   assertTrustedMutationRequest(request);
-  const {session}=await authenticate.admin(request);let form;try{form=await request.formData();}catch(error){console.error("VSN font upload form parse failed:",error);return Response.json({ok:false,error:"The upload could not be read. Choose the file again; if it still fails, check the file size and restart the development server."},{status:400});}const intent=String(form.get('intent')||'');const id=String(form.get('id')||'');
+  const {session}=await authenticate.admin(request);const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;let form;try{form=await request.formData();}catch(error){console.error("VSN font upload form parse failed:",error);return Response.json({ok:false,error:"The upload could not be read. Choose the file again; if it still fails, check the file size and restart the development server."},{status:400});}const intent=String(form.get('intent')||'');const id=String(form.get('id')||'');
   const existing=id?await db.builderCustomFont.findFirst({where:{id,shop:session.shop}}):null;
   if(["delete","trash"].includes(intent)){
     if(!existing)return Response.json({ok:false,error:'Custom font not found.'},{status:404});
