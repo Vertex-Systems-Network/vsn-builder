@@ -220,6 +220,34 @@ test("failed streamed POST response rolls back all previously staged writes",asy
  assert(!fx.actions.includes("commit"));
  assert.equal(fx.closes,1);
 });
+test("never-ending HTTP 200 stream times out and rolls back transaction",async()=>{
+ const fx=fixture();
+ let cancelled=false;
+ const stalled=new ReadableStream({
+  start(controller){
+   controller.enqueue(new TextEncoder().encode("partial"));
+   // Deliberately never enqueue more data nor close the stream.
+  },
+  cancel(){cancelled=true},
+ });
+ const before=Date.now();
+ const r=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"stalled-stream-must-not-commit"},
+   });
+   return new Response(stalled,{status:200});
+  },
+ });
+ assert.equal(r.status,503);
+ assert.equal(await r.text(),"");
+ assert.equal(fx.stored.scope,undefined);
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+ assert.equal(cancelled,true);
+ assert(Date.now()-before<6000,"Rollback must not wait for stalled source forever");
+});
 test("oversized streamed POST response fails closed before transaction commit",async()=>{
  const fx=fixture();
  const r=await acceptWorkerShopifyAdminMutation(request(),env,{
