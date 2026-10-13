@@ -1,7 +1,7 @@
 name: VSN Builder Development Chromium Browser Acceptance (No Deploy)
 on:
   push:
-    branches: [feat/builder-dev-browser-acceptance-20261013]
+    branches: [feat/builder-dev-browser-acceptance-20261013, development]
   workflow_dispatch:
 permissions:
   contents: read
