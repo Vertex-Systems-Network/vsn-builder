@@ -33,7 +33,7 @@ jobs:
         run: npx prisma generate --schema prisma/cloud/schema.prisma
       - name: Install isolated Wrangler 4.149.0 runner tooling, not tracked
         run: |
-          npm install --no-save --package-lock=false --no-audit --no-fund wrangler@4.149.0
+          npm exec --yes --package=wrangler@4.149.0 -- wrangler --version
           git diff --exit-code -- package.json package-lock.json
       - name: Assert Workerd test has no hosted credentials or API access
         run: |

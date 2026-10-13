@@ -8,11 +8,10 @@ assert.equal(process.env.CI,"true","CI-only Workerd probe");
 assert.equal(process.env.NODE_ENV,"test","Test runtime only");
 const forbidden=["CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID","SHOPIFY_API_SECRET","DATABASE_URL","DIRECT_URL"];
 for(const name of forbidden)assert(!process.env[name],"Cloud credential "+name+" must not be present during local Worker test");
-const binary=path.join(root,"node_modules/.bin/wrangler");
-assert(fs.existsSync(binary),"Pinned CI Wrangler was not installed");
+const binary="npm";
 const port=8788,origin="http://127.0.0.1:"+port;
 let log="";
-const worker=spawn(binary,["dev","--config","wrangler.ci.jsonc","--local","--ip","127.0.0.1","--port",String(port)],{
+const worker=spawn(binary,["exec","--yes","--package=wrangler@4.149.0","--","wrangler","dev","--config","wrangler.ci.jsonc","--local","--ip","127.0.0.1","--port",String(port)],{
  cwd:root,env:{
   ...process.env,
   BROWSER:"none",CI:"true",WRANGLER_SEND_METRICS:"false",
