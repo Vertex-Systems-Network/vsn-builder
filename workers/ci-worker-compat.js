@@ -156,7 +156,7 @@ export default {
     // official Shopify SDK inside real Cloudflare Workerd. This never touches
     // a Neon database or an actual merchant.
     try {
-      const body=JSON.stringify({shop_domain:"ci-merchant.myshopify.com",id:12345});
+      const body=JSON.stringify({id:12345,name:"CI Dev Shop",myshopify_domain:null});
       const key=await crypto.subtle.importKey(
         "raw",new TextEncoder().encode(sdkEnv.SHOPIFY_API_SECRET),
         {name:"HMAC",hash:"SHA-256"},false,["sign"]
