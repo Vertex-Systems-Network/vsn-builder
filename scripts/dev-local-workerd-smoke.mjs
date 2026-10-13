@@ -59,6 +59,9 @@ try{
  assert.equal(check.modulesLoaded,true,JSON.stringify(check.checks));
  for(const [name,state] of Object.entries(check.checks))assert.equal(state,true,"Module/guard not healthy: "+name);
  console.log("PASS workerd imports Shopify SDK, Prisma Neon, Web Streams SSR and signed webhook modules");
+ assert.equal(check.checks.prismaClientConstructed,true,"Worker Prisma-Neon Client could not construct/close in real workerd");
+ assert.equal(check.checks.crossProjectBlocked,true,"Worker Prisma Client did not reject cross-project identity");
+ console.log("PASS workerd constructs and disconnects engine-less Prisma/Neon Client without DB queries");
  const blocked=await probe("/app");
  assert.equal(blocked.status,503);
  assert(!blocked.body.includes("session"),"No authenticated app runtime should be exposed");

@@ -13,3 +13,7 @@ A real local Workerd run exposed the old `prisma-client-js` generator's top-leve
 ## Verification repair (CI-only)
 
 The first Workerd CI failed at a *textual inspection* of generated Prisma `client.ts`, checking for any occurrence of the string `__dirname`, **before running Wrangler or the workerd test**. This is not evidence that the bundler executes a Node global: Prisma-generated source can mention strings or static branches which are optimized out. The heuristic is replaced with an ESM PrismaClient-export check and the existing real `wrangler dev --local` runtime import/HTTP probe remains the required acceptance gate. If Workerd import actually fails, the branch must remain red until the concrete bundling/runtime error is repaired. No Shopify/Cloudflare/Neon credentials or deploys are permitted.
+
+## Actual Workerd Prisma Client lifecycle with synthetic credentials
+
+The read-only CI-only probe now actually executes `createWorkerNeonPrisma` under Cloudflare's **real local workerd**, checks the resulting 51-model Prisma Client exposes a Session query API, and calls `$disconnect()`. It uses a hard-coded **nonexistent synthetic Neon hostname** and never invokes any query, connect, fetch or migration. It separately proves a Staging/Production project ID mismatch is rejected **before** any adapter initialization. Worker fetch still only allows the localhost CI probe; `/app` returns 503 and no hosted Worker is deployed. Only test-time constructor compatibility is established, not real hosted DB connectivity or merchant authentication.

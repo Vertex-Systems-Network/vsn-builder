@@ -25,6 +25,33 @@ export default {
       neonFailClosed:!inspectWorkerNeonEnvironment(env).ready,
       workerRuntime:typeof caches!=="undefined" && typeof crypto.subtle?.verify==="function",
     };
+    // Run an actual engine-less Prisma-Neon *construction* on workerd without
+    // issuing any query, fetch, connect or migration. This synthetic non-existent
+    // endpoint must never be replaced by a hosted credential.
+    const fake={
+      APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",
+      NEON_PROJECT_ID:"shiny-violet-61219572",
+      SHOPIFY_BILLING_TEST_MODE:"true",
+      DATABASE_URL:"postgresql://ci-no-network:synthetic-only@ep-invalid-no-network.aws.neon.tech/disposable?sslmode=require"
+    };
+    let prisma;
+    try {
+      prisma=createWorkerNeonPrisma(fake);
+      checks.prismaClientConstructed=typeof prisma?.session?.findMany==="function" &&
+        typeof prisma?.$disconnect==="function";
+    } catch {
+      checks.prismaClientConstructed=false;
+    } finally {
+      if (prisma) {
+        try { await prisma.$disconnect(); } catch { checks.prismaClientConstructed=false; }
+      }
+    }
+    try {
+      createWorkerNeonPrisma({...fake,NEON_PROJECT_ID:"wrong-project"});
+      checks.crossProjectBlocked=false;
+    } catch(err) {
+      checks.crossProjectBlocked=err?.code==="VSN_WORKER_DATABASE_NOT_READY";
+    }
     return new Response(JSON.stringify({
       ciOnly:true,ready:false,modulesLoaded:Object.values(checks).every(Boolean),checks,
     }),{status:200,headers:LOCKED});
