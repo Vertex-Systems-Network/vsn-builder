@@ -91,7 +91,11 @@ if (mode === "local") {
 if (mode === "staging" || mode === "production") {
   assert(String(process.env.APP_ENV || "") === mode, "APP_ENV must match the target environment.");
   const desiredTest = mode === "staging";
-  assert(isTrue(required("SHOPIFY_BILLING_TEST_MODE")) === desiredTest, "Billing test mode does not match " + mode + ".");
+  // Reject unknown values instead of treating every non-true string as false.
+  // Production must explicitly opt out of test billing; Staging must opt in.
+  required("SHOPIFY_BILLING_TEST_MODE");
+  assert(String(process.env.SHOPIFY_BILLING_TEST_MODE ?? "") === (desiredTest ? "true" : "false"),
+    "Billing test mode must be exactly " + (desiredTest ? "true" : "false") + " for " + mode + ".");
   const clientId = required("SHOPIFY_API_KEY");
   required("SHOPIFY_API_SECRET");
   if (identityOnly) {
