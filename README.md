@@ -35,6 +35,8 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 **Phase 1 infrastructure recheck (2026-10-13):** Both dedicated Neon projects and Cloudflare Worker script names exist, but **Cloudflare currently lists zero Worker secret bindings for both Staging and Production**. Both Neon primary branches report `protected: false`; protections require review before release. This is an authenticated read-only historical observation, **not hosted app readiness or GitHub Environment secret verification**. See `config/project/phase1-cloud-observation.json` and `node scripts/phase1-cloud-observation-check.mjs`. Phase 1 remains **4/7 evidence-tracked, IN PROGRESS**.
 
+**Phase 1 GitHub secret verification:** `.github/workflows/phase1-protected-identity-preflight.yml` now defines a **manual-only**, protected-branch, environment-scoped, no-checkout syntax/tier check for Staging and Production. CI covers this validator only with synthetic secrets; **real GitHub Environment reviewer/secret existence checks and actual protected runs remain pending**. The legacy inventory workflow is restricted to protected refs. No hosted credentials or Shopify merchant API calls were made. Phase 1 is still **4/7 evidence-tracked, IN PROGRESS**; see [closeout plan](docs/eight-phase-closure-plan.md).
+
 ## Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
