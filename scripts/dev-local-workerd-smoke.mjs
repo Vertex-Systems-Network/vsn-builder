@@ -70,6 +70,9 @@ try{
  assert.equal(check.checks.shopifySdkSessionClosed,true,"Official SDK synthetic session context was not closed");
  assert.equal(check.checks.wrongProjectUrlDeniedBeforeSdkStorage,true,"Cross-tier Neon URL was not refused before Shopify SDK storage");
  console.log("PASS actual Shopify SDK merchant frame-ancestors and request-scoped cleanup in workerd");
+ assert.equal(check.checks.realSignedWebhookAccepted,true,"Signed Shopify APP_UNINSTALLED webhook was not authenticated twice inside Workerd");
+ assert.equal(check.checks.tamperedWebhookDeniedBeforeStorage,true,"Tampered Shopify webhook triggered SDK storage before signature rejection");
+ console.log("PASS real Workerd signed Shopify webhook and tamper rejection before session storage");
 
  const blocked=await probe("/app");
  assert.equal(blocked.status,503);
