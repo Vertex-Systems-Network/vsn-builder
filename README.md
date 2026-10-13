@@ -39,6 +39,8 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 **Phase 1 GitHub branch protection (read-only, 2026-10-13):** `main` is protected under active ruleset `Protect main`, but **`development` currently reports `protected: false`**. Consequently the strict protected-branch Staging preflight will skip on `development` until an administrator protects it. GitHub Environment scoped secret names/policies remain unverified. See `config/project/phase1-github-protection-observation.json` and `scripts/phase1-github-protection-observation-check.mjs`. **No security guard disabled; Phase 1 remains 4/7 IN PROGRESS**.
 
+**Phase 1 source/Shopify secret hardening:** Staging secrets in the legacy GitHub workflow are now restricted to **protected `development` only** (not protected `main`); the protected identity-only preflight requires three separate Dev/Staging/Live Shopify Client IDs with exact runtime tier matching, tested against synthetic fixtures. `development` branch still lacks actual protection, and real GitHub Environment secret presence is still unverified; **Phase 1 remains 4/7**, not closed. See [closeout plan](docs/eight-phase-closure-plan.md).
+
 ## Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
