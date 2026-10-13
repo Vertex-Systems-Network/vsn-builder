@@ -48,7 +48,7 @@ test("protected GitHub preflight is exclusively manual, protected-branch and env
  assert.match(workflow,/set \+x/);
  assert.match(workflow,/contents: read/);
 });
-test("legacy secret inventory cannot run from PR or unprotected ref",()=>{
+test("retired weak hosted inventory cannot report Phase 1 acceptance or receive secrets",()=>{
  const legacy=readFileSync(".github/workflows/hosted-environment-secret-inventory.yml","utf8");
  assert.match(legacy,/^  workflow_dispatch:/m);
  assert.doesNotMatch(legacy,/^  push:|^  pull_request:|^  pull_request_target:/m);
@@ -56,13 +56,20 @@ test("legacy secret inventory cannot run from PR or unprotected ref",()=>{
  const staging=legacy.split("  staging-inventory:")[1]?.split("  production-inventory:")[0]||"";
  const production=legacy.split("  production-inventory:")[1]||"";
  assert.match(staging,/github\.ref == 'refs\/heads\/development'/);
- assert.doesNotMatch(staging,/github\.ref == 'refs\/heads\/main'/,
-  "Staging-scoped secrets must never be available on the Production source branch");
+ assert.doesNotMatch(staging,/github\.ref == 'refs\/heads\/main'/);
  assert.match(production,/github\.ref == 'refs\/heads\/main'/);
  assert.doesNotMatch(production,/github\.ref == 'refs\/heads\/development'/);
  const executable=legacy.split("\n").filter(line=>!/^\s*#/.test(line)).join("\n");
- assert.doesNotMatch(executable,/actions\/checkout|npm (?:install|ci|run)|curl |wget /);
+ // A retired workflow cannot resolve GitHub secrets/vars, select an
+ // Environment or accidentally claim a weaker check has passed.
+ assert.doesNotMatch(executable,/secrets\.|vars\.|^\s+environment\s*:|^\s+env\s*:/m);
+ assert.doesNotMatch(executable,/actions\/checkout|npm (?:install|ci|run)|curl |wget |gh api/);
+ assert.equal((executable.match(/exit 1/g)||[]).length,2);
+ assert.equal((executable.match(/::error::Legacy inventory is retired/g)||[]).length,2);
+ assert.doesNotMatch(executable,/(?:syntax|inventory) PASS|presence\/format PASS/);
+ assert.match(executable,/Phase 1 Protected Identity Preflight/);
 });
+
 test("actual inline workflow preflight accepts isolated CI-only Staging and Production shapes",()=>{
  for(const tier of ["staging","production"]){
   const r=run(tier);
