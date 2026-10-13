@@ -1,6 +1,7 @@
 import { COMMERCIAL_PLANS, UNSUBSCRIBED_PLAN, normalizePlanKey, planAtLeast } from "../config/commercialPlans.js";
 import { ENTITLEMENT_FEATURES, ENTITLEMENT_QUOTAS, ENTITLEMENT_VERSION, getEntitlementFeatureDefinition, getEntitlementQuotaDefinition } from "../config/entitlements.js";
 import { subscriptionMirrorIsTrusted } from "./shopify-subscription.server.js";
+import { resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
 
 function monthStart(now = new Date()) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -70,8 +71,7 @@ export async function resolveEntitlementPlan(db, shop, { now = new Date() } = {}
     // A verified subscription cannot convert an old Free or unknown handle
     // into an authorized paid plan. Trust the actual handle, not only the row.
     const validHandle = row?.planHandle && candidate !== "inactive";
-    const handleMatch = validHandle && (await import("./shopify-app-pricing.server.js"))
-      .resolveInternalPlanKeyFromHandle(row.planHandle) === candidate;
+    const handleMatch = validHandle && resolveInternalPlanKeyFromHandle(row.planHandle) === candidate;
     if (handleMatch) {
       key = candidate;
       source = "shopify-verified";
