@@ -88,9 +88,10 @@ export async function acceptWorkerShopifyUninstallWebhook(request,env,{
     const event=await context.shopify.authenticate.webhook(validatedRequest);
     if(event?.shop!==shop || event?.topic!=="APP_UNINSTALLED" ||
        !event.webhookId || event.webhookId!==id)throw denied(401);
-    // onVerified is where the actual idempotent deletion handler must be
-    // injected; no destructive action is performed by this acceptance module.
-    const response=await onVerified({event});
+    // Only after independent WebCrypto + official Shopify SDK authentication
+    // may a cleanup callback access the SDK request-scoped database. This
+    // hook itself never performs a delete, and finally always closes context.
+    const response=await onVerified({event,context});
     if(!(response instanceof Response))throw new TypeError("Missing webhook response");
     return response;
   }finally {
