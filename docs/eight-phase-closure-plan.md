@@ -60,6 +60,21 @@ They require the tier's *actual* environment variables (never check secrets into
 
 Phase 1 stays **4/7 evidence-tracked; NOT closed**, until separately authenticated Shopify registration, GitHub secret bindings/protection and actual protected tier-specific preflight are verified. Code having an identity preflight does not make its real invocation passed.
 
+## GitHub branch-protection verification (actual read-only GitHub, 2026-10-13)
+
+The GitHub repository read-only **`GET /repos/.../branches/{name}`** and active repository **rulesets** API returned the following:
+
+| Branch | GitHub `protected` | Active ruleset matching branch | Phase 1 impact |
+| --- | --- | --- | --- |
+| `main` | **true** | Repository ruleset `Protect main` (ID `23685287`) enforces pull requests, required checks `verify` and `Analyze JavaScript and TypeScript`, strict updates and deletion restrictions | Protected source branch requirement **met** for a future Production manual preflight, but GitHub Environment secrets/policies remain unknown |
+| `development` | **false** | No active `development` ruleset returned | **BLOCKER**: manual Staging preflight requires `github.ref_protected == true`; will be skipped until the branch is actually protected |
+
+This is a verified current observation, not a statement about **GitHub Environment reviewer** protection or scoped secret names. GitHub's branch-protection REST endpoint itself returned **403 due to this connector's missing administration permission**, while the ruleset and branch summary were readable. The branch summary plus active ruleset suffice to distinguish the actual main/dev protection state. Do **not** force `github.ref_protected` to true in code, run Staging off `main`, replace protected branch checks with a synthetic boolean, or treat skipped jobs as successful.
+
+Sanitized, historical evidence is recorded in `config/project/phase1-github-protection-observation.json`, with `node scripts/phase1-github-protection-observation-check.mjs` checking exact-branch/prerequisite consistency. Running `node scripts/phase1-github-protection-observation-check.mjs --require-staging-protected` **currently fails intentionally**. The source of truth for current protection is GitHub itself, not this historical snapshot. Securing `development` requires a repository administrator to configure an actual active branch ruleset with appropriate required checks and merge protections; existing GitHub connection cannot change repository rulesets.
+
+**Phase 1 remains 4/7**: task 1.6 is **not complete**, both because `development` is unprotected and because scoped GitHub Environment secret/protection policy metadata is not authenticated. Task 1.7 real protected preflight also cannot pass until then. Task 1.5 actual three Shopify Partner app identities is separately pending.
+
 ## Protected GitHub Environment secret-presence preflight (2026-10-13)
 
 New manual-only `.github/workflows/phase1-protected-identity-preflight.yml` verifies **one** Staging or Production environment in a deliberately isolated job. It permits Staging only from a **protected** `development` branch and Production only from a **protected** `main` branch. The job explicitly selects `cloudflare-staging` or `cloudflare-production` so GitHub's configured environment protection rules apply before scoped secrets are released. The source branch must have `github.ref_protected == true`. **Skipped jobs are not successful preflight evidence**: the run must show the credential-check step actually executed and passed.
