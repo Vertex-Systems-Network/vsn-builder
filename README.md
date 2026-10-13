@@ -31,6 +31,8 @@ The tracked execution order below is enforced by `scripts/phase-closure-check.mj
 
 No phase is currently closed. This is an evidence-inventory count, **not a feature-completion estimate** or readiness to deploy. Phase 2 may become active only after Phase 1 passes all required identity, configuration and separation acceptance checks.
 
+**Phase 1 preflight update:** `npm run env:staging:identity:check` and `npm run env:production:identity:check` verify real supplied identity/configuration variables without requiring the Phase 3 Neon schema or Phase 4 Worker application. The full `env:staging:check` / `env:production:check` stay strict and deployment-blocking. CI uses synthetic identities only; **actual GitHub Environment and Shopify Partner registrations remain unverified**, so Phase 1 is still 4/7 and IN PROGRESS. See [phase closeout rules](docs/eight-phase-closure-plan.md).
+
 ## Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
