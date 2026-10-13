@@ -44,6 +44,16 @@ The repo now contains `workers/app.js`, `wrangler.staging.jsonc`, and `wrangler.
 
 Local CI must execute static/runtime regression checks, validate staged Prisma policy, and bundle the *gated* Staging Worker with Wrangler **dry run only**. A dry-run bundling pass does NOT prove the hosted Worker is deployed, Shopify OAuth, public HTTPS, or app-route SSR. **Neither Staging nor Live was deployed.** Both connected Worker scripts previously had zero secrets/bindings; these code changes do not secretly configure them.
 
+## New protected remote verification gates (2026-10-14)
+
+The prior migration workflow accepted any plausible `br-` branch ID as "backup evidence." That was **not evidence of a real backup**. The code now requires the actual pinned Staging root snapshot `snap-green-bar-b3m1btfb`, independently observed via the connected Neon account. The Staging manifest also pins restored default branch `br-square-mountain-b3ij6q2s`, preserved original root `br-wandering-queen-b3mmztjy` and pool-enabled endpoint `ep-little-dream-b3g6puj2`.
+
+`scripts/phase3-staging-neon-live-proof.mjs` checks the **actual Neon read-only control-plane API** for the snapshot's original source, restored default, independent recoverable original branch, correct pooled endpoint, matching project and no truncated list responses. This check is injected **before** the mandatory security audit and any Prisma DDL in the protected Staging-only workflow. It requires a correctly scoped `NEON_API_KEY` GitHub Environment secret; a fake string or missing token fails. Synthetic regression tests cover forged snapshots, switched endpoints, absent pooler and API failures. This is not confirmation that a protected workflow has ever executed; GitHub `development` protection and audit issue #96 remain unresolved.
+
+`scripts/phase4-staging-cloudflare-readiness.mjs` adds a separate **Cloudflare metadata GET-only** acceptance check through the protected manual workflow `phase4-staging-cloudflare-observation.yml`. It requires real bound secret names `DATABASE_URL` and `SHOPIFY_API_SECRET`, public Shopify config bindings, and exact tier variables for Staging/Neon. **It never writes secrets or deploys a Worker and never prints credentials.** Missing secrets or a Production target fail closed. Previous connected Cloudflare inventory showed **zero Staging/Production Worker bindings**, so this remains an externally blocked gate until Cloudflare Workers are genuinely configured. Unit tests validate the denial cases using synthetic API results only.
+
+Neither workflow is currently ready to run from protected `development` and neither constitutes a Live app or real merchant acceptance. No cloud Worker deployment or production database migration took place in this follow-up.
+
 ## True outstanding closure evidence
 
 | Phase | Existing verified subtasks | Outstanding |
