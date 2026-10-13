@@ -6,11 +6,13 @@ Canonical detail: [41 atomic tasks and dependencies](docs/task-dependency-roadma
 
 Run `node scripts/task-dependency-check.mjs` to list next READY P0/P1 tasks; `node scripts/task-dependency-check.mjs --format=markdown` for the entire backlog; `node --test tests/task-dependency-check.test.mjs` for graph regression.
 
-**Current status:** 41 total tasks, 9 narrowly VERIFIED, 3 IN REVIEW, 10 READY and 19 WAITING for explicit dependencies. These counts are not a deployability score.
+**Current status:** 41 total tasks, 9 narrowly VERIFIED, 4 IN REVIEW, 9 READY and 19 WAITING for explicit dependencies. These counts are not a deployability score.
 
-**READY tasks:** `T011` security audit, `T012` PR integration, `T013` GitHub branch protection, `T014` environment secrets, `T015` ONE public Shopify app ownership, `T020` functional hosted Worker, `T024` trusted webhook generation, `T026` server-side entitlement enforcement, `T032` theme/template/widget code QA and `T040` Shopify listing content.
+**READY tasks:** `T011` security audit, `T012` PR integration, `T013` GitHub branch protection, `T014` environment secrets, `T015` ONE public Shopify app ownership, `T020` functional hosted Worker, `T024` trusted webhook generation, `T032` theme/template/widget code QA and `T040` Shopify listing content.
 
 **Commercial contract:** Starter $30/mo, Sliver $100/mo, Gold $150/mo, Platinum $350/mo or $3,000/year. Four paid plans, exact plan IDs, 10-day Shopify trial each. No Free public plan. Only VSN | Builder Live can be submitted.
+
+**Now in review:** `T026` paid mutation guard [PR #170](https://github.com/Vertex-Systems-Network/vsn-builder/pull/170), not verified or merchant-accepted.
 
 **External blockers remain:** GitHub protected development and scoped secrets unverified; Neon default Staging/Production have no actual Prisma migration history/app tables; Cloudflare Builder Staging/Production Workers have no secrets/bindings; mandatory npm development dependency audit `braces` #96 is red; real merchant Shopify auth/billing not accepted.
 
