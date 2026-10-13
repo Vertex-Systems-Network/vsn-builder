@@ -17,6 +17,8 @@ Read-only inspection of the real VSN organization projects:
 
 On that isolated QA branch, the repository's **two exact PostgreSQL migration SQL files** were split into 171 statements (170 baseline + 1 installation-generation fence) and executed in a single Neon SQL transaction. Real post-execution SQL results: **52 application tables, 168 indexes, 477 constraints**, with `BuilderShopInstallation` and `BuilderSubscription` tables present. A synthetic shop installation and Session row were inserted under a SAVEPOINT and then **rolled back**; SQL verification observed **1/1 inside the savepoint, 0/0 after rollback**. No real merchant data was used or accessed. The shadow remains available to diagnose/compare; its contents are **NOT** Prisma migration deployment evidence.
 
+**Staging compute pooler change:** A fresh authorized Neon endpoint inventory showed both primary endpoints originally had `pooler_enabled:false`. The **Staging primary endpoint only**, `ep-little-dream-b3g6puj2`, was updated to `pooler_enabled:true`, `pooler_mode:transaction`; the API confirmed these values. No Production compute settings changed. This prepares the paired pooled/runtime and direct/migration URL paths but **does not** verify credentials or an end-to-end pooled query.
+
 **Important gap:** These direct SQL dry-run transactions do **not** create Prisma's `_prisma_migrations` bookkeeping. The QA branch reports **zero Prisma migration-history tables**. We have not tested a Neon point-in-time restore of a *migrated* branch, direct vs pooled **authenticated app** connections, or the real protected migration workflow. The Staging default branch and Production project were not written to.
 
 A new manual-only `phase3-staging-neon-migration.yml`:
