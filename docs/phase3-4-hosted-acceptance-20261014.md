@@ -10,7 +10,7 @@ Read-only inspection of the real VSN organization projects:
 
 | Tier | Project | Default branch | Current baseline | Acceptance |
 | --- | --- | --- | --- | --- |
-| Staging | `shiny-violet-61219572` | `br-wandering-queen-b3mmztjy` | PostgreSQL 18.6; zero application tables and no Prisma migration history at inspection | NOT MIGRATED |
+| Staging | `shiny-violet-61219572` | `br-square-mountain-b3ij6q2s` (restored snapshot default) | PostgreSQL 18.6; zero application tables and no Prisma migration history at inspection | NOT MIGRATED |
 | Production | `nameless-violet-68750490` | `br-odd-credit-b3rzlpz9` | PostgreSQL 18.6; zero application tables and no Prisma migration history at inspection | NOT MIGRATED |
 
 **QA shadow branch created under the Staging project only:** `br-blue-flower-b3kiqk5n` / `vsn-builder-phase3-migration-qa-20261014`, copied from Staging before applying any migration. This branch is neither the Staging default nor the Production project.
@@ -19,7 +19,9 @@ On that isolated QA branch, the repository's **two exact PostgreSQL migration SQ
 
 **Staging compute pooler change:** A fresh authorized Neon endpoint inventory showed both primary endpoints originally had `pooler_enabled:false`. The **Staging primary endpoint only**, `ep-little-dream-b3g6puj2`, was updated to `pooler_enabled:true`, `pooler_mode:transaction`; the API confirmed these values. No Production compute settings changed. This prepares the paired pooled/runtime and direct/migration URL paths but **does not** verify credentials or an end-to-end pooled query.
 
-**Important gap:** These direct SQL dry-run transactions do **not** create Prisma's `_prisma_migrations` bookkeeping. The QA branch reports **zero Prisma migration-history tables**. We have not tested a Neon point-in-time restore of a *migrated* branch, direct vs pooled **authenticated app** connections, or the real protected migration workflow. The Staging default branch and Production project were not written to.
+**Neon root snapshot / actual recovery drill (same Staging project, 2026-10-14):** The live Staging root was captured as `snap-green-bar-b3m1btfb` while it held **zero application tables**. Neon `restore_snapshot` with `finalize:true` restored the snapshot to new branch `br-square-mountain-b3ij6q2s` **and switched the Staging default branch and stable endpoint `ep-little-dream-b3g6puj2` to that restored branch**. This was a real Staging default-branch cutover, NOT a passive isolated restore; the original root `br-wandering-queen-b3mmztjy` is preserved under the backup/recovery-drill name, with independent endpoint `ep-holy-tooth-b39zxzxs`. Follow-up Neon branch/endpoint listing and SQL on both confirmed **zero application tables on the old and restored branches**, the restored branch is default, the same configured application endpoint hostname remains attached to the default, and **Production was not touched**. This proves successful restoration of the *empty pre-migration* Staging baseline, not recovery of an initialized app schema. The QA migration branch `br-blue-flower-b3kiqk5n` remains separate and still contains the 52-table SQL dry run. The new Staging default branch ID must be used when reviewing future backup identifiers and migration plans.
+
+**Important gap:** These direct SQL dry-run transactions do **not** create Prisma's `_prisma_migrations` bookkeeping. The QA branch reports **zero Prisma migration-history tables**. We have not tested a Neon point-in-time restore of a *migrated* branch, direct vs pooled **authenticated app** connections, or the real protected migration workflow. The Staging default's application tables remained empty throughout; a separate Neon restore subsequently changed its default-branch identity as documented below. Production project was not written to.
 
 A new manual-only `phase3-staging-neon-migration.yml`:
 - Runs only on the **protected `development` branch** with GitHub Environment `cloudflare-staging`.
