@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -13,7 +14,7 @@ export async function loader({request}){
 }
 
 export async function action({request}){
-  const{session}=await authenticate.admin(request);const form=await request.formData();const intent=String(form.get("intent")||"toggle");const state=await loadState(session.shop);
+  const{session}=await authenticate.admin(request);const form=await request.formData();const intent=String(form.get("intent")||"toggle");if(intent==="seed-demo"){const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;}const state=await loadState(session.shop);
   if(intent==="select-track"){
     const goal=String(form.get("goal")||"");if(!ONBOARDING_TRACKS.some((row)=>row.key===goal))return Response.json({ok:false,error:"Choose a valid onboarding goal."},{status:400});
     const next=await saveState(session.shop,{...state,goal});return Response.json({ok:true,intent,state:next,progress:await onboardingStatus(db,session.shop,next),message:`${ONBOARDING_TRACKS.find((row)=>row.key===goal)?.label} workflow selected.`});
