@@ -73,7 +73,7 @@ test("official SDK session plus persisted active generation authorizes merchant-
 });
 test("unsigned shop query or fabricated authorization header cannot grant access",async()=>{
  let called=false;
- for(const unauthenticated of [undefined, null, {shop:"invalid.example.test"}]){
+ for(const unauthenticated of [null, {shop:"invalid.example.test"}, {shop,accessToken:"fake"}]){
   const fx=fixture({authenticated:unauthenticated});
   const result=await acceptWorkerShopifyAdminRequest(request(),env,{
    createSdkContext:fx.createSdkContext,
@@ -85,7 +85,7 @@ test("unsigned shop query or fabricated authorization header cannot grant access
  const req=new Request(env.SHOPIFY_APP_URL+"/app?shop="+shop,{
   headers:{Authorization:"Bearer fabricated-for-ci-only"},
  });
- const fx=fixture({authenticated:undefined});
+ const fx=fixture({authenticated:null});
  assert.equal((await acceptWorkerShopifyAdminRequest(req,env,{
   createSdkContext:fx.createSdkContext,
   async onAuthenticated(){called=true;return pass()},
