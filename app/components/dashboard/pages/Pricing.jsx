@@ -12,7 +12,7 @@ const accents = {
 };
 
 const faqs = [
-  { q:'Why are exact paid prices not hard-coded here?', a:'Shopify App Pricing hosts the authoritative plan selection and approval page. VSN shows entitlement differences, while Shopify shows the configured recurring price, trial and billing period.' },
+  { q:'Are the displayed prices final?', a:'VSN displays the planned USD rates and 10-day trials. The merchant confirms the actual recurring price, trial and billing period on Shopify’s hosted App Pricing page.' },
   { q:'Where do I choose monthly or yearly billing?', a:'On Shopify’s hosted pricing page when that option is enabled for the plan. VSN no longer adds undocumented plan or interval query parameters to the Shopify URL.' },
   { q:'Do lower plans remove widgets from existing designs?', a:'No. VSN differentiates plans by systems and usage limits rather than hiding individual builder widgets. Existing content is not deleted by changing the selected plan.' },
 ];
@@ -55,7 +55,6 @@ export default function Pricing({ darkMode, currentPlan, entitlements, billingUr
         const accent = accents[key];
         const active = currentPlan?.key === key;
         const popular = key === 'sliver';
-        const paid = true;
         const href = billingUrl || '';
         const shopifyHandle = pricing?.planHandles?.[key] || key;
         return <article key={key} style={{
@@ -76,7 +75,7 @@ export default function Pricing({ darkMode, currentPlan, entitlements, billingUr
           <div style={{ fontSize:12, color:muted, lineHeight:1.55, minHeight:57, marginTop:4 }}>{plan.description}</div>
           <div style={{ fontSize:10.5, color:muted, marginTop:6 }}>Shopify handle: <code>{shopifyHandle}</code></div>
           <div style={{ margin:'18px 0 4px', color:text }}>
-            <><span style={{ fontSize:28, fontWeight:800 }}>${"$"}{plan.monthlyUsd}</span><span style={{ fontSize:13, color:muted }}>/mo</span><div style={{ fontSize:11.5, color:muted, marginTop:3 }}>{plan.trialDays}-day free trial{plan.annualUsd ? ` · ${plan.annualUsd}/year` : ''}</div><div style={{ fontSize:11.5, color:muted, marginTop:3 }}>Shopify Admin confirms the actual charge</div></>
+            <><span style={{ fontSize:28, fontWeight:800 }}>${plan.monthlyUsd}</span><span style={{ fontSize:13, color:muted }}>/mo</span><div style={{ fontSize:11.5, color:muted, marginTop:3 }}>{plan.trialDays}-day free trial{plan.annualUsd ? ` · ${plan.annualUsd}/year` : ''}</div><div style={{ fontSize:11.5, color:muted, marginTop:3 }}>Shopify Admin confirms the actual charge</div></>
           </div>
           <div style={{ marginTop:18 }}>
             {active ? <div style={{ width:'100%', padding:'10px', borderRadius:9, border:`1px solid ${border}`, textAlign:'center', fontSize:12.5, fontWeight:700, color:muted }}>Current plan</div>
