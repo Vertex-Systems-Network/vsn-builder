@@ -134,7 +134,7 @@ jobs:
                  parsed.port is not None or parsed.path not in ("", "/") or parsed.query or \
                  parsed.fragment or host in ("localhost", "example.com", "example.org",
                                              "example.net") or host.endswith(forbidden) or \
-                 not re.fullmatch(r"[a-z0-9-]+(?:\\.[a-z0-9-]+)+", host):
+                 not re.fullmatch(r"[a-z0-9-]+(?:\.[a-z0-9-]+)+", host):
                   problems.append("Shopify App URL must be stable HTTPS origin")
           except ValueError:
               problems.append("Shopify App URL invalid")
