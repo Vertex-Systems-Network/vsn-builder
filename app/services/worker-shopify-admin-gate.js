@@ -15,6 +15,18 @@ const matches=(stored,session,shop)=>!!stored &&
   stored.shop===shop && stored.isOnline===session.isOnline &&
   stored.accessToken===session.accessToken;
 
+// Throw within the Prisma transaction, rather than returning an HTTP error
+// as a successful transaction result. Prisma commits on normal return,
+// INCLUDING 4xx/5xx Response values. Keep the failed response for safe
+// 4xx application errors; sanitize 5xx to avoid disclosing driver details.
+class RollbackResponse extends Error {
+  constructor(response){
+    super("Admin mutation transaction must roll back");
+    this.response=response;
+  }
+}
+const rollback=(status)=>{throw new RollbackResponse(denied(status))};
+
 async function guardedAdminRequest(request,env,{
   createSdkContext=createWorkerShopifySdkContext,onAuthenticated,
 }={},mutation=false) {
@@ -72,17 +84,22 @@ async function guardedAdminRequest(request,env,{
           where:{shop,uninstalledAt:null},
           data:{updatedAt:new Date()},
         });
-        if(locked?.count!==1)return denied(403);
+        if(locked?.count!==1)rollback(403);
         const current=await transaction.session.findUnique({
           where:{id:session.id}
         });
-        if(!matches(current,session,shop))return denied(403);
+        if(!matches(current,session,shop))rollback(403);
 
         // All merchant-facing database writes MUST use this transaction.
         // The external request-scoped Prisma client is NOT passed through.
-        return onAuthenticated({
+        // Await callback completion while transaction remains open, and
+        // ROLLBACK if it returns any error status or invalid result.
+        const result=await onAuthenticated({
           request,shop,session,admin:authenticated.admin,transaction
         });
+        if(!(result instanceof Response))throw new TypeError("Mutation callback did not return Response");
+        if(result.status>=400)throw new RollbackResponse(result);
+        return result;
       },{maxWait:5000,timeout:12000});
     }else{
       // GET is for loaders/read-only data. Do not expose the mutable DB
@@ -96,6 +113,14 @@ async function guardedAdminRequest(request,env,{
     response.headers.set("x-content-type-options","nosniff");
     return response;
   } catch(error) {
+    if(error instanceof RollbackResponse){
+      // The database transaction has already been rolled back. Preserve
+      // intentional client errors, never surface arbitrary server failures.
+      if(error.response.status>=500)return denied(503);
+      error.response.headers.set("cache-control","no-store");
+      error.response.headers.set("x-content-type-options","nosniff");
+      return error.response;
+    }
     // Shopify SDK can throw a Response to start reauthentication. Forward it
     // unchanged (including cookie/redirect headers), as the official SDK
     // requires. Reject other errors without exposing tokens/Neon URLs.
