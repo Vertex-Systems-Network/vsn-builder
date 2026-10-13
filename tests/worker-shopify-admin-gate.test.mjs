@@ -1,0 +1,192 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {acceptWorkerShopifyAdminRequest} from "../app/services/worker-shopify-admin-gate.js";
+import {createWorkerShopifySdkContext} from "../app/services/shopify-worker-sdk-context.js";
+import {SHOPIFY_EXPECTED_SCOPES} from "../app/config/shopifyIntegration.js";
+
+const env={
+ APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",
+ NEON_PROJECT_ID:"shiny-violet-61219572",SHOPIFY_BILLING_TEST_MODE:"true",
+ SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"synthetic-admin-only-ci-secret",
+ SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+ SHOPIFY_APP_URL:"https://staging.builder.example.org",
+ SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
+ DATABASE_URL:"postgresql://synthetic:fake@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/testing?sslmode=require",
+};
+const shop="ci-authenticated.myshopify.com";
+const session={id:"offline_"+shop,shop,state:"",isOnline:false,accessToken:"not-real-token"};
+const request=(path="/app?shop="+shop,method="GET")=>
+ new Request(env.SHOPIFY_APP_URL+path,{method});
+const entry={
+ shop,installedAt:new Date("2026-10-13T10:00:00.000Z"),
+ uninstalledAt:null,
+};
+function fixture({authenticated=session,stored=session,lifecycle=entry,failDatabase=false,
+ throwAuth=null}={}){
+ const calls=[];
+ const context={
+  shopify:{authenticate:{
+   async admin(req){
+    calls.push(["official-admin",req.url]);
+    if(throwAuth)throw throwAuth;
+    return {session:authenticated,admin:{graphql:async()=>{throw Error("not an API call")}}};
+   },
+  }},
+  database:{
+   builderShopInstallation:{
+    async findUnique({where}){
+     calls.push(["lifecycle",where.shop]);
+     if(failDatabase)throw Error("postgresql://sensitive:password@private.neon.tech");
+     return lifecycle;
+    },
+   },
+   session:{
+    async findUnique({where}){calls.push(["session",where.id]);return stored},
+   },
+  },
+  async close(){calls.push(["close"])},
+ };
+ return {context,calls,createSdkContext:async()=>context};
+}
+const pass=async()=>new Response("Authenticated app data",{status:200});
+const run=(options={},req=request(),environment=env,callback=pass)=>{
+ const fx=fixture(options);
+ return acceptWorkerShopifyAdminRequest(req,environment,{
+  createSdkContext:fx.createSdkContext,
+  onAuthenticated:callback,
+ }).then(response=>({response,...fx}));
+};
+
+test("official SDK session plus persisted active generation authorizes merchant-scoped app",async()=>{
+ let observed;
+ const {response,calls}=await run({},request(),env,async values=>{
+  observed=values;
+  return pass();
+ });
+ assert.equal(response.status,200);
+ assert.equal(response.headers.get("cache-control"),"no-store");
+ assert.equal(response.headers.get("x-content-type-options"),"nosniff");
+ assert.equal(await response.text(),"Authenticated app data");
+ assert.equal(observed.shop,shop);
+ assert.equal(observed.session.id,session.id);
+ assert.deepEqual(calls.map(row=>row[0]),["official-admin","lifecycle","session","close"]);
+});
+test("unsigned shop query or fabricated authorization header cannot grant access",async()=>{
+ let called=false;
+ for(const unauthenticated of [undefined, null, {shop:"invalid.example.test"}]){
+  const fx=fixture({authenticated:unauthenticated});
+  const result=await acceptWorkerShopifyAdminRequest(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated(){called=true;return pass()},
+  });
+  assert.equal(result.status,401);
+  assert.deepEqual(fx.calls.map(c=>c[0]),["official-admin","close"]);
+ }
+ const req=new Request(env.SHOPIFY_APP_URL+"/app?shop="+shop,{
+  headers:{Authorization:"Bearer fabricated-for-ci-only"},
+ });
+ const fx=fixture({authenticated:undefined});
+ assert.equal((await acceptWorkerShopifyAdminRequest(req,env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated(){called=true;return pass()},
+ })).status,401);
+ assert.equal(called,false);
+});
+test("Shopify merchant from SDK is authoritative; URL tenant conflict is denied",async()=>{
+ const bad=await run({},request("/app?shop=another-merchant.myshopify.com"));
+ assert.equal(bad.response.status,401);
+ assert(!bad.calls.some(([key])=>key==="session"));
+ const invalid=await run({},request("/app?shop=merchant.example.test"));
+ assert.equal(invalid.response.status,400);
+ assert.deepEqual(invalid.calls,[]);
+});
+test("uninstalled shop, missing generation and stale token are refused",async()=>{
+ for(const options of [
+  {lifecycle:null},
+  {lifecycle:{...entry,uninstalledAt:new Date("2026-10-13T12:00:00Z")}},
+  {lifecycle:{...entry,installedAt:"untrusted"}},
+  {stored:null},
+  {stored:{...session,shop:"second.myshopify.com"}},
+  {stored:{...session,accessToken:"different-token"}},
+  {stored:{...session,isOnline:true}},
+ ]) {
+  let called=false;
+  const r=await run(options,request(),env,async()=>{
+   called=true;return pass();
+  });
+  assert.equal(r.response.status,403);
+  assert.equal(called,false);
+  assert.equal(r.calls.at(-1)[0],"close");
+ }
+});
+test("Shopify native reauth Response passes through unchanged, including headers",async()=>{
+ const redirect=new Response(null,{status:302,headers:{
+  location:"https://admin.shopify.com/store/ci/auth",
+  "set-cookie":"shopify-reauth=test; Secure; HttpOnly",
+ }});
+ const {response,calls}=await run({throwAuth:redirect});
+ assert.equal(response,redirect);
+ assert.equal(response.status,302);
+ assert.equal(response.headers.get("set-cookie"),redirect.headers.get("set-cookie"));
+ assert.deepEqual(calls.map(x=>x[0]),["official-admin","close"]);
+});
+test("unexpected driver/auth failures sanitize credentials and always close context",async()=>{
+ for(const options of [
+  {failDatabase:true},
+  {throwAuth:new Error("postgresql://sensitive:private@host")},
+ ]){
+  const {response,calls}=await run(options);
+  assert.equal(response.status,503);
+  assert.equal(await response.text(),"");
+  assert.equal(calls.at(-1)[0],"close");
+ }
+ const invalidResponse=await run({},request(),env,async()=>({status:200}));
+ assert.equal(invalidResponse.response.status,503);
+ assert.equal(invalidResponse.calls.at(-1)[0],"close");
+});
+test("tier identity and route/method blockers never construct session/SDK context",async()=>{
+ for(const [req,identity,status] of [
+  [request("/webhooks/app/uninstalled"),env,404],
+  [request("/apps"),env,404],
+  [request("/app","PUT"),env,405],
+  [request(),{...env,NEON_PROJECT_ID:"nameless-violet-68750490"},503],
+  [request(),{...env,APP_ENV:"production"},503],
+ ]){
+  let opened=false;
+  const result=await acceptWorkerShopifyAdminRequest(req,identity,{
+   createSdkContext(){opened=true},
+   onAuthenticated:pass,
+  });
+  assert.equal(result.status,status);
+  assert.equal(opened,false);
+ }
+});
+test("actual official Shopify SDK does NOT trust a bare query shop as an authenticated merchant",async()=>{
+ const req=request();
+ const fx=fixture({authenticated:undefined});
+ let called=false;
+ const response=await acceptWorkerShopifyAdminRequest(req,env,{
+  async createSdkContext(signedRequest,settings) {
+   return createWorkerShopifySdkContext(signedRequest,settings,{
+    async createSessionContext(){
+     return {
+      database:fx.context.database,
+      sessionStorage:{
+       async storeSession(){return true},
+       async loadSession(){return undefined},
+       async deleteSession(){return true},
+       async deleteSessions(){return true},
+       async findSessionsByShop(){return []},
+       async isReady(){return true},
+      },
+      async close(){fx.calls.push(["close"])},
+     };
+    },
+   });
+  },
+  async onAuthenticated(){called=true;return pass()},
+ });
+ assert.equal(called,false);
+ assert(fx.calls.some(([action])=>action==="close"),"Real SDK context must close after reject/reauth");
+ assert([200,302,401,403,503].includes(response.status));
+});
