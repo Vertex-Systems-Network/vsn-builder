@@ -21,6 +21,17 @@ export function inspectWorkerNeonEnvironment(env) {
     const parsed=new URL(url);
     if(!["postgres:","postgresql:"].includes(parsed.protocol))issues.push("Neon URL scheme invalid");
     if(!parsed.hostname.endsWith(".neon.tech")||parsed.hostname==="neon.tech")issues.push("Neon host invalid");
+    // NEON_PROJECT_ID is a caller-supplied string; it cannot prove that the
+    // DATABASE_URL actually targets this tier's project. Bind the URL to the
+    // exact compute hostname recorded in the reviewed deployment manifest.
+    const directHost=String(cfg.neon_endpoint_host||"").toLowerCase();
+    const dot=directHost.indexOf(".");
+    const pooledHost=dot>0?directHost.slice(0,dot)+"-pooler"+directHost.slice(dot):"";
+    if(!directHost.startsWith("ep-")||!directHost.endsWith(".neon.tech")||dot<=0 ||
+      ![directHost,pooledHost].includes(parsed.hostname.toLowerCase())) {
+      issues.push("Neon endpoint identity mismatch");
+    }
+    if(parsed.port && parsed.port!=="5432")issues.push("Neon PostgreSQL port invalid");
     if(!parsed.username||!parsed.password||!parsed.pathname||parsed.pathname==="/")issues.push("Neon database credentials incomplete");
     if(parsed.searchParams.get("sslmode")!=="require")issues.push("Neon TLS policy missing");
   }catch{issues.push("Neon URL malformed")}
