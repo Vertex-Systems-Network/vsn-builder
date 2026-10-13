@@ -44,3 +44,6 @@ shopify.app.production.toml
 
 # Engine-less Cloudflare/Neon Prisma Worker Client (never commit generated code)
 /generated/prisma-worker/
+
+# Cloudflare Workerd-native TypeScript Prisma ESM Client
+/generated/prisma-edge/

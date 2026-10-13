@@ -7,3 +7,5 @@ Worker config `wrangler.ci.jsonc` has `APP_ENV=development`, `workers_dev=false`
 A green result is necessary but **not sufficient** for Shopify Worker deployment: the current `app/entry.server.jsx` is still Node-only, the production Worker React Router fetch handler/Vite plugin and hosted secrets remain unwired, Neon Staging hasn't been migrated and issue #96's full development dependency audit is red. Never substitute this CI-only probe for a real Worker app.
 
 Wrangler is now resolved through an isolated npm exec cache, avoiding root npm re-resolution after npm ci.
+
+A real local Workerd run exposed the old `prisma-client-js` generator's top-level `__dirname` failure. The schema now generates a THIRD isolated `prisma-client` output with `runtime="workerd"`, `moduleFormat="esm"`, `engineType="client"`; the SDK/Neon Worker factory imports this TypeScript ESM client. The original Local SQLite client and Node PostgreSQL clients remain untouched. See Prisma ORM v6 generator docs: https://www.prisma.io/docs/orm/v6/prisma-schema/overview/generators .

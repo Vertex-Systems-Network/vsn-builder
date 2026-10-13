@@ -2,7 +2,7 @@
 // Only the future certified Cloudflare runtime should import this module.
 // The app's existing Local SQLite Prisma client remains untouched.
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { PrismaClient } from "../../generated/prisma-worker/index.js";
+import { PrismaClient } from "../../generated/prisma-edge/client.ts";
 import manifests from "../../config/deployment/environments.json" with { type: "json" };
 
 const own=(record,name)=>Object.prototype.hasOwnProperty.call(record||{},name);

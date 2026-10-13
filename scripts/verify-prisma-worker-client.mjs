@@ -12,6 +12,11 @@ assert(/engineType\s*=\s*"client"/.test(worker),"Worker Client must be Rust engi
 assert(!/engineType\s*=/.test(normal),"Node Cloud Client must retain native Prisma driver for CI");
 assert(/output\s*=\s*"\.\.\/\.\.\/generated\/prisma-cloud"/.test(normal),"Node Cloud Client output changed");
 const out=path.join(root,"generated/prisma-worker");
+const edge=cloud.match(/generator\\s+workerEdge\\s*\\{([^}]*)\\}/s)?.[1]||"";
+assert(/provider\\s*=\\s*"prisma-client"/.test(edge),"Edge generator must use ESM-friendly prisma-client");
+assert(/runtime\\s*=\\s*"workerd"/.test(edge),"Cloudflare runtime target missing");
+assert(/moduleFormat\\s*=\\s*"esm"/.test(edge),"Edge generator ESM format missing");
+assert(/engineType\\s*=\\s*"client"/.test(edge),"Edge generator must not ship Rust");
 const ignore=fs.readFileSync(path.join(root,".gitignore"),"utf8");
 assert(ignore.split(/\r?\n/).includes("/generated/prisma-worker/"),"Generated Worker Client must be gitignored");
 if(process.argv.includes("--generated")){
@@ -20,5 +25,8 @@ if(process.argv.includes("--generated")){
  assert(/generator\s+workerClient\s*\{[^}]*engineType\s*=\s*"client"/s.test(generated),"Worker generated schema lost engine-less setting");
  assert.equal((generated.match(/^model\s+\w+/gm)||[]).length,51,"Worker Client model parity drift");
  assert(fs.existsSync(path.join(out,"index.js")),"Worker Prisma Client index.js missing");
+ const edgeSrc=fs.readFileSync(path.join(root,"generated/prisma-edge/client.ts"),"utf8");
+ assert(!edgeSrc.includes("__dirname"),"Cloudflare ESM Client must not use Node __dirname");
+ assert.equal((fs.readFileSync(path.join(root,"generated/prisma-edge/internal/class.ts"),"utf8").match(/model/gi)||[]).length>0,true,"Edge Prisma model definitions missing");
 }
 console.log("Worker Prisma generator isolation PASS; adapter and runtime are NOT yet implemented.");

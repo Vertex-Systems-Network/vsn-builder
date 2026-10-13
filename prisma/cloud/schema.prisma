@@ -15,6 +15,18 @@ generator workerClient {
   engineType = "client"
 }
 
+// Actual Cloudflare Workerd ESM target. Separate from the earlier Node-test
+// engine-less generator to preserve historical CI and local runtime behavior.
+generator workerEdge {
+  provider               = "prisma-client"
+  output                 = "../../generated/prisma-edge"
+  engineType             = "client"
+  runtime                = "workerd"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
+}
+
 // Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
 // enough when changing adapters.
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
