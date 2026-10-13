@@ -41,6 +41,9 @@ jobs:
       SHOPIFY_STAGING_CLIENT_ID: ${{  secrets.SHOPIFY_STAGING_CLIENT_ID  }}
       SHOPIFY_PRODUCTION_CLIENT_ID: ${{  secrets.SHOPIFY_PRODUCTION_CLIENT_ID  }}
       SHOPIFY_APP_URL: ${{  secrets.SHOPIFY_APP_URL  }}
+      # GitHub Environment-scoped non-secret identifiers, never hardcoded in credentials.
+      NEON_PROJECT_ID: ${{  vars.NEON_PROJECT_ID  }}
+      CLOUDFLARE_WORKER_NAME: ${{  vars.CLOUDFLARE_WORKER_NAME  }}
       DATABASE_URL: ${{  secrets.DATABASE_URL  }}
       DIRECT_URL: ${{  secrets.DIRECT_URL  }}
       CLOUDFLARE_ACCOUNT_ID: ${{  secrets.CLOUDFLARE_ACCOUNT_ID  }}
@@ -67,11 +70,24 @@ jobs:
               return value
 
           expected = {
-              "staging": "ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech",
-              "production": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech",
+              "staging": {
+                  "neon_host": "ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech",
+                  "neon_project": "shiny-violet-61219572",
+                  "worker": "vsn-builder-staging",
+              },
+              "production": {
+                  "neon_host": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech",
+                  "neon_project": "nameless-violet-68750490",
+                  "worker": "vsn-builder-production",
+              },
           }
           if tier not in expected:
               problems.append("Invalid target tier")
+          if tier in expected:
+              if require("NEON_PROJECT_ID") != expected[tier]["neon_project"]:
+                  problems.append("Neon project ID mismatches scoped tier")
+              if require("CLOUDFLARE_WORKER_NAME") != expected[tier]["worker"]:
+                  problems.append("Cloudflare Worker name mismatches scoped tier")
           if os.environ.get("SOURCE_BRANCH_PROTECTED") != "true":
               problems.append("Source branch is not protected")
           if os.environ.get("SHOPIFY_BILLING_TEST_MODE") != ("true" if tier == "staging" else "false"):
@@ -135,7 +151,7 @@ jobs:
           runtime = inspect_url("DATABASE_URL")
           direct = inspect_url("DIRECT_URL")
           if tier in expected:
-              primary = expected[tier]
+              primary = expected[tier]["neon_host"]
               pooled = primary.replace(".", "-pooler.", 1)
               if direct and (direct.hostname or "").lower() != primary:
                   problems.append("DIRECT_URL Neon endpoint crosses tier")
@@ -151,6 +167,6 @@ jobs:
               for problem in problems:
                   print("::error::Phase 1 preflight: " + problem)
               raise SystemExit(1)
-          print("Phase 1 protected " + tier + " identity syntax/tier map: PASS.")
+          print("Phase 1 protected " + tier + " Shopify/Neon-project/Worker identity syntax/tier map: PASS.")
           print("NOT certified: Shopify Partner ownership, environment reviewer policy, API connectivity, hosted Worker application, or Neon migration.")
           PY
