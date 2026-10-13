@@ -13,3 +13,7 @@ This is a version-major override and may be incompatible; if a test fails, it mu
 ## Defense in depth: extension glob input
 
 `.graphqlrc.js` now accepts extension project directories only when their names match a bounded ASCII-safe Shopify extension identifier (letters/numbers/hyphen/underscore, maximum 80 chars), are actual directories rather than symlinks and contain `schema.graphql`. This prevents extension filenames with braces, wildcard syntax or nested glob meta-characters from being injected into GraphQL Codegen document patterns. A temporary-filesystem regression fixture verifies ordinary extension scanning still works and rejects malicious names and symlinks. This is input hardening **not a patch for the `braces` package**; canonical full dev npm audit still fails on advisory GHSA-vfj7-8cjw-p6xm. No permissions or audit gate softened.
+
+## End-to-end code generator regression
+
+The read-only GraphQL security CI now runs the actual installed `graphql-codegen` binary on a temporary local `schema.graphql`, a synthetic query and a TypeScript plugin, then validates the emitted TypeScript types. This exercises GraphQL Tools loaders and plugin compatibility after forcing `@graphql-tools/utils@12.0.4` without a networked Shopify schema or merchant credentials. It complements—not replaces—the Shopify-specific configuration import smoke check.

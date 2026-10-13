@@ -31,6 +31,8 @@ jobs:
         run: |
           node scripts/check-shopify-graphql-codegen.mjs
           node scripts/p11-runtime-parse-graphql-audit.mjs
+      - name: Run full local GraphQL Codegen CLI over a synthetic schema
+        run: node scripts/check-graphql-codegen-cli.mjs
       - name: Prevent regressions in production dependency security
         run: npm audit --omit=dev --audit-level=high
       - name: Ensure application typechecking still passes
