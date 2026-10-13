@@ -119,6 +119,40 @@ test("uninstalled shop, missing generation and stale token are refused",async()=
   assert.equal(r.calls.at(-1)[0],"close");
  }
 });
+test("expired, malformed or missing online-session expiry never authorizes Admin GET",async()=>{
+ const expired=new Date("2025-01-01T00:00:00.000Z");
+ const future=new Date("2099-01-01T00:00:00.000Z");
+ const badCases=[
+  {stored:{...session,expires:expired}},
+  {stored:{...session,expires:"2099-01-01T00:00:00Z"}},
+  {authenticated:{...session,expires:expired}},
+  {authenticated:{...session,expires:"not-a-date"}},
+  {authenticated:{...session,isOnline:true,expires:future},
+   stored:{...session,isOnline:true}},
+  {authenticated:{...session,isOnline:true},
+   stored:{...session,isOnline:true,expires:future}},
+ ];
+ for(const options of badCases){
+  let reached=false;
+  const {response,calls}=await run(options,request(),env,async()=>{
+   reached=true;return pass();
+  });
+  assert.equal(response.status,403);
+  assert.equal(reached,false);
+  assert.equal(calls.at(-1)[0],"close");
+ }
+ // Non-expired expiring offline tokens are still valid. Online tokens need
+ // actual future expiration on both SDK and DB session objects.
+ for(const options of [
+  {authenticated:{...session,expires:future},
+   stored:{...session,expires:future}},
+  {authenticated:{...session,isOnline:true,expires:future},
+   stored:{...session,isOnline:true,expires:future}},
+ ]){
+  const {response}=await run(options);
+  assert.equal(response.status,200);
+ }
+});
 test("Shopify native reauth Response passes through unchanged, including headers",async()=>{
  const redirect=new Response(null,{status:302,headers:{
   location:"https://admin.shopify.com/store/ci/auth",
