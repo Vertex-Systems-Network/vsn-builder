@@ -4,7 +4,7 @@ import { createElement } from "react";
 import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "../app/services/shopify-worker-sdk-context.js";
-import { acceptWorkerShopifyAdminRequest } from "../app/services/worker-shopify-admin-gate.js";
+import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } from "../app/services/worker-shopify-admin-gate.js";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { persistWorkerShopifySessionWithGeneration } from "../app/services/worker-shopify-install-session-storage.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
@@ -207,6 +207,52 @@ export default {
     }catch{
       checks.adminSdkShopIsolationGate=false;
     }
+    // The atomic POST contract must also execute under real Workerd globals.
+    // All SDK auth, rows, and transactions here are synthetic CI fixtures;
+    // genuine PostgreSQL row-lock behavior is certified separately.
+    try{
+      const merchant="ci-mutating.myshopify.com";
+      const active={id:"offline_"+merchant,shop:merchant,
+        isOnline:false,accessToken:"synthetic-locked-session"};
+      let lockClaims=0,performed=0,closed=0;
+      const req=new Request(sdkEnv.SHOPIFY_APP_URL+"/app/pages?shop="+merchant,{
+        method:"POST"
+      });
+      const factory=({revoked=false}={})=>async()=>({
+        shopify:{authenticate:{async admin(){return {session:active}}}},
+        database:{
+          builderShopInstallation:{async findUnique(){
+            return {shop:merchant,installedAt:new Date("2026-10-13T09:00:00Z"),
+              uninstalledAt:null};
+          }},
+          session:{async findUnique(){return active}},
+          async $transaction(fn){
+            return fn({
+              builderShopInstallation:{async updateMany(){
+                lockClaims++;
+                return {count:revoked?0:1};
+              }},
+              session:{async findUnique(){return active}},
+            });
+          },
+        },
+        async close(){closed++},
+      });
+      const good=await acceptWorkerShopifyAdminMutation(req,sdkEnv,{
+        createSdkContext:factory(),
+        async onAuthenticated({transaction,shop}){
+          if(shop===merchant && transaction)performed++;
+          return new Response(null,{status:204});
+        },
+      });
+      const stale=await acceptWorkerShopifyAdminMutation(req,sdkEnv,{
+        createSdkContext:factory({revoked:true}),
+        async onAuthenticated(){performed++;return new Response(null,{status:204})},
+      });
+      checks.adminMutationRequiresLockedSession=good.status===204 &&
+        stale.status===403 && performed===1 && lockClaims===2 &&
+        closed===2;
+    }catch{checks.adminMutationRequiresLockedSession=false}
     // The exact official PrismaSessionStorage implementation persists an
     // offline Shopify session and its installation generation in a single
     // synthetic transaction INSIDE workerd (no Neon query/merchant API).
