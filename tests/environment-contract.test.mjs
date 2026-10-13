@@ -79,6 +79,19 @@ test("Phase 1 Staging and Production synthetic identity-only preflight validates
   assert.match(result.stdout,/no external identity ownership/);
  }
 });
+test("Phase 1 rejects missing and noncanonical hosted billing flags, including Production false-like values",()=>{
+ for(const tier of ["staging","production"]){
+  const invalid=["", "0", "1", "off", "on", "no", "yes", "FALSE", "TRUE", "False", "True",
+    " false", "false ", " true", "true ", "garbage"];
+  for(const value of invalid){
+   const r=identityPreflight(tier,{SHOPIFY_BILLING_TEST_MODE:value});
+   assert.equal(r.status,1,tier+" must reject noncanonical billing value "+JSON.stringify(value));
+   assert.match(r.stderr,/Billing test mode must be exactly/);
+   assert(!r.stderr.includes("ci_password"),"Secret must never leak in errors");
+  }
+ }
+});
+
 test("Phase 1 rejects non-origin URLs, reserved placeholder hosts and URL credentials",()=>{
  const bad=[
   "https://builder.example.org",
