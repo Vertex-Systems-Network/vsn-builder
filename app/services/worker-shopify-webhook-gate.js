@@ -71,6 +71,12 @@ export async function acceptWorkerShopifyUninstallWebhook(request,env,{
   const hmac=request.headers.get("x-shopify-hmac-sha256")||"";
   const version=request.headers.get("x-shopify-api-version")||"";
   const id=request.headers.get("x-shopify-webhook-id")||"";
+  const timestamp=request.headers.get("x-shopify-triggered-at")||"";
+  // Shopify emits an RFC3339 UTC event timestamp, sometimes with nanoseconds.
+  // Do not infer event time from *delivery* time: retries can follow reinstall.
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(timestamp) ||
+     !Number.isFinite(Date.parse(timestamp)))throw denied(400);
+  const triggeredAt=new Date(timestamp);
   if(!SHOP_PATTERN.test(shop) || topic!=="app/uninstalled" ||
      !/^\d{4}-\d{2}$/.test(version) || !/^[a-zA-Z0-9-]{1,128}$/.test(id) || !hmac)
     throw denied(400);
@@ -91,7 +97,7 @@ export async function acceptWorkerShopifyUninstallWebhook(request,env,{
     // Only after independent WebCrypto + official Shopify SDK authentication
     // may a cleanup callback access the SDK request-scoped database. This
     // hook itself never performs a delete, and finally always closes context.
-    const response=await onVerified({event,context});
+    const response=await onVerified({event,context,triggeredAt});
     if(!(response instanceof Response))throw new TypeError("Missing webhook response");
     return response;
   }finally {
