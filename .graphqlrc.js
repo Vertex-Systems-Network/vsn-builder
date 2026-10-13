@@ -22,7 +22,18 @@ function getConfig() {
     // ignore if no extensions
   }
   for (const entry of extensions) {
+    // Extension directory names enter GraphQL Tools glob patterns. Never pass
+    // arbitrary filesystem names into a vulnerable transitive brace parser.
+    // Reject glob metacharacters, long names, symlinks and non-directories.
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/.test(entry)) {
+      continue;
+    }
     const extensionPath = `./extensions/${entry}`;
+    try {
+      if (!fs.lstatSync(extensionPath).isDirectory()) continue;
+    } catch {
+      continue;
+    }
     const schema = `${extensionPath}/schema.graphql`;
     if (!fs.existsSync(schema)) {
       continue;
