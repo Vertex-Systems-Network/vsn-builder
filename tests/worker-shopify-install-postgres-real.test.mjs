@@ -289,6 +289,25 @@ test("real PostgreSQL admin POST holds row lock and commits only authenticated m
  assert.equal((await db.session.findUnique({
   where:{id:"offline_"+adminShop},
  })).scope,"immutable-response-committed");
+ // A forever-open stream must not retain the shop-row lock after the
+ // 2-second response-body deadline. Prisma must roll back the previous write
+ // and allow subsequent merchant operations on the same installation row.
+ const stuck=await acceptWorkerShopifyAdminMutation(req,e,{
+  ...options,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:"offline_"+adminShop},
+    data:{scope:"stalled-stream-must-rollback"},
+   });
+   return new Response(new ReadableStream({
+    start(controller){controller.enqueue(new TextEncoder().encode("partial"))},
+   }),{status:200});
+  },
+ });
+ assert.equal(stuck.status,503);
+ assert.equal((await db.session.findUnique({
+  where:{id:"offline_"+adminShop},
+ })).scope,"immutable-response-committed");
  const oversized=await acceptWorkerShopifyAdminMutation(req,e,{
   ...options,
   async onAuthenticated({transaction}){
