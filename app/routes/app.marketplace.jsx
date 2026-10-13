@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -18,6 +19,7 @@ export async function loader({request}) {
 
 export async function action({request}) {
   const {session}=await authenticate.admin(request); if(!(await canAccessBuilderAction(db,session,"marketplace","browse")))return Response.json({ok:false,error:"Marketplace access denied."},{status:403});
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   const role=getBuilderRole(session); const form=await request.formData(); const intent=String(form.get("intent")||""); const catalogId=String(form.get("catalogId")||"");
   if(!catalogId)return Response.json({ok:false,error:"Template ID is required."},{status:400});
   if(intent==="favorite"){
