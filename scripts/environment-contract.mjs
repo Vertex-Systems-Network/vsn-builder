@@ -59,9 +59,18 @@ function stableHttps(value) {
   try {
     const u = new URL(value);
     const host = u.hostname.toLowerCase();
-    return u.protocol === "https:" && !["localhost", "127.0.0.1", "example.com"].includes(host) &&
-      !host.endsWith(".example.invalid") && !host.endsWith(".example.com") &&
-      ![".trycloudflare.com", ".ngrok-free.app", ".ngrok.io", ".loca.lt"].some((s) => host.endsWith(s));
+    const forbidden = [".example.com", ".example.org", ".example.net",
+      ".example.invalid", ".invalid", ".test", ".localhost", ".local",
+      ".trycloudflare.com", ".ngrok-free.app", ".ngrok.io", ".loca.lt"];
+    // Identity-only preflight is the source of truth for a stable, hosted
+    // Shopify callback origin; credentials, path, query and custom ports must
+    // never be silently accepted as part of that origin.
+    return u.protocol === "https:" && u.username === "" && u.password === "" &&
+      u.port === "" && u.pathname === "/" && u.search === "" && u.hash === "" &&
+      /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/.test(host) &&
+      !["localhost", "example.com", "example.org", "example.net"].includes(host) &&
+      !forbidden.some((suffix) => host.endsWith(suffix)) &&
+      !/^\d+(?:\.\d+){3}$/.test(host);
   } catch { return false; }
 }
 
