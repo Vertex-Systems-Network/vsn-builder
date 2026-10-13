@@ -1,0 +1,51 @@
+name: VSN Cloudflare Workerd Local SDK Compatibility (No Deploy)
+on:
+  push:
+    branches: [feat/builder-local-workerd-sdk-compat-20261013]
+permissions:
+  contents: read
+jobs:
+  local-workerd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      APP_ENV: development
+    steps:
+      - name: Checkout immutable code without write token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Install exact app lockfile
+        run: npm ci
+      - name: Check production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Generate independent PostgreSQL Worker Prisma Client, offline
+        env:
+          DATABASE_URL: postgresql://dummy:unused@localhost:5432/unused
+          DIRECT_URL: postgresql://dummy:unused@localhost:5432/unused
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Install isolated Wrangler 4.149.0 runner tooling, not tracked
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund wrangler@4.149.0
+          git diff --exit-code -- package.json package-lock.json
+      - name: Assert Workerd test has no hosted credentials or API access
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DATABASE_URL:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Compile SDK and test real local Cloudflare Workerd over HTTP
+        run: node scripts/dev-local-workerd-smoke.mjs
+      - name: Reject actual hosted Worker/Shopify deploy configuration
+        run: |
+          test ! -e workers/app.js
+          test ! -e wrangler.staging.jsonc
+          test ! -e wrangler.production.jsonc
