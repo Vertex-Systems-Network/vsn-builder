@@ -1,7 +1,14 @@
 name: VSN Cloudflare Workerd Local SDK Compatibility (No Deploy)
 on:
   push:
-    branches: [feat/builder-local-workerd-sdk-compat-20261013, fix/builder-workerd-runtime-probe-20261013, feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013]
+    branches: [feat/builder-local-workerd-sdk-compat-20261013, fix/builder-workerd-runtime-probe-20261013, feat/builder-workerd-neon-client-lifecycle-20261013]
+  pull_request:
+    branches: [feat/builder-workerd-neon-client-lifecycle-20261013]
+    paths:
+      - "workers/**"
+      - "app/services/**"
+      - "scripts/dev-local-workerd-smoke.mjs"
+      - ".github/workflows/workerd-local-compatibility.yml"
 permissions:
   contents: read
 concurrency:
