@@ -37,8 +37,13 @@ const webhook=name=>({
  shop:name,topic:"APP_UNINSTALLED",webhookId:"ci-pg-uninstall-1",
  payload:{id:1234,myshopify_domain:name},
 });
+// CI-only synthetic independent generation attestor: this exercises the
+// database/locking invariant, NOT real Shopify webhook freshness.
+const syntheticCiAttestation=async({shop})=>shops.includes(shop);
 const revoke=(name,at=uninstalledAt)=>revokeVerifiedWorkerShopifySessions({
- event:webhook(name),context:{database:db},triggeredAt:at,
+ event:webhook(name),
+ context:{database:db,verifyTrustedUninstallGeneration:syntheticCiAttestation},
+ triggeredAt:at,
 });
 async function clearFixtures(){
  await db.session.deleteMany({where:{shop:{in:shops}}});
@@ -63,6 +68,16 @@ test("actual official Shopify adapter atomically commits two isolated offline me
  assert.equal(generation.uninstalledAt,null);
  assert.equal(first.accessToken,"first-ci-token");
  assert.equal(second.accessToken,"other-ci-token");
+});
+test("real PostgreSQL sessions cannot be deleted using a signed body plus forged unsigned event header",async()=>{
+ const response=await revokeVerifiedWorkerShopifySessions({
+  event:webhook(shop),
+  context:{database:db}, // real hosted SDK supplies no trusted proof
+  triggeredAt:new Date("2030-01-01T00:00:00Z"),
+ });
+ assert.equal(response.status,503);
+ assert.equal(await db.session.count({where:{shop}}),1);
+ assert.equal((await db.builderShopInstallation.findUnique({where:{shop}})).uninstalledAt,null);
 });
 test("normal Shopify token rotation cannot rewrite PostgreSQL installation generation",async()=>{
  assert.equal(await persist(shop,"rotated-ci-token",PrismaSessionStorage,
