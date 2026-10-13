@@ -26,6 +26,8 @@ on:
       - "scripts/dev-local-workerd-smoke.mjs"
       - "scripts/environment-contract.mjs"
       - "tests/environment-contract.test.mjs"
+      - "scripts/shopify-three-tier-identity-check.mjs"
+      - "tests/shopify-three-tier-identity-check.test.mjs"
       - "tests/hosted-neon-url-policy.test.mjs"
       - ".github/workflows/ci.yml"
       - "tests/ci-audit-gate-continuity.test.mjs"
@@ -94,6 +96,7 @@ jobs:
           node --test tests/worker-shopify-admin-mutation.test.mjs
           node --test tests/phase-closure-check.test.mjs
           node --test tests/environment-contract.test.mjs
+          node --test tests/shopify-three-tier-identity-check.test.mjs
           node scripts/phase-closure-check.mjs --format=markdown
           node scripts/verify-prisma-environment-parity.mjs
       - name: Certify actual Prisma SQLite install generation, rollback and stale-session denial
