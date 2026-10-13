@@ -60,6 +60,14 @@ They require the tier's *actual* environment variables (never check secrets into
 
 Phase 1 stays **4/7 evidence-tracked; NOT closed**, until separately authenticated Shopify registration, GitHub secret bindings/protection and actual protected tier-specific preflight are verified. Code having an identity preflight does not make its real invocation passed.
 
+## Phase 1 protected resource identity and Shopify HTTPS origin hardening
+
+The protected, manual-only Staging/Production identity preflight now requires two **GitHub Environment-scoped non-secret variables**: `NEON_PROJECT_ID` and `CLOUDFLARE_WORKER_NAME`. They must be configured on each respective GitHub Environment. The inline Python validator checks both against exact `config/deployment/environments.json`-aligned expected tier identities: Staging project `shiny-violet-61219572` / Worker `vsn-builder-staging`, and Production project `nameless-violet-68750490` / Worker `vsn-builder-production`. A missing, swapped or invented identifier fails before any deployment and prints no credentials. This closes the gap between the CLI's identity-only mapping contract and the protected runner; it **does not** prove ownership or network connectivity.
+
+Both the Node CLI preflight and protected runner reject reserved/placeholder Shopify application origins (`*.example.org`, `*.example.net`, `*.test`, localhost/private IP), credential-bearing URLs, custom ports, callback subpaths, query parameters and fragments. Shopify app URLs must be an exact stable HTTPS origin; a successful check remains syntax-only. Unit tests execute both real validators against synthetic fixtures with positive and negative cases.
+
+The required secret bindings, GitHub Environment variable names, and actual protected workflow execution are **still not independently verified**; the feature is an unmerged stacked PR, `development` remains unprotected and the Stage 8 mandatory development dependency audit #96 is red. **Phase 1 remains 4/7 evidence-tracked, IN PROGRESS**.
+
 ## Phase 1 secret-scope and three-app uniqueness fix (2026-10-13)
 
 The legacy `hosted-environment-secret-inventory.yml` formerly allowed `cloudflare-staging` environment secrets to be accessed on **either** protected `development` or protected `main`, violating the approved mapping. It now permits Staging access **only from protected `development`**; Production continues to permit **only protected `main`**. The required branch protection guard is not relaxed.
