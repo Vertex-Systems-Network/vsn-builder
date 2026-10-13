@@ -159,6 +159,60 @@ test("POST 422/409/500 callbacks roll back all staged writes instead of committi
   else assert.equal(await response.text(),"Invalid edit");
  }
 });
+test("returned HTTP 303 redirect after a write rolls back instead of committing",async()=>{
+ const fx=fixture();
+ const r=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"redirect-must-not-commit"},
+   });
+   return Response.redirect("https://admin.shopify.com/store/test/apps/vsn",303);
+  },
+ });
+ assert.equal(r.status,503);
+ assert.equal(await r.text(),"");
+ assert.equal(fx.stored.scope,undefined);
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+});
+test("immutable fetch Response is normalized before transaction commit",async()=>{
+ const fx=fixture();
+ const immutable=await fetch("data:text/plain,secured-result");
+ assert.throws(()=>immutable.headers.set("cache-control","no-store"),TypeError);
+ const r=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"committed-with-valid-response"},
+   });
+   return immutable;
+  },
+ });
+ assert.equal(r.status,200);
+ assert.equal(await r.text(),"secured-result");
+ assert.equal(r.headers.get("cache-control"),"no-store");
+ assert.equal(r.headers.get("x-content-type-options"),"nosniff");
+ assert.equal(fx.stored.scope,"committed-with-valid-response");
+ assert.equal(fx.actions.filter(x=>x==="commit").length,1);
+ assert.equal(fx.closes,1);
+});
+test("unconstructible response cannot commit merchant writes",async()=>{
+ const fx=fixture();
+ const r=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"unsupported-status-0"},
+   });
+   return Response.error();
+  },
+ });
+ assert.equal(r.status,503);
+ assert.equal(fx.stored.scope,undefined);
+ assert(!fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
+});
 test("POST invalid callback result also rolls back and never leaks transaction",async()=>{
  const fx=fixture();
  const response=await acceptWorkerShopifyAdminMutation(request(),env,{
