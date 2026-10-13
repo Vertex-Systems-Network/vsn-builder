@@ -67,6 +67,10 @@ function securedResponse(result) {
 // Keep POST responses intentionally small; large editor data should be
 // fetched via authenticated GET, not streamed from a mutating transaction.
 const MAX_MUTATION_RESPONSE_BYTES=256*1024;
+// Must be shorter than the Prisma interactive-transaction timeout (12s).
+// Applies to the TOTAL body, not each individual read, so a slow sender
+// cannot extend the row lock forever by sending one byte per second.
+const MAX_MUTATION_RESPONSE_READ_MS=2000;
 async function securedMutationResponse(result) {
   if(!(result instanceof Response))throw new TypeError("Missing HTTP Response");
   const headers=new Headers(result.headers);
@@ -81,9 +85,24 @@ async function securedMutationResponse(result) {
   const reader=result.body.getReader();
   const chunks=[];
   let length=0;
+  const deadline=Date.now()+MAX_MUTATION_RESPONSE_READ_MS;
   try {
     while(true) {
-      const {done,value}=await reader.read();
+      const remaining=deadline-Date.now();
+      if(remaining<=0)throw new RangeError("Admin mutation response read deadline exceeded");
+      let timer;
+      let next;
+      try {
+        next=await Promise.race([
+          reader.read(),
+          new Promise((_,reject)=>{
+            timer=setTimeout(()=>reject(
+              new RangeError("Admin mutation response read deadline exceeded")
+            ),remaining);
+          }),
+        ]);
+      }finally{if(timer!==undefined)clearTimeout(timer)}
+      const {done,value}=next;
       if(done)break;
       if(!(value instanceof Uint8Array))throw new TypeError("Invalid HTTP body chunk");
       length+=value.byteLength;
@@ -92,7 +111,10 @@ async function securedMutationResponse(result) {
       chunks.push(value);
     }
   }catch(error) {
-    try{await reader.cancel()}catch{ /* keep original stream failure */ }
+    // A stalled or malicious stream may also hang when cancelled. Trigger
+    // cancellation but NEVER await it while the row-locked transaction waits
+    // to roll back; a late rejection stays handled.
+    try{void reader.cancel().catch(()=>{})}catch{ /* preserve original failure */ }
     throw error;
   }finally{try{reader.releaseLock()}catch{}}
   const bytes=new Uint8Array(length);
