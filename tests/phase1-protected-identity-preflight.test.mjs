@@ -79,7 +79,7 @@ test("scoped Staging/Production validator requires three real distinct Shopify C
    {SHOPIFY_DEVELOPMENT_CLIENT_ID:"b".repeat(32)},
    {SHOPIFY_DEVELOPMENT_CLIENT_ID:"c".repeat(32)},
    {SHOPIFY_STAGING_CLIENT_ID:"c".repeat(32)},
-   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"A".repeat(32)},
+   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"B".repeat(32)},
    {SHOPIFY_STAGING_CLIENT_ID:"z".repeat(32)},
    {SHOPIFY_DEVELOPMENT_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3"},
   ]){
