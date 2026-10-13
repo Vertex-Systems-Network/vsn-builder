@@ -1,3 +1,4 @@
+import { createElement } from "react";
 // CI-only Workers runtime compatibility probe. This MUST NOT be used as
 // a Shopify app entry or deployed to any Cloudflare account.
 import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
@@ -51,6 +52,42 @@ export default {
       checks.crossProjectBlocked=false;
     } catch(err) {
       checks.crossProjectBlocked=err?.code==="VSN_WORKER_DATABASE_NOT_READY";
+    }
+    // Exercise real React 19 Web Streams rendering inside local Cloudflare Workerd.
+    // The CSP callback below is synthetic CI input, NOT a production Shopify
+    // authentication/header provider. Never promote this CI-only Worker.
+    try {
+      const document=await renderWorkerDocument({
+        request,
+        reactElement:createElement("main",{"data-vsn-ci-ssr":"yes"},"VSN Builder synthetic Workerd SSR"),
+        addShopifyHeaders(_request,headers) {
+          headers.set("content-security-policy","frame-ancestors https://admin.shopify.com; default-src 'none'");
+        },
+      });
+      const markup=await document.text();
+      checks.reactWebStreamRendered=document.status===200 &&
+        markup.includes("VSN Builder synthetic Workerd SSR") &&
+        document.headers.get("content-type")==="text/html; charset=utf-8" &&
+        document.headers.get("cache-control")==="no-store" &&
+        document.headers.get("x-content-type-options")==="nosniff" &&
+        document.headers.get("content-security-policy")?.includes("frame-ancestors https://admin.shopify.com");
+    } catch {
+      checks.reactWebStreamRendered=false;
+    }
+    try {
+      await renderWorkerDocument({request,reactElement:createElement("p",null,"blocked")});
+      checks.missingShopifyCspCallbackBlocked=false;
+    } catch (error) {
+      checks.missingShopifyCspCallbackBlocked=String(error?.message||"").includes("Shopify document security headers");
+    }
+    try {
+      await renderWorkerDocument({
+        request,reactElement:createElement("p",null,"blocked"),
+        addShopifyHeaders(_request,headers) {headers.set("content-security-policy","default-src 'none'");},
+      });
+      checks.missingFrameAncestorsBlocked=false;
+    } catch (error) {
+      checks.missingFrameAncestorsBlocked=String(error?.message||"").includes("frame-ancestors is missing");
     }
     return new Response(JSON.stringify({
       ciOnly:true,ready:false,modulesLoaded:Object.values(checks).every(Boolean),checks,
