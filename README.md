@@ -45,6 +45,8 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 **Phase 1 billing-mode consistency (2026-10-14):** The repository-side Staging/Production identity-only preflight now requires an explicit canonical `SHOPIFY_BILLING_TEST_MODE=true` or `false`, rather than treating malformed or omitted values as Production `false`. Synthetic negative tests cover noncanonical flags. This is not hosted credential verification; Phase 1 remains **4/7 IN PROGRESS**.
 
+**Phase 1 hosted identity parity (2026-10-14):** Both full hosted preflight and Phase 1 `--identity-only` now require exact Neon project/Cloudflare Worker IDs and all three unique Dev/Staging/Production Shopify Client IDs. Both reject runtime ID mismatch, duplicate/uppercase alias and unclassified default-app reuse. CI uses synthetic IDs; real Shopify Partner ownership and GitHub Environment protection remain unverified. **Phase 1 is still 4/7, IN PROGRESS.**
+
 **Phase 1 effective GitHub config validation:** The protected, manually dispatched preflight now checks actual effective `vars.APP_ENV` and `vars.SHOPIFY_BILLING_TEST_MODE` against the requested tier, rather than comparing hardcoded expectations with themselves. Missing or wrong vars fail closed. GitHub `vars` may inherit from repository/organization, so the **selected Environment's own variable/secret inventory and branch rules are still unverified**. No real protected run, Phase 1 still **4/7**. See [eight-phase closeout plan](docs/eight-phase-closure-plan.md).
 
 ## Evidence-based status dashboard
