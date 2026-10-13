@@ -1,4 +1,4 @@
-import { COMMERCIAL_PLANS, UNSUBSCRIBED_PLAN, normalizePlanKey, planAtLeast } from "../config/commercialPlans.js";
+import { COMMERCIAL_PLANS, UNSUBSCRIBED_PLAN, normalizePlanKey, planAtLeast, planRank } from "../config/commercialPlans.js";
 import { ENTITLEMENT_FEATURES, ENTITLEMENT_QUOTAS, ENTITLEMENT_VERSION, getEntitlementFeatureDefinition, getEntitlementQuotaDefinition } from "../config/entitlements.js";
 import { subscriptionMirrorIsTrusted } from "./shopify-subscription.server.js";
 import { resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
@@ -130,7 +130,7 @@ export async function getEntitlementUsage(db, shop, { quotaKeys = Object.keys(EN
 export function getFeatureDecisionFromPlan(plan, featureKey) {
   const definition = getEntitlementFeatureDefinition(featureKey);
   if (!definition) throw new Error(`Unknown entitlement feature: ${featureKey}`);
-  const allowed = planSupportsFeature(plan, definition);
+  const allowed = planRank(plan?.key) >= 0 && planSupportsFeature(plan, definition);
   return {
     type: "feature",
     key: definition.key,
@@ -149,11 +149,12 @@ export function getFeatureDecisionFromPlan(plan, featureKey) {
 export function getQuotaDecisionFromUsage(plan, quotaKey, used, { extra = 1, resetAt = null } = {}) {
   const definition = getEntitlementQuotaDefinition(quotaKey);
   if (!definition) throw new Error(`Unknown entitlement quota: ${quotaKey}`);
-  const limit = numericLimit(plan?.[definition.planField]);
+  const isPaidTier = planRank(plan?.key) >= 0;
+  const limit = isPaidTier ? numericLimit(plan?.[definition.planField]) : 0;
   const normalizedUsed = Math.max(0, Number(used || 0));
   const normalizedExtra = Math.max(0, Number(extra || 0));
   const unlimited = limit < 0;
-  const allowed = unlimited || normalizedUsed + normalizedExtra <= limit;
+  const allowed = isPaidTier && (unlimited || normalizedUsed + normalizedExtra <= limit);
   const unavailable = limit === 0;
   const planName = plan?.name || "No active subscription";
   const requiredPlanName = COMMERCIAL_PLANS[normalizePlanKey(definition.requiredPlan)]?.name || definition.requiredPlan;
