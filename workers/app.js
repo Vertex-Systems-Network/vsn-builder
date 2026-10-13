@@ -53,7 +53,7 @@ export default {
   async fetch(request,env) {
     if(!(request instanceof Request) || !tierIdentity(env))return locked();
     const url=new URL(request.url);
-    if(url.search && (url.pathname==="/healthz" || url.pathname==="/readyz"))return locked(404);
+    if(url.search && ["/healthz","/readyz","/__vsn/database-health"].includes(url.pathname))return locked(404);
     if(url.pathname==="/healthz" && request.method==="GET")
       return safeJson({service:"VSN Builder",tier:env.APP_ENV,liveness:true,merchantAppReady:false});
     if(url.pathname==="/readyz" && request.method==="GET")
