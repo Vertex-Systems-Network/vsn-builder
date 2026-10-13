@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { inspectHostedNeonUrlPair } from "../app/services/neon-target-policy.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
@@ -90,9 +91,16 @@ if (mode === "staging" || mode === "production") {
     assert(clientId !== process.env.SHOPIFY_PRODUCTION_CLIENT_ID, "Staging must not reuse the Production Shopify app.");
   }
   assert(stableHttps(required("SHOPIFY_APP_URL")), "Hosted Shopify origin must be a stable HTTPS URL.");
+  // Credential presence is necessary but cannot certify database identity.
+  // A Staging DIRECT_URL pointed at Production is a potential destructive
+  // migration, even when APP_ENV and NEON_PROJECT_ID look correct.
   const database = required("DATABASE_URL");
-  assert(/^postgres(ql)?:\/\//i.test(database), mode + " target requires isolated PostgreSQL, not local SQLite.");
-  assert(Boolean(required("DIRECT_URL")), mode + " migrations require a separate direct database URL.");
+  const direct = required("DIRECT_URL");
+  const connectionIdentity = inspectHostedNeonUrlPair(mode,{
+    DATABASE_URL:database,DIRECT_URL:direct,
+  });
+  for(const issue of connectionIdentity.issues)
+    assert(false, mode + " Neon migration target blocked: " + issue);
 
   // Fail closed until the required PostgreSQL schema, migrations and Worker entry point really exist.
   const schema = read("prisma/schema.prisma");
