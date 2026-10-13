@@ -69,6 +69,27 @@ test("expected direct and pooled Neon endpoint variants are admitted without ope
   assert.equal(inspectWorkerNeonEnvironment({...env,DATABASE_URL}).ready,true);
  }
 });
+test("Worker refuses an accidentally bound opposite-tier direct migration URL",()=>{
+ for(const tier of ["staging","production"]){
+  const other=tier==="staging"?"production":"staging";
+  const valid=mk(tier);
+  const bad={
+    ...valid,
+    DIRECT_URL:mk(other).DATABASE_URL,
+  };
+  const status=inspectWorkerNeonEnvironment(bad);
+  assert.equal(status.ready,false);
+  assert(status.issues.some(issue=>issue.includes("direct Neon endpoint")));
+  assert.throws(()=>createWorkerNeonPrisma(bad),{code:"VSN_WORKER_DATABASE_NOT_READY"});
+ }
+});
+test("Worker accepts an isolated matching direct migration URL without DB I/O",()=>{
+ for(const tier of ["staging","production"]){
+  const cfg=mk(tier);
+  const pooled=cfg.DATABASE_URL.replace(".c-4.", "-pooler.c-4.");
+  assert.equal(inspectWorkerNeonEnvironment({...cfg,DATABASE_URL:pooled,DIRECT_URL:cfg.DATABASE_URL}).ready,true);
+ }
+});
 test("real Prisma Worker adapter constructs client without making a Neon network call",async()=>{
  const fake=mk("staging");
  const db=createWorkerNeonPrisma(fake);
