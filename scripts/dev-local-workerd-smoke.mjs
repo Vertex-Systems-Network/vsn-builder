@@ -62,6 +62,10 @@ try{
  assert.equal(check.checks.prismaClientConstructed,true,"Worker Prisma-Neon Client could not construct/close in real workerd");
  assert.equal(check.checks.crossProjectBlocked,true,"Worker Prisma Client did not reject cross-project identity");
  console.log("PASS workerd constructs and disconnects engine-less Prisma/Neon Client without DB queries");
+ assert.equal(check.checks.reactWebStreamRendered,true,"React Web Streams did not render HTML with secure response headers in workerd");
+ assert.equal(check.checks.missingShopifyCspCallbackBlocked,true,"Workerd SSR accepted missing Shopify CSP provider");
+ assert.equal(check.checks.missingFrameAncestorsBlocked,true,"Workerd SSR accepted CSP lacking frame-ancestors");
+ console.log("PASS real Workerd React Web Streams HTML, CSP callback and frame-ancestors rejection");
  const blocked=await probe("/app");
  assert.equal(blocked.status,503);
  assert(!blocked.body.includes("session"),"No authenticated app runtime should be exposed");
