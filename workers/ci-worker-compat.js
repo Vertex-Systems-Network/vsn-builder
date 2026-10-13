@@ -5,6 +5,7 @@ import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worke
 import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "../app/services/shopify-worker-sdk-context.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
+import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
 import { renderWorkerDocument } from "../app/services/worker-ssr-webstream.js";
 import { SHOPIFY_EXPECTED_SCOPES } from "../app/config/shopifyIntegration.js";
 
@@ -176,27 +177,56 @@ export default {
           body:payload,
         }
       );
-      let opened=0,closed=0,verified=0;
+      let opened=0,closed=0,verified=0,deletes=0;
+      const sessions=[
+        {id:"ci-shop-one",shop:"ci-merchant.myshopify.com"},
+        {id:"ci-shop-two",shop:"ci-merchant.myshopify.com"},
+        {id:"ci-other",shop:"other-merchant.myshopify.com"},
+      ];
+      const ciDatabase={session:{
+        async deleteMany({where}){
+          deletes++;
+          const selected=sessions.filter(record=>record.shop===where.shop);
+          for(let i=sessions.length-1;i>=0;i--){
+            if(sessions[i].shop===where.shop)sessions.splice(i,1);
+          }
+          return {count:selected.length};
+        },
+      }};
       const createSdkContext=(signedRequest,settings)=>
         createWorkerShopifySdkContext(signedRequest,settings,{
           async createSessionContext(){
             opened++;
-            return {sessionStorage,async close(){closed++;}};
+            return {sessionStorage,database:ciDatabase,async close(){closed++;}};
           },
         });
       const accepted=await acceptWorkerShopifyUninstallWebhook(
         makeWebhook(),sdkEnv,{
           createSdkContext,
-          async onVerified({event}){
+          async onVerified({event,context}){
             if(event.shop==="ci-merchant.myshopify.com" &&
               event.topic==="APP_UNINSTALLED" &&
               event.webhookId==="ci-workerd-webhook-1")verified++;
-            return new Response(null,{status:204});
+            return revokeVerifiedWorkerShopifySessions({event,context});
           },
         }
       );
       checks.realSignedWebhookAccepted=accepted.status===204 && verified===1 &&
         opened===1 && closed===1;
+      checks.uninstallRevokedOnlyMerchantSessions=deletes===1 &&
+        sessions.length===1 && sessions[0].shop==="other-merchant.myshopify.com";
+      const replay=await acceptWorkerShopifyUninstallWebhook(
+        makeWebhook(),sdkEnv,{
+          createSdkContext,
+          async onVerified({event,context}){
+            verified++;
+            return revokeVerifiedWorkerShopifySessions({event,context});
+          },
+        }
+      );
+      checks.uninstallReplayIsIdempotent=replay.status===204 &&
+        deletes===2 && opened===2 && closed===2 &&
+        sessions.length===1 && sessions[0].id==="ci-other";
       let tamperedStatus=0;
       try {
         await acceptWorkerShopifyUninstallWebhook(
@@ -209,9 +239,12 @@ export default {
         if(error instanceof Response)tamperedStatus=error.status;
       }
       checks.tamperedWebhookDeniedBeforeStorage=tamperedStatus===401 &&
-        verified===1 && opened===1 && closed===1;
+        verified===2 && deletes===2 && opened===2 && closed===2 &&
+        sessions.length===1;
     }catch{
       checks.realSignedWebhookAccepted=false;
+      checks.uninstallRevokedOnlyMerchantSessions=false;
+      checks.uninstallReplayIsIdempotent=false;
       checks.tamperedWebhookDeniedBeforeStorage=false;
     }
     return new Response(JSON.stringify({
