@@ -1,5 +1,7 @@
 // Session revocation after TWO independent Shopify webhook HMAC checks.
 // A delayed pre-reinstall uninstall event must never delete new sessions.
+// Default context never provides trusted event-generation proof; no
+// destructive cleanup is allowed from the existing hosted SDK context.
 // No destructive query may run without a durable, transactionally claimed
 // installation-generation fence. The cloud schema/migration for that fence
 // is NOT deployed yet; absent model/transaction deliberately returns 503.
@@ -25,6 +27,23 @@ export async function revokeVerifiedWorkerShopifySessions({event,context,trigger
   // any destructive action (and replay must be detected transactionally).
   const when=triggeredAt instanceof Date?triggeredAt:new Date(NaN);
   if(!Number.isFinite(when.getTime()))return reject(400);
+  // Webhook HMAC signs the BODY, not X-Shopify-Triggered-At or event ID.
+  // A valid older body paired with a forged newer timestamp could otherwise
+  // delete newly reinstalled merchant sessions. Never enable a destructive
+  // transaction based on signed-body + unsigned-header metadata alone.
+  //
+  // The normal Shopify SDK request context deliberately does NOT implement
+  // this capability. Only a FUTURE independent, authenticated, generation-
+  // aware event attestation service may authorize it; no live issuer exists.
+  if(typeof context?.verifyTrustedUninstallGeneration!=="function")
+    return reject(503);
+  try {
+    const attested=await context.verifyTrustedUninstallGeneration({
+      shop,topic:event.topic,webhookId:event.webhookId,
+      payload,triggeredAt:when,
+    });
+    if(attested!==true)return reject(503);
+  }catch{return reject(503)}
   if(typeof context?.database?.$transaction!=="function")return reject(503);
 
   try {
