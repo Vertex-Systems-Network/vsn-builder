@@ -24,6 +24,8 @@ function run(tier,overrides={}){
   SHOPIFY_STAGING_CLIENT_ID:"b".repeat(32),
   SHOPIFY_PRODUCTION_CLIENT_ID:"c".repeat(32),
   SHOPIFY_APP_URL:tier==="staging"?"https://builder-staging.synthetic.dev":"https://builder-live.synthetic.dev",
+  NEON_PROJECT_ID:tier==="staging"?"shiny-violet-61219572":"nameless-violet-68750490",
+  CLOUDFLARE_WORKER_NAME:tier==="staging"?"vsn-builder-staging":"vsn-builder-production",
   CLOUDFLARE_ACCOUNT_ID:"d".repeat(32),
   CLOUDFLARE_API_TOKEN:"ci-not-a-real-token",
   DATABASE_URL:`postgresql://ci_user:ci_password@${pooled}/builder_ci?sslmode=require`,
@@ -69,6 +71,28 @@ test("actual inline workflow preflight accepts isolated CI-only Staging and Prod
   assert.match(r.stdout,/NOT certified/);
   assert(!r.stdout.includes("ci_password"));
  }
+});
+test("both protected tiers refuse missing or swapped Neon Project/Cloudflare Worker identities",()=>{
+ for(const tier of ["staging","production"]){
+  for(const wrong of [
+   {NEON_PROJECT_ID:""},
+   {CLOUDFLARE_WORKER_NAME:""},
+   {NEON_PROJECT_ID:tier==="staging"?"nameless-violet-68750490":"shiny-violet-61219572"},
+   {CLOUDFLARE_WORKER_NAME:tier==="staging"?"vsn-builder-production":"vsn-builder-staging"},
+   {NEON_PROJECT_ID:"synthetic-other-project"},
+   {CLOUDFLARE_WORKER_NAME:"vsn-builder-another"},
+  ]){
+   const result=run(tier,wrong);
+   assert(fail(result),tier+" must reject missing or cross-tier hosted resource ID");
+   assert.match(result.stdout,/project ID|Worker name/);
+   assert(!result.stdout.includes("ci_password"));
+  }
+ }
+});
+test("manual preflight takes resource names exclusively from protected GitHub Environment vars",()=>{
+ assert.match(workflow,/NEON_PROJECT_ID:\s*\$\{\{\s*vars\.NEON_PROJECT_ID\s*\}\}/);
+ assert.match(workflow,/CLOUDFLARE_WORKER_NAME:\s*\$\{\{\s*vars\.CLOUDFLARE_WORKER_NAME\s*\}\}/);
+ assert.doesNotMatch(workflow,/NEON_PROJECT_ID:\s*\$\{\{\s*github\.event/);
 });
 test("scoped Staging/Production validator requires three real distinct Shopify Client IDs",()=>{
  for(const tier of ["staging","production"]){
