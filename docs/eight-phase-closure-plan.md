@@ -60,7 +60,11 @@ They require the tier's *actual* environment variables (never check secrets into
 
 Phase 1 stays **4/7 evidence-tracked; NOT closed**, until separately authenticated Shopify registration, GitHub secret bindings/protection and actual protected tier-specific preflight are verified. Code having an identity preflight does not make its real invocation passed.
 
-## Canonical hosted billing setting checked in both local and protected preflights (2026-10-14)\n\nA repository CLI audit found that its Production `isTrue(flag) === false` test also passed arbitrary non-true strings (e.g. `off`, `garbage`, `0`), despite the protected inline GitHub validator already requiring the exact string `false`. The repository Staging/Production `--identity-only` and full preflight now reject *all* noncanonical values: exactly `true` for Staging, exactly `false` for Production. Node regression fixtures exercise invalid/empty values for both tiers without any live Shopify/Neon/Cloudflare access. This strengthens Phase 1 configuration checks only; actual protected GitHub Environment credential execution and Shopify Partner ownership are still missing, so **Phase 1 remains 4/7 and OPEN**.\n\n## Verify configured GitHub variables rather than self-generated expected values
+## Canonical hosted billing setting checked in both local and protected preflights (2026-10-14)
+
+A repository CLI audit found that its Production `isTrue(flag) === false` test also passed arbitrary non-true strings (e.g. `off`, `garbage`, `0`), despite the protected inline GitHub validator already requiring the exact string `false`. The repository Staging/Production `--identity-only` and full preflight now reject *all* noncanonical values: exactly `true` for Staging, exactly `false` for Production. Node regression fixtures exercise invalid/empty values for both tiers without any live Shopify/Neon/Cloudflare access. This strengthens Phase 1 configuration checks only; actual protected GitHub Environment credential execution and Shopify Partner ownership are still missing, so **Phase 1 remains 4/7 and OPEN**.
+
+## Verify configured GitHub variables rather than self-generated expected values
 
 A Phase 1 audit found that the manual protected preflight's `APP_ENV` and `SHOPIFY_BILLING_TEST_MODE` environment values were **hardcoded by its own `workflow_dispatch` target**. Those earlier checks compared expected values to themselves and could not detect a GitHub Environment configured with the wrong app tier or billing mode.
 
