@@ -23,6 +23,7 @@ const webhook=(data=payload,overrides={},method="POST")=>{
    "X-Shopify-Topic":"app/uninstalled",
    "X-Shopify-API-Version":"2026-07",
    "X-Shopify-Webhook-Id":"signed-ci-123",
+   "X-Shopify-Triggered-At":"2026-10-13T09:00:00.000000Z",
    "X-Shopify-Hmac-Sha256":hmac,
    ...overrides,
   },...(method==="POST"?{body:data}:{})
@@ -58,7 +59,8 @@ const result=async (request,envOverride=env,ctx=context(),onVerified=async()=>ne
  }
 };
 test("signed webhook verified twice by WebCrypto and real Shopify SDK",async()=>{
- const c=context(),data=await result(webhook(),env,c,async({event})=>{
+ const c=context(),data=await result(webhook(),env,c,async({event,triggeredAt})=>{
+  assert.equal(triggeredAt.toISOString(),"2026-10-13T09:00:00.000Z");
   assert.equal(event.shop,"test-store.myshopify.com");
   assert.equal(event.topic,"APP_UNINSTALLED");
   assert.equal(event.webhookId,"signed-ci-123");
@@ -89,6 +91,8 @@ test("unsigned or malformed webhook rejects with no database connection",async()
   {"X-Shopify-Topic":"orders/create"},
   {"X-Shopify-Webhook-Id":""},
   {"X-Shopify-API-Version":""},
+  {"X-Shopify-Triggered-At":""},
+  {"X-Shopify-Triggered-At":"invalid"},
  ])assert.equal((await result(webhook(payload,patch),env,c)).status,400);
  assert.equal(c.opened,0);
 });
