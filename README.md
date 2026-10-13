@@ -43,6 +43,8 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 **Phase 1 hosted identity preflight improvement:** Protected manual workflow now requires GitHub Environment-scoped non-secret `NEON_PROJECT_ID` / `CLOUDFLARE_WORKER_NAME` alongside 3 distinct Shopify app IDs, and exact tier identity/strict HTTPS origin checks. The repository CLI and workflow reject reserved placeholder domains, callback paths, embedded URL credentials and wrong-tier resources with synthetic CI. Real protected environment variables/secrets and Shopify Partner ownership remain unverified. **Environment Setup stays 4/7 evidence-tracked, IN PROGRESS.**
 
+**Phase 1 effective GitHub config validation:** The protected, manually dispatched preflight now checks actual effective `vars.APP_ENV` and `vars.SHOPIFY_BILLING_TEST_MODE` against the requested tier, rather than comparing hardcoded expectations with themselves. Missing or wrong vars fail closed. GitHub `vars` may inherit from repository/organization, so the **selected Environment's own variable/secret inventory and branch rules are still unverified**. No real protected run, Phase 1 still **4/7**. See [eight-phase closeout plan](docs/eight-phase-closure-plan.md).
+
 ## Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
