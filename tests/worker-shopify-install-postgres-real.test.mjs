@@ -5,6 +5,8 @@ import prismaCloud from "../generated/prisma-cloud/index.js";
 import {PrismaSessionStorage} from "@shopify/shopify-app-session-storage-prisma";
 import {persistWorkerShopifySessionWithGeneration} from "../app/services/worker-shopify-install-session-storage.js";
 import {revokeVerifiedWorkerShopifySessions} from "../app/services/worker-shopify-uninstall-session-revoke.js";
+import {acceptWorkerShopifyAdminRequest} from "../app/services/worker-shopify-admin-gate.js";
+import {SHOPIFY_EXPECTED_SCOPES} from "../app/config/shopifyIntegration.js";
 
 // This test is ONLY permitted against the disposable GitHub Actions postgres
 // service container. Fail before opening Prisma if any setting is not exact.
@@ -85,6 +87,61 @@ test("normal Shopify token rotation cannot rewrite PostgreSQL installation gener
  const row=await db.builderShopInstallation.findUnique({where:{shop}});
  assert.equal(row.installedAt.toISOString(),installedAt.toISOString());
  assert.equal((await db.session.findUnique({where:{id:"offline_"+shop}})).accessToken,"rotated-ci-token");
+});
+test("real PostgreSQL installation/session rows gate Shopify SDK authenticated app callback",async()=>{
+ const expectedSession=await db.session.findUnique({where:{id:"offline_"+shop}});
+ const e={
+  APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",
+  NEON_PROJECT_ID:"shiny-violet-61219572",SHOPIFY_BILLING_TEST_MODE:"true",
+  SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"synthetic-admin-ci-secret",
+  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+  SHOPIFY_APP_URL:"https://staging.builder.example.org",
+  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
+  DATABASE_URL:"postgresql://fake:test@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/fake?sslmode=require",
+ };
+ // Official SDK authenticate.admin is the only real authority. This mocked
+ // authentication return intentionally tests solely DB lifecycle validation.
+ const request=new Request(e.SHOPIFY_APP_URL+"/app?shop="+shop);
+ let approved=0,closed=0;
+ const context={
+  database:db,
+  shopify:{authenticate:{async admin(){
+   return {session:{
+    id:expectedSession.id,shop:expectedSession.shop,
+    isOnline:expectedSession.isOnline,accessToken:expectedSession.accessToken,
+   }};
+  }}},
+  async close(){closed++},
+ };
+ const response=await acceptWorkerShopifyAdminRequest(request,e,{
+  createSdkContext:async()=>context,
+  async onAuthenticated({shop:trustedShop}){
+   approved++;
+   assert.equal(trustedShop,shop);
+   return new Response("trusted-merchant",{status:200});
+  },
+ });
+ assert.equal(response.status,200);
+ assert.equal(approved,1);
+ assert.equal(closed,1);
+ const forged=await acceptWorkerShopifyAdminRequest(
+  new Request(e.SHOPIFY_APP_URL+"/app?shop="+other),e,{
+   createSdkContext:async()=>context,
+   async onAuthenticated(){throw Error("must not expose tenant")},
+  }
+ );
+ assert.equal(forged.status,401);
+ const revokedContext={
+  ...context,
+  shopify:{authenticate:{async admin(){
+   return {session:{...expectedSession,accessToken:"forged-old-token"}};
+  }}},
+ };
+ const old=await acceptWorkerShopifyAdminRequest(request,e,{
+  createSdkContext:async()=>revokedContext,
+  async onAuthenticated(){throw Error("stale token authorized")},
+ });
+ assert.equal(old.status,403);
 });
 test("uninstall updateMany waits for real PostgreSQL row lock before deleting only target tenant",async()=>{
  let grantLock;
