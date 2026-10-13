@@ -42,8 +42,8 @@ await check("Topbar brand has no app-owned Zap icon",()=>assert.ok(topNav.includ
 await check("Dashboard view initialization is SSR/client deterministic",()=>assert.ok(dashboardApp.includes("normalizeView(new URLSearchParams(location.search).get('view'))")&&assert.doesNotMatch(dashboardApp,/window\.location\.search/)==undefined));
 await check("Dashboard lazy modules have bounded retry",()=>assert.ok(dashboardApp.includes("function lazyWithRetry")&&dashboardApp.includes("setTimeout(resolve, 180)")));
 await check("No Q6.2 Prisma migration",()=>assert.equal(fs.readdirSync("prisma/migrations").some((n)=>/q62|settings_bulk_shell/i.test(n)),false));
-await check("Shopify Free handle remains free",()=>assert.ok(plans.includes('shopifyHandle: "free"')));
+await check("Shopify public plan starts with paid Starter (no Free)",()=>{assert.ok(plans.includes('shopifyHandle: "starter"'));assert.ok(!plans.includes('shopifyHandle: "free"'))});
 await check("Shopify Silver handle remains sliver",()=>assert.ok(plans.includes('shopifyHandle: "sliver"')));
 await check("Shopify Gold handle remains gold",()=>assert.ok(plans.includes('shopifyHandle: "gold"')));
-await check("Shopify Platinum handle remains platenium",()=>assert.ok(plans.includes('shopifyHandle: "platenium"')));
+await check("Shopify Platinum handle uses exact canonical spelling",()=>{assert.ok(plans.includes('shopifyHandle: "platinum"'));assert.ok(!plans.includes('shopifyHandle: "platenium"'))});
 const failed=checks.filter(([,ok])=>!ok);console.log(`\nMilestone Q.6.2 Settings/Bulk/Shell audit: ${checks.length-failed.length}/${checks.length} PASS`);if(failed.length)process.exit(1);
