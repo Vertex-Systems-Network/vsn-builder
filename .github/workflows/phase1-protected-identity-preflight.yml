@@ -1,0 +1,141 @@
+name: VSN Phase 1 Protected Identity Preflight (No Deploy)
+# Manual ONLY. Never run with pull_request/push, PR checkout, or unprotected refs.
+# GitHub Environment protections must be independently reviewed: a job
+# completing here certifies syntax/mapping, NOT required reviewers or ownership.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Verify one isolated environment's secret syntax without external requests
+        type: choice
+        required: true
+        options:
+          - staging
+          - production
+permissions:
+  contents: read
+concurrency:
+  group: builder-phase1-protected-identity-${{  inputs.target  }}
+  cancel-in-progress: false
+jobs:
+  protected-identity:
+    # Fail closed before ANY scoped secret is injected on feature/unprotected refs.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref_protected == true &&
+      (
+        (inputs.target == 'staging' && github.ref == 'refs/heads/development') ||
+        (inputs.target == 'production' && github.ref == 'refs/heads/main')
+      )
+    name: Protected ${{  inputs.target  }} identity syntax ONLY
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: ${{  inputs.target == 'staging' && 'cloudflare-staging' || 'cloudflare-production'  }}
+    env:
+      APP_ENV: ${{  inputs.target  }}
+      SOURCE_BRANCH_PROTECTED: ${{  github.ref_protected  }}
+      SHOPIFY_BILLING_TEST_MODE: ${{  inputs.target == 'staging' && 'true' || 'false'  }}
+      SHOPIFY_API_KEY: ${{  secrets.SHOPIFY_API_KEY  }}
+      SHOPIFY_API_SECRET: ${{  secrets.SHOPIFY_API_SECRET  }}
+      SHOPIFY_PRODUCTION_CLIENT_ID: ${{  secrets.SHOPIFY_PRODUCTION_CLIENT_ID  }}
+      SHOPIFY_APP_URL: ${{  secrets.SHOPIFY_APP_URL  }}
+      DATABASE_URL: ${{  secrets.DATABASE_URL  }}
+      DIRECT_URL: ${{  secrets.DIRECT_URL  }}
+      CLOUDFLARE_ACCOUNT_ID: ${{  secrets.CLOUDFLARE_ACCOUNT_ID  }}
+      CLOUDFLARE_API_TOKEN: ${{  secrets.CLOUDFLARE_API_TOKEN  }}
+    steps:
+      - name: Validate secret presence, exact Neon tier and Shopify identity without printing values
+        # Inline system Python only. No checkout / npm / third-party code / API calls
+        # while credentials exist in the runner's environment.
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          from urllib.parse import urlsplit, parse_qs
+
+          tier = os.environ.get("APP_ENV", "")
+          problems = []
+          def require(key):
+              value = os.environ.get(key, "").strip()
+              if not value:
+                  problems.append(key + " missing")
+              return value
+
+          expected = {
+              "staging": "ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech",
+              "production": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech",
+          }
+          if tier not in expected:
+              problems.append("Invalid target tier")
+          if os.environ.get("SOURCE_BRANCH_PROTECTED") != "true":
+              problems.append("Source branch is not protected")
+          if os.environ.get("SHOPIFY_BILLING_TEST_MODE") != ("true" if tier == "staging" else "false"):
+              problems.append("Invalid Shopify billing mode")
+          api_id = require("SHOPIFY_API_KEY")
+          if not re.fullmatch(r"[0-9a-fA-F]{32}", api_id):
+              problems.append("Shopify Client ID format invalid")
+          if api_id.lower() == "997eae5a9961f21d131e5f31bbbe31d3":
+              problems.append("Unclassified default Shopify Client ID reused")
+          require("SHOPIFY_API_SECRET")
+          production_id = os.environ.get("SHOPIFY_PRODUCTION_CLIENT_ID", "").strip()
+          if tier == "production" and production_id != api_id:
+              problems.append("Production Shopify Client ID missing or mismatched")
+          if tier == "staging" and production_id and production_id.lower() == api_id.lower():
+              problems.append("Staging reuses Production Shopify ID")
+          app_url = require("SHOPIFY_APP_URL")
+          try:
+              parsed = urlsplit(app_url)
+              host = (parsed.hostname or "").lower()
+              if parsed.scheme != "https" or not host or parsed.username or parsed.password or \
+                 parsed.port is not None or parsed.path not in ("", "/") or parsed.query or \
+                 parsed.fragment or host in ("localhost", "127.0.0.1") or \
+                 host.endswith((".example.com", ".example.org", ".example.invalid",
+                                ".trycloudflare.com", ".ngrok.io", ".loca.lt")):
+                  problems.append("Shopify App URL must be stable HTTPS origin")
+          except ValueError:
+              problems.append("Shopify App URL invalid")
+          account_id = require("CLOUDFLARE_ACCOUNT_ID")
+          if not re.fullmatch(r"[0-9a-fA-F]{32}", account_id):
+              problems.append("Cloudflare account ID format invalid")
+          require("CLOUDFLARE_API_TOKEN")
+
+          def inspect_url(name):
+              value = require(name)
+              try:
+                  uri = urlsplit(value)
+                  if uri.scheme not in ("postgresql", "postgres") or \
+                     not uri.username or not uri.password or \
+                     not uri.path or uri.path == "/" or uri.fragment or \
+                     uri.port not in (None, 5432) or \
+                     parse_qs(uri.query).get("sslmode") != ["require"]:
+                      problems.append(name + " PostgreSQL connection syntax invalid")
+                  return uri
+              except ValueError:
+                  problems.append(name + " PostgreSQL URL invalid")
+                  return None
+
+          runtime = inspect_url("DATABASE_URL")
+          direct = inspect_url("DIRECT_URL")
+          if tier in expected:
+              primary = expected[tier]
+              pooled = primary.replace(".", "-pooler.", 1)
+              if direct and (direct.hostname or "").lower() != primary:
+                  problems.append("DIRECT_URL Neon endpoint crosses tier")
+              if runtime and (runtime.hostname or "").lower() not in (primary, pooled):
+                  problems.append("DATABASE_URL Neon endpoint crosses tier")
+          if runtime and direct:
+              if runtime.username != direct.username or runtime.path != direct.path:
+                  problems.append("Neon runtime/direct role or database mismatch")
+              if os.environ.get("DATABASE_URL") == os.environ.get("DIRECT_URL"):
+                  problems.append("Neon runtime/direct connection strings must differ")
+          # Never emit any URL, token, ID, raw exception or secret fingerprint.
+          if problems:
+              for problem in problems:
+                  print("::error::Phase 1 preflight: " + problem)
+              raise SystemExit(1)
+          print("Phase 1 protected " + tier + " identity syntax/tier map: PASS.")
+          print("NOT certified: Shopify Partner ownership, environment reviewer policy, API connectivity, hosted Worker application, or Neon migration.")
+          PY
