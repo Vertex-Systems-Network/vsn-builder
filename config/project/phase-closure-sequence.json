@@ -1,0 +1,297 @@
+{
+  "schema_version": 1,
+  "policy": "strict_serial_closure_evidence_first_no_fake_status",
+  "updated_on": "2026-10-13",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Environment Setup",
+      "status": "in_progress",
+      "items": [
+        {
+          "name": "Three isolated app templates and billing policies",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/94"
+        },
+        {
+          "name": "Dev/Staging/Live titles and badges",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/102"
+        },
+        {
+          "name": "Environment configuration fail-closed checks",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/94"
+        },
+        {
+          "name": "Separate Neon / Worker resource inventory",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Three distinct Shopify app registrations and identity ownership",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Scoped GitHub secrets, protection policies and correct Shopify IDs",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Actual environment preflight using separate tier identities",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Local Application & Browser",
+      "status": "queued",
+      "items": [
+        {
+          "name": "Local SQLite migrations and server HTTP smoke",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/113"
+        },
+        {
+          "name": "Desktop and mobile Chromium synthetic acceptance",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/114"
+        },
+        {
+          "name": "Actual Dev shop login, first-time install and token exchange",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Dev editor create/edit/save with real Shopify test-billing",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "PostgreSQL / Neon Database",
+      "status": "queued",
+      "items": [
+        {
+          "name": "PostgreSQL schema parity and offline migrations",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/104"
+        },
+        {
+          "name": "Disposable PostgreSQL CRUD + backup/restore",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/106"
+        },
+        {
+          "name": "Local real PostgreSQL session row locks and rollback",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/141"
+        },
+        {
+          "name": "Neon Staging approved migration, connect/pool health and restore",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Neon Production isolated migration / recovery acceptance",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Cloudflare Worker Runtime",
+      "status": "queued",
+      "items": [
+        {
+          "name": "Actual local Workerd SDK/Prisma/SSR compatibility",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38411932967"
+        },
+        {
+          "name": "Hosted Worker entry, routes and scoped secrets",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Staging HTTPS routing and Shopify callback runtime",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Live runtime isolation, release and rollback smoke",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Shopify Authentication & Sessions",
+      "status": "queued",
+      "items": [
+        {
+          "name": "Official SDK session data and tenant-bound Admin gate",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/135"
+        },
+        {
+          "name": "Expired token, stale session and lock-gated mutation checks",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/138"
+        },
+        {
+          "name": "Real Dev and Staging OAuth/App Bridge ID-token exchange",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Verified reinstall after uninstall with new installation generation",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Webhooks & Mutation Security",
+      "status": "queued",
+      "items": [
+        {
+          "name": "Signed-body validation and fail-closed timestamp handling",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/134"
+        },
+        {
+          "name": "Prisma mutation atomicity, stream cap and deadline",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/141"
+        },
+        {
+          "name": "Independent actual webhook-to-install-generation attestation",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Real merchant webhook retries and uninstall lifecycle E2E",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "Application Features & E2E",
+      "status": "queued",
+      "items": [
+        {
+          "name": "Internal components/editor/AI QA scripts",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38411932985"
+        },
+        {
+          "name": "Real merchant create/edit/publish and page persistence",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Theme storefront responsive + app proxy asset acceptance",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Shopify plan pricing, test billing and subscription cycles",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Full Staging browser/device/merchant E2E",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Security, CI & Deployment",
+      "status": "queued",
+      "items": [
+        {
+          "name": "Application typecheck/build, production audit and internal QA",
+          "evidence_type": "ci",
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38411932985"
+        },
+        {
+          "name": "High-severity full development dependency audit #96",
+          "evidence_type": "external",
+          "status": "blocked",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/96"
+        },
+        {
+          "name": "All stacked PRs reviewed and integrated with required CI green",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Protected Staging accepted SHA, backup, smoke and rollback",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Authorized Production release, smoke and rollback",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        },
+        {
+          "name": "Shopify review submission only after release certification",
+          "evidence_type": "external",
+          "status": "unverified",
+          "evidence": null
+        }
+      ]
+    }
+  ]
+}
