@@ -562,12 +562,9 @@ export async function action({
 	params,
 }) {
   assertTrustedMutationRequest(request);
-	const { admin, session } =
-		await authenticate.admin(request);
+	const { admin, session } = await authenticate.admin(request);
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view the visual editor.", { status: 403 });
-
-	const paidDenial = await paidMutationDenied(db, session.shop);
-	if (paidDenial) return paidDenial;
+	const paidDenial = await paidMutationDenied(db, session.shop); if (paidDenial) return paidDenial;
 	const builderRole = getBuilderRole(session);
 	const builderActorName = builderActor(session);
 	const rebuildPublishedAssets = async () => {
