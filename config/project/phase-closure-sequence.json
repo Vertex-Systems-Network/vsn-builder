@@ -29,8 +29,8 @@
         {
           "name": "Separate Neon / Worker resource inventory",
           "evidence_type": "external",
-          "status": "unverified",
-          "evidence": null
+          "status": "verified",
+          "evidence": "https://github.com/Vertex-Systems-Network/vsn-builder/pull/142"
         },
         {
           "name": "Three distinct Shopify app registrations and identity ownership",
