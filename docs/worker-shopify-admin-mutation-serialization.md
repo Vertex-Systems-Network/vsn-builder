@@ -21,6 +21,14 @@ The mutation gateway now **awaits** the callback within the transaction and thro
 
 The local PostgreSQL acceptance explicitly verifies that **actual Session fields and BuilderShopInstallation.updatedAt remain unmodified** following a callback that writes through Prisma but returns a 409, 422 or 500. In-memory unit tests and the local Cloudflare Workerd smoke test independently enforce the rule. Successful 2xx and intentional redirect responses remain valid commits where appropriate.
 
+## Response finalization must precede PostgreSQL COMMIT
+
+Earlier versions finalized `response.headers` **after** `$transaction` returned successfully. Built-in `Response.redirect()`, `fetch()` Responses and other immutable-header Responses can throw when headers are mutated. This allowed merchant changes to COMMIT successfully, followed by HTTP 503, falsely reporting failure and encouraging duplicate retries.
+
+The gateway now builds a **new Response** with copied headers and mandatory `cache-control: no-store` / `x-content-type-options: nosniff` *inside the still-open interactive transaction*. Any malformed or unconstructible response fails before commit and rolls back every staged session/installation write. Returned 4xx/5xx statuses continue to throw the rollback sentinel; 5xx replies are sanitized. Returned 3xx redirects and status-0 responses are rejected and rolled back rather than ambiguously committing writes on a redirect. **Shopify SDK-thrown reauthentication redirects remain a distinct case:** they abort the transaction and are forwarded unchanged with their original location/cookie headers. GET responses are secured without a write transaction.
+
+New unit and actual disposable PostgreSQL tests cover `Response.redirect(303)` after a staged write (must rollback), an immutable successful `fetch("data:...")` Response (must be normalized and committed with headers intact), and `Response.error()` (must rollback). The real Cloudflare Workerd synthetic test asserts returned POST redirect does not commit.
+
 ## Tests
 
 - `tests/worker-shopify-admin-mutation.test.mjs`: synthetic SDK and fake Prisma transactions, verifies required row lock and session recheck, token rotated after initial read, uninstall between initial read/transaction, missing transaction and sanitized errors, no cross-merchant writes.
