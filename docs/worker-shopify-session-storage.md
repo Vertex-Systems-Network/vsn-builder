@@ -1,0 +1,7 @@
+# Shopify Worker session context — actual Prisma SessionStorage wiring (nonrelease)
+
+The `createWorkerShopifySessionContext` helper integrates the existing `@shopify/shopify-app-session-storage-prisma` package with a separately validated Worker Neon Prisma factory. It verifies Shopify tier identity and canonical scopes plus exact Cloudflare Worker/Neon project identity and TLS database URL *before* creating a database client. It counts the Session table prior to initializing Shopify's adapter, which otherwise retries and may log the underlying Prisma error. It rejects missing tables/failed readiness without emitting secrets, and provides an idempotent `close()` hook for per-request disconnect.
+
+GitHub CI exercises lifecycle and failure paths with fake values, and a second PostgreSQL 18 **ephemeral** job uses the actual pinned `PrismaSessionStorage` against the PostgreSQL-generated Prisma Node client: persists/reloads/deletes a synthetic offline session across Client instances, merchant isolation, and online staff profile persistence. This proves the **schema + storage adapter**, not a complete Cloudflare Worker runtime or an authenticated Shopify session.
+
+**Still blocked:** Cloudflare-specific SDK adapter, verified OAuth callback/session signatures and JWTs, signed webhook handling, actual Cloudflare Vite Worker build, supported Worker runtime import/bundling, real Neon Staging migrations and restore, Shopify merchant installation, full dependency-security release gate. Never auto-deploy these modules into Production.
