@@ -7,8 +7,15 @@ const event=(shop="tenant-one.myshopify.com")=>({
  shop,topic:"APP_UNINSTALLED",webhookId:"signed-ci-1",
  payload:{shop_domain:shop},
 });
+// Synthetic attestation ONLY for exercising transaction semantics in CI.
+// The real request-scoped SDK context has no such verifier and refuses writes.
+const syntheticCiAttestor=async({shop})=>shop==="tenant-one.myshopify.com";
 const invoke=(database,webhookEvent=event(),when=triggeredAt)=>
- revokeVerifiedWorkerShopifySessions({event:webhookEvent,context:{database},triggeredAt:when});
+ revokeVerifiedWorkerShopifySessions({
+  event:webhookEvent,
+  context:{database,verifyTrustedUninstallGeneration:syntheticCiAttestor},
+  triggeredAt:when,
+ });
 
 function fakeDatabase(){
  const sessions=[
@@ -50,6 +57,24 @@ function fakeDatabase(){
  };
  return {database,installs,sessions,claims,deletes};
 }
+test("signed body with forged or missing timestamp proof NEVER starts a destructive transaction",async()=>{
+ const db=fakeDatabase();
+ const forged=new Date("2030-01-01T00:00:00Z");
+ for(const context of [
+  {database:db.database},
+  {database:db.database,verifyTrustedUninstallGeneration:async()=>false},
+  {database:db.database,verifyTrustedUninstallGeneration:async()=>{throw Error("secret")}},
+ ]){
+  const response=await revokeVerifiedWorkerShopifySessions({
+   event:event(),context,triggeredAt:forged,
+  });
+  assert.equal(response.status,503);
+  assert.equal(await response.text(),"");
+ }
+ assert.equal(db.claims.length,0);
+ assert.equal(db.deletes.length,0);
+ assert.equal(db.sessions.length,3);
+});
 test("only signed uninstall merchant sessions deleted after atomic installation claim",async()=>{
  const db=fakeDatabase();
  const response=await invoke(db.database);
