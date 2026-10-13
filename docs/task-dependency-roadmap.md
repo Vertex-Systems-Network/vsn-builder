@@ -10,7 +10,7 @@ Earlier eight-phase trackers are legacy historical evidence inventories. They do
 
 ## Current scope-limited task counts: 41 total
 
-**9 VERIFIED** narrow tasks · **3 IN REVIEW** · **10 READY** · **19 WAITING**. This does not measure overall product readiness or imply production deployment.
+**9 VERIFIED** narrow tasks · **4 IN REVIEW** · **9 READY** · **19 WAITING**. This does not measure overall product readiness or imply production deployment.
 
 One public **VSN | Builder** app; Dev/Staging only internal testing. No Free plan.
 
@@ -32,7 +32,6 @@ One public **VSN | Builder** app; Dev/Staging only internal testing. No Free pla
 | `T015` | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 | `T020` | P0 | Implement functional hosted React Router/Shopify Worker adapter | [#161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
 | `T024` | P0 | Trusted uninstall-generation provenance and safe replay handling | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
-| `T026` | P0 | Enforce paid-tier authorization across every server-side merchant mutation | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T032` | P1 | Templates/Widgets/theme app assets implementation and synthetic QA | [#165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
 | `T040` | P1 | Shopify listing screenshots, privacy, support, scopes and review assets | [#168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 
@@ -88,7 +87,7 @@ flowchart TD
 | `T023` | Shopify Auth | P0 | Real Staging Shopify OAuth, App Bridge ID token and session lifecycle | `T015`, `T021`, `T022` | WAITING | [#162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
 | `T024` | Security | P0 | Trusted uninstall-generation provenance and safe replay handling | `T008` | READY | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | `T025` | Security | P0 | Real signed Shopify webhook retry/uninstall/reinstall E2E | `T018`, `T023`, `T024` | WAITING | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
-| `T026` | Security | P0 | Enforce paid-tier authorization across every server-side merchant mutation | `T007` | READY | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
+| `T026` | Security | P0 | Enforce paid-tier authorization across every server-side merchant mutation | `T007` | IN REVIEW | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T027` | Billing | P0 | Review and integrate exact four-plan pricing code PR #153 | None | IN REVIEW | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T028` | Billing | P0 | Create/verify exactly four public plans in Shopify Partner Dashboard | `T015` | WAITING | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T029` | Billing | P0 | Real subscription/trial lifecycle and plan limits E2E | `T023`, `T026`, `T027`, `T028` | WAITING | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
@@ -104,6 +103,8 @@ flowchart TD
 | `T039` | Production Release | P0 | Live merchant smoke, safety rollback and payment verification | `T029`, `T038` | WAITING | [#167](https://github.com/Vertex-Systems-Network/vsn-builder/issues/167) |
 | `T040` | App Store Review | P1 | Shopify listing screenshots, privacy, support, scopes and review assets | None | READY | [#168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 | `T041` | App Store Review | P0 | Attempt Shopify App Store submission only after release certification | `T011`, `T025`, `T029`, `T035`, `T039`, `T040` | WAITING | [#168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
+
+**In-review update:** T026 server-side paid merchant mutation guards now have [Draft PR #170](https://github.com/Vertex-Systems-Network/vsn-builder/pull/170) with 30 protected action routes and synthetic tests. This is code in review, NOT verified merchant acceptance or a release authorization.
 
 ## Current external blockers
 
