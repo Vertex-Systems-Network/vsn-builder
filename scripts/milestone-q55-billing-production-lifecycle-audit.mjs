@@ -55,26 +55,26 @@ await check("HTTP 503 is retryable",()=>assert.equal(isRetryablePartnerStatus(50
 await check("HTTP 401 is not retryable",()=>assert.equal(isRetryablePartnerStatus(401),false));
 await check("Retry count is capped to three",()=>withEnv({...baseEnv,SHOPIFY_PARTNER_API_RETRY_COUNT:"99"},()=>assert.equal(getShopifySubscriptionSyncConfig().retryCount,3)));
 
-await check("First install without a contract fails closed to Free",async()=>{const state=await stateFor(null);assert.equal(state.planKey,"inactive");assert.equal(state.status,"inactive")});
-await check("Verified Free contract stays Free and active",async()=>{const state=await stateFor(active("free"),event("CREATED","free"));assert.equal(state.planKey,"inactive");assert.equal(state.planHandle,"free");assert.equal(state.status,"active")});
-await check("Silver Shopify key maps to internal Pro",async()=>{const state=await stateFor(active("sliver"),event("CREATED","sliver"));assert.equal(state.planKey,"sliver");assert.equal(state.planHandle,"sliver")});
+await check("First install without a contract fails closed to Inactive",async()=>{const state=await stateFor(null);assert.equal(state.planKey,"inactive");assert.equal(state.status,"inactive")});
+await check("Verified Inactive contract stays Inactive and active",async()=>{const state=await stateFor(active("starter"),event("CREATED","starter"));assert.equal(state.planKey,"starter");assert.equal(state.planHandle,"starter");assert.equal(state.status,"active")});
+await check("Sliver Shopify key maps to internal Pro",async()=>{const state=await stateFor(active("sliver"),event("CREATED","sliver"));assert.equal(state.planKey,"sliver");assert.equal(state.planHandle,"sliver")});
 await check("Gold Shopify key maps to internal CRO",async()=>{const state=await stateFor(active("gold"),event("CREATED","gold"));assert.equal(state.planKey,"gold");assert.equal(state.planHandle,"gold")});
-await check("Platinum Shopify key maps to internal Agency",async()=>{const state=await stateFor(active("platenium"),event("CREATED","platenium"));assert.equal(state.planKey,"platinum");assert.equal(state.planHandle,"platenium")});
-await check("Active Gold overrides stale Silver history after immediate upgrade",async()=>{const state=await stateFor(active("gold"),event("UPDATED","sliver"));assert.equal(state.planKey,"gold");assert.equal(state.planHandle,"gold");assert.equal(state.diagnostics.historicalPlanHandle,"sliver")});
+await check("Platinum Shopify key maps to internal Agency",async()=>{const state=await stateFor(active("platinum"),event("CREATED","platinum"));assert.equal(state.planKey,"platinum");assert.equal(state.planHandle,"platinum")});
+await check("Active Gold overrides stale Sliver history after immediate upgrade",async()=>{const state=await stateFor(active("gold"),event("UPDATED","sliver"));assert.equal(state.planKey,"gold");assert.equal(state.planHandle,"gold");assert.equal(state.diagnostics.historicalPlanHandle,"sliver")});
 await check("Active Gold ignores stale canceled history for plan authority",async()=>{const state=await stateFor(active("gold"),event("CANCELED","sliver"));assert.equal(state.status,"active");assert.equal(state.planKey,"gold")});
-await check("Active Free can follow a canceled paid history",async()=>{const state=await stateFor(active("free"),event("CANCELED","sliver"));assert.equal(state.status,"active");assert.equal(state.planKey,"inactive");assert.equal(state.planHandle,"free")});
-await check("Pending Platinum to Gold change is exposed as Gold",async()=>{const current=active("platenium",{pendingUpdate:{billingPeriod:"EVERY_30_DAYS",items:[{handle:"gold"}],legacySubscriptionId:null}});const state=await stateFor(current,event("UPDATED","platenium"));assert.equal(state.planKey,"platinum");assert.equal(state.pendingPlanKey,"gold");assert.equal(state.pendingPlanHandle,"gold")});
-await check("Pending Silver to Platinum upgrade is exposed",async()=>{const current=active("sliver",{pendingUpdate:{billingPeriod:"EVERY_30_DAYS",items:[{handle:"platenium"}],legacySubscriptionId:null}});const state=await stateFor(current,event("UPDATED","sliver"));assert.equal(state.planKey,"sliver");assert.equal(state.pendingPlanKey,"platinum")});
+await check("Active Inactive can follow a canceled paid history",async()=>{const state=await stateFor(active("starter"),event("CANCELED","sliver"));assert.equal(state.status,"active");assert.equal(state.planKey,"starter");assert.equal(state.planHandle,"starter")});
+await check("Pending Platinum to Gold change is exposed as Gold",async()=>{const current=active("platinum",{pendingUpdate:{billingPeriod:"EVERY_30_DAYS",items:[{handle:"gold"}],legacySubscriptionId:null}});const state=await stateFor(current,event("UPDATED","platinum"));assert.equal(state.planKey,"platinum");assert.equal(state.pendingPlanKey,"gold");assert.equal(state.pendingPlanHandle,"gold")});
+await check("Pending Sliver to Platinum upgrade is exposed",async()=>{const current=active("sliver",{pendingUpdate:{billingPeriod:"EVERY_30_DAYS",items:[{handle:"platinum"}],legacySubscriptionId:null}});const state=await stateFor(current,event("UPDATED","sliver"));assert.equal(state.planKey,"sliver");assert.equal(state.pendingPlanKey,"platinum")});
 await check("Billing-period-only pending update preserves current plan",async()=>{const current=active("sliver",{pendingUpdate:{billingPeriod:"ANNUAL",items:[{handle:"sliver"}],legacySubscriptionId:null}});const state=await stateFor(current,event("UPDATED","sliver"));assert.equal(state.planKey,"sliver");assert.equal(state.pendingPlanKey,"sliver");assert.equal(state.pendingBillingPeriod,"ANNUAL")});
-await check("Scheduled cancellation keeps paid access until effective date",async()=>{const current=active("sliver",{cancelAtEndOfCycle:true});const state=await stateFor(current,event("CANCELLATION_SCHEDULED","sliver",{cancelEffectiveOn:"2026-08-31"}));assert.equal(state.status,"canceling");assert.equal(state.planKey,"sliver");assert.equal(state.pendingPlanKey,"inactive");assert.equal(state.pendingPlanHandle,"free")});
-await check("Effective cancellation without active contract becomes Free",async()=>{const state=await stateFor(null,event("CANCELLATION_SCHEDULED","sliver",{cancelEffectiveOn:"2026-08-01"}));assert.equal(state.status,"canceled");assert.equal(state.planKey,"inactive")});
-await check("Canceled contract without active subscription becomes Free",async()=>{const state=await stateFor(null,event("CANCELED","gold"));assert.equal(state.status,"canceled");assert.equal(state.planKey,"inactive")});
-await check("Frozen paid subscription immediately fails closed to Free",async()=>{const state=await stateFor(active("gold"),event("FROZEN","gold"));assert.equal(state.status,"frozen");assert.equal(state.planKey,"inactive")});
+await check("Scheduled cancellation keeps paid access until effective date",async()=>{const current=active("sliver",{cancelAtEndOfCycle:true});const state=await stateFor(current,event("CANCELLATION_SCHEDULED","sliver",{cancelEffectiveOn:"2026-08-31"}));assert.equal(state.status,"canceling");assert.equal(state.planKey,"sliver");assert.equal(state.pendingPlanKey,"inactive");assert.equal(state.pendingPlanHandle,null)});
+await check("Effective cancellation without active contract becomes Inactive",async()=>{const state=await stateFor(null,event("CANCELLATION_SCHEDULED","sliver",{cancelEffectiveOn:"2026-08-01"}));assert.equal(state.status,"canceled");assert.equal(state.planKey,"inactive")});
+await check("Canceled contract without active subscription becomes Inactive",async()=>{const state=await stateFor(null,event("CANCELED","gold"));assert.equal(state.status,"canceled");assert.equal(state.planKey,"inactive")});
+await check("Frozen paid subscription immediately fails closed to Inactive",async()=>{const state=await stateFor(active("gold"),event("FROZEN","gold"));assert.equal(state.status,"frozen");assert.equal(state.planKey,"inactive")});
 await check("Unfrozen Gold subscription restores paid entitlement",async()=>{const state=await stateFor(active("gold"),event("UNFROZEN","gold"));assert.equal(state.status,"active");assert.equal(state.planKey,"gold")});
-await check("Silver trial remains Silver while trial is active",async()=>{const state=await stateFor(active("sliver",{trialEndsAt:"2026-08-15T00:00:00Z",currentBillingCycle:null}),event("CREATED","sliver"));assert.equal(state.status,"trialing");assert.equal(state.planKey,"sliver")});
-await check("Unknown active handle never inherits a paid historical handle",async()=>{const state=await stateFor(active("mystery"),event("UPDATED","platenium"));assert.equal(state.planKey,"inactive");assert.equal(state.planHandle,null);assert.equal(state.diagnostics.historicalPlanKey,"platinum")});
-await check("Ambiguous active paid handles fail closed to Free",async()=>{const state=await stateFor(active("sliver",{items:[{handle:"sliver"},{handle:"gold"}]}),event("UPDATED","gold"));assert.equal(state.planKey,"inactive");assert.equal(state.planHandle,null);assert.equal(state.diagnostics.activePlanAmbiguous,true)});
-await check("Historical paid event without an active contract cannot grant paid access",async()=>{const state=await stateFor(null,event("UPDATED","platenium"));assert.equal(state.status,"inactive");assert.equal(state.planKey,"inactive")});
+await check("Sliver trial remains Sliver while trial is active",async()=>{const state=await stateFor(active("sliver",{trialEndsAt:"2026-08-15T00:00:00Z",currentBillingCycle:null}),event("CREATED","sliver"));assert.equal(state.status,"trialing");assert.equal(state.planKey,"sliver")});
+await check("Unknown active handle never inherits a paid historical handle",async()=>{const state=await stateFor(active("mystery"),event("UPDATED","platinum"));assert.equal(state.planKey,"inactive");assert.equal(state.planHandle,null);assert.equal(state.diagnostics.historicalPlanKey,"platinum")});
+await check("Ambiguous active paid handles fail closed to Inactive",async()=>{const state=await stateFor(active("sliver",{items:[{handle:"sliver"},{handle:"gold"}]}),event("UPDATED","gold"));assert.equal(state.planKey,"inactive");assert.equal(state.planHandle,null);assert.equal(state.diagnostics.activePlanAmbiguous,true)});
+await check("Historical paid event without an active contract cannot grant paid access",async()=>{const state=await stateFor(null,event("UPDATED","platinum"));assert.equal(state.status,"inactive");assert.equal(state.planKey,"inactive")});
 await check("Partner API shop mismatch remains rejected",()=>withEnv(baseEnv,async()=>{const wrong=active("gold",{shop:{id:"gid://shopify/Shop/99",myshopifyDomain:"other.myshopify.com"}});await assert.rejects(()=>fetchShopifySubscriptionState({appId,shopId,expectedShop:shop,now,fetchImpl:async()=>response(payload(wrong,event("UPDATED","gold"))),sleepImpl:async()=>{}}),/did not match/)}));
 
 await check("HTTP 429 retries and then recovers",()=>withEnv(baseEnv,async()=>{
@@ -109,7 +109,7 @@ await check("Transient network failure retries and then recovers",()=>withEnv(ba
     fetchImpl:async()=>{
       attempts+=1;
       if(attempts===1)throw new TypeError("temporary network failure");
-      return response(payload(active("platenium"),event("UPDATED","platenium")));
+      return response(payload(active("platinum"),event("UPDATED","platinum")));
     },
   });
   assert.equal(attempts,2);assert.equal(state.planKey,"platinum");
@@ -122,7 +122,7 @@ await check("GraphQL throttling retries and then recovers",()=>withEnv(baseEnv,a
       attempts+=1;
       return attempts===1
         ? response({errors:[{message:"Throttled",extensions:{code:"THROTTLED"}}]})
-        : response(payload(active("free"),event("UPDATED","free")));
+        : response(payload(active("starter"),event("UPDATED","starter")));
     },
   });
   assert.equal(attempts,2);assert.equal(state.planKey,"inactive");
@@ -148,20 +148,20 @@ await check("Invalid Partner JSON fails explicitly",()=>withEnv(baseEnv,async()=
   await assert.rejects(()=>fetchShopifySubscriptionState({appId,shopId,expectedShop:shop,now,fetchImpl:async()=>broken,sleepImpl:async()=>{}}),/invalid JSON/);
 }));
 
-await check("Current exact Silver mirror remains cache-compatible",()=>withEnv(baseEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"active",planKey:"sliver",planHandle:"sliver"}),true)));
-await check("Legacy Pro mirror forces re-verification",()=>withEnv(baseEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"active",planKey:"sliver",planHandle:"sliver"}),false)));
+await check("Current exact Sliver mirror remains cache-compatible",()=>withEnv(baseEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"active",planKey:"sliver",planHandle:"sliver"}),true)));
+await check("Legacy Pro mirror forces re-verification",()=>withEnv(baseEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"active",planKey:"pro",planHandle:"pro"}),false)));
 await check("Inactive mirror cannot grant paid access based on its old handle",()=>withEnv(baseEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"inactive",planKey:"inactive",planHandle:"platenium"}),true)));
 
 await check("Uninstall lifecycle deletes the disposable subscription mirror",()=>assert.ok(lifecycleDelete.includes("db.builderSubscription.deleteMany({ where: { shop } })")));
 await check("App shell always attempts subscription sync before loading the plan",()=>assert.ok(appShell.indexOf("syncShopifySubscription")<appShell.indexOf("getPlan(db, session.shop)")));
-await check("Reinstall with no local mirror rebuilds Platinum from Shopify",()=>withEnv(baseEnv,async()=>{const db=memoryDb(null);let partnerCalls=0;const result=await syncShopifySubscription({db,admin:adminIdentity(),shop,force:false,now,sleepImpl:async()=>{},fetchImpl:async()=>{partnerCalls+=1;return response(payload(active("platenium"),event("CREATED","platenium")))} });assert.equal(result.ok,true);assert.equal(result.verified,true);assert.equal(partnerCalls,1);assert.equal(db.row.planKey,"platinum");assert.equal(db.row.planHandle,"platenium")}));
+await check("Reinstall with no local mirror rebuilds Platinum from Shopify",()=>withEnv(baseEnv,async()=>{const db=memoryDb(null);let partnerCalls=0;const result=await syncShopifySubscription({db,admin:adminIdentity(),shop,force:false,now,sleepImpl:async()=>{},fetchImpl:async()=>{partnerCalls+=1;return response(payload(active("platinum"),event("CREATED","platinum")))} });assert.equal(result.ok,true);assert.equal(result.verified,true);assert.equal(partnerCalls,1);assert.equal(db.row.planKey,"platinum");assert.equal(db.row.planHandle,"platinum")}));
 await check("Reinstall mirror is marked Shopify-authoritative",()=>withEnv(baseEnv,async()=>{const db=memoryDb(null);await syncShopifySubscription({db,admin:adminIdentity(),shop,force:true,now,sleepImpl:async()=>{},fetchImpl:async()=>response(payload(active("gold"),event("CREATED","gold")))});assert.equal(db.row.provider,"shopify-app-pricing");assert.equal(db.row.status,"active");assert.equal(new Date(db.row.verifiedAt).toISOString(),now.toISOString())}));
 await check("Successful verification stores authority diagnostics snapshot",()=>withEnv(baseEnv,async()=>{const db=memoryDb(null);await syncShopifySubscription({db,admin:adminIdentity(),shop,force:true,now,sleepImpl:async()=>{},fetchImpl:async()=>response(payload(active("gold"),event("UPDATED","sliver")))});const snapshot=JSON.parse(db.row.snapshotJson);assert.equal(snapshot.diagnostics.historicalPlanHandle,"sliver");assert.equal(snapshot.diagnostics.activePlanAmbiguous,false)}));
 
 await check("Environment documents Partner retry count",()=>assert.ok(env.includes("SHOPIFY_PARTNER_API_RETRY_COUNT=2")));
 await check("Environment documents Partner retry backoff",()=>assert.ok(env.includes("SHOPIFY_PARTNER_API_RETRY_BASE_MS=250")));
 await check("Production QA docs preserve exact sliver spelling",()=>assert.ok(docs.includes("`sliver`")));
-await check("Production QA docs preserve exact platenium spelling",()=>assert.ok(docs.includes("`platenium`")));
+await check("Production QA docs preserve exact platenium spelling",()=>assert.ok(docs.includes("`platinum`")));
 await check("Production QA docs cover reinstall",()=>assert.ok(/reinstall/i.test(docs)&&/local `BuilderSubscription` mirror/i.test(docs)));
 await check("Active subscription is explicitly documented as canonical authority",()=>assert.ok(service.includes("activeSubscription is the canonical current contract")));
 await check("Historical plan cannot override active item in implementation",()=>assert.ok(service.includes("let planKey=active?activePlan.key:eventKey")));
