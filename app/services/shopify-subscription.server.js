@@ -114,11 +114,11 @@ export async function fetchShopifySubscriptionState({appId,shopId,expectedShop,f
   const status=statusFrom(active,event,now);
   let planKey=active?activePlan.key:eventKey;
   let planHandle=active?activePlan.handle:eventHandle;
-  if(["inactive","canceled","frozen"].includes(status)){planKey="core";planHandle=planHandle||eventHandle||null;}
-  if(!planKey)planKey="core";
+  if(["inactive","canceled","frozen"].includes(status)){planKey="inactive";planHandle=null;}
+  if(!planKey)planKey="inactive";
 
   const pending=planFromItems(active?.pendingUpdate?.items||[]);
-  const pendingEvent=status==="canceling"&&event?.cancelEffectiveOn?{planKey:"core",planHandle:getShopifyPlanHandleMap().core,billingPeriod:null}:null;
+  const pendingEvent=status==="canceling"&&event?.cancelEffectiveOn?{planKey:"inactive",planHandle:null,billingPeriod:null}:null;
   return {active,event,status,planKey,planHandle,billingPeriod:active?.billingPeriod||event?.plan?.billingPeriod||null,trialEndsAt:active?.trialEndsAt||null,currentCycleStart:active?.currentBillingCycle?.startTime||null,currentCycleEnd:active?.currentBillingCycle?.endTime||null,cancelAtEndOfCycle:Boolean(active?.cancelAtEndOfCycle||status==="canceling"),cancelEffectiveOn:event?.cancelEffectiveOn||null,pendingPlanKey:pendingEvent?.planKey||pending.key||null,pendingPlanHandle:pendingEvent?.planHandle||pending.handle||null,pendingBillingPeriod:active?.pendingUpdate?.billingPeriod||null,legacySubscriptionId:active?.legacySubscriptionId||null,verifiedShopId:active?.shop?.id||shopId,verifiedShop:activeDomain||eventDomain||expectedDomain,snapshot:json.data,diagnostics:{activePlanAmbiguous:Boolean(activePlan.ambiguous),pendingPlanAmbiguous:Boolean(pending.ambiguous),historicalPlanKey:eventKey||null,historicalPlanHandle:eventHandle||null}};
 }
 
