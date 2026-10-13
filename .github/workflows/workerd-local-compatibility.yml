@@ -3,7 +3,7 @@ on:
   push:
     branches: [feat/builder-local-workerd-sdk-compat-20261013, fix/builder-workerd-runtime-probe-20261013, feat/builder-workerd-neon-client-lifecycle-20261013]
   pull_request:
-    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013, test/builder-workerd-signed-shopify-webhook-20261013, security/builder-neon-direct-migration-tier-guard-20261013, ci/builder-audit-gate-qa-continuity-20261013, feat/builder-workerd-uninstall-session-revoke-20261013, security/builder-uninstall-reinstall-fence-20261013]
+    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013, test/builder-workerd-signed-shopify-webhook-20261013, security/builder-neon-direct-migration-tier-guard-20261013, ci/builder-audit-gate-qa-continuity-20261013, feat/builder-workerd-uninstall-session-revoke-20261013, security/builder-uninstall-reinstall-fence-20261013, feat/builder-install-generation-schema-20261013]
     paths:
       - "workers/**"
       - "app/services/**"
@@ -13,6 +13,7 @@ on:
       - "tests/worker-shopify-webhook-gate.test.mjs"
       - "tests/worker-uninstall-session-revoke.test.mjs"
       - "tests/worker-install-generation-schema.test.mjs"
+      - "tests/worker-shopify-install-session-storage.test.mjs"
       - "prisma/**"
       - "scripts/verify-prisma-worker-client.mjs"
       - "scripts/dev-local-workerd-smoke.mjs"
@@ -64,6 +65,7 @@ jobs:
           node --test tests/worker-shopify-webhook-gate.test.mjs
           node --test tests/worker-uninstall-session-revoke.test.mjs
           node --test tests/worker-install-generation-schema.test.mjs
+          node --test tests/worker-shopify-install-session-storage.test.mjs
           node scripts/verify-prisma-environment-parity.mjs
       - name: Preserve TypeScript application compatibility with generated Edge code
         run: npm run typecheck
