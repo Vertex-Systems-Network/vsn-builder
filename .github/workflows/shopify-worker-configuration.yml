@@ -1,0 +1,33 @@
+name: VSN Shopify Worker SDK Configuration (No Deploy)
+on:
+  push:
+    branches: [feat/builder-worker-shopify-auth-contract-20261013]
+permissions:
+  contents: read
+jobs:
+  sdk-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      NODE_ENV: test
+      DATABASE_URL: file:./ci.sqlite
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - run: npm ci
+      - name: Verify Shopify Worker SDK config with dummy credentials
+        run: node --test tests/shopify-worker-configuration.test.mjs
+      - name: Revalidate Worker Web Streams and frame-ancestor CSP
+        run: node --test tests/worker-ssr-webstream.test.mjs
+      - name: Enforce configuration isolation and production dependency audit
+        run: npm run env:check && npm run env:test && npm audit --omit=dev --audit-level=high
+      - name: Confirm real Worker application remains intentionally unavailable
+        run: |
+          test ! -e workers/app.js
+          test ! -e wrangler.staging.jsonc
+          test ! -e wrangler.production.jsonc
