@@ -41,6 +41,8 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 **Phase 1 source/Shopify secret hardening:** Staging secrets in the legacy GitHub workflow are now restricted to **protected `development` only** (not protected `main`); the protected identity-only preflight requires three separate Dev/Staging/Live Shopify Client IDs with exact runtime tier matching, tested against synthetic fixtures. `development` branch still lacks actual protection, and real GitHub Environment secret presence is still unverified; **Phase 1 remains 4/7**, not closed. See [closeout plan](docs/eight-phase-closure-plan.md).
 
+**Phase 1 hosted identity preflight improvement:** Protected manual workflow now requires GitHub Environment-scoped non-secret `NEON_PROJECT_ID` / `CLOUDFLARE_WORKER_NAME` alongside 3 distinct Shopify app IDs, and exact tier identity/strict HTTPS origin checks. The repository CLI and workflow reject reserved placeholder domains, callback paths, embedded URL credentials and wrong-tier resources with synthetic CI. Real protected environment variables/secrets and Shopify Partner ownership remain unverified. **Environment Setup stays 4/7 evidence-tracked, IN PROGRESS.**
+
 ## Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
