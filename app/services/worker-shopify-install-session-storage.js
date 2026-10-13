@@ -72,6 +72,12 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
         // The real Shopify SDK still serializes the token via storeSession.
       }
       const inside=new SessionStorage(tx,options);
+      // The official Prisma adapter starts an asynchronous session-table
+      // readiness probe in its constructor. Await the PUBLIC isReady() API
+      // while the transaction is still alive, including paths where a
+      // subclass/driver rejects storeSession before ensureReady().
+      if(typeof inside.isReady!=="function" ||
+         await inside.isReady()!==true)throw blocked();
       if(await inside.storeSession(session)!==true)throw blocked();
       return true;
     });
