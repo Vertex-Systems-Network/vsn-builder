@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server";
 import { getBuilderRole } from "../utils/builder-permissions.js";
 import db from "../db.server.js";
@@ -31,6 +32,7 @@ export async function loader({request}) {
 export async function action({request}) {
   assertTrustedMutationRequest(request);
   const {admin,session}=await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   if(!(await canAccessBuilderSystem(db,session,"developerSdk"))) return Response.json({ok:false,error:"Developer SDK access denied."},{status:403});
   const entitlement=await getFeatureDecision(db,session.shop,"developerSdk");
   if(!entitlement.allowed)return Response.json({ok:false,error:entitlement.message,code:entitlement.code,entitlement},{status:403});
