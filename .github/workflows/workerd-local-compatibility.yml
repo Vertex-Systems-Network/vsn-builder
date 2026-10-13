@@ -3,7 +3,7 @@ on:
   push:
     branches: [feat/builder-local-workerd-sdk-compat-20261013, fix/builder-workerd-runtime-probe-20261013, feat/builder-workerd-neon-client-lifecycle-20261013]
   pull_request:
-    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013, test/builder-workerd-signed-shopify-webhook-20261013, security/builder-neon-direct-migration-tier-guard-20261013, ci/builder-audit-gate-qa-continuity-20261013, feat/builder-workerd-uninstall-session-revoke-20261013, security/builder-uninstall-reinstall-fence-20261013, feat/builder-install-generation-schema-20261013, feat/builder-transactional-install-session-storage-20261013, security/builder-session-resurrection-hardening-20261013, test/builder-real-sqlite-install-rollback-20261013, test/builder-ephemeral-postgres-transaction-20261013, security/builder-uninstall-proof-required-20261013, feat/builder-worker-shopify-admin-auth-gate-20261013, security/builder-admin-mutation-row-lock-20261013, security/builder-post-transaction-error-rollback-20261013, security/builder-admin-expired-session-guard-20261013, security/builder-admin-response-commit-guard-20261013, security/builder-admin-post-response-stream-guard-20261013, security/builder-admin-post-stream-timeout-20261013, feat/builder-eight-phase-closure-sequence-20261013, fix/builder-phase1-identity-preflight-20261013, audit/builder-phase1-cloud-binding-inventory-20261013, ci/builder-phase1-protected-github-preflight-20261013, audit/builder-phase1-github-branch-protection-20261013, security/builder-phase1-scope-boundaries-three-tier-20261013, security/builder-phase1-host-identity-url-guard-20261013, security/builder-phase1-config-var-attestation-20261013, fix/builder-phase1-canonical-billing-flag-20261014, security/builder-phase1-full-hosted-identity-parity-20261014, security/builder-phase1-retire-legacy-preflight-20261014]
+    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013, test/builder-workerd-signed-shopify-webhook-20261013, security/builder-neon-direct-migration-tier-guard-20261013, ci/builder-audit-gate-qa-continuity-20261013, feat/builder-workerd-uninstall-session-revoke-20261013, security/builder-uninstall-reinstall-fence-20261013, feat/builder-install-generation-schema-20261013, feat/builder-transactional-install-session-storage-20261013, security/builder-session-resurrection-hardening-20261013, test/builder-real-sqlite-install-rollback-20261013, test/builder-ephemeral-postgres-transaction-20261013, security/builder-uninstall-proof-required-20261013, feat/builder-worker-shopify-admin-auth-gate-20261013, security/builder-admin-mutation-row-lock-20261013, security/builder-post-transaction-error-rollback-20261013, security/builder-admin-expired-session-guard-20261013, security/builder-admin-response-commit-guard-20261013, security/builder-admin-post-response-stream-guard-20261013, security/builder-admin-post-stream-timeout-20261013, feat/builder-eight-phase-closure-sequence-20261013, fix/builder-phase1-identity-preflight-20261013, audit/builder-phase1-cloud-binding-inventory-20261013, ci/builder-phase1-protected-github-preflight-20261013, audit/builder-phase1-github-branch-protection-20261013, security/builder-phase1-scope-boundaries-three-tier-20261013, security/builder-phase1-host-identity-url-guard-20261013, security/builder-phase1-config-var-attestation-20261013, fix/builder-phase1-canonical-billing-flag-20261014, security/builder-phase1-full-hosted-identity-parity-20261014, security/builder-phase1-retire-legacy-preflight-20261014, feat/builder-phase3-4-staging-runtime-safety-20261014]
     paths:
       - "workers/**"
       - "app/services/**"
@@ -37,6 +37,13 @@ on:
       - "config/project/phase1-github-protection-observation.json"
       - ".github/workflows/phase1-protected-identity-preflight.yml"
       - ".github/workflows/hosted-environment-secret-inventory.yml"
+      - "tests/phase34-hosted-worker-gate.test.mjs"
+      - "tests/phase3-staging-migration-preflight.test.mjs"
+      - "scripts/phase3-staging-migration-preflight.mjs"
+      - "scripts/phase3-staging-post-migrate-check.mjs"
+      - ".github/workflows/phase3-staging-neon-migration.yml"
+      - "wrangler.staging.jsonc"
+      - "wrangler.production.jsonc"
       - "tests/hosted-neon-url-policy.test.mjs"
       - ".github/workflows/ci.yml"
       - "tests/ci-audit-gate-continuity.test.mjs"
@@ -92,6 +99,8 @@ jobs:
         run: node scripts/verify-prisma-worker-client.mjs --generated
       - name: Recheck Shopify SDK and Neon factory Node compatibility
         run: |
+          node --test tests/phase34-hosted-worker-gate.test.mjs
+          node --test tests/phase3-staging-migration-preflight.test.mjs
           node --test tests/hosted-neon-url-policy.test.mjs
           node --test tests/ci-audit-gate-continuity.test.mjs
           node --test tests/worker-neon-factory.test.mjs
@@ -141,8 +150,16 @@ jobs:
           test -z "${DIRECT_URL:-}"
       - name: Compile SDK and test real local Cloudflare Workerd over HTTP
         run: node scripts/dev-local-workerd-smoke.mjs
-      - name: Reject actual hosted Worker/Shopify deploy configuration
+      - name: Compile gated Staging hosted Worker using Wrangler dry run only
         run: |
-          test ! -e workers/app.js
-          test ! -e wrangler.staging.jsonc
-          test ! -e wrangler.production.jsonc
+          npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.staging.jsonc --dry-run --outdir /tmp/vsn-builder-staging-dryrun
+          test -n "$(find /tmp/vsn-builder-staging-dryrun -type f -name '*.js' -print -quit)"
+      - name: Preserve unconfigured Production and no-credential/no-deploy invariant
+        run: |
+          test -e workers/app.js
+          test -e wrangler.staging.jsonc
+          test -e wrangler.production.jsonc
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DATABASE_URL:-}"
+          git diff --exit-code -- package.json package-lock.json
