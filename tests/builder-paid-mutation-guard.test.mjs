@@ -52,7 +52,7 @@ test("verified Shopify paid contract and 10-day trial can write",{concurrency:fa
  }finally{restoreMode();}
 });
 test("only explicit billing, support, notifications and app uninstall bypass the paid mutation guard",()=>{
- for(const intent of ["app-uninstall","billing-refresh","support-create","support-reply","notification-read"]){
+ for(const intent of ["app-uninstall","billing-refresh","support-create","support-reply","support-status","notification-read"]){
   assert.equal(isUnpaidDashboardExempt(intent),true,intent);
  }
  for(const intent of ["save-widgets","save-app-settings","rebuild-theme-assets","sync-library-defaults",
