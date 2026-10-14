@@ -1,0 +1,13 @@
+{
+  // CI-only test build: no merchant Worker, app route, billing, or Shopify.
+  "name": "vsn-builder-react-router-ci",
+  "main": "./workers/edge-react-router-ci-probe.js",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "APP_ENV": "test",
+    "VSN_BUILD_INTENT": "react-router-ci"
+  }
+}
