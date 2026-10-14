@@ -31,3 +31,14 @@ jobs:
           if-no-files-found: warn
       - name: Require functioning Shopify GraphQL developer codegen
         run: node scripts/t011-codegen-compatibility.mjs
+      - name: Actually generate Shopify GraphQL types
+        run: npm run graphql-codegen
+      - name: Assert generated operation types are nonempty
+        run: |
+          test -d app/types
+          if ! find app/types -type f \( -name '*.ts' -o -name '*.tsx' \) -size +0c | grep -q .; then
+            echo 'BLOCKED T011: generator produced no nonempty TypeScript declarations'
+            exit 1
+          fi
+      - name: Enforce zero high-severity advisories in full dependency tree
+        run: npm audit --include=dev --audit-level=high
