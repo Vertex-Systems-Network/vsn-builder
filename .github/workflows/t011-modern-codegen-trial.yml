@@ -1,0 +1,46 @@
+name: T011 Modern Shopify Codegen Trial
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/t011-modern-codegen-trial.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  modern-codegen-trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Trial modern Shopify codegen preset and regenerate lockfile
+        run: |
+          npm pkg set 'scripts.graphql-codegen=graphql-codegen'
+          npm install --save-dev --ignore-scripts @shopify/api-codegen-preset@3.0.0
+      - name: Reproducible fresh install
+        run: npm ci
+      - name: Generate Shopify GraphQL operation types
+        run: npm run graphql-codegen
+      - name: Capture unfiltered dependency audits
+        if: always()
+        run: |
+          npm audit --json > t011-modern-codegen-all.json || true
+          npm audit --omit=dev --json > t011-modern-codegen-prod.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t011-modern-codegen-v3-trial
+          path: |
+            package.json
+            package-lock.json
+            t011-modern-codegen-*.json
+            app/types/
+          if-no-files-found: warn
+      - name: Enforce full audit
+        run: npm audit --include=dev --audit-level=high
+      - name: Verify project typecheck and build
+        run: |
+          npm run typecheck
+          npm run build
