@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
-export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWranglerConfig = false, hasD1Adapter = false } = {}) {
+export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWranglerConfig = false, hasD1Adapter = false, hasNeonAdapter = false, hasWorkerMerchantRuntime = false } = {}) {
   const checks = [];
   const check = (name, ok, reason) => checks.push({ name, ok: Boolean(ok), ...(ok ? {} : { reason }) });
   const get = (key) => String(vars[key] || "").trim();
@@ -29,9 +29,27 @@ export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWra
     for (const name of ["SHOPIFY_API_KEY", "SHOPIFY_API_SECRET"]) {
       check("Worker secret " + name, names.has(name), "Protected secret binding missing");
     }
-    const d1 = (worker?.bindings || []).some((b) => b.type === "d1" || b.type === "d1_database");
-    check("Persistent D1 database binding", d1, "No D1 relational database binding");
-    check("D1-compatible Prisma client", hasD1Adapter, "Current SQLite file Prisma client is not adapted to Workers D1");
+    const dbProvider = get("VSN_STAGING_DATABASE_PROVIDER") || "neon-postgresql";
+    check("Staging database provider explicit", ["neon-postgresql", "d1"].includes(dbProvider),
+      "Only Neon PostgreSQL or D1 supported for Cloudflare Worker staging");
+    if (dbProvider === "neon-postgresql") {
+      check("Staging Neon project identity", get("NEON_PROJECT_ID") === "shiny-violet-61219572",
+        "Use the existing isolated vsn-builder-staging Neon project");
+      check("Worker Neon DATABASE_URL secret", names.has("DATABASE_URL"),
+        "Bind Staging Neon PostgreSQL connection string as a protected Worker secret");
+      check("Worker Neon Prisma adapter", hasNeonAdapter,
+        "Worker edge Prisma/Neon adapter and PostgreSQL client bundle not integrated");
+      check("Neon default branch schema attested", get("VSN_STAGING_NEON_SCHEMA_VERIFIED") === "1",
+        "Default branch has no verified migrated application schema");
+      check("Neon migration ledger attested", get("VSN_STAGING_NEON_MIGRATIONS_VERIFIED") === "1",
+        "Verified Prisma migration history on staging default branch required");
+    } else if (dbProvider === "d1") {
+      const d1 = (worker?.bindings || []).some((b) => b.type === "d1" || b.type === "d1_database");
+      check("Persistent D1 database binding", d1, "No D1 relational database binding");
+      check("D1-compatible Prisma client", hasD1Adapter, "D1 Prisma adapter missing");
+    }
+    check("Worker merchant SSR/OAuth integration", hasWorkerMerchantRuntime,
+      "Existing Worker placeholder is not a Shopify React Router merchant application");
     check("Worker app build/config", hasWranglerConfig, "No Wrangler Worker application deployment config");
     check("Verified external HTTPS route", worker?.publicUrlVerified === true,
       "workers.dev disabled or routed HTTPS application endpoint has not been verified");
@@ -64,7 +82,7 @@ async function fetchWorkerEvidence() {
     get("/script-settings"), get("/deployments"), get("/secrets"), get("/subdomain"),
   ]);
   return {
-    exists: Boolean(settings),
+    exists: Boolean(settings || deployments),
     deployments: deployments?.deployments?.length || 0,
     bindings: (settings?.bindings || []).map((item) => ({ type: item.type, name: item.name })),
     secretNames: (Array.isArray(secrets) ? secrets : []).map((item) => item.name),
@@ -74,7 +92,7 @@ async function fetchWorkerEvidence() {
 if (process.argv[1] && import.meta.url === new URL("file://" + process.argv[1]).href) {
   const configPath = "shopify.app.staging.toml";
   const pkg = JSON.parse(readFileSync("package.json", "utf8"));
-  const hasWranglerConfig = ["wrangler.toml", "wrangler.json", "wrangler.jsonc"].some(existsSync);
+  const hasWranglerConfig = ["wrangler.staging.jsonc", "wrangler.toml", "wrangler.json", "wrangler.jsonc"].some(existsSync);
   const clientSources = ["app/db.server.js", "app/db.server.ts"].filter(existsSync).map((file) => readFileSync(file, "utf8")).join("\n");
   let worker = null;
   try { worker = await fetchWorkerEvidence(); }
@@ -86,6 +104,10 @@ if (process.argv[1] && import.meta.url === new URL("file://" + process.argv[1]).
     hasWranglerConfig,
     hasD1Adapter: Boolean(pkg.dependencies?.["@prisma/adapter-d1"] || pkg.devDependencies?.["@prisma/adapter-d1"]) &&
       clientSources.includes("PrismaD1"),
+    hasNeonAdapter: Boolean(pkg.dependencies?.["@prisma/adapter-neon"]) &&
+      existsSync("app/services/db-worker-neon.js") && existsSync("generated/prisma-edge/client.ts"),
+    hasWorkerMerchantRuntime: existsSync("workers/app.js") &&
+      !readFileSync("workers/app.js", "utf8").includes("No storefront, OAuth, merchant mutations, billing, or editor routes"),
   });
   writeFileSync("staging-hosted-readiness.json", JSON.stringify(report, null, 2) + "\n");
   for (const row of report.checks) console.log((row.ok ? "PASS" : "BLOCKED") + " " + row.name +
