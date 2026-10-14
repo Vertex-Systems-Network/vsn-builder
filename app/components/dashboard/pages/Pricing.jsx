@@ -90,7 +90,7 @@ export default function Pricing({ darkMode, currentPlan, entitlements, billingUr
       })}
     </div>
 
-    <div style={{ marginBottom:34, padding:17, border:`1px solid ${border}`, borderRadius:12, background:cardBg, display:'flex', gap:12, alignItems:'flex-start' }}><ShieldCheck size={20} color="#5C6AC4"/><div><div style={{ fontSize:13, fontWeight:700, color:text }}>Shopify App Pricing remains authoritative</div><div style={{ fontSize:12, color:muted, lineHeight:1.6, marginTop:3 }}>VSN now links directly to Shopify’s hosted App Pricing page. It does not create Billing API subscriptions and it never treats a plan_handle query parameter as proof of an active contract.</div></div></div>
+    <div style={{ marginBottom:34, padding:17, border:`1px solid ${border}`, borderRadius:12, background:cardBg, display:'flex', gap:12, alignItems:'flex-start' }}><ShieldCheck size={20} color="#5C6AC4"/><div><div style={{ fontSize:13, fontWeight:700, color:text }}>Shopify app pricing remains authoritative</div><div style={{ fontSize:12, color:muted, lineHeight:1.6, marginTop:3 }}>VSN now links directly to Shopify’s hosted App Pricing page. It does not create Billing API subscriptions and it never treats a plan_handle query parameter as proof of an active contract.</div></div></div>
 
     <div style={{ maxWidth:720, margin:'0 auto' }}>
       <h2 style={{ fontSize:18, fontWeight:700, color:text, marginBottom:16, display:'flex', alignItems:'center', gap:8 }}><HelpCircle size={18} color="var(--vsn-green)"/> Frequently Asked Questions</h2>
