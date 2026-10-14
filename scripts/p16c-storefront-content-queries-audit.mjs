@@ -93,9 +93,11 @@ equal(search, {
 
 const blogAdmin = {
   async graphql(query, { variables }) {
-    ok(query.includes("BlogData"), "Blog loader keeps BlogData query");
-    equal(variables, { handle: "journal" }, "Blog loader keeps handle variable");
-    return { async json() { return { data: { blogByHandle: {
+    ok(query.includes("BlogData"), "Blog loader keeps BlogData operation");
+    ok(query.includes("blogs(first:1,query:$filter)"), "Blog loader uses supported Shopify Admin blogs filter");
+    ok(!query.includes("blogByHandle"), "Blog loader never calls Storefront-only blogByHandle");
+    equal(variables, { filter: "handle:journal" }, "Blog loader searches by normalized blog handle");
+    return { async json() { return { data: { blogs: { nodes: [{
       id: "blog1",
       title: "Journal",
       handle: "journal",
@@ -103,7 +105,7 @@ const blogAdmin = {
         { id: "a1", title: "First", handle: "first", excerpt: "E1", publishedAt: "2026-01-01", author: { name: "A" }, image: null },
         { id: "a2", title: "Second", handle: "second", excerpt: "E2", publishedAt: "2025-01-01", author: null, image: null },
       ] },
-    } } }; } };
+    }] } } }; } };
   },
 };
 equal(await getBlogData({ admin: blogAdmin, handle: "journal" }), {
@@ -119,33 +121,31 @@ equal(await getBlogData({ admin: blogAdmin, handle: "journal" }), {
 
 const articleAdmin = {
   async graphql(query, { variables }) {
-    ok(query.includes("ArticleData"), "Article loader keeps ArticleData query");
-    equal(variables, { blog: "journal", query: "handle:middle" }, "Article loader keeps blog/query variables");
-    return { async json() { return { data: { blogByHandle: {
-      title: "Journal",
-      handle: "journal",
-      articles: { nodes: [{
-        id: "middle-id",
-        title: "Middle",
-        handle: "middle",
-        contentHtml: "<p>Body</p>",
-        excerpt: "Middle excerpt",
-        publishedAt: "2025-06-01",
-        tags: ["tag"],
-        author: { name: "Writer" },
-        image: null,
+    ok(query.includes("ArticleData"), "Article loader keeps ArticleData operation");
+    ok(query.includes("articles(first:25,query:$query)"), "Article lookup uses Shopify Admin top-level search");
+    ok(!query.includes("blogByHandle"), "Article lookup avoids Storefront-only blogByHandle");
+    equal(variables, { filter: "handle:journal", query: "handle:middle" }, "Article loader keeps supported blog and article filters");
+    return { async json() { return { data: {
+      blogs: { nodes: [{
+        title: "Journal",
+        handle: "journal",
+        allArticles: { nodes: [
+          { id: "new-id", title: "Newer", handle: "newer", excerpt: "N", publishedAt: "2026-01-01", image: null },
+          { id: "middle-id", title: "Middle", handle: "middle", excerpt: "M", publishedAt: "2025-06-01", image: null },
+          { id: "old-id", title: "Older", handle: "older", excerpt: "O", publishedAt: "2025-01-01", image: null },
+          { id: "old2-id", title: "Old Two", handle: "old-two", excerpt: "O2", publishedAt: "2024-06-01", image: null },
+          { id: "old3-id", title: "Old Three", handle: "old-three", excerpt: "O3", publishedAt: "2024-01-01", image: null },
+        ] },
       }] },
-      allArticles: { nodes: [
-        { id: "new-id", title: "Newer", handle: "newer", excerpt: "N", publishedAt: "2026-01-01", image: null },
-        { id: "middle-id", title: "Middle", handle: "middle", excerpt: "M", publishedAt: "2025-06-01", image: null },
-        { id: "old-id", title: "Older", handle: "older", excerpt: "O", publishedAt: "2025-01-01", image: null },
-        { id: "old2-id", title: "Old Two", handle: "old-two", excerpt: "O2", publishedAt: "2024-06-01", image: null },
-        { id: "old3-id", title: "Old Three", handle: "old-three", excerpt: "O3", publishedAt: "2024-01-01", image: null },
-      ] },
-    } } }; } };
+      articles: { nodes: [{
+        id: "middle-id", title: "Middle", handle: "middle",
+        contentHtml: "<p>Body</p>", excerpt: "Middle excerpt",
+        publishedAt: "2025-06-01", tags: ["tag"],
+        author: { name: "Writer" }, image: null, blog: { handle: "journal" },
+      }] },
+    } }; } };
   },
 };
-
 const article = await getArticleData({ admin: articleAdmin, blogHandle: "journal", articleHandle: "middle" });
 equal(article.author, "Writer", "Article author name remains flattened");
 equal(article.blogHandle, "journal", "Article result keeps requested blog handle");
