@@ -1,12 +1,15 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { sanitizeSvg, safeSvgName, safeSvgFileName, serializeSvgAsset } from "../services/svg-assets.server.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 async function list(shop, deletedAt){const rows=await db.builderSvgAsset.findMany({where:{shop,deletedAt},orderBy:{updatedAt:"desc"}});return rows.map(serializeSvgAsset);}
-export async function loader({request}){const {session}=await authenticate.admin(request);const url=new URL(request.url);const active=await list(session.shop,null);if(url.searchParams.get("mode")==="picker")return Response.json({ok:true,files:active,count:active.length});const trash=await list(session.shop,{not:null});return Response.json({ok:true,files:active,trash});}
+export async function loader({request}){const {session}=await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "svgAssets"))) throw new Response("Resource access denied.", { status: 403 });const url=new URL(request.url);const active=await list(session.shop,null);if(url.searchParams.get("mode")==="picker")return Response.json({ok:true,files:active,count:active.length});const trash=await list(session.shop,{not:null});return Response.json({ok:true,files:active,trash});}
 export async function action({request}){
   assertTrustedMutationRequest(request);const {session}=await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "svgAssets"))) throw new Response("Resource access denied.", { status: 403 });
   await assertPaidBuilderMutation(db, session.shop);let form;try{form=await request.formData();}catch(error){console.error("VSN SVG upload form parse failed:",error);return Response.json({ok:false,error:"The upload could not be read. Choose the file again; if it still fails, check the file size and restart the development server."},{status:400});}const intent=String(form.get("intent")||"");const id=String(form.get("id")||"");const row=id?await db.builderSvgAsset.findFirst({where:{id,shop:session.shop}}):null;
   if(intent==="trash"){if(!row)return Response.json({ok:false,error:"SVG not found."},{status:404});await db.builderSvgAsset.update({where:{id},data:{deletedAt:new Date()}});return Response.json({ok:true,intent,id,message:"SVG moved to Trash."});}
   if(intent==="restore"){if(!row)return Response.json({ok:false,error:"SVG not found."},{status:404});const asset=await db.builderSvgAsset.update({where:{id},data:{deletedAt:null}});return Response.json({ok:true,intent,id,asset:serializeSvgAsset(asset),message:"SVG restored."});}
