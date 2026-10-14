@@ -1,0 +1,56 @@
+name: T011 Audited GraphQL Parser Sync
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/t011-audited-graphql-parser-sync.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  audited-parser-sync:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'integration/t011-t026-paid-plans-qa-20261015'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked app first
+        run: npm ci
+      - name: Add standalone GraphQL parser without Shopify codegen dependency chain
+        run: npm install --save-dev --save-exact graphql@16.11.0
+      - name: Mandatory security gate including development tools
+        run: npm audit --include=dev --audit-level=high
+      - name: Verify app and actual GraphQL AST extraction
+        run: |
+          node scripts/t011-graphql-document-inventory.mjs
+          node scripts/t011-graphql-ast-analysis.mjs
+          node --input-type=module -e "import fs from 'node:fs'; const r=JSON.parse(fs.readFileSync('t011-graphql-ast-report.json')); if(!r.parserAvailable || r.discoveredDocuments===0 || r.valid===0) process.exit(1); console.log('AST parser validated',r.valid,'of',r.discoveredDocuments,'documents')"
+          npm run typecheck
+          npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t011-audited-parser-and-ast
+          path: |
+            package.json
+            package-lock.json
+            t011-graphql-operation-inventory.json
+            t011-graphql-ast-report.json
+      - name: Promote audited parser lockfile into integration branch
+        run: |
+          test "$(git branch --show-current)" = "integration/t011-t026-paid-plans-qa-20261015"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "Already present in lockfile"
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "fix(T011): add audited standalone GraphQL parser with reproducible lockfile"
+          git push origin HEAD:integration/t011-t026-paid-plans-qa-20261015
