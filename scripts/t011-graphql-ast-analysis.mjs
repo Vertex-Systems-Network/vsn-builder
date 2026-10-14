@@ -69,4 +69,11 @@ console.log("T011 GraphQL AST:", JSON.stringify({
   parsedValid: report.valid,
   unvalidated: report.invalid,
 }));
+const reasons = results.filter((row) => !row.valid).reduce((acc, row) => {
+  const key = row.status || "unknown";
+  acc[key] = (acc[key] || 0) + 1;
+  return acc;
+}, {});
+console.log("T011 unvalidated document classes:", JSON.stringify(reasons));
+console.log("T011 example unvalidated documents:", JSON.stringify(results.filter((row) => !row.valid).slice(0,8).map((row) => ({ file: row.file, status: row.status, error: row.error }))));
 console.log("NOTE: Syntax validity is NOT Shopify Admin schema validation or generated operation type safety.");
