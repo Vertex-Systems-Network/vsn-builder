@@ -1,0 +1,34 @@
+name: VSN Builder Staging Neon Schema Contract
+on:
+  pull_request:
+    paths:
+      - "prisma/cloud/**"
+      - "prisma/schema.prisma"
+      - "scripts/staging-cloud-schema-parity.mjs"
+      - "tests/staging-cloud-schema-parity.test.mjs"
+      - ".github/workflows/staging-neon-schema-contract.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  non-destructive-schema-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify 51 local models and 52 cloud models including installation fence
+        run: |
+          node --test tests/staging-cloud-schema-parity.test.mjs
+          node scripts/staging-cloud-schema-parity.mjs
+      - name: Install reproducible locked tooling
+        run: npm ci
+      - name: Validate isolated PostgreSQL schema without connecting
+        env:
+          DATABASE_URL: postgresql://staging_test:unused@127.0.0.1:5432/placeholder?sslmode=require
+          DIRECT_URL: postgresql://staging_test:unused@127.0.0.1:5432/placeholder?sslmode=require
+        run: npm run prisma -- validate --schema prisma/cloud/schema.prisma
+      - name: Assert zero high vulnerabilities
+        run: npm audit --include=dev --audit-level=high
