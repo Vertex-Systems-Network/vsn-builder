@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { BUILDER_PANEL_SYSTEM_MAP } from "../utils/builder-permissions.js";
 import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import { dispatchBuilderPanelAction, loadBuilderPanel, unwrapPanelResult } from "../services/builder-panels.server.js";
@@ -54,6 +55,7 @@ export async function action({request, params}) {
   assertTrustedMutationRequest(request);
   const panel=String(params.panel||"");
   const {session}=await authenticate.admin(request.clone());
+  await assertPaidBuilderMutation(db, session.shop);
   const system=BUILDER_PANEL_SYSTEM_MAP[panel];
   if(system && !(await canAccessBuilderSystem(db,session,system))) return panelResponse({error:"VSN role permission denied.",status:403},panel,403);
   try{
