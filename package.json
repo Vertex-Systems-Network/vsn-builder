@@ -185,7 +185,8 @@
     "qa:p16k-storefront-presentation-metadata": "node scripts/p16k-storefront-presentation-metadata-audit.mjs",
     "qa:p16l-storefront-design-tokens": "node scripts/p16l-storefront-design-tokens-audit.mjs",
     "qa:p16m-storefront-font-runtime": "node scripts/p16m-storefront-font-runtime-audit.mjs",
-    "qa:p16n-storefront-custom-js-bundle": "node scripts/p16n-storefront-custom-js-bundle-audit.mjs"
+    "qa:p16n-storefront-custom-js-bundle": "node scripts/p16n-storefront-custom-js-bundle-audit.mjs",
+    "graphql-codegen": "node scripts/t011-graphql-document-inventory.mjs && node scripts/t011-graphql-ast-analysis.mjs && node scripts/t011-graphql-typegen.mjs"
   },
   "type": "module",
   "engines": {
