@@ -97,7 +97,7 @@ export async function getArticleData({ admin, blogHandle, articleHandle }) {
     { filter: `handle:${blogHandle}`, query: `handle:${articleHandle}` },
     "article data",
   );
-  const blog = data?.blogByHandle;
+  const blog = data?.blogs?.nodes?.[0];
   const article = (data?.articles?.nodes || []).find((item) => item.blog?.handle === blogHandle) || null;
   if (!article) return null;
 
