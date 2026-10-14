@@ -25,6 +25,8 @@ on:
       - "app/routes/app.motion-library.jsx"
       - "app/routes/app.platform-intelligence.jsx"
       - "app/utils/paid-mutation-guard.server.js"
+      - "app/utils/csv-security.js"
+      - "app/routes/app.form-uploads.$id.jsx"
       - "scripts/t026-mutation-inventory.mjs"
       - "tests/t026-action-exceptions.test.mjs"
       - "app/services/dashboard-actions.server.js"
