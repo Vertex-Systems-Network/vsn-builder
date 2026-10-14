@@ -26,6 +26,8 @@ on:
       - "app/routes/app.platform-intelligence.jsx"
       - "app/utils/paid-mutation-guard.server.js"
       - "scripts/t026-mutation-inventory.mjs"
+      - "tests/t026-action-exceptions.test.mjs"
+      - "app/services/dashboard-actions.server.js"
       - "app/utils/paid-mutation-access.js"
       - "tests/paid-mutation-access.test.mjs"
       - ".github/workflows/t026-paid-mutation-unit.yml"
@@ -42,7 +44,7 @@ jobs:
         with:
           node-version: "22"
       - name: Run T026 regression tests without dependency install
-        run: node --test tests/paid-mutation-access.test.mjs
+        run: node --test tests/paid-mutation-access.test.mjs tests/t026-action-exceptions.test.mjs
       - name: Inventory all merchant route mutations
         run: node scripts/t026-mutation-inventory.mjs
       - name: Upload mutation inventory
