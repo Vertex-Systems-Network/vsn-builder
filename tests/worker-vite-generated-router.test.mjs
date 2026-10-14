@@ -15,7 +15,7 @@ test("real Vite build exports exactly synthetic root and resource route",async()
  assert.equal(routes.length,3);
  assert(routes.some(x=>x.path==="app/__vsn-auth-smoke"));
  assert(routes.some(x=>x.path==="__vsn/react-router-smoke"));
- assert(!routes.some(x=>/app\/|auth|webhook|billing|shopify/i.test(x.path||"")));
+ assert(routes.every(x=>!x.path || ["__vsn/react-router-smoke","app/__vsn-auth-smoke"].includes(x.path)), "CI fixture must not add real merchant/OAuth routes");
 });
 test("Vite-generated React Router route dispatches and unauthorized paths fail closed",async()=>{
  const probe=(await import("../workers/edge-router-vite-ci-probe.js")).default;
