@@ -1,2 +1,2 @@
 import { route } from "@react-router/dev/routes";
-export default [route("__vsn/react-router-smoke","./routes/smoke.jsx")];
+export default [route("__vsn/react-router-smoke","./routes/smoke.jsx"),route("app/__vsn-auth-smoke","./routes/auth-smoke.jsx")];
