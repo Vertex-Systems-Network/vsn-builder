@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { buildClientSchema, getIntrospectionQuery, getNamedType, isEnumType, isInputObjectType, isListType, isNonNullType, isScalarType, parse, validate } from "graphql";
+import { buildClientSchema, getIntrospectionQuery, getNamedType, isEnumType, isInputObjectType, isListType, isNonNullType, isScalarType, parse, validate, SchemaMetaFieldDef, TypeMetaFieldDef } from "graphql";
 
 const VERSION = "2026-07";
 const ENDPOINT = "https://shopify.dev/admin-graphql-direct-proxy/" + VERSION;
@@ -56,6 +56,8 @@ function renderSelection(parent, selection, fragments, visited = new Set()) {
       const key = node.alias?.value || node.name.value;
       const type = node.name.value === "__typename"
         ? JSON.stringify(parent.name)
+        : node.name.value === "__schema" ? SchemaMetaFieldDef.type
+        : node.name.value === "__type" ? TypeMetaFieldDef.type
         : parent.getFields?.()[node.name.value]?.type;
       if (!type) throw new Error("T011: unresolved output field " + parent.name + "." + node.name.value);
       const value = node.name.value === "__typename"
