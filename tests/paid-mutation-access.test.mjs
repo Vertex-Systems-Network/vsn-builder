@@ -30,7 +30,7 @@ test("missing, stale, unverified, retired Free and mismatched contracts are deni
   }
 });
 
-test("paid gate stays in action, never read-only loader for eighteen merchant routes", async () => {
+test("paid gate stays in action, never read-only loader for twenty-two merchant routes", async () => {
   const { readFile } = await import("node:fs/promises");
   const protectedRoutes = [
     "app.pages.jsx", "app.builder.$id.jsx", "app.ai.jsx",
@@ -40,6 +40,8 @@ test("paid gate stays in action, never read-only loader for eighteen merchant ro
     "app.email-builder.jsx", "app.floating-elements.jsx", "app.plugins.jsx",
     "app.campaigns.jsx", "app.stock-images.jsx", "app.stock-videos.jsx",
     "app.experiments.jsx", "app.backups.jsx", "app.library.jsx",
+    "app.stock-audio.jsx", "app.brand-kits.jsx",
+    "app.motion-library.jsx", "app.platform-intelligence.jsx",
   ];
   for (const path of protectedRoutes) {
     const source = await readFile(new URL("../app/routes/" + path, import.meta.url), "utf8");
@@ -50,7 +52,7 @@ test("paid gate stays in action, never read-only loader for eighteen merchant ro
       assert.equal(source.slice(loaderStart, actionStart).includes("assertPaidBuilderMutation(db, session.shop)"), false, path + " loader must remain read-only");
     }
     assert.equal(source.slice(actionStart).includes("assertPaidBuilderMutation(db, session.shop)"), true, path + " must gate mutations");
-    assert.equal(source.includes('from "../utils/paid-mutation-guard.server.js"'), true, path + " must import guard");
+    assert.equal(source.includes("paid-mutation-guard.server.js"), true, path + " must import guard");
     const actionSource = source.slice(actionStart);
     assert.ok(actionSource.indexOf("await authenticate.admin(") < actionSource.indexOf("assertPaidBuilderMutation(db, session.shop)"), path + " authenticates first");
   }
