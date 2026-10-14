@@ -20,6 +20,8 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+      - name: Resolve updated scoped overrides into lockfile
+        run: npm install --package-lock-only --ignore-scripts
       - name: Install locked dependencies
         run: npm ci
       - name: Apply compatible non-force lockfile fixes
@@ -33,8 +35,7 @@ jobs:
           npm audit --json > t011-postfix-all.json || true
       - name: Commit only package-lock.json to isolated branch
         run: |
-          git diff --exit-code -- package.json
-          git add -- package-lock.json
+          git add -- package.json package-lock.json
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix(deps): apply npm compatible security lockfile resolutions'
             git push origin HEAD:security/t011-partial-lockfile-remediation
