@@ -1,0 +1,49 @@
+name: T011 Latest Shopify Codegen Secure Candidate
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/t011-latest-codegen-candidate.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Resolve latest published Shopify generator in isolated runner
+        run: |
+          npm view @shopify/api-codegen-preset version
+          npm pkg set 'scripts.graphql-codegen=graphql-codegen'
+          npm install --save-dev --ignore-scripts @shopify/api-codegen-preset@latest
+          npm ls @shopify/api-codegen-preset @shopify/graphql-codegen --depth=1
+      - name: Clean install with regenerated lockfile
+        run: npm ci
+      - name: Functional GraphQL generation
+        run: npm run graphql-codegen
+      - name: Capture both npm audits and candidate package metadata
+        if: always()
+        run: |
+          npm audit --json > t011-latest-full.json || true
+          npm audit --omit=dev --json > t011-latest-production.json || true
+          npm ls @shopify/api-codegen-preset @shopify/graphql-codegen --json > t011-latest-package-graph.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t011-latest-codegen-candidate
+          path: |
+            package.json
+            package-lock.json
+            t011-latest-*.json
+            app/types/
+          if-no-files-found: warn
+      - name: Mandatory full audit no high advisories
+        run: npm audit --include=dev --audit-level=high
+      - name: Runtime compatibility
+        run: |
+          npm run typecheck
+          npm run build
