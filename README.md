@@ -55,6 +55,8 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 **Phase 1 effective GitHub config validation:** The protected, manually dispatched preflight now checks actual effective `vars.APP_ENV` and `vars.SHOPIFY_BILLING_TEST_MODE` against the requested tier, rather than comparing hardcoded expectations with themselves. Missing or wrong vars fail closed. GitHub `vars` may inherit from repository/organization, so the **selected Environment's own variable/secret inventory and branch rules are still unverified**. No real protected run, Phase 1 still **4/7**. See [eight-phase closeout plan](docs/eight-phase-closure-plan.md).
 
+**T011 Shopify GraphQL remediation checkpoint (2026-10-15):** The custom audited generator runs as `npm run graphql-codegen` from the existing source code and Shopify Admin 2026-07 schema. CI [#38654817429](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38654817429) passed actual generation of **95 operation data and variable types**, 11 input object types, generated TypeScript compilation and full audit (**0 vulnerabilities**). Source AST / direct schema CI [#38654817455](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38654817455) passed **96/96 discovered documents parsed**, **95/95 Admin operations valid**, with **one distinct Partner API operation excluded on purpose**; no unresolved static interpolation. These results are from the **unmerged integration branch** and do **not** certify hosted Shopify app readiness, Partner API schema, actual merchant sessions, Worker deployment or Staging billing. The hosted runtime/Neon blockers above remain.
+
 ## Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
@@ -65,7 +67,8 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 | Local/Dev real merchant readiness² | `[░░░░] 0/4` | **Not certified** |
 | Hosted Staging readiness³ | `[░░░░░░] 0/6` | **Not deployed** |
 | Hosted Production readiness³ | `[░░░░░░] 0/6` | **Not deployed** |
-| Mandatory full security audit | `[░] 0/1` | **BLOCKED** by dev-only `braces` advisory, [#96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) |
+| Mandatory full security audit on PR #181 | `[█] 1/1` | **PASS** at `93ceca9c`: full npm audit 0 vulnerabilities, [T011 CI #38654817429](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38654817429); other branches remain unverified |
+| Shopify Admin codegen (static documents) | `[████] 4/4` | **PASS** — 95/95 Admin GraphQL documents schema-validated, 95 generated operation types, TypeScript compilation, and 0-high full audit; 1 Partner API operation excluded by design |
 
 ¹ Seven passing CI-only capability classes: generated Worker Prisma, Neon endpoint isolation, Worker Shopify SDK, merchant CSP Web Streams SSR, signed webhook verification, tenant-scoped uninstall session revocation, and restricted HTTP Workerd routes. These use synthetic input and never establish real Shopify/Neon connectivity. [Exact code-head Workerd CI evidence](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38387490935).
 
@@ -85,7 +88,7 @@ Separate Neon Staging and Production projects each contain a default `neondb` da
 
 ### Next verified release prerequisites
 
-1. Resolve the development dependency security advisory **without bypassing the audit**; keep mandatory release CI red meanwhile.
+1. **Codegen/security gate completed on unmerged PR #181 only:** audit 0 vulnerabilities, 95/95 statically extracted Shopify Admin operations schema-validated and generated, TypeScript compiled; ensure whole PR Production Confidence and required merge checks are green before promoting. Re-run on the exact merge SHA.
 2. Implement and review the real hosted React Router Worker entry + service/asset ports, with isolated Staging bindings; never use the CI-only Workerd Worker in hosted production.
 3. Certify offline schema/migration/rollback, then apply **Staging-only** reviewed migration through protected approval and validate actual DB health.
 4. Validate signed real merchant installation/session persistence, editor, billing and webhook delivery on Staging.
