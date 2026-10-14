@@ -1,6 +1,7 @@
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { getBuilderRole, canBuilder } from "../utils/builder-permissions.js";
 import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
@@ -38,6 +39,7 @@ export async function loader({ request }) {
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   const role = getBuilderRole(session);
   if (!canBuilder(role, "settings")) return Response.json({ ok: false, error: "Only the store owner can change form security and integration settings." }, { status: 403 });
 
