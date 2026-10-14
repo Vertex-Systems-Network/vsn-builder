@@ -11,6 +11,7 @@ import { saveDashboardPreferences } from "./dashboard-preferences.server.js";
 import { saveEnterpriseSettings } from "./enterprise-hardening.server.js";
 import { saveAppSettings } from "./app-settings.server.js";
 import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/request-security.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { syncShopifySubscription } from "./shopify-subscription.server.js";
 import { saveStockProviderSettings, testStockProviderCredential } from "./stock-image-integrations.server.js";
 import { loadStockApiUsageSummary } from "./stock-api-usage.server.js";
@@ -42,6 +43,12 @@ function ticketCode() {
   return `VSN-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 }
 
+const DASHBOARD_PREBILLING_INTENTS = new Set([
+  "app-uninstall", "billing-refresh",
+  "notification-read", "notification-read-all", "notification-dismiss",
+  "support-create", "support-reply", "support-status",
+]);
+
 export async function handleDashboardAction({ request }) {
   assertTrustedMutationRequest(request);
   const { admin, session } = await authenticate.admin(request);
@@ -49,6 +56,12 @@ export async function handleDashboardAction({ request }) {
   const intent = String(formData.get("intent") || "");
   const actor = builderActor(session);
   const role = getBuilderRole(session);
+
+  // Merchants must be able to refresh billing, access support, and uninstall
+  // even when a subscription has expired. All feature writes remain paid-only.
+  if (!DASHBOARD_PREBILLING_INTENTS.has(intent)) {
+    await assertPaidBuilderMutation(db, session.shop);
+  }
 
   try {
     if (intent === "app-uninstall") {
