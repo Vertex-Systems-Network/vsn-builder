@@ -86,13 +86,6 @@ export async function loader({ request }) {
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
 		throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
 	}
-  if (process.env.NODE_ENV === "production") {
-    const paidPlan = await resolveEntitlementPlan(db, session.shop);
-    const decision = evaluatePaidMutationAccess(paidPlan, resolveInternalPlanKeyFromHandle);
-    if (!decision.allowed) {
-      return Response.json({ success: false, error: "An active verified Shopify paid subscription is required for builder changes.", code: decision.code }, { status: 403 });
-    }
-  }
 	const builderRole = getBuilderRole(session);
 	const roleAccess = await getBuilderRoleAccess(db, session.shop);
 	const permissions = getRoleActionAccess(roleAccess, builderRole).pages || {};
@@ -197,6 +190,13 @@ export async function action({ request }) {
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
 		throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
 	}
+  if (process.env.NODE_ENV === "production") {
+    const paidPlan = await resolveEntitlementPlan(db, session.shop);
+    const decision = evaluatePaidMutationAccess(paidPlan, resolveInternalPlanKeyFromHandle);
+    if (!decision.allowed) {
+      return Response.json({ success: false, error: "An active verified Shopify paid subscription is required for builder changes.", code: decision.code }, { status: 403 });
+    }
+  }
 	const builderRole = getBuilderRole(session);
 	const builderActorName = builderActor(session);
 
