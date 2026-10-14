@@ -30,12 +30,14 @@ test("missing, stale, unverified, retired Free and mismatched contracts are deni
   }
 });
 
-test("paid gate stays in action, never read-only loader for seven merchant routes", async () => {
+test("paid gate stays in action, never read-only loader for twelve merchant routes", async () => {
   const { readFile } = await import("node:fs/promises");
   const protectedRoutes = [
     "app.pages.jsx", "app.builder.$id.jsx", "app.ai.jsx",
     "app.ai-command.jsx", "app.form-settings.jsx",
     "app.widget-studio.jsx", "app.builder-panel.$panel.jsx",
+    "app.role-manager.jsx", "app.developer-studio.jsx",
+    "app.email-builder.jsx", "app.floating-elements.jsx", "app.plugins.jsx",
   ];
   for (const path of protectedRoutes) {
     const source = await readFile(new URL("../app/routes/" + path, import.meta.url), "utf8");
