@@ -25,7 +25,8 @@ for(const file of files.sort()) {
   // Inventory only; embedded templates require a real GraphQL parser before codegen.
   const patterns=[/\b(?:gql|graphql)\s*`/g,/\b(?:query|mutation|subscription|fragment)\s+[A-Za-z_][A-Za-z0-9_]*/g];
   const hits=patterns.map(pattern=>[...content.matchAll(pattern)].length);
-  if(hits.some(Boolean)) entries.push({file:relative(".",file),kind:"candidate",taggedTemplates:hits[0],operationTokens:hits[1]});
+  const shopifyMarkers=[...content.matchAll(/#graphql\b/g)].length;
+  if(hits.some(Boolean)||shopifyMarkers) entries.push({file:relative(".",file),kind:"candidate",taggedTemplates:hits[0],operationTokens:hits[1],shopifyMarkers});
 }
 const summary={scannedFiles:files.length,candidateFiles:entries.length,documentFiles:entries.filter(e=>e.kind==="document-file").length,entries};
 writeFileSync("t011-graphql-operation-inventory.json",JSON.stringify(summary,null,2)+"\n");
