@@ -6,13 +6,17 @@ on:
       - ".github/workflows/t011-codegen-isolation.yml"
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   audit-and-build:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'security/t011-dev-codegen-isolation'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: security/t011-dev-codegen-isolation
+          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -51,3 +55,11 @@ jobs:
         run: npm run security:audit
       - name: Core QA
         run: npm run qa
+      - name: Commit regenerated lockfile to experiment branch only
+        run: |
+          git diff --exit-code -- package.json
+          git add -- package-lock.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'test(T011): lock clean dependency isolation experiment'
+            git push origin HEAD:security/t011-dev-codegen-isolation
+          fi
