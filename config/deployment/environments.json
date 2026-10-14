@@ -29,7 +29,12 @@
     "cloudflare_worker": "vsn-builder-staging",
     "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed",
     "neon_project_id": "shiny-violet-61219572",
-    "neon_endpoint_host": "ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech"
+    "neon_endpoint_host": "ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech",
+    "neon_default_branch_id": "br-square-mountain-b3ij6q2s",
+    "neon_recovery_source_branch_id": "br-wandering-queen-b3mmztjy",
+    "neon_pre_migration_snapshot_id": "snap-green-bar-b3m1btfb",
+    "neon_endpoint_id": "ep-little-dream-b3g6puj2",
+    "neon_pooler_enabled": true
   },
   "production": {
     "source_branch": "main",
@@ -44,6 +49,7 @@
     "cloudflare_worker": "vsn-builder-production",
     "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed",
     "neon_project_id": "nameless-violet-68750490",
-    "neon_endpoint_host": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech"
+    "neon_endpoint_host": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech",
+    "neon_default_branch_id": "br-odd-credit-b3rzlpz9"
   }
 }
