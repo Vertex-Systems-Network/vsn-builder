@@ -1,0 +1,61 @@
+name: VSN Builder Staging Hosted Readiness
+on:
+  pull_request:
+    paths:
+      - "scripts/staging-hosted-readiness.mjs"
+      - "tests/staging-hosted-readiness.test.mjs"
+      - ".github/workflows/staging-hosted-readiness.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  readiness-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test staging safety contract
+        run: node --test tests/staging-hosted-readiness.test.mjs
+      - name: Report repository staging blockers without credentials
+        env:
+          VSN_TARGET_ENV: staging
+          VSN_STAGING_PLATFORM: cloudflare-worker
+        run: node scripts/staging-hosted-readiness.mjs
+      - name: Save non-secret staging-readiness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-hosted-readiness-audit
+          path: staging-hosted-readiness.json
+          if-no-files-found: warn
+  hosted-readiness:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check real Staging hosting and protected credentials without deployment
+        env:
+          VSN_TARGET_ENV: staging
+          VSN_STAGING_PLATFORM: cloudflare-worker
+          SHOPIFY_APP_URL: ${{ vars.SHOPIFY_APP_URL }}
+          SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+          SHOPIFY_API_SECRET: ${{ secrets.SHOPIFY_API_SECRET }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VSN_STAGING_PUBLIC_URL_VERIFIED: ${{ vars.VSN_STAGING_PUBLIC_URL_VERIFIED }}
+        run: node scripts/staging-hosted-readiness.mjs --require-ready
+      - name: Save non-secret hosted readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-hosted-runtime-evidence
+          path: staging-hosted-readiness.json
+          if-no-files-found: warn
