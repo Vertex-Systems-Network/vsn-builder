@@ -1,5 +1,6 @@
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
+import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import db from "../db.server.js";
 
 function safeJson(value) { try { return JSON.parse(value || "{}"); } catch { return {}; } }
@@ -28,6 +29,7 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
+  assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request); const form = await request.formData(); const intent=String(form.get("intent")||""); const id=String(form.get("id")||"");
   const item = id ? await db.builderFormSubmission.findFirst({ where:{ id, shop:session.shop } }) : null;
   if (id && !item) return Response.json({ok:false,error:"Submission not found."},{status:404});
