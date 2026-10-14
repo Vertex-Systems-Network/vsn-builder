@@ -13,8 +13,8 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.equal(plan.policy,"dependency_driven_evidence_first_no_phase_gating");
  assert.equal(plan.tasks.length,41);
  assert.equal(result.summary.verified,9);
- assert.equal(result.summary.in_review,5);
- assert.equal(result.summary.ready,8);
+ assert.equal(result.summary.in_review,6);
+ assert.equal(result.summary.ready,7);
  assert.equal(plan.public_shopify_apps,1);
  assert.deepEqual(plan.commercial_plans.map(p=>p.id),["starter","sliver","gold","platinum"]);
  assert(plan.commercial_plans.every(p=>p.trial_days===10));
@@ -23,12 +23,13 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
 test("unrelated workstreams run READY without an earlier phase or cloud prerequisites",()=>{
  const {rows}=inspectTaskPlan(fresh());
  const ready=new Set(rows.filter(r=>r.execution==="READY").map(r=>r.id));
- for(const id of ["T011","T013","T014","T015","T020","T024","T032","T040"])
+ for(const id of ["T011","T013","T014","T015","T024","T032","T040"])
   assert(ready.has(id),"Expected independent READY task "+id);
  for(const id of ["T018","T021","T023","T025","T029","T031","T037","T038","T041"])
   assert.equal(rows.find(r=>r.id===id).execution,"WAITING",id);
  assert.equal(rows.find(r=>r.id==="T017").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T012").execution,"IN_REVIEW");
+ assert.equal(rows.find(r=>r.id==="T020").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T027").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T026").execution,"IN_REVIEW");
 });
