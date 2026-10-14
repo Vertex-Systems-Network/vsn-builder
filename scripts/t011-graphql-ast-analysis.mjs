@@ -23,7 +23,7 @@ const add = (file, kind, value, dynamic = false) => {
       name: node.name?.value ?? null,
       operation: node.operation ?? null,
     }));
-    results.push({ file, kind, valid: true, definitions });
+    results.push({ file, kind, valid: true, definitions, document: value });
   } catch (error) {
     results.push({ file, kind, valid: false, status: "syntax-error", error: String(error.message) });
   }
