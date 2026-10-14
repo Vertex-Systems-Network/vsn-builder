@@ -44,3 +44,41 @@ jobs:
         run: |
           npm run typecheck
           npm run build
+
+  forced-remediation-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Resolve Shopify v3 preset in disposable workspace
+        run: |
+          npm pkg set 'scripts.graphql-codegen=graphql-codegen'
+          npm install --save-dev --ignore-scripts @shopify/api-codegen-preset@3.0.0
+      - name: Attempt npm-managed transitive advisory remediation in isolation
+        run: |
+          npm audit fix --package-lock-only --ignore-scripts --force || true
+          npm ci
+      - name: Preserve post-remediation security evidence
+        if: always()
+        run: |
+          npm audit --json > t011-force-trial-all-audit.json || true
+          npm audit --omit=dev --json > t011-force-trial-prod-audit.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t011-force-remediation-diagnostics
+          path: |
+            package.json
+            package-lock.json
+            t011-force-trial-*.json
+          if-no-files-found: warn
+      - name: Mandatory full security audit
+        run: npm audit --include=dev --audit-level=high
+      - name: Functional Shopify codegen and typecheck
+        run: |
+          npm run graphql-codegen
+          npm run typecheck
+          npm run build
