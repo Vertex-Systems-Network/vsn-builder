@@ -6,6 +6,7 @@ on:
       - ".graphqlrc.js"
       - "scripts/t011-codegen-compatibility.mjs"
       - "scripts/t011-graphql-document-inventory.mjs"
+      - "scripts/t011-graphql-ast-analysis.mjs"
       - ".github/workflows/t011-codegen-compatibility.yml"
   workflow_dispatch:
 permissions:
@@ -23,11 +24,15 @@ jobs:
         run: npm ci
       - name: Produce dependency-free GraphQL discovery evidence
         run: node scripts/t011-graphql-document-inventory.mjs
+      - name: Parse real GraphQL operation templates using existing dependencies
+        run: node scripts/t011-graphql-ast-analysis.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: t011-source-inventory
-          path: t011-graphql-operation-inventory.json
+          path: |
+            t011-graphql-operation-inventory.json
+            t011-graphql-ast-report.json
           if-no-files-found: warn
       - name: Require functioning Shopify GraphQL developer codegen
         run: node scripts/t011-codegen-compatibility.mjs
