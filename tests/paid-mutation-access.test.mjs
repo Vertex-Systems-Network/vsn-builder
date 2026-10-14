@@ -40,7 +40,7 @@ test("paid gate stays in action, never read-only loader for seven merchant route
   for (const path of protectedRoutes) {
     const source = await readFile(new URL("../app/routes/" + path, import.meta.url), "utf8");
     const loaderStart = source.indexOf("export async function loader(");
-    const actionStart = source.search(/export\\s+(?:async\\s+function|const)\\s+action\\b/);
+    const actionStart = source.search(/export\s+(?:async\s+function|const)\s+action\b/);
     assert.ok(actionStart >= 0, path + " requires an action");
     if (loaderStart >= 0 && loaderStart < actionStart) {
       assert.equal(source.slice(loaderStart, actionStart).includes("assertPaidBuilderMutation(db, session.shop)"), false, path + " loader must remain read-only");
@@ -54,7 +54,7 @@ test("paid gate stays in action, never read-only loader for seven merchant route
 test("server helper explicitly fails closed in production", async () => {
   const { readFile } = await import("node:fs/promises");
   const source = await readFile(new URL("../app/utils/paid-mutation-guard.server.js", import.meta.url), "utf8");
-  assert.match(source, /process\\.env\\.NODE_ENV !== "production"/);
-  assert.match(source, /evaluatePaidMutationAccess\\(plan, resolveInternalPlanKeyFromHandle\\)/);
+  assert.match(source, /process\.env\.NODE_ENV !== "production"/);
+  assert.match(source, /evaluatePaidMutationAccess\(plan, resolveInternalPlanKeyFromHandle\)/);
   assert.match(source, /status: 403/);
 });
