@@ -3,6 +3,7 @@ import { useFetcher, useLoaderData } from "react-router";
 import { Code2, Play, Save, Star, Trash2, RotateCcw, Copy, ShieldAlert } from "lucide-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { builderActor, getBuilderRole, getRoleActionAccess, isBuilderOwner } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction, canAccessBuilderSystem, getBuilderRoleAccess } from "../utils/builder-permissions.server.js";
 import { describeGraphqlOperation, executeDeveloperGraphql, loadDeveloperGraphqlStudio, mutateDeveloperQuery, saveDeveloperQuery } from "../services/developer-graphql.server.js";
@@ -61,6 +62,7 @@ export async function loader({request}) {
 export async function action({request}) {
   assertTrustedMutationRequest(request);
   const {admin,session}=await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   if(!(await canAccessBuilderSystem(db,session,"developerStudio"))) return Response.json({ok:false,error:"Developer Studio access denied."},{status:403});
   const form=await request.formData(); const intent=String(form.get("intent")||"");
   const deny=(message)=>Response.json({ok:false,intent,error:message},{status:403});
