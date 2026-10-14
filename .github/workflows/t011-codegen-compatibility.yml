@@ -1,0 +1,24 @@
+name: T011 Shopify GraphQL Codegen Compatibility
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - ".graphqlrc.js"
+      - "scripts/t011-codegen-compatibility.mjs"
+      - ".github/workflows/t011-codegen-compatibility.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-codegen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install locked root dependencies
+        run: npm ci
+      - name: Require functioning Shopify GraphQL developer codegen
+        run: node scripts/t011-codegen-compatibility.mjs
