@@ -1,0 +1,13 @@
+{
+  // No-deploy module-compatibility probe: never the staging or Live script.
+  "name": "vsn-builder-shopify-neon-bundle-ci",
+  "main": "./workers/shopify-neon-module-ci-probe.js",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "APP_ENV": "test",
+    "VSN_BUILD_INTENT": "shopify-neon-bundle-ci"
+  }
+}
