@@ -3,6 +3,13 @@ on:
   pull_request:
     paths:
       - "app/routes/app.pages.jsx"
+      - "app/routes/app.builder.$id.jsx"
+      - "app/routes/app.ai.jsx"
+      - "app/routes/app.ai-command.jsx"
+      - "app/routes/app.form-settings.jsx"
+      - "app/routes/app.widget-studio.jsx"
+      - "app/routes/app.builder-panel.$panel.jsx"
+      - "app/utils/paid-mutation-guard.server.js"
       - "app/utils/paid-mutation-access.js"
       - "tests/paid-mutation-access.test.mjs"
       - ".github/workflows/t026-paid-mutation-unit.yml"
