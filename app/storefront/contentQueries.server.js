@@ -93,12 +93,12 @@ export async function getBlogData({ admin, handle }) {
 export async function getArticleData({ admin, blogHandle, articleHandle }) {
   const data = await safeAdminData(
     admin,
-    `#graphql\nquery ArticleData($filter:String!,$query:String!){blogs(first:1,query:$filter){nodes{title handle articles(first:50,query:$query){nodes{id title handle contentHtml:body excerpt:summary publishedAt tags author{name} image{url altText}}} allArticles:articles(first:50,reverse:true){nodes{id title handle excerpt:summary publishedAt image{url altText}}}}}}`,
+    `#graphql\nquery ArticleData($filter:String!,$query:String!){blogs(first:1,query:$filter){nodes{title handle allArticles:articles(first:50,reverse:true){nodes{id title handle excerpt:summary publishedAt image{url altText}}}}} articles(first:25,query:$query){nodes{id title handle contentHtml:body excerpt:summary publishedAt tags author{name} image{url altText} blog{handle}}}}`,
     { filter: `handle:${blogHandle}`, query: `handle:${articleHandle}` },
     "article data",
   );
   const blog = data?.blogByHandle;
-  const article = blog?.articles?.nodes?.[0];
+  const article = (data?.articles?.nodes || []).find((item) => item.blog?.handle === blogHandle) || null;
   if (!article) return null;
 
   const all = blog.allArticles?.nodes || [];
