@@ -83,13 +83,8 @@ function renderSelection(parent, selection, fragments, visited = new Set()) {
 }
 function renderVariables(operation) {
   const lines = (operation.variableDefinitions || []).map((variable) => {
-    const gqlType = variable.type;
-    function fromAst(t) {
-      if (t.kind === "NonNullType") return { nonNull: true, graphType: schema.getType(t.type.name?.value) };
-      return { nonNull: false, graphType: schema.getType(t.name?.value) };
-    }
     const { typeFromAST } = graphqlHelpers;
-    const result = typeFromAST(schema, gqlType);
+    const result = typeFromAST(schema, variable.type);
     if (!result) throw new Error("T011: unresolved variable type " + variable.variable.name.value);
     const required = isNonNullType(result) && !variable.defaultValue;
     return "readonly " + JSON.stringify(variable.variable.name.value) + (required ? "" : "?") + ": " + inputType(result) + ";";
@@ -124,10 +119,11 @@ for (const item of entries) {
     operations.push({ id, file: item.file, name: operation.name?.value || null, kind: operation.operation });
   }
 }
+const renderedInputs = new Set();
 let next;
-while ((next = [...inputTypes.entries()].find(([name, type]) => !type.__t011Rendered))) {
+while ((next = [...inputTypes.entries()].find(([name]) => !renderedInputs.has(name)))) {
   const [name, type] = next;
-  type.__t011Rendered = true;
+  renderedInputs.add(name);
   const parts = Object.entries(type.getFields()).map(([key, field]) => {
     const required = isNonNullType(field.type) && field.defaultValue === undefined;
     return "readonly " + JSON.stringify(key) + (required ? "" : "?") + ": " + inputType(field.type) + ";";
