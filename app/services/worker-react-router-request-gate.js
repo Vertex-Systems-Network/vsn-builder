@@ -9,7 +9,7 @@ const SAFE_HEADERS={
   "referrer-policy":"no-referrer",
 };
 const EXPECTED_KEYS=["APP_ENV","VSN_BUILD_INTENT"];
-const ALLOWED_HOST=/^(?:localhost|127\.0\.0\.1|[a-z0-9-]+\.test)$/i;
+const ALLOWED_HOST=/^(?:localhost|127\.0\.0\.1|vsn-edge\.test)$/i;
 const PROBE_PATH="/__vsn/react-router-smoke";
 const blocked=(status=503)=>new Response(null,{status,headers:SAFE_HEADERS});
 
