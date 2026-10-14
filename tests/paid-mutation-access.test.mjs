@@ -12,6 +12,35 @@ test("trusted paid contracts allow merchant writes", () => {
     assert.equal(evaluatePaidMutationAccess(active({ subscription: { status, planHandle: "starter" } }), resolve).allowed, true);
   }
 });
+test("configured Shopify public handles map to exact paid tier", () => {
+  const mapped = (handle) => ({
+    "vsn-starter-monthly": "starter",
+    "vsn-sliver": "sliver",
+    "vsn-gold": "gold",
+    "vsn-platinum-yearly": "platinum",
+  })[handle] || null;
+  for (const [key, handle] of [
+    ["starter", "vsn-starter-monthly"],
+    ["sliver", "vsn-sliver"],
+    ["gold", "vsn-gold"],
+    ["platinum", "vsn-platinum-yearly"],
+  ]) {
+    assert.equal(evaluatePaidMutationAccess(active({
+      key,
+      subscription: { status: "trialing", planHandle: handle },
+    }), mapped).allowed, true, key);
+  }
+  assert.equal(evaluatePaidMutationAccess(active({
+    key: "starter",
+    subscription: { status: "active", planHandle: "vsn-platinum-yearly" },
+  }), mapped).allowed, false);
+  for (const handle of ["free", "core", "inactive"]) {
+    assert.equal(evaluatePaidMutationAccess(active({
+      key: "starter",
+      subscription: { status: "active", planHandle: handle },
+    }), () => "starter").allowed, false);
+  }
+});
 test("missing, stale, unverified, retired Free and mismatched contracts are denied", () => {
   const cases = [
     null, {}, active({ subscriptionMirrorTrusted: false }), active({ entitlementVerified: false }),
