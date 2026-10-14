@@ -1,52 +1,72 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import ts from "typescript";
 import { createRequire } from "node:module";
-const require=createRequire(import.meta.url);
+const require = createRequire(import.meta.url);
+const inventory = JSON.parse(readFileSync("t011-graphql-operation-inventory.json", "utf8"));
 let parse;
-let parserAvailable=true;
-try { ({ parse }=require("graphql")); }
-catch { parserAvailable=false; }
-if (!parserAvailable) {
-  const inventory=JSON.parse(readFileSync("t011-graphql-operation-inventory.json","utf8"));
-  const report={
-    status:"blocked-parser-unavailable",
-    scannedCandidates:inventory.candidateFiles,
-    parsedDocuments:0,
-    valid:0,
-    invalid:0,
-    results:[],
-    reason:"graphql parser is absent from the audited dependency tree; no GraphQL document has been syntax-validated",
-  };
-  writeFileSync("t011-graphql-ast-report.json",JSON.stringify(report,null,2)+"\\n");
-  console.log("T011 GraphQL AST analyzer blocked: parser unavailable; report generated without false validation claims.");
-  process.exit(0);
-}
-const inventory=JSON.parse(readFileSync("t011-graphql-operation-inventory.json","utf8"));
-const results=[];
-for(const row of inventory.entries){
-  const text=readFileSync(row.file,"utf8");
-  if(row.kind==="document-file"){
-    try {const ast=parse(text);results.push({file:row.file,type:"document-file",definitions:ast.definitions.map(d=>d.kind),valid:true});}
-    catch(e){results.push({file:row.file,type:"document-file",valid:false,error:String(e.message)});}
+try { ({ parse } = require("graphql")); } catch { /* audited tree might not include parser yet */ }
+const results = [];
+const isGraphqlString = (value) => /^\\s*(?:#graphql\\b|(?:query|mutation|subscription|fragment)\\b)/.test(value);
+const add = (file, kind, value, dynamic = false) => {
+  if (dynamic) {
+    results.push({ file, kind, valid: false, status: "dynamic-interpolation", reason: "Review document composition before validation" });
+    return;
+  }
+  if (!parse) {
+    results.push({ file, kind, valid: false, status: "parser-unavailable" });
+    return;
+  }
+  try {
+    const parsed = parse(value);
+    const definitions = parsed.definitions.map((node) => ({
+      kind: node.kind,
+      name: node.name?.value ?? null,
+      operation: node.operation ?? null,
+    }));
+    results.push({ file, kind, valid: true, definitions });
+  } catch (error) {
+    results.push({ file, kind, valid: false, status: "syntax-error", error: String(error.message) });
+  }
+};
+for (const entry of inventory.entries) {
+  const file = entry.file;
+  const source = readFileSync(file, "utf8");
+  if (entry.kind === "document-file") {
+    add(file, "document-file", source);
     continue;
   }
-  const kind=row.file.endsWith(".tsx")?ts.ScriptKind.TSX:row.file.endsWith(".jsx")?ts.ScriptKind.JSX:row.file.endsWith(".ts")?ts.ScriptKind.TS:ts.ScriptKind.JS;
-  const ast=ts.createSourceFile(row.file,text,ts.ScriptTarget.Latest,true,kind);
-  function walk(node){
-    if(ts.isTaggedTemplateExpression(node)&&/^(gql|graphql)$/.test(node.tag.getText(ast))){
-      const template=node.template;
-      const hasInterpolation=!ts.isNoSubstitutionTemplateLiteral(template);
-      if(hasInterpolation){results.push({file:row.file,type:"tagged",valid:false,reason:"dynamic-interpolation"});}
-      else{
-        try{const parsed=parse(template.text);results.push({file:row.file,type:"tagged",valid:true,definitions:parsed.definitions.map(d=>({kind:d.kind,name:d.name?.value||null}))});}
-        catch(e){results.push({file:row.file,type:"tagged",valid:false,error:String(e.message)});}
-      }
+  const kind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : file.endsWith(".jsx") ? ts.ScriptKind.JSX : file.endsWith(".ts") ? ts.ScriptKind.TS : ts.ScriptKind.JS;
+  const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, kind);
+  function visit(node) {
+    if (ts.isTaggedTemplateExpression(node) && /^(?:gql|graphql)$/.test(node.tag.getText(ast))) {
+      const template = node.template;
+      add(file, "tagged-template", ts.isNoSubstitutionTemplateLiteral(template) ? template.text : template.head.text, !ts.isNoSubstitutionTemplateLiteral(template));
+      return;
     }
-    ts.forEachChild(node,walk);
+    if ((ts.isNoSubstitutionTemplateLiteral(node) || ts.isStringLiteral(node)) && isGraphqlString(node.text)) {
+      add(file, "graphql-string", node.text);
+    } else if (ts.isTemplateExpression(node) && isGraphqlString(node.head.text)) {
+      add(file, "graphql-dynamic-template", node.head.text, true);
+    }
+    ts.forEachChild(node, visit);
   }
-  walk(ast);
+  visit(ast);
 }
-const report={scannedCandidates:inventory.candidateFiles,parsedDocuments:results.length,valid:results.filter(x=>x.valid).length,invalid:results.filter(x=>!x.valid).length,results};
-writeFileSync("t011-graphql-ast-report.json",JSON.stringify(report,null,2)+"\n");
-console.log("T011 GraphQL AST analysis:",JSON.stringify({scannedCandidates:report.scannedCandidates,parsedDocuments:report.parsedDocuments,valid:report.valid,invalid:report.invalid}));
-console.log("NOTE: Parsed GraphQL documents do not imply schema-validated, generated operation TypeScript types.");
+const report = {
+  status: parse ? "parsed" : "blocked-parser-unavailable",
+  scannedCandidates: inventory.candidateFiles,
+  discoveredDocuments: results.length,
+  valid: results.filter((row) => row.valid).length,
+  invalid: results.filter((row) => !row.valid).length,
+  parserAvailable: Boolean(parse),
+  results,
+};
+writeFileSync("t011-graphql-ast-report.json", JSON.stringify(report, null, 2) + "\n");
+console.log("T011 GraphQL AST:", JSON.stringify({
+  status: report.status,
+  candidateFiles: report.scannedCandidates,
+  discoveredDocuments: report.discoveredDocuments,
+  parsedValid: report.valid,
+  unvalidated: report.invalid,
+}));
+console.log("NOTE: Syntax validity is NOT Shopify Admin schema validation or generated operation type safety.");
