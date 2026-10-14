@@ -39,7 +39,14 @@ export function getShopifyPlanHandleMap() {
     const plan = COMMERCIAL_PLANS[key];
     const publicEnvName = `SHOPIFY_APP_PRICING_PLAN_${String(plan.publicKey || key).toUpperCase()}_HANDLE`;
     const legacyEnvName = `SHOPIFY_APP_PRICING_PLAN_${key.toUpperCase()}_HANDLE`;
-    const configured = normalizePricingHandle(process.env[publicEnvName]) || normalizePricingHandle(process.env[legacyEnvName]);
+    // Sliver is the owner's exact commercial plan ID; SILVER is a legacy
+    // config alias only, never a fifth Shopify public plan.
+    const olderPublicEnvName = key === "sliver" ? "SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE" : "";
+    const olderInternalEnvName = ({starter:"CORE",sliver:"PRO",gold:"CRO",platinum:"AGENCY"})[key];
+    const configured = normalizePricingHandle(process.env[publicEnvName]) ||
+      (olderPublicEnvName && normalizePricingHandle(process.env[olderPublicEnvName])) ||
+      normalizePricingHandle(process.env[legacyEnvName]) ||
+      normalizePricingHandle(process.env[`SHOPIFY_APP_PRICING_PLAN_${olderInternalEnvName}_HANDLE`]);
     return [key, configured || normalizePricingHandle(plan.shopifyHandle) || key];
   })));
 }

@@ -1,6 +1,8 @@
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
+import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { builderActor, getBuilderRole, canBuilder } from "../utils/builder-permissions.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { retireLegacyDefaultLibraryItems, serializeLibraryItem } from "../services/library-presets.server";
@@ -21,7 +23,9 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
+  assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   if (!(await canAccessBuilderEditor(db, session))) throw new Response("Your role does not have access to the visual editor.", { status: 403 });
   const role = getBuilderRole(session);
   if (!canBuilder(role, "edit")) return Response.json({ ok: false, error: "Your role cannot edit the library." }, { status: 403 });

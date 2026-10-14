@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import { captureEmailRevision, compileEmailTemplateInput, deleteEmailReusableBlock, listEmailBuilder, loadEmailCommerceCatalog, loadEmailPreviewBindings, saveEmailReusableBlock, starterInput } from "../services/email-builder.server.js";
 import { findEmailMarketplaceTemplate } from "../email/emailMarketplace.js";
@@ -28,6 +29,7 @@ export async function loader({request}){
 export async function action({request}){
   assertTrustedMutationRequest(request);
   const {session,admin}=await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   if(!(await allowed(session))) return Response.json({ok:false,error:"Your role does not have access to Email Builder."},{status:403});
   try { await ensureFeatureSchema(db,"emailBuilder"); } catch (error) {
     if (error instanceof VsnSchemaNotReadyError || isMissingDatabaseTableError(error)) return Response.json({ok:false,error:schemaRecoveryMessage(error,"Email Builder"),code:"VSN_SCHEMA_NOT_READY"},{status:503});

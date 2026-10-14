@@ -10,18 +10,22 @@ VSN generates the Shopify-hosted pricing page from the authenticated shop and ap
 
 Set `SHOPIFY_APP_HANDLE` to the App Home handle configured for the Shopify app. `SHOPIFY_APP_PRICING_URL` is an optional absolute HTTPS override. `SHOPIFY_MANAGED_PRICING_URL` is retained only as a temporary compatibility fallback.
 
-## Plan handles
+## Four paid public plans (owner-approved, 2026-10-14)
 
-Configure the Partner Dashboard plan handles to match the VSN mapping, or override them with:
+VSN | Builder is **one public Shopify app**. Development and Staging are internal test environments, not separate App Store listings. No Free plan is offered. Public Shopify plan IDs, displayed plan names, and default handles match **exactly**:
 
-- `SHOPIFY_APP_PRICING_PLAN_FREE_HANDLE=free`
-- `SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE=sliver`
-- `SHOPIFY_APP_PRICING_PLAN_GOLD_HANDLE=gold`
-- `SHOPIFY_APP_PRICING_PLAN_PLATINUM_HANDLE=platenium`
+| Public plan / canonical ID / handle | Monthly USD | Annual USD | Shopify free trial |
+| --- | ---: | ---: | ---: |
+| Starter (`starter`) | $30 | Not offered | 10 days |
+| Sliver (`sliver`) | $100 | Not offered | 10 days |
+| Gold (`gold`) | $150 | Not offered | 10 days |
+| Platinum (`platinum`) | $350 | $3,000 | 10 days |
 
-VSN intentionally preserves the Shopify handle spellings exactly as configured. The merchant-facing names are Free, Silver, Gold and Platinum, while the stable internal entitlement IDs remain `core`, `pro`, `cro` and `agency` for backward compatibility. Legacy `...CORE/PRO/CRO/AGENCY_HANDLE` environment names are still accepted, but the public plan env names above take precedence.
+`Sliver` is the intentional owner-supplied spelling. Previous internal DB keys `core/pro/cro/agency` are backward-compatible aliases only; `free` and an unknown Shopify paid handle never authorize Starter. Subscription-free merchants remain on a no-access `inactive` sentinel until a Shopify-verified trial or paid contract exists.
 
-The default Shopify handles are `free`, `sliver`, `gold`, and `platenium`.
+Environment handle names: `SHOPIFY_APP_PRICING_PLAN_STARTER_HANDLE`, `...SLIVER_HANDLE`, `...GOLD_HANDLE`, `...PLATINUM_HANDLE`. Older SILVER and internal-key env overrides are migration fallbacks, not additional public tiers. Before Live, verify exact handles and prices in the **Shopify Partner Dashboard** and complete a real billing acceptance run.
+
+Shopify App Pricing owns recurring charges and trial accounting; never fake an approved subscription locally in Production. Trial reinstallation limits are governed by Shopify. Do not submit the app while hosted runtime, branch protection, security CI, merchant OAuth, billing smoke or developer audit is blocked.
 
 ## Return contract
 

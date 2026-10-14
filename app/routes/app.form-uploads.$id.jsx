@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 
 function safeDownloadName(value) {
   return String(value || "upload").replace(/[\r\n\"]+/g, "_").slice(0, 180) || "upload";
@@ -7,6 +8,7 @@ function safeDownloadName(value) {
 
 export async function loader({ request, params }) {
   const { session } = await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "submissions"))) throw new Response("Form uploads access denied.", { status: 403 });
   const item = await db.builderFormUpload.findFirst({ where: { id: String(params.id || ""), shop: session.shop } });
   if (!item) return new Response("Not found", { status: 404 });
   return new Response(item.fileData, {

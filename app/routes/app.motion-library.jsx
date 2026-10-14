@@ -1,5 +1,7 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
+import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { canBuilder, getBuilderRole } from "../utils/builder-permissions.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { getBuiltinMotionPreset, listMotionLibrary, normalizePresetInput } from "../services/motion-library.server.js";
@@ -18,7 +20,9 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
+  assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   if (!(await canAccessBuilderEditor(db, session))) return Response.json({ ok:false, error:"Your role does not have access to Motion Library." }, { status:403 });
   const role = getBuilderRole(session);
   if (!canBuilder(role, "edit")) return Response.json({ ok:false, error:"Your role cannot edit animations." }, { status:403 });

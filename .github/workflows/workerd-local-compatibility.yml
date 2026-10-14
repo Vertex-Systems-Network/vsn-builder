@@ -1,0 +1,162 @@
+name: VSN Cloudflare Workerd Local SDK Compatibility (No Deploy)
+on:
+  push:
+    branches: [feat/builder-local-workerd-sdk-compat-20261013, fix/builder-workerd-runtime-probe-20261013, feat/builder-workerd-neon-client-lifecycle-20261013]
+  pull_request:
+    branches: [feat/builder-workerd-neon-client-lifecycle-20261013, test/builder-workerd-ssr-acceptance-20261013, security/builder-neon-endpoint-isolation-20261013, test/builder-workerd-real-shopify-csp-20261013, test/builder-workerd-signed-shopify-webhook-20261013, security/builder-neon-direct-migration-tier-guard-20261013, ci/builder-audit-gate-qa-continuity-20261013, feat/builder-workerd-uninstall-session-revoke-20261013, security/builder-uninstall-reinstall-fence-20261013, feat/builder-install-generation-schema-20261013, feat/builder-transactional-install-session-storage-20261013, security/builder-session-resurrection-hardening-20261013, test/builder-real-sqlite-install-rollback-20261013, test/builder-ephemeral-postgres-transaction-20261013, security/builder-uninstall-proof-required-20261013, feat/builder-worker-shopify-admin-auth-gate-20261013, security/builder-admin-mutation-row-lock-20261013, security/builder-post-transaction-error-rollback-20261013, security/builder-admin-expired-session-guard-20261013, security/builder-admin-response-commit-guard-20261013, security/builder-admin-post-response-stream-guard-20261013, security/builder-admin-post-stream-timeout-20261013, feat/builder-eight-phase-closure-sequence-20261013, fix/builder-phase1-identity-preflight-20261013, audit/builder-phase1-cloud-binding-inventory-20261013, ci/builder-phase1-protected-github-preflight-20261013, audit/builder-phase1-github-branch-protection-20261013, security/builder-phase1-scope-boundaries-three-tier-20261013, security/builder-phase1-host-identity-url-guard-20261013, security/builder-phase1-config-var-attestation-20261013, fix/builder-phase1-canonical-billing-flag-20261014, security/builder-phase1-full-hosted-identity-parity-20261014, security/builder-phase1-retire-legacy-preflight-20261014, feat/builder-paid-only-four-tier-shopify-pricing-20261014]
+    paths:
+      - "workers/**"
+      - "app/services/**"
+      - "app/config/**"
+      - "app/routes/app.plans.jsx"
+      - "tests/builder-four-paid-plans.test.mjs"
+      - "scripts/milestone-q5*-*.mjs"
+      - "scripts/phase16-commercialization-audit.mjs"
+      - "config/deployment/environments.json"
+      - "tests/worker-neon-factory.test.mjs"
+      - "tests/worker-real-shopify-sdk.test.mjs"
+      - "tests/worker-shopify-webhook-gate.test.mjs"
+      - "tests/worker-uninstall-session-revoke.test.mjs"
+      - "tests/worker-install-generation-schema.test.mjs"
+      - "tests/worker-shopify-install-session-storage.test.mjs"
+      - "tests/worker-install-lifecycle-readiness.test.mjs"
+      - "tests/worker-shopify-install-sqlite-real.test.mjs"
+      - "tests/worker-shopify-install-postgres-real.test.mjs"
+      - "tests/worker-shopify-admin-gate.test.mjs"
+      - "tests/worker-shopify-admin-mutation.test.mjs"
+      - "tests/phase-closure-check.test.mjs"
+      - "config/project/phase-closure-sequence.json"
+      - "prisma/**"
+      - "scripts/verify-prisma-worker-client.mjs"
+      - "scripts/dev-local-workerd-smoke.mjs"
+      - "scripts/environment-contract.mjs"
+      - "tests/environment-contract.test.mjs"
+      - "scripts/shopify-three-tier-identity-check.mjs"
+      - "tests/shopify-three-tier-identity-check.test.mjs"
+      - "scripts/phase1-cloud-observation-check.mjs"
+      - "config/project/phase1-cloud-observation.json"
+      - "tests/phase1-cloud-observation-check.test.mjs"
+      - "tests/phase1-protected-identity-preflight.test.mjs"
+      - "tests/phase1-github-protection-observation-check.test.mjs"
+      - "scripts/phase1-github-protection-observation-check.mjs"
+      - "config/project/phase1-github-protection-observation.json"
+      - ".github/workflows/phase1-protected-identity-preflight.yml"
+      - ".github/workflows/hosted-environment-secret-inventory.yml"
+      - "tests/hosted-neon-url-policy.test.mjs"
+      - ".github/workflows/ci.yml"
+      - "tests/ci-audit-gate-continuity.test.mjs"
+      - ".github/workflows/workerd-local-compatibility.yml"
+permissions:
+  contents: read
+concurrency:
+  group: vsn-workerd-local-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  local-workerd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    services:
+      # Disposable local service only: NEVER Neon or Cloudflare credentials.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vsn_ci
+          POSTGRES_PASSWORD: isolated-only-password
+          POSTGRES_DB: vsn_builder_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vsn_ci -d vsn_builder_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      APP_ENV: development
+    steps:
+      - name: Checkout immutable code without write token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Install exact app lockfile
+        run: npm ci
+      - name: Check production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Generate independent PostgreSQL Worker Prisma Client, offline
+        env:
+          DATABASE_URL: postgresql://dummy:unused@localhost:5432/unused
+          DIRECT_URL: postgresql://dummy:unused@localhost:5432/unused
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Verify Edge/Node Prisma Client isolation and actual generated models
+        run: node scripts/verify-prisma-worker-client.mjs --generated
+      - name: Recheck Shopify SDK and Neon factory Node compatibility
+        run: |
+          node --test tests/builder-four-paid-plans.test.mjs
+          node --test tests/hosted-neon-url-policy.test.mjs
+          node --test tests/ci-audit-gate-continuity.test.mjs
+          node --test tests/worker-neon-factory.test.mjs
+          node --test tests/worker-real-shopify-sdk.test.mjs
+          node --test tests/worker-shopify-webhook-gate.test.mjs
+          node --test tests/worker-uninstall-session-revoke.test.mjs
+          node --test tests/worker-install-generation-schema.test.mjs
+          node --test tests/worker-shopify-install-session-storage.test.mjs
+          node --test tests/worker-install-lifecycle-readiness.test.mjs
+          node --test tests/worker-shopify-admin-gate.test.mjs
+          node --test tests/worker-shopify-admin-mutation.test.mjs
+          node --test tests/phase-closure-check.test.mjs
+          node --test tests/environment-contract.test.mjs
+          node --test tests/shopify-three-tier-identity-check.test.mjs
+          node --test tests/phase1-cloud-observation-check.test.mjs
+          node --test tests/phase1-protected-identity-preflight.test.mjs
+          node --test tests/phase1-github-protection-observation-check.test.mjs
+          node scripts/phase1-github-protection-observation-check.mjs
+          node scripts/phase1-cloud-observation-check.mjs
+          node scripts/phase-closure-check.mjs --format=markdown
+          node scripts/verify-prisma-environment-parity.mjs
+      - name: Verify paid-only Q5 billing lifecycle and commercialization regressions
+        run: |
+          node scripts/milestone-q51-shopify-app-pricing-foundation-audit.mjs
+          node scripts/milestone-q52-shopify-subscription-sync-audit.mjs
+          node scripts/milestone-q53-entitlement-engine-audit.mjs
+          node scripts/milestone-q54-billing-lifecycle-ux-audit.mjs
+          node scripts/milestone-q55-billing-production-lifecycle-audit.mjs
+          node scripts/phase16-commercialization-audit.mjs
+      - name: Certify actual Prisma SQLite install generation, rollback and stale-session denial
+        env:
+          DATABASE_URL: file:./worker-install-fence-ci.sqlite
+        run: |
+          npm run prisma -- migrate deploy
+          node --test tests/worker-shopify-install-sqlite-real.test.mjs
+      - name: Certify real PostgreSQL migration, row lock, transaction rollback and merchant isolation
+        env:
+          DATABASE_URL: postgresql://vsn_ci:isolated-only-password@127.0.0.1:5432/vsn_builder_ci?schema=public
+          DIRECT_URL: postgresql://vsn_ci:isolated-only-password@127.0.0.1:5432/vsn_builder_ci?schema=public
+        run: |
+          npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+          node --test tests/worker-shopify-install-postgres-real.test.mjs
+      - name: Preserve TypeScript application compatibility with generated Edge code
+        run: npm run typecheck
+      - name: Install isolated Wrangler 4.149.0 runner tooling, not tracked
+        run: |
+          npm exec --yes --package=wrangler@4.149.0 -- wrangler --version
+          git diff --exit-code -- package.json package-lock.json
+      - name: Assert Workerd test has no hosted credentials or API access
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DATABASE_URL:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Compile SDK and test real local Cloudflare Workerd over HTTP
+        run: node scripts/dev-local-workerd-smoke.mjs
+      - name: Reject actual hosted Worker/Shopify deploy configuration
+        run: |
+          test ! -e workers/app.js
+          test ! -e wrangler.staging.jsonc
+          test ! -e wrangler.production.jsonc

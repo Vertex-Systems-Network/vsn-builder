@@ -1,6 +1,8 @@
 import { Form, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
+import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { applyExperimentVariant } from "../services/experiment-engine.server.js";
 import { experimentVariantStats, EXPERIMENT_GOAL_TYPES, EXPERIMENT_TARGET_TYPES } from "../builder/experimentSystem.js";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
@@ -51,7 +53,9 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
+  assertTrustedMutationRequest(request);
   const { admin, session } = await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
   const experimentId = String(form.get("experimentId") || "");

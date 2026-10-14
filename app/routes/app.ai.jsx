@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server.js";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/request-security.server.js";
 import { aiUsageStatus, runAiBuilder } from "../services/ai-builder.server.js";
@@ -74,6 +75,7 @@ export async function action({ request }) {
   assertTrustedMutationRequest(request);
   if (!aiEnabled()) return Response.json({ ok: false, code: "AI_DISABLED", error: "AI Builder is disabled." }, { status: 404 });
   const { session } = await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   if (!(await canAccessBuilderEditor(db, session))) return Response.json({ ok: false, error: "Your role cannot use AI Builder." }, { status: 403 });
   if (!process.env.OPENAI_API_KEY) return Response.json({ ok: false, code: "AI_NOT_CONFIGURED", error: "AI Builder is not configured for this developer environment. Add OPENAI_API_KEY to your .env file and restart Shopify CLI." }, { status: 503 });
 

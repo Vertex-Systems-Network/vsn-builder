@@ -1,0 +1,27 @@
+// Shared, fail-closed predicate for production merchant mutations.
+// A role permission is not proof of Shopify billing entitlement.
+const PUBLIC_PAID_PLANS = new Set(["starter", "sliver", "gold", "platinum"]);
+export function evaluatePaidMutationAccess(plan, resolveHandle) {
+  const subscription = plan?.subscription;
+  const status = String(subscription?.status || "");
+  const paidState = ["active", "trialing", "canceling"].includes(status);
+  const handle = subscription?.planHandle;
+  const resolved = handle && typeof resolveHandle === "function" ? resolveHandle(handle) : null;
+  // A public Shopify pricing handle can be customized (for example
+  // "vsn-starter-monthly"). Resolve it through the trusted current Shopify
+  // handle map; do not require the literal public tier name as the handle.
+  // Explicitly reject retired Free/Core identifiers, even if an old resolver
+  // were to map them to a paid tier.
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
+  const canonicalTier = String(plan?.key || "").trim().toLowerCase();
+  const retiredHandle = new Set(["free", "core", "inactive"]).has(normalizedHandle);
+  const tierMatches = Boolean(
+    normalizedHandle &&
+    !retiredHandle &&
+    PUBLIC_PAID_PLANS.has(canonicalTier) &&
+    resolved === canonicalTier
+  );
+  const trusted = plan?.subscriptionMirrorTrusted === true && plan?.entitlementVerified === true;
+  const allowed = Boolean(trusted && paidState && tierMatches);
+  return { allowed, code: allowed ? "VSN_ENTITLEMENT_ALLOWED" : "VSN_PAID_SUBSCRIPTION_REQUIRED" };
+}

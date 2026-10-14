@@ -1,4 +1,7 @@
 import { authenticate } from "../shopify.server";
+import db from "../db.server.js";
+import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
+import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 
 function json(data, status = 200) {
   return Response.json(data, { status });
@@ -294,6 +297,7 @@ function mapResolvedFiles(requestedIds, candidates = []) {
 
 export async function loader({ request }) {
   const { admin, session } = await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "pages"))) throw new Response("Resource access denied.", { status: 403 });
   const url = new URL(request.url);
   const mode = url.searchParams.get("mode") || "";
 
@@ -317,7 +321,9 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
+  assertTrustedMutationRequest(request);
   const { admin, session } = await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "pages"))) throw new Response("Resource access denied.", { status: 403 });
   let payload;
   try {
     payload = await request.json();

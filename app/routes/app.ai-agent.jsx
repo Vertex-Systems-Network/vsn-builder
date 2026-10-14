@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server.js";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { builderActor, getBuilderRole } from "../utils/builder-permissions.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/request-security.server.js";
@@ -39,6 +40,7 @@ export async function action({ request }) {
   if (!aiEnabled()) return Response.json({ ok: false, code: "AI_DISABLED", error: "AI Builder is disabled." }, { status: 404 });
 
   const { session, admin } = await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   if (!(await canAccessBuilderEditor(db, session))) {
     return Response.json({ ok: false, code: "AI_AGENT_FORBIDDEN", error: "Your role cannot use the editor Agent." }, { status: 403 });
   }

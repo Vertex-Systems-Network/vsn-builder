@@ -1,6 +1,7 @@
 import { isRouteErrorResponse, useFetcher, useLoaderData, useRouteError } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { builderActor, canBuilder, getBuilderRole } from "../utils/builder-permissions.js";
 import { cleanupBuilderData } from "../utils/cleanup.server";
 import { VSN_BASELINE } from "../config/baseline.js";
@@ -412,6 +413,12 @@ export async function action({ request }) {
   const actor = builderActor(session);
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
+  // Keep basic onboarding, diagnostics and data-retention cleanup accessible
+  // without billing. All editor, token, restoration and enterprise writes are paid.
+  const accessibleWithoutPaidPlan = new Set([
+    "save-onboarding", "run-diagnostics", "run-cleanup", "clear-request-logs",
+  ]);
+  if (!accessibleWithoutPaidPlan.has(intent)) await assertPaidBuilderMutation(db, session.shop);
   const deny = (message) => Response.json({ success: false, error: message }, { status: 403 });
 
   if (intent === "save-tokens") {

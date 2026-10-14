@@ -1,6 +1,9 @@
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
+import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
+import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { ONBOARDING_TRACKS, onboardingStatus, seedDemoWorkspace } from "../services/commercialization.server.js";
 
 function parse(v,f={}){try{return JSON.parse(v||"")||f}catch{return f}}
@@ -8,17 +11,21 @@ async function loadState(shop){const setting=await db.builderShopSetting.findUni
 async function saveState(shop,next){await db.builderShopSetting.upsert({where:{shop},create:{shop,onboardingJson:JSON.stringify(next)},update:{onboardingJson:JSON.stringify(next)}});return next;}
 
 export async function loader({request}){
-  const{session}=await authenticate.admin(request);const state=await loadState(session.shop);
+  const{session}=await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "onboarding"))) throw new Response("Resource access denied.", { status: 403 });const state=await loadState(session.shop);
   return{scope:session.scope||"",state,tracks:ONBOARDING_TRACKS,progress:await onboardingStatus(db,session.shop,state),developerMode:process.env.NODE_ENV!=="production"};
 }
 
 export async function action({request}){
-  const{session}=await authenticate.admin(request);const form=await request.formData();const intent=String(form.get("intent")||"toggle");const state=await loadState(session.shop);
+  assertTrustedMutationRequest(request);
+  const{session}=await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "onboarding"))) throw new Response("Resource access denied.", { status: 403 });const form=await request.formData();const intent=String(form.get("intent")||"toggle");const state=await loadState(session.shop);
   if(intent==="select-track"){
     const goal=String(form.get("goal")||"");if(!ONBOARDING_TRACKS.some((row)=>row.key===goal))return Response.json({ok:false,error:"Choose a valid onboarding goal."},{status:400});
     const next=await saveState(session.shop,{...state,goal});return Response.json({ok:true,intent,state:next,progress:await onboardingStatus(db,session.shop,next),message:`${ONBOARDING_TRACKS.find((row)=>row.key===goal)?.label} workflow selected.`});
   }
   if(intent==="seed-demo"){
+    await assertPaidBuilderMutation(db, session.shop);
     const goal=String(form.get("goal")||state.goal||ONBOARDING_TRACKS[0].key);const result=await seedDemoWorkspace(db,session.shop,goal);const next=await saveState(session.shop,{...state,goal,demoSeeded:true,demoSeededAt:new Date().toISOString()});
     await db.builderAuditLog.create({data:{shop:session.shop,action:"onboarding.demo_seeded",details:JSON.stringify({goal,created:result.created.map((row)=>row.id)})}}).catch(()=>{});
     return Response.json({ok:true,intent,state:next,progress:await onboardingStatus(db,session.shop,next),created:result.created,message:`Developer-safe demo workspace prepared for ${result.track.label}. Nothing was published to Shopify.`});

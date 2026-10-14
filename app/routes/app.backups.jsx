@@ -1,6 +1,7 @@
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { getFeatureDecision } from "../services/entitlements.server.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 
@@ -83,6 +84,7 @@ export async function loader({ request }) {
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   const form = await request.formData();
   if (String(form.get("intent")) !== "restore") return Response.json({ ok: false }, { status: 400 });
   const entitlement = await getFeatureDecision(db, session.shop, "backups");

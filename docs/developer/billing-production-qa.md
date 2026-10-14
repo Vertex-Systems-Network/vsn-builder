@@ -1,44 +1,22 @@
-# Billing Production Lifecycle QA — Q5.5
+# Billing Production Lifecycle QA — Paid-only Q5.5 contract
 
-Q5.5 is the production-lifecycle hardening layer for Shopify App Pricing. It keeps the merchant-facing plan names **Free / Silver / Gold / Platinum** while preserving the exact Shopify handles `free`, `sliver`, `gold`, and `platenium`.
+The merchant-approved public tiers are **Starter ($30/mo), Sliver ($100/mo), Gold ($150/mo), Platinum ($350/mo or $3,000/year)**. Each has a **10-day Shopify-managed trial**. Exact Partner handles are `starter/sliver/gold/platinum`. There is no public Free plan.
 
 ## Authority rules
 
-1. `activeSubscription(appId, shopId)` is the canonical current contract.
-2. Historical subscription events provide lifecycle context such as scheduled cancellation, frozen, canceled, and unfrozen.
-3. A historical plan handle never overrides an active contract handle.
-4. Unknown or ambiguous active handles fail closed to Free.
-5. Shopify pricing-return query parameters remain untrusted until Partner API verification succeeds.
+1. Only the Shopify Partner API `activeSubscription(appId, shopId)`, verified for the authenticated store, can grant a paid entitlement or trial.
+2. Historical subscription events never override the current active plan item.
+3. Unknown, ambiguous, Free (retired handle), canceled, frozen and expired/untrusted states fail closed to `inactive` with zero entitlement quota.
+4. Pending cancellation retains the paid tier until the verified effective end, then transitions to `inactive`.
+5. Shopify pricing-return URL parameters remain untrusted.
+6. Historical local `core/pro/cro/agency` rows are migration aliases; remap and verify real Partner handles before using them.
+7. Sliver is the exact merchant-approved spelling; it is not `silver`. Platinum handle is `platinum`, not historical `platenium`.
 
-## Lifecycle matrix locked by Q5.5
+## Acceptance matrix
 
-The dedicated `qa:q55` suite exercises:
+Tests cover first install with no contract, verified Starter, Sliver, Gold, Platinum, trialing paid plan, Platinum yearly billing, upgrade/downgrade, cancellation scheduling/effective date, frozen/unfrozen, stale/unknown handles, Shopify shop identity mismatch, retryable 429/5xx errors, bounded retries and reinstall after session cleanup.
 
-- first install with no active contract → Free / inactive
-- verified Free contract (`free`)
-- Silver (`sliver`)
-- immediate Silver → Gold upgrade
-- Platinum (`platenium`)
-- pending Platinum → Gold downgrade
-- billing-period-only pending update
-- scheduled cancellation while paid access remains active
-- cancellation effective → Free
-- paid contract canceled followed by active Free contract
-- frozen paid subscription → Free fail-closed
-- unfrozen paid subscription → paid entitlement restored
-- trial subscription
-- unknown and ambiguous active plan handles → Free fail-closed
-- store identity mismatch rejection
-- temporary Partner API `429` retry and recovery
-- retryable GraphQL throttling recovery
-- non-retryable `401` failure
-- reinstall bootstrap after the local subscription mirror was deleted
-
-## Reinstall behavior
-
-The app-uninstalled lifecycle deletes VSN-owned merchant data, including the local `BuilderSubscription` mirror and stored sessions. On reinstall, the authenticated app shell has no local billing row, so subscription sync cannot use a fresh-cache shortcut and must rebuild the mirror from Shopify's Partner API. The local mirror is therefore disposable; it is never the commercial source of truth.
-
-## Retry controls
+The app-uninstalled lifecycle deletes VSN-owned merchant data and its local subscription mirror. On reinstall it must re-query Shopify; a cached row is never commercial authority.
 
 ```env
 SHOPIFY_PARTNER_API_TIMEOUT_MS=8000
@@ -46,8 +24,4 @@ SHOPIFY_PARTNER_API_RETRY_COUNT=2
 SHOPIFY_PARTNER_API_RETRY_BASE_MS=250
 ```
 
-Retries are bounded to protect request latency. `Retry-After` is honored for HTTP 429 when available (with a short safety cap). Partner credentials remain server-only.
-
-## Production gate
-
-Q5.5 does not create or cancel Shopify billing contracts. Merchant plan management stays on Shopify App Pricing. The release gate validates the lifecycle matrix with deterministic mocked Partner API responses; a real Partner API smoke still requires the deployment's own Partner organization token and an eligible test/development store.
+A green synthetic QA result does not certify real billing. Live release requires a working hosted app, Shopify Partner API access, actual protected billing/merchant E2E, all mandatory security audits and reviewed promotion from Staging. Only the single **VSN | Builder** Live application will be offered for App Store review; Development/Staging are internal.
