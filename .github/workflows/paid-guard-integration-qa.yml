@@ -11,7 +11,11 @@ on:
       - "tests/paid-mutation-access.test.mjs"
       - "tests/t026-action-exceptions.test.mjs"
       - "scripts/milestone-g-engineering-audit.mjs"
+      - "scripts/milestone-q51-shopify-app-pricing-foundation-audit.mjs"
+      - "scripts/milestone-q52-shopify-subscription-sync-audit.mjs"
       - "scripts/milestone-q53-entitlement-engine-audit.mjs"
+      - "scripts/milestone-q54-billing-lifecycle-ux-audit.mjs"
+      - "scripts/milestone-q55-billing-production-lifecycle-audit.mjs"
       - "app/components/dashboard/pages/Pricing.jsx"
   workflow_dispatch:
 permissions:
@@ -29,8 +33,13 @@ jobs:
         run: node --test tests/builder-four-paid-plans.test.mjs tests/paid-mutation-access.test.mjs tests/t026-action-exceptions.test.mjs
       - name: Ensure Milestone G plan UX and authority contracts are still met
         run: node scripts/milestone-g-engineering-audit.mjs
-      - name: Verify Q5.3 paid entitlement lifecycle and quotas
-        run: node scripts/milestone-q53-entitlement-engine-audit.mjs
+      - name: Verify Q5.1-Q5.5 Shopify-managed pricing lifecycle contracts
+        run: |
+          node scripts/milestone-q51-shopify-app-pricing-foundation-audit.mjs
+          node scripts/milestone-q52-shopify-subscription-sync-audit.mjs
+          node scripts/milestone-q53-entitlement-engine-audit.mjs
+          node scripts/milestone-q54-billing-lifecycle-ux-audit.mjs
+          node scripts/milestone-q55-billing-production-lifecycle-audit.mjs
       - name: Inventory all app mutation actions
         run: node scripts/t026-mutation-inventory.mjs
       - name: Review JavaScript syntax in policy and guard modules
