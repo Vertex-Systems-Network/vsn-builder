@@ -1,6 +1,8 @@
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
+import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { builderActor, getBuilderRole } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 import { getPlan, getPlanUsage } from "../utils/plan.server.js";
@@ -17,7 +19,9 @@ export async function loader({request}) {
 }
 
 export async function action({request}) {
-  const {session}=await authenticate.admin(request); if(!(await canAccessBuilderAction(db,session,"marketplace","browse")))return Response.json({ok:false,error:"Marketplace access denied."},{status:403});
+  assertTrustedMutationRequest(request);
+  const {session}=await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop); if(!(await canAccessBuilderAction(db,session,"marketplace","browse")))return Response.json({ok:false,error:"Marketplace access denied."},{status:403});
   const role=getBuilderRole(session); const form=await request.formData(); const intent=String(form.get("intent")||""); const catalogId=String(form.get("catalogId")||"");
   if(!catalogId)return Response.json({ok:false,error:"Template ID is required."},{status:400});
   if(intent==="favorite"){
