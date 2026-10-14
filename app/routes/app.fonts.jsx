@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { getFontCatalog, getCustomFontCatalog } from "../services/font-registry.server.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
@@ -18,6 +19,7 @@ async function serializedRows(shop, deletedAt){
 }
 export async function loader({request}){
   const {session}=await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "fonts"))) throw new Response("Resource access denied.", { status: 403 });
   const url=new URL(request.url);
   const mode=url.searchParams.get("mode");
   if(mode==="picker") return Response.json({ok:true,custom:await serializedRows(session.shop,null)});
@@ -31,6 +33,7 @@ export async function loader({request}){
 export async function action({request}){
   assertTrustedMutationRequest(request);
   const {session}=await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "fonts"))) throw new Response("Resource access denied.", { status: 403 });
   await assertPaidBuilderMutation(db, session.shop);let form;try{form=await request.formData();}catch(error){console.error("VSN font upload form parse failed:",error);return Response.json({ok:false,error:"The upload could not be read. Choose the file again; if it still fails, check the file size and restart the development server."},{status:400});}const intent=String(form.get('intent')||'');const id=String(form.get('id')||'');
   const existing=id?await db.builderCustomFont.findFirst({where:{id,shop:session.shop}}):null;
   if(["delete","trash"].includes(intent)){
