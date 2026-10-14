@@ -10,6 +10,7 @@ import PageEditor from "../components/editor/PageEditor";
 import PolarisIcon from "../components/ui/PolarisIcon";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { builderActor, getBuilderRole, getRoleActionAccess } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction, getBuilderRoleAccess } from "../utils/builder-permissions.server.js";
 import { finishObservation, startObservation } from "../utils/observability.server";
@@ -563,6 +564,7 @@ export async function action({
   assertTrustedMutationRequest(request);
 	const { admin, session } =
 		await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view the visual editor.", { status: 403 });
 
 	const builderRole = getBuilderRole(session);
