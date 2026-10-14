@@ -2,6 +2,7 @@ import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 
 function safeJson(value) { try { return JSON.parse(value || "{}"); } catch { return {}; } }
 function compactValue(value) { if (Array.isArray(value)) return value.join(", "); if (value && typeof value === "object") return value.name ? `${value.name} (${value.size || 0} bytes)` : JSON.stringify(value); return String(value ?? ""); }
@@ -30,7 +31,10 @@ export async function loader({ request }) {
 
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
-  const { session } = await authenticate.admin(request); const form = await request.formData(); const intent=String(form.get("intent")||""); const id=String(form.get("id")||"");
+  const { session } = await authenticate.admin(request); const form = await request.formData(); const intent=String(form.get("intent")||"");
+  // Keep merchant data deletion available after cancellation for privacy.
+  if (intent !== "delete") await assertPaidBuilderMutation(db, session.shop);
+  const id=String(form.get("id")||"");
   const item = id ? await db.builderFormSubmission.findFirst({ where:{ id, shop:session.shop } }) : null;
   if (id && !item) return Response.json({ok:false,error:"Submission not found."},{status:404});
   if (intent === "read") await db.builderFormSubmission.update({ where:{id}, data:{readAt:new Date()} });
