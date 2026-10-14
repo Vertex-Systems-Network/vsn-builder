@@ -1,6 +1,7 @@
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { canBuilder, getBuilderRole } from "../utils/builder-permissions.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
 import { FALLBACK_GOOGLE_FONTS, SYSTEM_FONTS } from "../data/font-catalog.js";
@@ -24,7 +25,8 @@ export async function loader({request}){
 }
 
 export async function action({request}){
-  const {session}=await authenticate.admin(request);if(!(await canAccessBuilderEditor(db,session)))return Response.json({ok:false,error:"Brand Kit access denied."},{status:403});
+  const {session}=await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);if(!(await canAccessBuilderEditor(db,session)))return Response.json({ok:false,error:"Brand Kit access denied."},{status:403});
   const role=getBuilderRole(session);if(!canBuilder(role,"edit"))return Response.json({ok:false,error:"Your role cannot change Brand Kits."},{status:403});
   const form=await request.formData();const intent=safe(form.get("intent"));const id=safe(form.get("id"));
   if(intent==="extract-profile"){
