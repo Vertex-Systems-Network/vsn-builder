@@ -27,6 +27,28 @@ jobs:
         run: |
           npm audit fix --dry-run --json > audit-fix-dry-run.json || true
           npm ls proxy-addr brace-expansion compression morgan source-map-js --all > dependency-tree.txt || true
+      - name: Apply compatible fixes on disposable runner only
+        shell: bash
+        run: |
+          npm audit fix --package-lock-only --ignore-scripts > remediation-install.log 2>&1 || true
+          npm audit --omit=dev --json > audit-production-after.json || true
+          npm audit --json > audit-after.json || true
+          git diff -- package.json package-lock.json > remediation.patch
+          git status --short > remediation-status.txt
+      - name: Upload proposed lockfile and audit comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: t011-proposed-security-lockfile
+          path: |
+            package.json
+            package-lock.json
+            remediation.patch
+            remediation-status.txt
+            remediation-install.log
+            audit-production-after.json
+            audit-after.json
+          if-no-files-found: error
       - name: Produce remediation artifacts
         if: always()
         uses: actions/upload-artifact@v4
