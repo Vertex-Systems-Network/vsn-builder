@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import probe from "../workers/edge-react-router-ci-probe.js";
 const request=(path)=>new Request("https://vsn-edge.test"+path);
-test("real React Router framework module is compiled but incomplete route build FAILS CLOSED",async()=>{
+test("real React Router framework runs a synthetic one-route resource loader, while merchant paths FAIL CLOSED",async()=>{
  for(const path of [
   "/app","/app/pages","/auth/callback","/webhooks/app/uninstalled",
   "/__vsn/react-router-smoke?shop=attacker",
@@ -20,8 +20,11 @@ test("real React Router framework module is compiled but incomplete route build 
  const result=await probe.fetch(request("/__vsn/react-router-smoke"),{
   APP_ENV:"test",VSN_BUILD_INTENT:"react-router-ci",
  });
- assert.equal(result.status,503,"An empty test build must never become a merchant-ready server");
- assert.equal(await result.text(),"");
+ assert.equal(result.status,200,"A synthetic one-route real React Router loader must respond");
+ const body=await result.text();
+ assert.match(body,/real React Router loader CI proof/);
+ assert.equal(result.headers.get("set-cookie"),null);
+ assert.equal(result.headers.get("content-security-policy"),"default-src 'none'; frame-ancestors 'none'");
 });
 test("Wrangler preview cannot use hosted Staging or Production identities",()=>{
  const source=readFileSync("wrangler.edge-router-ci.jsonc","utf8");
