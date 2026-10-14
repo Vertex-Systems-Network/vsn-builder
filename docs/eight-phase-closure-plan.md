@@ -139,3 +139,10 @@ node scripts/phase-closure-check.mjs --require-closed=1
 The last command is **expected to return nonzero** until Phase 1 is legitimately closed. The local Workerd GitHub Actions job runs the non-mutating policy and regression checks along with application tests.
 
 After this phase is genuinely closed, mark Phase 2 `in_progress` and continue its outstanding merchant/install/browser checks; progress responses still show all eight rows.
+
+
+## Targeted Phase 3 / Phase 4 shadow migration and gated Worker batch (2026-10-14)
+
+The owner temporarily prioritized implementation work for Phases 3 and 4 before returning to Phase 1 and billing. On a disposable branch **inside Staging's Neon project only**, 171 repository SQL statements were applied transactionally, yielding 52 tables, 168 indexes and 477 constraints. A synthetic installation/Shopify Session transaction was rolled back with both row counts returning to zero. **No Prisma migration history or main Staging/Production schema was applied** by this test. A protected, backup-gated Staging-only migration workflow was added but not executed; GitHub `development` remains unprotected and mandatory dependency audit issue #96 remains open.
+
+A hosted Worker entry with isolated non-secret Staging/Production Wrangler configs was added for liveness, database schema check and official Shopify verified-session testing. **The real React Router merchant app/Shopify OAuth/editor routes remain HTTP 503**; both public Worker domains and cloud secrets remain unconfigured, and no deployed Worker or real merchant smoke is proven. Read the complete [Phase 3/4 audit](phase3-4-hosted-acceptance-20261014.md). The 3/5 and 1/4 evidence counts are unchanged. No phase closed.
