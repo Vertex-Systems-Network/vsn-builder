@@ -65,3 +65,15 @@ test("merchant PII, media and setup access require the correct VSN role", async 
     }
   }
 });
+
+test("form submission CSV export neutralizes spreadsheet formulas", async () => {
+  const { csvCell } = await import("../app/utils/csv-security.js");
+  for (const input of ['=1+1', '+SUM(A1:A2)', '-1+2', '@SUM(A1)', '  =HYPERLINK("x")', '\t=1+1', '\n@x']) {
+    const encoded = csvCell(input);
+    assert.ok(encoded.startsWith('"\''), "suspicious cell must be forced to text: " + JSON.stringify(input));
+  }
+  assert.equal(csvCell('Safe "quoted" value'), '"Safe ""quoted"" value"');
+  assert.equal(csvCell("customer@example.com"), '"customer@example.com"');
+  const route = await source("app/routes/app.form-submissions.jsx");
+  assert.match(route, /import \{ csvCell \} from "\.\.\/utils\/csv-security\.js"/);
+});
