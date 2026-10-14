@@ -1,0 +1,53 @@
+name: T011 GraphQL Codegen Isolation Experiment
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - ".github/workflows/t011-codegen-isolation.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Find repository GraphQL codegen usage (evidence only)
+        run: |
+          git grep -nE '@shopify/api-codegen-preset|graphql-config|graphql-codegen' -- ':!package.json' ':!package-lock.json' > codegen-usage.txt || true
+      - name: Regenerate isolated lockfile (never push)
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Reproducible clean install
+        run: npm ci
+      - name: Audit evidence files
+        run: |
+          npm audit --json > t011-all-audit.json || true
+          npm audit --omit=dev --json > t011-production-audit.json || true
+      - name: Upload lockfile and audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: t011-codegen-isolation-evidence
+          path: |
+            package-lock.json
+            codegen-usage.txt
+            t011-all-audit.json
+            t011-production-audit.json
+          if-no-files-found: warn
+      - name: Enforce full dependency audit
+        run: npm audit --include=dev --audit-level=high
+      - name: Enforce production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Security checks
+        run: npm run security:audit
+      - name: Core QA
+        run: npm run qa
