@@ -13,6 +13,7 @@ const report = {
   valid: 0,
   invalid: 0,
   invalidDocuments: [],
+  excludedNonAdminOperations: [],
 };
 try {
   const response = await fetch(endpoint, {
@@ -29,6 +30,16 @@ try {
   const schema = buildClientSchema(json.data);
   report.schemaFetched = true;
   for (const entry of astReport.results.filter((row) => row.valid)) {
+    const operationNames = (entry.definitions || []).map((definition) => definition.name);
+    if (entry.file === "app/services/shopify-subscription.server.js" &&
+        operationNames.length === 1 && operationNames[0] === "VsnSubscriptionState") {
+      report.excludedNonAdminOperations.push({
+        file: entry.file,
+        name: operationNames[0],
+        reason: "Shopify Partner API at partners.shopify.com, not Shopify Admin API",
+      });
+      continue;
+    }
     report.documentsExamined++;
     const problems = validate(schema, parse(entry.document)).map((issue) => issue.message);
     if (problems.length) {
@@ -38,7 +49,7 @@ try {
       report.valid++;
     }
   }
-  console.log("T011 Shopify Admin schema:", JSON.stringify({ version: VERSION, checked: report.documentsExamined, valid: report.valid, invalid: report.invalid }));
+  console.log("T011 Shopify Admin schema:", JSON.stringify({ version: VERSION, checked: report.documentsExamined, valid: report.valid, invalid: report.invalid, excludedPartnerApi: report.excludedNonAdminOperations.length }));
 } catch (error) {
   report.error = String(error?.message || error);
   console.error("T011 Shopify schema verification BLOCKED:", report.error);
