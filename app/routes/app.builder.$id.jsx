@@ -196,8 +196,8 @@ export async function loader({
 		}
 		const [blogHandle, articleHandle] = resource.split("/");
 		if (blogHandle && articleHandle) {
-			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewArticle($filter:String!,$query:String!){ blogs(first:1,query:$filter){ nodes{ title handle articles(first:20,query:$query){ nodes{ id title handle contentHtml:body excerpt:summary publishedAt tags author{ name } image{ url altText } } } } } }`, { filter: `handle:${blogHandle}`, query: `handle:${articleHandle}` }, "article preview");
-			previewArticle = data?.blogs?.nodes?.[0]?.articles?.nodes?.[0] || null;
+			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewArticle($query:String!){ articles(first:25,query:$query){ nodes{ id title handle contentHtml:body excerpt:summary publishedAt tags author{ name } image{ url altText } blog{ handle } } } }`, { query: `handle:${articleHandle}` }, "article preview");
+			previewArticle = (data?.articles?.nodes || []).find((item) => item.blog?.handle === blogHandle) || null;
 			if (previewArticle) previewArticle.blogHandle = blogHandle;
 		}
 	}
