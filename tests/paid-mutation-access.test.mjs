@@ -28,3 +28,13 @@ test("missing, stale, unverified, retired Free and mismatched contracts are deni
     assert.equal(decision.code, "VSN_PAID_SUBSCRIPTION_REQUIRED");
   }
 });
+
+test("paid gate stays in action, never read-only loader", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(new URL("../app/routes/app.pages.jsx", import.meta.url), "utf8");
+  const loaderStart = source.indexOf("export async function loader(");
+  const actionStart = source.indexOf("export async function action(");
+  assert.ok(loaderStart >= 0 && actionStart > loaderStart);
+  assert.equal(source.slice(loaderStart, actionStart).includes("evaluatePaidMutationAccess("), false);
+  assert.equal(source.slice(actionStart).includes("evaluatePaidMutationAccess("), true);
+});
