@@ -121,10 +121,10 @@ await check("Dashboard Home no longer uses useLayoutEffect",()=>{const imports=h
 await check("React Router v8 future flags were not enabled blindly",()=>{const config=["react-router.config.js","react-router.config.ts","vite.config.js","vite.config.ts"].filter(exists).map(read).join("\n");assert.doesNotMatch(config,/v8_middleware|v8_splitRouteModules|v8_viteEnvironmentApi|v8_passThroughRequests|v8_trailingSlashAwareDataRequests/)});
 
 await check("No Q6.1 Prisma migration was added",()=>assert.equal(fs.readdirSync("prisma/migrations").some((name)=>/q61|reusable_data_view|app_shell_qa/i.test(name)),false));
-await check("Exact Shopify Free handle remains free",()=>assert.ok(plans.includes('shopifyHandle: "free"')));
+await check("No public Shopify Free plan is offered",()=>assert.ok(!plans.includes('shopifyHandle: "free"')&&plans.includes('shopifyHandle: "starter"')));
 await check("Exact Shopify Silver key remains sliver",()=>assert.ok(plans.includes('shopifyHandle: "sliver"')));
 await check("Exact Shopify Gold handle remains gold",()=>assert.ok(plans.includes('shopifyHandle: "gold"')));
-await check("Exact Shopify Platinum key remains platenium",()=>assert.ok(plans.includes('shopifyHandle: "platenium"')));
+await check("Exact Shopify Platinum handle is platinum",()=>assert.ok(plans.includes('shopifyHandle: "platinum"')&&!plans.includes('shopifyHandle: "platenium"')));
 await check("App route passes owner state to profile controls",()=>assert.ok(appRoute.includes("isOwner={isOwner}")));
 
 const failed=checks.filter(([,ok])=>!ok);
