@@ -1,0 +1,49 @@
+name: T011 Patch Lockfile On Isolated Branch
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/t011-lockfile-patch.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch-lockfile:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'security/t011-partial-lockfile-remediation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: security/t011-partial-lockfile-remediation
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Apply compatible non-force lockfile fixes
+        run: npm audit fix --package-lock-only --ignore-scripts || test "$?" -eq 1
+      - name: Validate updated lockfile can install
+        run: npm ci
+      - name: Collect unfiltered audit outcomes
+        continue-on-error: true
+        run: |
+          npm audit --omit=dev --json > t011-postfix-production.json || true
+          npm audit --json > t011-postfix-all.json || true
+      - name: Commit only package-lock.json to isolated branch
+        run: |
+          git diff --exit-code -- package.json
+          git add -- package-lock.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix(deps): apply npm compatible security lockfile resolutions'
+            git push origin HEAD:security/t011-partial-lockfile-remediation
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t011-postfix-audit
+          path: t011-postfix-*.json
+          if-no-files-found: warn
+      - name: Mandatory production audit gate
+        run: npm audit --omit=dev --audit-level=high
