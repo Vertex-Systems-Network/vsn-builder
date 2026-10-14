@@ -37,16 +37,39 @@ for (const entry of inventory.entries) {
   }
   const kind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : file.endsWith(".jsx") ? ts.ScriptKind.JSX : file.endsWith(".ts") ? ts.ScriptKind.TS : ts.ScriptKind.JS;
   const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, kind);
+  const staticallyDeclaredStrings = new Map();
+  for (const statement of ast.statements) {
+    if (!ts.isVariableStatement(statement) || !(statement.declarationList.flags & ts.NodeFlags.Const)) continue;
+    for (const declaration of statement.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name) || !declaration.initializer) continue;
+      if (ts.isStringLiteral(declaration.initializer) || ts.isNoSubstitutionTemplateLiteral(declaration.initializer)) {
+        staticallyDeclaredStrings.set(declaration.name.text, declaration.initializer.text);
+      }
+    }
+  }
+  const resolveStaticTemplate = (template) => {
+    if (ts.isNoSubstitutionTemplateLiteral(template)) return { text: template.text, dynamic: false };
+    if (!ts.isTemplateExpression(template)) return { text: "", dynamic: true };
+    let value = template.head.text;
+    for (const span of template.templateSpans) {
+      if (!ts.isIdentifier(span.expression) || !staticallyDeclaredStrings.has(span.expression.text)) {
+        return { text: template.head.text, dynamic: true };
+      }
+      value += staticallyDeclaredStrings.get(span.expression.text) + span.literal.text;
+    }
+    return { text: value, dynamic: false };
+  };
   function visit(node) {
     if (ts.isTaggedTemplateExpression(node) && /^(?:gql|graphql)$/.test(node.tag.getText(ast))) {
-      const template = node.template;
-      add(file, "tagged-template", ts.isNoSubstitutionTemplateLiteral(template) ? template.text : template.head.text, !ts.isNoSubstitutionTemplateLiteral(template));
+      const resolved = resolveStaticTemplate(node.template);
+      add(file, "tagged-template", resolved.text, resolved.dynamic);
       return;
     }
     if ((ts.isNoSubstitutionTemplateLiteral(node) || ts.isStringLiteral(node)) && isGraphqlString(node.text)) {
       add(file, "graphql-string", node.text);
     } else if (ts.isTemplateExpression(node) && isGraphqlString(node.head.text)) {
-      add(file, "graphql-dynamic-template", node.head.text, true);
+      const resolved = resolveStaticTemplate(node);
+      add(file, "graphql-template", resolved.text, resolved.dynamic);
     }
     ts.forEachChild(node, visit);
   }
