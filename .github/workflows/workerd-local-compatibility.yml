@@ -13,6 +13,8 @@ on:
       - "tests/builder-paid-mutation-guard.test.mjs"
       - "tests/phase34-hosted-worker-gate.test.mjs"
       - "tests/worker-edge-html.test.mjs"
+      - "tests/worker-edge-ssr-probe.test.mjs"
+      - "wrangler.edge-ssr-ci.jsonc"
       - "app/entry.worker.js"
       - "app/services/worker-edge-html.server.js"
       - "tests/phase3-staging-migration-preflight.test.mjs"
@@ -119,6 +121,7 @@ jobs:
           node --test tests/builder-paid-mutation-guard.test.mjs
           node --test tests/phase34-hosted-worker-gate.test.mjs
           node --test tests/worker-edge-html.test.mjs
+          node --test tests/worker-edge-ssr-probe.test.mjs
           node --test tests/phase3-staging-migration-preflight.test.mjs
           node --test tests/phase3-staging-neon-live-proof.test.mjs
           node --test tests/phase4-staging-cloudflare-readiness.test.mjs
@@ -179,6 +182,10 @@ jobs:
           test -z "${DIRECT_URL:-}"
       - name: Compile SDK and test real local Cloudflare Workerd over HTTP
         run: node scripts/dev-local-workerd-smoke.mjs
+      - name: Compile isolated CI Web Streams SSR Worker into Wrangler bundle — no deploy
+        run: |
+          npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.edge-ssr-ci.jsonc --dry-run --outdir /tmp/vsn-builder-edge-ssr
+          test -n "$(find /tmp/vsn-builder-edge-ssr -type f -name '*.js' -print -quit)"
       - name: Compile gated Staging Worker with Wrangler dry-run ONLY — no deploy
         run: |
           npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.staging.jsonc --dry-run --outdir /tmp/vsn-builder-staging-dryrun
