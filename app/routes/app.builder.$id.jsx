@@ -119,7 +119,6 @@ export async function loader({
 	const { admin, session } =
 		await authenticate.admin(request);
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view the visual editor.", { status: 403 });
-
 	const builderRole = getBuilderRole(session);
 	const roleAccess = await getBuilderRoleAccess(db, session.shop);
 	const pagePermissions = getRoleActionAccess(roleAccess, builderRole).pages || {};
@@ -562,8 +561,7 @@ export async function action({
 	params,
 }) {
   assertTrustedMutationRequest(request);
-	const { admin, session } =
-		await authenticate.admin(request);
+	const { admin, session } = await authenticate.admin(request);
   await assertPaidBuilderMutation(db, session.shop);
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view the visual editor.", { status: 403 });
 
