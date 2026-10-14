@@ -79,7 +79,6 @@ test("prohibits every production/Staging identity, secret and unintended route b
   "https://vsn-edge.test.attacker.example.net",
   "http://127.0.0.1.evil.test",
  ]){
-   if(unsafeOrigin==="http://127.0.0.1.evil.test")continue; // ends .test: synthetic
    assert.equal((await gateway.fetch(request(unsafeOrigin+"/__vsn/react-router-smoke"),env)).status,503);
  }
  assert.equal(sdk.calls.length,0);
@@ -114,6 +113,7 @@ test("URL credentials and unrelated origins are never accepted as app access",as
   "https://builder.example.com/__vsn/react-router-smoke",
   "https://store.myshopify.com/__vsn/react-router-smoke",
   "https://vsn-edge.test.evil.com/__vsn/react-router-smoke",
+  "https://attacker:pw@vsn-edge.test/__vsn/react-router-smoke",
  ]){
   const res=await gateway.fetch(request(url),env);
   assert.equal(res.status,503);
@@ -126,6 +126,5 @@ test("real hosted app entry remains fail-closed and cannot import CI-only gatewa
  assert.match(hosted,/return locked\(\)/);
  const gateway=readFileSync("app/services/worker-react-router-request-gate.js","utf8");
  assert(!gateway.includes("process.env"));
- assert(!gateway.includes("DATABASE_URL") || gateway.includes("DATABASE_URL"));
  assert(!gateway.includes("eval("));
 });
