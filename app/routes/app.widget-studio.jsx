@@ -1,5 +1,6 @@
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import { canBuilder, getBuilderRole } from "../utils/builder-permissions.js";
 import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import { loadWidgetStudio, mutateCustomWidget, resetWidgetTemplate, saveCustomWidget, saveWidgetTemplate } from "../services/widget-studio.server.js";
@@ -20,6 +21,7 @@ export async function loader({request}){
 export async function action({request}){
   assertTrustedMutationRequest(request);
   const {session}=await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   if(!(await canAccessBuilderSystem(db,session,"widgetStudio")))return Response.json({ok:false,error:"Your role does not have access to Widget Studio."},{status:403});
   const role=getBuilderRole(session);if(!canBuilder(role,"edit"))return Response.json({ok:false,error:"Your role cannot change widgets."},{status:403});
   const form=await request.formData();const intent=String(form.get("intent")||"");
