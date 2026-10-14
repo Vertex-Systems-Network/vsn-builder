@@ -13,6 +13,7 @@ import { canAccessBuilderAction, getBuilderRoleAccess } from "../utils/builder-p
 import { finishObservation, startObservation } from "../utils/observability.server";
 import { getQuotaDecision, resolveEntitlementPlan } from "../services/entitlements.server.js";
 import { resolveInternalPlanKeyFromHandle } from "../services/shopify-app-pricing.server.js";
+import { evaluatePaidMutationAccess } from "../utils/paid-mutation-access.js";
 import { handleBulkTemplateAction } from "../services/template-dashboard-actions.server.js";
 import {
 	deleteShopifyPage,
@@ -85,17 +86,11 @@ export async function loader({ request }) {
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
 		throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
 	}
-  // Every state-changing intent (including forwarded panels, imports and bulk
-  // operations) requires a trusted paid Shopify contract in production.
-  // Role permissions alone do not authorize merchant writes.
   if (process.env.NODE_ENV === "production") {
     const paidPlan = await resolveEntitlementPlan(db, session.shop);
-    const subscribed = paidPlan.subscription;
-    const trustedHandle = resolveInternalPlanKeyFromHandle(subscribed?.planHandle);
-    const trustedTier = trustedHandle && trustedHandle === paidPlan.key;
-    const activeState = ["active", "trialing", "canceling"].includes(String(subscribed?.status || ""));
-    if (!paidPlan.subscriptionMirrorTrusted || !paidPlan.entitlementVerified || !activeState || !trustedTier) {
-      return Response.json({ success: false, error: "An active verified Shopify paid subscription is required for builder changes.", code: "VSN_PAID_SUBSCRIPTION_REQUIRED" }, { status: 403 });
+    const decision = evaluatePaidMutationAccess(paidPlan, resolveInternalPlanKeyFromHandle);
+    if (!decision.allowed) {
+      return Response.json({ success: false, error: "An active verified Shopify paid subscription is required for builder changes.", code: decision.code }, { status: 403 });
     }
   }
 	const builderRole = getBuilderRole(session);
