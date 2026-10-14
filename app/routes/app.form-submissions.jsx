@@ -2,6 +2,7 @@ import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import db from "../db.server.js";
+import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 
 function safeJson(value) { try { return JSON.parse(value || "{}"); } catch { return {}; } }
@@ -10,6 +11,7 @@ function csvCell(value) { const text = String(value ?? ""); return `"${text.repl
 
 export async function loader({ request }) {
   const { session } = await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "submissions"))) throw new Response("Form submissions access denied.", { status: 403 });
   const url = new URL(request.url); const formKey = String(url.searchParams.get("formKey") || "").trim();
   const status = String(url.searchParams.get("status") || "all"); const q = String(url.searchParams.get("q") || "").trim().toLowerCase();
   const from = url.searchParams.get("from"); const to = url.searchParams.get("to");
@@ -31,7 +33,8 @@ export async function loader({ request }) {
 
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
-  const { session } = await authenticate.admin(request); const form = await request.formData(); const intent=String(form.get("intent")||"");
+  const { session } = await authenticate.admin(request);
+  if (!(await canAccessBuilderSystem(db, session, "submissions"))) throw new Response("Form submissions access denied.", { status: 403 }); const form = await request.formData(); const intent=String(form.get("intent")||"");
   // Keep merchant data deletion available after cancellation for privacy.
   if (intent !== "delete") await assertPaidBuilderMutation(db, session.shop);
   const id=String(form.get("id")||"");
