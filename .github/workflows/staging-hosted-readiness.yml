@@ -34,7 +34,7 @@ jobs:
   hosted-readiness:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    environment: staging
+    environment: cloudflare-staging
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +45,10 @@ jobs:
         env:
           VSN_TARGET_ENV: staging
           VSN_STAGING_PLATFORM: cloudflare-worker
+          VSN_STAGING_DATABASE_PROVIDER: neon-postgresql
+          NEON_PROJECT_ID: shiny-violet-61219572
+          VSN_STAGING_NEON_SCHEMA_VERIFIED: ${{ vars.VSN_STAGING_NEON_SCHEMA_VERIFIED }}
+          VSN_STAGING_NEON_MIGRATIONS_VERIFIED: ${{ vars.VSN_STAGING_NEON_MIGRATIONS_VERIFIED }}
           SHOPIFY_APP_URL: ${{ vars.SHOPIFY_APP_URL }}
           SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
           SHOPIFY_API_SECRET: ${{ secrets.SHOPIFY_API_SECRET }}
