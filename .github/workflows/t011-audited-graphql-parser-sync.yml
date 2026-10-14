@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/t011-audited-graphql-parser-sync.yml"
+      - "scripts/t011-graphql-ast-analysis.mjs"
+      - "scripts/t011-graphql-document-inventory.mjs"
   workflow_dispatch:
 permissions:
   contents: write
