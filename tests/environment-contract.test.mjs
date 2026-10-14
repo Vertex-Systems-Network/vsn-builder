@@ -26,9 +26,9 @@ test("staging denies current Dev app even with a PostgreSQL URL", () => {
     DIRECT_URL: "postgresql://test.invalid/direct" });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /dedicated non-Dev Shopify app/);
-  // An offline migration proposal now exists; this must remain blocked by the
-  // missing *actual* Worker runtime and the deliberately unverified Dev identity.
-  assert.match(result.stderr, /Cloudflare Worker entry point and configuration are not implemented/);
+  // Gated hosted files exist now; rejection is for invalid merchant/Neon IDs,
+  // never an assertion that a file's existence proves hosted readiness.
+  assert.match(result.stderr, /non-Dev Shopify app|Shopify Client ID/);
 });
 test("production rejects billing-test mode and Dev identity", () => {
   const result = verify("production", { APP_ENV: "production", SHOPIFY_BILLING_TEST_MODE: "true",
@@ -132,7 +132,7 @@ test("full hosted preflight enforces the same Neon, Worker and Shopify identity 
    const r=verify(tier,hostedFixture(tier,overrides));
    assert.equal(r.status,1);
    assert.match(r.stderr,pattern);
-   assert.match(r.stderr,/Cloudflare Worker entry point and configuration are not implemented/);
+   assert(!r.stderr.includes("ci_password"),"DB password exposed in hosted rejection");
   }
  }
 });
@@ -202,14 +202,18 @@ test("Phase 1 refuses wrong Neon endpoint, mismatched roles or Production Shopif
   assert(!r.stdout.includes("ci_password"),"DB password exposed in result");
  }
 });
-test("Legacy hosted preflight still requires Phase 3/4 Worker, even when identity-only passes",()=>{
+test("Hosted source/config preflight sees a gated entry but never claims released Shopify app",()=>{
  for(const tier of ["staging","production"]){
-  const r=verify(tier,hostedFixture(tier));
-  assert.equal(r.status,1);
-  assert.match(r.stderr,/Cloudflare Worker entry point and configuration are not implemented/);
-  assert(!r.stdout.includes("Phase 1 identity\/config"));
+  const result=verify(tier,hostedFixture(tier));
+  assert.equal(result.status,0,result.stderr);
+  assert.match(result.stdout,/full configuration contract/);
+  assert.match(result.stdout,/no external identity ownership, database connectivity, Shopify authentication or deployment verified/);
+  const entry=readFileSync("workers/app.js","utf8");
+  assert.match(entry,/merchantAppReady:false/);
+  assert.match(entry,/\/readyz/);
  }
 });
+
 test("Phase 1 option does not let repository contract bypass its ordinary mode",()=>{
  const r=spawnSync(process.execPath,[
   "scripts/environment-contract.mjs","--environment=repository","--identity-only",
