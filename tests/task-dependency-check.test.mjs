@@ -38,7 +38,8 @@ test("blocking one task cannot artificially block independent READY tasks",()=>{
  find(plan,"T016").depends_on.push("T011");
  const {errors,rows}=inspectTaskPlan(plan);
  assert.deepEqual(errors,[]);
- assert.equal(rows.find(r=>r.id==="T020").execution,"READY");
+ assert.equal(rows.find(r=>r.id==="T024").execution,"READY");
+ assert.equal(rows.find(r=>r.id==="T020").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T040").execution,"READY");
 });
 test("cycles, duplicate dependencies and unknown prerequisite fail",()=>{
