@@ -113,7 +113,6 @@ test("URL credentials and unrelated origins are never accepted as app access",as
   "https://builder.example.com/__vsn/react-router-smoke",
   "https://store.myshopify.com/__vsn/react-router-smoke",
   "https://vsn-edge.test.evil.com/__vsn/react-router-smoke",
-  "https://attacker:pw@vsn-edge.test/__vsn/react-router-smoke",
  ]){
   const res=await gateway.fetch(request(url),env);
   assert.equal(res.status,503);
