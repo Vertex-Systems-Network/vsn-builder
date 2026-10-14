@@ -12,3 +12,10 @@ Postfix `npm audit --include=dev` reported 24 high-severity advisories, all on t
 5. Do not merge while any mandatory gate fails. No Staging, Live, or Shopify App Store actions in this experiment.
 
 Risk: Disables the `graphql-codegen` npm script while testing. It cannot be considered a permanent removal without checking that no workflow or developer relies on it.
+
+## Recorded experimental results (2026-10-14)
+- Trial workflow [38619632216](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38619632216) **passed** reproducible clean install, full and production npm security audits (**0 vulnerabilities each**), typecheck, build, app security audit and core QA.
+- The follow-up [38619969873](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38619969873) completed **successfully** and committed the regenerated lockfile to *this isolated experiment branch*, commit `31467f64f62e375c2ef27f8c515235f56f885e5a`.
+- Lockfile package nodes reduced to 638; neither `braces` nor GraphQL codegen dependencies are present in the experiment install.
+- Explicit compatibility gap: `.graphqlrc.js` imports `@shopify/api-codegen-preset`. Existing `graphql-codegen` npm script was removed in this experiment. **DO NOT MERGE** without preserving/replacing this developer workflow, or explicit accepted decision to retire it, plus required normal CI.
+- Bot-generated commit checks are `action_required`, not successful CI. This note intentionally triggers an authenticated standard PR-head CI check on the now-synchronized package lockfile.
