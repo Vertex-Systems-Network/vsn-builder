@@ -12,7 +12,8 @@ test("real Vite build exports exactly synthetic root and resource route",async()
  const build=await import(pathToFileURL(resolve(buildFile)));
  assert.equal(build.ssr,true);
  const routes=Object.values(build.routes||{});
- assert.equal(routes.length,2);
+ assert.equal(routes.length,3);
+ assert(routes.some(x=>x.path==="app/__vsn-auth-smoke"));
  assert(routes.some(x=>x.path==="__vsn/react-router-smoke"));
  assert(!routes.some(x=>/app\/|auth|webhook|billing|shopify/i.test(x.path||"")));
 });
