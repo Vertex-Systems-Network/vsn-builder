@@ -25,7 +25,7 @@ test("real React Router framework module is compiled but incomplete route build 
 });
 test("Wrangler preview cannot use hosted Staging or Production identities",()=>{
  const source=readFileSync("wrangler.edge-router-ci.jsonc","utf8");
- const obj=JSON.parse(source.replace(/^\\s*\\/\\/.*$/gm,""));
+ const obj=JSON.parse(source.split("\n").filter(line=>!line.trimStart().startsWith("//")).join("\n"));
  assert.equal(obj.main,"./workers/edge-react-router-ci-probe.js");
  assert.equal(obj.workers_dev,false);
  assert.equal(obj.preview_urls,false);
