@@ -59,7 +59,15 @@ for (const entry of inventory.entries) {
     }
     return { text: value, dynamic: false };
   };
+  const isEditorSuggestionExample = (node) => {
+    for (let parent = node.parent; parent; parent = parent.parent) {
+      if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name) &&
+          parent.name.text === "GRAPHQL_SUGGESTIONS") return true;
+    }
+    return false;
+  };
   function visit(node) {
+    if ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) && isEditorSuggestionExample(node)) return;
     if (ts.isTaggedTemplateExpression(node) && /^(?:gql|graphql)$/.test(node.tag.getText(ast))) {
       const resolved = resolveStaticTemplate(node.template);
       add(file, "tagged-template", resolved.text, resolved.dynamic);
