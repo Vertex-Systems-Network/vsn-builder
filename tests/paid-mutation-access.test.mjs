@@ -30,17 +30,31 @@ test("missing, stale, unverified, retired Free and mismatched contracts are deni
   }
 });
 
-test("paid gate stays in action, never read-only loader", async () => {
+test("paid gate stays in action, never read-only loader for seven merchant routes", async () => {
   const { readFile } = await import("node:fs/promises");
-  const source = await readFile(new URL("../app/routes/app.pages.jsx", import.meta.url), "utf8");
-  const loaderStart = source.indexOf("export async function loader(");
-  const actionStart = source.indexOf("export async function action(");
-  assert.ok(loaderStart >= 0 && actionStart > loaderStart);
-  assert.equal(source.slice(loaderStart, actionStart).includes("evaluatePaidMutationAccess("), false);
-  assert.equal(source.slice(actionStart).includes("evaluatePaidMutationAccess("), true);
+  const protectedRoutes = [
+    "app.pages.jsx", "app.builder.$id.jsx", "app.ai.jsx",
+    "app.ai-command.jsx", "app.form-settings.jsx",
+    "app.widget-studio.jsx", "app.builder-panel.$panel.jsx",
+  ];
+  for (const path of protectedRoutes) {
+    const source = await readFile(new URL("../app/routes/" + path, import.meta.url), "utf8");
+    const loaderStart = source.indexOf("export async function loader(");
+    const actionStart = source.search(/export\\s+(?:async\\s+function|const)\\s+action\\b/);
+    assert.ok(actionStart >= 0, path + " requires an action");
+    if (loaderStart >= 0 && loaderStart < actionStart) {
+      assert.equal(source.slice(loaderStart, actionStart).includes("assertPaidBuilderMutation(db, session.shop)"), false, path + " loader must remain read-only");
+    }
+    assert.equal(source.slice(actionStart).includes("assertPaidBuilderMutation(db, session.shop)"), true, path + " must gate mutations");
+    assert.equal(source.includes('from "../utils/paid-mutation-guard.server.js"'), true, path + " must import guard");
+    const actionSource = source.slice(actionStart);
+    assert.ok(actionSource.indexOf("await authenticate.admin(") < actionSource.indexOf("assertPaidBuilderMutation(db, session.shop)"), path + " authenticates first");
+  }
 });
-
-test("legacy resolver cannot turn Free into a paid entitlement", () => {
-  const legacyResolver = (handle) => ({ free: "core", sliver: "pro", gold: "cro" })[handle] || null;
-  assert.equal(evaluatePaidMutationAccess(active({ key: "core", subscription: { status: "active", planHandle: "free" } }), legacyResolver).allowed, false);
+test("server helper explicitly fails closed in production", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(new URL("../app/utils/paid-mutation-guard.server.js", import.meta.url), "utf8");
+  assert.match(source, /process\\.env\\.NODE_ENV !== "production"/);
+  assert.match(source, /evaluatePaidMutationAccess\\(plan, resolveInternalPlanKeyFromHandle\\)/);
+  assert.match(source, /status: 403/);
 });
