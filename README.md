@@ -8,6 +8,10 @@ VSN Builder is a Shopify page-builder application. This repository is being sepa
 
 **One public Shopify App: VSN | Builder. Four paid plans and no Free tier:** Starter (`starter`, $30/month), Sliver (`sliver`, $100/month), Gold (`gold`, $150/month), Platinum (`platinum`, $350/month or $3,000/year). **Each includes a 10-day Shopify free trial.** The names and public handles are the exact plan IDs. No active verified Shopify trial/subscription means **zero builder access**. Legacy internal keys are read aliases, not public billing IDs. Shopify Partner Dashboard pricing setup and real merchant verification are pending; this is source-code configuration in an unmerged PR, not published prices. Do not submit for Shopify review before all release gates are proven green.
 
+## Dependency-first integration checkpoint — 2026-10-14
+
+**T012 combined source candidate:** four paid Starter/Sliver/Gold/Platinum plans, trusted merchant-write guards, real Neon shadow migration evidence and gated Staging Cloudflare Worker source are reconciled in one branch. This is **code integration only**: GitHub Developer branch remains unprotected, Staging/Production primary Neon schemas are not migrated, both Worker scripts lack actual secret bindings, and Shopify merchant OAuth/billing E2E are unverified. Mandatory development dependency security issue [#96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) remains red. **No deploy, Live promotion, or App Store submission.** See [Staging Neon/Cloudflare acceptance record](docs/phase3-4-hosted-acceptance-20261014.md) and [Task Board #156](https://github.com/Vertex-Systems-Network/vsn-builder/issues/156).
+
 ## Environment identity and promotion
 
 | Tier | User-facing name | Code source | Storage | Worker | Verification |
