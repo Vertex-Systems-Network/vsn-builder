@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
+import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 import {
   BUILDER_RESOURCE_DEFINITIONS,
   BUILDER_ROLE_DEFINITIONS,
@@ -33,6 +34,7 @@ export async function loader({request}){
 export async function action({request}){
   assertTrustedMutationRequest(request);
   const{session}=await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   requireOwner(session);
   const form=await request.formData();
   const intent=String(form.get("intent")||"toggle-role");
