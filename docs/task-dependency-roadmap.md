@@ -10,7 +10,7 @@ Earlier eight-phase trackers are legacy historical evidence inventories. They do
 
 ## Current scope-limited task counts: 41 total
 
-**9 VERIFIED** narrow tasks · **4 IN REVIEW** · **9 READY** · **19 WAITING**. This does not measure overall product readiness or imply production deployment.
+**9 VERIFIED** narrow tasks · **5 IN REVIEW** · **8 READY** · **19 WAITING**. This does not measure overall product readiness or imply production deployment.
 
 One public **VSN | Builder** app; Dev/Staging only internal testing. No Free plan.
 
@@ -26,7 +26,6 @@ One public **VSN | Builder** app; Dev/Staging only internal testing. No Free pla
 | ID | Priority | Startable task | Issue |
 | --- | --- | --- | --- |
 | `T011` | P0 | Resolve mandatory full-dev dependency security audit (braces) | [#96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) |
-| `T012` | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | [#157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | `T013` | P0 | Protect development branch and verify GitHub required reviewers | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T014` | P0 | Configure/verify GitHub Environment secrets and tier variables | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T015` | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
@@ -73,7 +72,7 @@ flowchart TD
 | `T009` | Merchant Features | P1 | Internal editor/components/AI QA scripts | None | VERIFIED (scope-limited) | [#165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
 | `T010` | Engineering Planning | P0 | Adopt dependency-based task board, validator, issue mapping | None | IN REVIEW | [#156](https://github.com/Vertex-Systems-Network/vsn-builder/issues/156) |
 | `T011` | Security | P0 | Resolve mandatory full-dev dependency security audit (braces) | None | READY | [#96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) |
-| `T012` | Integration | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | None | READY | [#157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
+| `T012` | Integration | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | None | IN REVIEW | [#157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | `T013` | Infrastructure | P0 | Protect development branch and verify GitHub required reviewers | None | READY | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T014` | Infrastructure | P0 | Configure/verify GitHub Environment secrets and tier variables | None | READY | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T015` | Shopify Auth | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | None | READY | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
@@ -104,7 +103,7 @@ flowchart TD
 | `T040` | App Store Review | P1 | Shopify listing screenshots, privacy, support, scopes and review assets | None | READY | [#168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 | `T041` | App Store Review | P0 | Attempt Shopify App Store submission only after release certification | `T011`, `T025`, `T029`, `T035`, `T039`, `T040` | WAITING | [#168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 
-**In-review update:** T026 server-side paid merchant mutation guards now have [Draft PR #170](https://github.com/Vertex-Systems-Network/vsn-builder/pull/170) with 30 protected action routes and synthetic tests. This is code in review, NOT verified merchant acceptance or a release authorization.
+**In-review update:** T012 source reconciliation has [Draft PR #171](https://github.com/Vertex-Systems-Network/vsn-builder/pull/171), merging code evidence from PR #153/#155/#169/#170 without Live release; acceptance is pending. T026 server-side paid merchant mutation guards now have [Draft PR #170](https://github.com/Vertex-Systems-Network/vsn-builder/pull/170) with 30 protected action routes and synthetic tests. This is code in review, NOT verified merchant acceptance or a release authorization.
 
 ## Current external blockers
 
