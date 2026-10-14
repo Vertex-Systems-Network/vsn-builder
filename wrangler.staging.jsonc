@@ -1,0 +1,19 @@
+{
+  // Phase 4 gated integration only. No merchant app release or public URL.
+  // Shopify secrets and Neon DATABASE_URL must be set via scoped secret
+  // bindings; NEVER commit credentials to this file or use CLI deploy
+  // until the protected environment and acceptance gates are verified.
+  "name": "vsn-builder-staging",
+  "main": "./workers/app.js",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "send_metrics": false,
+  "vars": {
+    "APP_ENV": "staging",
+    "VSN_WORKER_NAME": "vsn-builder-staging",
+    "NEON_PROJECT_ID": "shiny-violet-61219572",
+    "SHOPIFY_BILLING_TEST_MODE": "true"
+  }
+}
