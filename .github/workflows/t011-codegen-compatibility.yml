@@ -2,6 +2,8 @@ name: T011 Shopify GraphQL Codegen Compatibility
 on:
   pull_request:
     paths:
+      - "app/**"
+      - "extensions/**"
       - "package.json"
       - ".graphqlrc.js"
       - "scripts/t011-codegen-compatibility.mjs"
