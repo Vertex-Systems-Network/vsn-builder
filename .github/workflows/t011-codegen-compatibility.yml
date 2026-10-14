@@ -7,6 +7,9 @@ on:
       - "scripts/t011-codegen-compatibility.mjs"
       - "scripts/t011-graphql-document-inventory.mjs"
       - "scripts/t011-graphql-ast-analysis.mjs"
+      - "scripts/t011-graphql-typegen.mjs"
+      - "scripts/t011-codegen-type-smoke.mjs"
+      - "package-lock.json"
       - ".github/workflows/t011-codegen-compatibility.yml"
   workflow_dispatch:
 permissions:
@@ -45,5 +48,17 @@ jobs:
             echo 'BLOCKED T011: generator produced no nonempty TypeScript declarations'
             exit 1
           fi
+      - name: Verify structurally typed operation data and variables
+        run: node scripts/t011-codegen-type-smoke.mjs
+      - name: Compile generated operation types with the application
+        run: npm run typecheck
       - name: Enforce zero high-severity advisories in full dependency tree
         run: npm audit --include=dev --audit-level=high
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t011-secure-generated-shopify-types
+          path: |
+            app/types/shopify-admin.generated.ts
+            t011-codegen-report.json
+          if-no-files-found: warn
