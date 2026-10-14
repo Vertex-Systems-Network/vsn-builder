@@ -1,0 +1,42 @@
+name: T011 Safe Dependency Remediation Diagnostic
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/t011-dependency-remediation.yml"
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exactly locked dependencies
+        run: npm ci
+      - name: Audit baseline (record output, never waive release gate)
+        continue-on-error: true
+        run: |
+          npm audit --json > audit-before.json || true
+          npm audit --omit=dev --json > audit-production-before.json || true
+      - name: Dry-run compatible remediation (do not modify repository)
+        run: |
+          npm audit fix --dry-run --json > audit-fix-dry-run.json || true
+          npm ls proxy-addr brace-expansion compression morgan source-map-js --all > dependency-tree.txt || true
+      - name: Produce remediation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: t011-dependency-diagnostics
+          path: |
+            audit-before.json
+            audit-production-before.json
+            audit-fix-dry-run.json
+            dependency-tree.txt
+          if-no-files-found: warn
+      - name: Enforce original production security gate
+        run: npm audit --omit=dev --audit-level=high
