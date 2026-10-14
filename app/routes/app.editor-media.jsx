@@ -1,4 +1,5 @@
 import { authenticate } from "../shopify.server";
+import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 
 function json(data, status = 200) {
   return Response.json(data, { status });
@@ -317,6 +318,7 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
+  assertTrustedMutationRequest(request);
   const { admin, session } = await authenticate.admin(request);
   let payload;
   try {
