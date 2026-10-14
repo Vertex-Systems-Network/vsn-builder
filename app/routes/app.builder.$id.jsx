@@ -180,8 +180,8 @@ export async function loader({
 			handle = firstBlog?.blogs?.nodes?.[0]?.handle || "";
 		}
 		if (handle) {
-			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewBlog($handle:String!){ blogByHandle(handle:$handle){ id title handle articles(first:12, sortKey:PUBLISHED_AT, reverse:true){ nodes{ id title handle excerpt publishedAt author{ name } image{ url altText } } } } }`, { handle }, "blog preview");
-			previewBlog = data?.blogByHandle || null;
+			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewBlog($filter:String!){ blogs(first:1,query:$filter){ nodes{ id title handle articles(first:12,reverse:true){ nodes{ id title handle excerpt:summary publishedAt author{ name } image{ url altText } } } } } }`, { filter: `handle:${handle}` }, "blog preview");
+			previewBlog = data?.blogs?.nodes?.[0] || null;
 		}
 	}
 
@@ -189,15 +189,15 @@ export async function loader({
 	if (page.template === "article") {
 		let resource = previewArticleHandle || page.resourceHandle || "";
 		if (!resource) {
-			const firstArticle = await safeAdminGraphql(admin, `#graphql\nquery FirstPreviewArticle { blogs(first:1, sortKey:TITLE){ nodes{ handle articles(first:1, sortKey:PUBLISHED_AT, reverse:true){ nodes{ handle } } } } }`, {}, "first article preview");
+			const firstArticle = await safeAdminGraphql(admin, `#graphql\nquery FirstPreviewArticle { blogs(first:1, sortKey:TITLE){ nodes{ handle articles(first:1, reverse:true){ nodes{ handle } } } } }`, {}, "first article preview");
 			const blogNode = firstArticle?.blogs?.nodes?.[0];
 			const articleNode = blogNode?.articles?.nodes?.[0];
 			if (blogNode?.handle && articleNode?.handle) resource = `${blogNode.handle}/${articleNode.handle}`;
 		}
 		const [blogHandle, articleHandle] = resource.split("/");
 		if (blogHandle && articleHandle) {
-			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewArticle($blog:String!,$query:String!){ blogByHandle(handle:$blog){ title handle articles(first:20, query:$query){ nodes{ id title handle contentHtml excerpt publishedAt tags author{ name } image{ url altText } } } } }`, { blog: blogHandle, query: `handle:${articleHandle}` }, "article preview");
-			previewArticle = data?.blogByHandle?.articles?.nodes?.[0] || null;
+			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewArticle($filter:String!,$query:String!){ blogs(first:1,query:$filter){ nodes{ title handle articles(first:20,query:$query){ nodes{ id title handle contentHtml:body excerpt:summary publishedAt tags author{ name } image{ url altText } } } } } }`, { filter: `handle:${blogHandle}`, query: `handle:${articleHandle}` }, "article preview");
+			previewArticle = data?.blogs?.nodes?.[0]?.articles?.nodes?.[0] || null;
 			if (previewArticle) previewArticle.blogHandle = blogHandle;
 		}
 	}
