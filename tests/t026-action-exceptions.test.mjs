@@ -42,3 +42,26 @@ test("SVG imports require trusted Shopify host boundaries and do not follow redi
   assert.match(route, /redirect:"error"/);
   assert.doesNotMatch(route, /host\.endsWith\("shopify\.com"\)/);
 });
+
+test("merchant PII, media and setup access require the correct VSN role", async () => {
+  const resources = [
+    ["app.form-submissions.jsx", "submissions", true],
+    ["app.form-uploads.$id.jsx", "submissions", false],
+    ["app.fonts.jsx", "fonts", true],
+    ["app.svg-assets.jsx", "svgAssets", true],
+    ["app.onboarding.jsx", "onboarding", true],
+    ["app.editor-media.jsx", "pages", true],
+  ];
+  for (const [file, permission, hasAction] of resources) {
+    const route = await source("app/routes/" + file);
+    const expected = 'canAccessBuilderSystem(db, session, "' + permission + '")';
+    const loaderStart = route.indexOf("export async function loader");
+    const actionStart = route.indexOf("export async function action");
+    assert.ok(loaderStart >= 0, file + " must authenticate protected reads");
+    assert.ok(route.slice(loaderStart, actionStart >= 0 ? actionStart : undefined).includes(expected), file + " loader role check");
+    if (hasAction) {
+      assert.ok(actionStart >= 0, file + " action present");
+      assert.ok(route.slice(actionStart).includes(expected), file + " action role check");
+    }
+  }
+});
