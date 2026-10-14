@@ -65,6 +65,7 @@ export function createAuthenticatedWorkerRouterBridge({
       try{url=new URL(request.url);}catch{return failed(400);}
       // NEVER use this synthetic probe as a general /app route handler.
       if(url.pathname!==ROUTE||url.hash||request.method!=="GET" ||
+         url.searchParams.size>1 ||
          [...url.searchParams.keys()].some(key=>key!=="shop"))
         return failed(404);
       if(env?.APP_ENV!=="staging" || typeof makeRequestHandler!=="function" ||
