@@ -75,7 +75,7 @@ await check("Agency enterprise controls are allowed",()=>assert.equal(getFeature
 await check("Numeric CRO feature follows plan capacity",()=>{assert.equal(getFeatureDecisionFromPlan({...COMMERCIAL_PLANS.pro,key:"sliver"},"croExperiments").allowed,false);assert.equal(getFeatureDecisionFromPlan({...COMMERCIAL_PLANS.cro,key:"gold"},"croExperiments").allowed,true)});
 await check("Minimum-plan decisions use tier order",()=>{assert.equal(getMinimumPlanDecisionFromPlan({...COMMERCIAL_PLANS.starter,key:"starter"},"sliver").allowed,false);assert.equal(getMinimumPlanDecisionFromPlan({...COMMERCIAL_PLANS.cro,key:"gold"},"sliver").allowed,true)});
 await check("Page quota allows capacity edge",()=>assert.equal(getQuotaDecisionFromUsage({...COMMERCIAL_PLANS.starter,key:"starter"},"pages",4,{extra:1}).allowed,true));
-await check("Page quota denies overflow",()=>{const d=getQuotaDecisionFromUsage({...COMMERCIAL_PLANS.core,key:"inactive"},"pages",5,{extra:1});assert.equal(d.allowed,false);assert.equal(d.code,"VSN_QUOTA_EXCEEDED")});
+await check("Page quota denies overflow",()=>{const d=getQuotaDecisionFromUsage({...COMMERCIAL_PLANS.starter,key:"starter"},"pages",5,{extra:1});assert.equal(d.allowed,false);assert.equal(d.code,"VSN_QUOTA_EXCEEDED")});
 await check("Unlimited Agency Marketplace quota remains unlimited",()=>{const d=getQuotaDecisionFromUsage({...COMMERCIAL_PLANS.agency,key:"platinum"},"marketplaceInstalls",5000,{extra:1});assert.equal(d.allowed,true);assert.equal(d.unlimited,true);assert.equal(d.remaining,null)});
 await check("Zero CRO quota reports not included",()=>{const d=getQuotaDecisionFromUsage({...COMMERCIAL_PLANS.pro,key:"sliver"},"croExperiments",0,{extra:1});assert.equal(d.code,"VSN_QUOTA_NOT_INCLUDED")});
 
@@ -100,7 +100,7 @@ await check("Plans loader exposes canonical entitlement snapshot",()=>assert.ok(
 await check("Dashboard loader exposes canonical entitlement snapshot",()=>assert.ok(dashboard.includes("getEntitlementSnapshot")&&dashboard.includes("serializeEntitlementSnapshot")));
 await check("Dashboard page usage reads centralized quota shape",()=>assert.ok(home.includes("planUsage?.pages?.used")));
 await check("License UI identifies entitlement authority",()=>assert.ok(license.includes("Entitlement authority")));
-await check("Production fail-closed rule is explicit in source",()=>assert.ok(service.includes("Production must fail closed")&&service.includes("VSN_DEFAULT_PLAN is intentionally ignored")));
+await check("Production fail-closed rule is explicit in source",()=>assert.ok(service.includes('key = "inactive"')&&service.includes("verifiedPaidState")&&service.includes("row?.planHandle")&&service.includes("production-no-subscription")));
 await check("No Q5.3 Prisma migration was added",()=>assert.equal(fs.readdirSync("prisma/migrations").some((name)=>/q53|entitlement/i.test(name)),false));
 await check("Q5.3 does not create Shopify Billing API charges",()=>assert.doesNotMatch(service+pages+marketplace+experiments,/appSubscriptionCreate\s*\(/));
 await check("Entitlement registry maps quotas to commercial plan fields",()=>{assert.ok(config.includes('planField: "maxPages"'));assert.ok(config.includes('planField: "templateQuota"'));assert.ok(config.includes('planField: "aiMonthly"'));assert.ok(config.includes('planField: "teamMembers"'))});
