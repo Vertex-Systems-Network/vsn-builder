@@ -6,7 +6,7 @@ const inventory = JSON.parse(readFileSync("t011-graphql-operation-inventory.json
 let parse;
 try { ({ parse } = require("graphql")); } catch { /* audited tree might not include parser yet */ }
 const results = [];
-const isGraphqlString = (value) => /^\\s*(?:#graphql\\b|(?:query|mutation|subscription|fragment)\\b)/.test(value);
+const isGraphqlString = (value) => /^\s*(?:#graphql\b|(?:query|mutation|subscription|fragment)\b)/.test(value);
 const add = (file, kind, value, dynamic = false) => {
   if (dynamic) {
     results.push({ file, kind, valid: false, status: "dynamic-interpolation", reason: "Review document composition before validation" });
