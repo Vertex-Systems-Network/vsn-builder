@@ -295,13 +295,15 @@
       "title": "Implement functional hosted React Router/Shopify Worker adapter",
       "workstream": "Runtime",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [
         "T004"
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/161",
-      "evidence": [],
-      "acceptance": "Real auth/SSR/router endpoints implemented and testable; no CI-only fake entry or unguarded public routes"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/172"
+      ],
+      "acceptance": "Full Cloudflare React Router/Shopify route graph and hosted OAuth still pending. Current PR #172 offers CI-only Web Streams SSR proof with Shopify CSP; not functional merchant app."
     },
     {
       "id": "T021",
