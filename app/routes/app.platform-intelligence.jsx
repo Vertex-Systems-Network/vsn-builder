@@ -4,6 +4,7 @@ import { Activity, Boxes, Database, GitBranch, Search, Sparkles, Tag, WandSparkl
 import PlatformQualityPanel from '../components/dashboard/platform/PlatformQualityPanel.jsx';
 import { authenticate } from '../shopify.server';
 import db from '../db.server.js';
+import { assertPaidBuilderMutation } from '../utils/paid-mutation-guard.server.js';
 import { canAccessBuilderAction, canAccessBuilderSystem } from '../utils/builder-permissions.server.js';
 import { builderActor, getBuilderRole } from '../utils/builder-permissions.js';
 import { DESIGN_TOKEN_GROUPS, DEFAULT_SEMANTIC_ALIASES, tokenGroupForKey } from '../builder/designTokens2.js';
@@ -25,6 +26,7 @@ export async function loader({ request }) {
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  await assertPaidBuilderMutation(db, session.shop);
   if (!(await canAccessBuilderSystem(db, session, 'platformIntelligence'))) return Response.json({ok:false,error:'Platform Intelligence permission denied.'},{status:403});
   const form = await request.formData();
   const intent = String(form.get('intent') || '');
