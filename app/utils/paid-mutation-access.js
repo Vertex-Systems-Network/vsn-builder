@@ -7,12 +7,17 @@ export function evaluatePaidMutationAccess(plan, resolveHandle) {
   const paidState = ["active", "trialing", "canceling"].includes(status);
   const handle = subscription?.planHandle;
   const resolved = handle && typeof resolveHandle === "function" ? resolveHandle(handle) : null;
-  // Older VSN versions mapped `free` -> `core`. Reject both retired IDs
-  // even when a legacy handle resolver claims they match a subscription row.
-  const canonicalHandle = String(handle || "").trim().toLowerCase();
+  // A public Shopify pricing handle can be customized (for example
+  // "vsn-starter-monthly"). Resolve it through the trusted current Shopify
+  // handle map; do not require the literal public tier name as the handle.
+  // Explicitly reject retired Free/Core identifiers, even if an old resolver
+  // were to map them to a paid tier.
+  const normalizedHandle = String(handle || "").trim().toLowerCase();
   const canonicalTier = String(plan?.key || "").trim().toLowerCase();
+  const retiredHandle = new Set(["free", "core", "inactive"]).has(normalizedHandle);
   const tierMatches = Boolean(
-    PUBLIC_PAID_PLANS.has(canonicalHandle) &&
+    normalizedHandle &&
+    !retiredHandle &&
     PUBLIC_PAID_PLANS.has(canonicalTier) &&
     resolved === canonicalTier
   );
