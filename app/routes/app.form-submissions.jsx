@@ -2,12 +2,13 @@ import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import db from "../db.server.js";
+import { csvCell } from "../utils/csv-security.js";
 import { canAccessBuilderSystem } from "../utils/builder-permissions.server.js";
 import { assertPaidBuilderMutation } from "../utils/paid-mutation-guard.server.js";
 
 function safeJson(value) { try { return JSON.parse(value || "{}"); } catch { return {}; } }
 function compactValue(value) { if (Array.isArray(value)) return value.join(", "); if (value && typeof value === "object") return value.name ? `${value.name} (${value.size || 0} bytes)` : JSON.stringify(value); return String(value ?? ""); }
-function csvCell(value) { const text = String(value ?? ""); return `"${text.replace(/"/g, '""')}"`; }
+
 
 export async function loader({ request }) {
   const { session } = await authenticate.admin(request);
