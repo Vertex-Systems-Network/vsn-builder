@@ -42,12 +42,13 @@ function setup({sdkSession=signed,dbSession=signed,installation=active,throwAuth
   },
   async close(){calls.push("disconnect");},
  };
+ const createSdkContext=async()=>{calls.push("open");return context;};
  const gateway=createAuthenticatedWorkerRouterBridge({
   makeRequestHandler:createRequestHandler,
   loadServerBuild:loadBuild,
-  createSdkContext:async()=>{calls.push("open");return context;},
+  createSdkContext,
  });
- return {gateway,calls};
+ return {gateway,calls,createSdkContext};
 }
 
 test("real Vite-generated authenticated loader gets Shopify-verified tenant only",async()=>{
@@ -136,18 +137,20 @@ test("official Shopify thrown reauth response is forwarded and context closed",a
 });
 
 test("invalid/missing Vite handler rejects safely and does not leak SDK tokens",async()=>{
- const {calls}=setup();
+ const {calls,createSdkContext}=setup();
  const gateway=createAuthenticatedWorkerRouterBridge({
   makeRequestHandler:()=>()=>new Response("fake-token-never-export",{status:200,
     headers:{"content-type":"application/json"}}),
-  loadServerBuild:loadBuild,
-  createSdkContext:setup().gateway.createSdkContext,
+  loadServerBuild:loadBuild,createSdkContext,
  });
+ const response=await gateway.fetch(makeRequest(),env);
+ assert.equal(response.status,503);
+ assert.equal(await response.text(),"");
+ assert.deepEqual(calls,["open","shopify-authenticated-request",
+   "installation-check","persisted-session-check","disconnect"]);
  // Null route-handler factories fail closed before an auth attempt.
  const missing=createAuthenticatedWorkerRouterBridge({
    makeRequestHandler:null,loadServerBuild:loadBuild,
  });
  assert.equal((await missing.fetch(makeRequest(),env)).status,503);
- assert.deepEqual(calls,[]);
- void gateway;
 });
