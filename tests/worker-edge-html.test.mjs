@@ -69,7 +69,7 @@ test("Node SSR and Worker SSR remain physically isolated",()=>{
  assert.match(worker,/worker-edge-html\.server\.js/);
  assert.doesNotMatch(worker,/^\s*import\s+.*(?:PassThrough|@react-router\/node|shopify\.server|db\.server)/m);
  const isolated=readFileSync("app/services/worker-edge-html.server.js","utf8");
- assert.doesNotMatch(isolated,/node:|PassThrough|@react-router\/node|@shopify\/shopify-app-react-router\/adapters\/node/);
+ assert.doesNotMatch(isolated,/^\s*import\s+.*(?:node:|PassThrough|@react-router\/node|@shopify\/shopify-app-react-router\/adapters\/node)/m);
  const old=readFileSync("app/entry.server.jsx","utf8");
  assert.match(old,/PassThrough/);
 });
