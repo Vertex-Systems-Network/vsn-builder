@@ -1,6 +1,6 @@
 # Billing Production Lifecycle QA — Paid-only Q5.5 contract
 
-The merchant-approved public tiers are **Starter ($30/mo), Sliver ($100/mo), Gold ($150/mo), Platinum ($350/mo or $3,000/year)**. Each has a **10-day Shopify-managed trial**. Exact Partner handles are `starter/sliver/gold/platinum`. There is no public Free plan.
+The merchant-approved public tiers are **Starter ($30/mo), Sliver ($100/mo), Gold ($150/mo), Platinum ($350/mo or $3,000/year)**. Each has a **10-day Shopify-managed trial**. Exact public Partner pricing handles are `starter`, `sliver`, `gold`, and `platinum`. Configured Partner aliases must resolve to those same four canonical paid IDs. There is no public Free plan.
 
 ## Authority rules
 
@@ -17,6 +17,8 @@ The merchant-approved public tiers are **Starter ($30/mo), Sliver ($100/mo), Gol
 Tests cover first install with no contract, verified Starter, Sliver, Gold, Platinum, trialing paid plan, Platinum yearly billing, upgrade/downgrade, cancellation scheduling/effective date, frozen/unfrozen, stale/unknown handles, Shopify shop identity mismatch, retryable 429/5xx errors, bounded retries and reinstall after session cleanup.
 
 The app-uninstalled lifecycle deletes VSN-owned merchant data and its local subscription mirror. On reinstall it must re-query Shopify; a cached row is never commercial authority.
+
+**Reinstall verification:** The local `BuilderSubscription` mirror is a non-authoritative cache. On uninstall delete merchant-scoped subscription and session records according to the privacy retention policy. After reinstall, create a fresh authenticated Shopify session and re-fetch `activeSubscription`; never restore a paid entitlement from an old local `BuilderSubscription` mirror without current Partner API verification. Exercise canceled, trialing, mismatched shop ID and changed-plan-handle cases.
 
 ```env
 SHOPIFY_PARTNER_API_TIMEOUT_MS=8000
