@@ -4,6 +4,10 @@ on:
     paths:
       - ".github/workflows/paid-guard-integration-qa.yml"
       - "app/config/commercialPlans.js"
+      - ".graphqlrc.js"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/t011-codegen-compatibility.mjs"
       - "app/services/entitlements.server.js"
       - "app/utils/paid-mutation-access.js"
       - "app/utils/paid-mutation-guard.server.js"
@@ -41,6 +45,8 @@ jobs:
           node scripts/milestone-q53-entitlement-engine-audit.mjs
           node scripts/milestone-q54-billing-lifecycle-ux-audit.mjs
           node scripts/milestone-q55-billing-production-lifecycle-audit.mjs
+      - name: Enforce Shopify GraphQL codegen compatibility before release integration
+        run: node scripts/t011-codegen-compatibility.mjs
       - name: Inventory all app mutation actions
         run: node scripts/t026-mutation-inventory.mjs
       - name: Review JavaScript syntax in policy and guard modules
