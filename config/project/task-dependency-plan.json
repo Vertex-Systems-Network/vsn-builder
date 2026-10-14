@@ -301,9 +301,12 @@
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/161",
       "evidence": [
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/172"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/172",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/173",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/174",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/175"
       ],
-      "acceptance": "Full Cloudflare React Router/Shopify route graph and hosted OAuth still pending. Current PR #172 offers CI-only Web Streams SSR proof with Shopify CSP; not functional merchant app."
+      "acceptance": "Complete Cloudflare Vite-built VSN Builder merchant route graph; real Shopify SDK OAuth/App Bridge and session auth, durable migrated PrismaNeon persistence, paid-only mutations, tenant isolation and real Staging Shopify test-store E2E. Draft PRs #172-#175 only verify isolated SSR, synthetic generated route execution and real SDK/Neon module bundling; they do NOT meet this acceptance criterion."
     },
     {
       "id": "T021",
