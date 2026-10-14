@@ -16,6 +16,7 @@ on:
       - "scripts/milestone-q53-entitlement-engine-audit.mjs"
       - "scripts/milestone-q54-billing-lifecycle-ux-audit.mjs"
       - "scripts/milestone-q55-billing-production-lifecycle-audit.mjs"
+      - "docs/developer/billing-production-qa.md"
       - "app/components/dashboard/pages/Pricing.jsx"
   workflow_dispatch:
 permissions:
