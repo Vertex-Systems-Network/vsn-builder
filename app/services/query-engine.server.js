@@ -104,9 +104,9 @@ async function fetchMetafieldReferences({ admin, query, context = {} }) {
   if (!handle) return { ok: false, error: `A current ${owner} preview context is required for metafield references.`, nodes: [] };
   if (!query.metafieldKey) return { ok: false, error: "Enter a metafield key.", nodes: [] };
   const rootField = owner === "collection" ? "collectionByHandle" : "productByHandle";
-  const result = await graphql(admin, `#graphql
+  const productQuery = `#graphql
     query VsnLoopMetafieldReferences($handle:String!,$namespace:String!,$key:String!,$first:Int!){
-      ${rootField}(handle:$handle){
+      productByHandle(handle:$handle){
         metafield(namespace:$namespace,key:$key){
           references(first:$first){
             nodes{
@@ -121,7 +121,26 @@ async function fetchMetafieldReferences({ admin, query, context = {} }) {
           }
         }
       }
-    }`, { handle, namespace: query.metafieldNamespace, key: query.metafieldKey, first: Math.min(100, query.offset + query.limit) }, "Loop metafield references");
+    }`;
+  const collectionQuery = `#graphql
+    query VsnLoopMetafieldReferences($handle:String!,$namespace:String!,$key:String!,$first:Int!){
+      collectionByHandle(handle:$handle){
+        metafield(namespace:$namespace,key:$key){
+          references(first:$first){
+            nodes{
+              __typename
+              ... on Product { id title handle vendor productType featuredImage{url altText width height} priceRangeV2{minVariantPrice{amount currencyCode}} }
+              ... on Collection { id title handle description image{url altText width height} }
+              ... on Metaobject { id handle type displayName updatedAt fields{key value type} }
+              ... on MediaImage { id image{url altText width height} }
+              ... on GenericFile { id url mimeType }
+            }
+            pageInfo{hasNextPage endCursor}
+          }
+        }
+      }
+    }`;
+  const result = await graphql(admin, owner === "collection" ? collectionQuery : productQuery, { handle, namespace: query.metafieldNamespace, key: query.metafieldKey, first: Math.min(100, query.offset + query.limit) }, "Loop metafield references");
   if (!result.ok) return result;
   const refs = result.data?.[rootField]?.metafield?.references;
   return { ok: true, ...connectionPage(refs || {}) };
