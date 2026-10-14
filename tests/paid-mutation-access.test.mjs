@@ -64,3 +64,13 @@ test("server helper explicitly fails closed in production", async () => {
   assert.match(source, /evaluatePaidMutationAccess\(plan, resolveInternalPlanKeyFromHandle\)/);
   assert.match(source, /status: 403/);
 });
+
+test("trusted-origin gate protects additional merchant write routes", async () => {
+  const { readFile } = await import("node:fs/promises");
+  for (const path of ["app.campaigns.jsx", "app.floating-elements.jsx", "app.experiments.jsx", "app.library.jsx", "app.motion-library.jsx"]) {
+    const source = await readFile(new URL("../app/routes/" + path, import.meta.url), "utf8");
+    const start = source.search(/export\s+(?:async\s+function|const)\s+action\b/);
+    assert.ok(start >= 0, path + " action");
+    assert.match(source.slice(start), /assertTrustedMutationRequest\(request\)/, path + " rejects untrusted mutation origins");
+  }
+});
