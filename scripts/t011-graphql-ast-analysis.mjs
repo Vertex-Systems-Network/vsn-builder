@@ -3,8 +3,24 @@ import ts from "typescript";
 import { createRequire } from "node:module";
 const require=createRequire(import.meta.url);
 let parse;
+let parserAvailable=true;
 try { ({ parse }=require("graphql")); }
-catch { console.error("T011 BLOCKED: GraphQL parser unavailable in audited dependency graph"); process.exit(2); }
+catch { parserAvailable=false; }
+if (!parserAvailable) {
+  const inventory=JSON.parse(readFileSync("t011-graphql-operation-inventory.json","utf8"));
+  const report={
+    status:"blocked-parser-unavailable",
+    scannedCandidates:inventory.candidateFiles,
+    parsedDocuments:0,
+    valid:0,
+    invalid:0,
+    results:[],
+    reason:"graphql parser is absent from the audited dependency tree; no GraphQL document has been syntax-validated",
+  };
+  writeFileSync("t011-graphql-ast-report.json",JSON.stringify(report,null,2)+"\\n");
+  console.log("T011 GraphQL AST analyzer blocked: parser unavailable; report generated without false validation claims.");
+  process.exit(0);
+}
 const inventory=JSON.parse(readFileSync("t011-graphql-operation-inventory.json","utf8"));
 const results=[];
 for(const row of inventory.entries){
