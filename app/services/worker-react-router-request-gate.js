@@ -37,8 +37,8 @@ export function createIsolatedReactRouterGateway({
         return blocked();
       let url;
       try{url=new URL(request.url)}catch{return blocked(400)}
-      if(!ALLOWED_HOST.test(url.hostname) || url.protocol!=="https:" &&
-          url.protocol!=="http:")
+      if(!ALLOWED_HOST.test(url.hostname) || (url.protocol!=="https:" &&
+          url.protocol!=="http:") || url.username || url.password)
         return blocked();
       if(url.pathname!==PROBE_PATH || url.search || url.hash ||
           request.method!=="GET")
@@ -71,9 +71,36 @@ export function createIsolatedReactRouterGateway({
         if(!type.startsWith("text/html"))return blocked();
         const length=Number(response.headers.get("content-length"));
         if(Number.isFinite(length) && length>65536)return blocked();
-        const body=await response.text();
-        if(body.length>65536)return blocked();
-        return new Response(body,{status:200,headers:{
+        // Bounded streaming read prevents a bad test route from consuming
+        // arbitrarily large memory or hanging the CI Worker indefinitely.
+        if(!response.body)return blocked();
+        const reader=response.body.getReader();
+        const chunks=[];
+        let bytes=0;
+        const deadline=Date.now()+1500;
+        try{
+          while(true){
+            const ms=deadline-Date.now();
+            if(ms<=0)return blocked();
+            let timer;
+            const next=await Promise.race([
+              reader.read(),
+              new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error("read timeout")),ms)}),
+            ]).finally(()=>clearTimeout(timer));
+            if(next.done)break;
+            if(!(next.value instanceof Uint8Array))return blocked();
+            bytes+=next.value.byteLength;
+            if(bytes>65536)return blocked();
+            chunks.push(next.value);
+          }
+        }finally{
+          try{void reader.cancel().catch(()=>{})}catch{}
+          try{reader.releaseLock()}catch{}
+        }
+        const payload=new Uint8Array(bytes);
+        let offset=0;
+        for(const part of chunks){payload.set(part,offset);offset+=part.byteLength}
+        return new Response(payload,{status:200,headers:{
           ...SAFE_HEADERS,"content-type":"text/html; charset=utf-8",
         }});
       }catch{
