@@ -188,10 +188,12 @@
       "title": "Review/rebase/merge stacked PRs with mandatory exact-SHA CI",
       "workstream": "Integration",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/157",
-      "evidence": [],
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/171"
+      ],
       "acceptance": "Reconcile PR #152/#153/#155; no merge with red mandatory checks, retain protected release gates"
     },
     {
