@@ -304,9 +304,10 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/172",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/173",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/174",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/175"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/175",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/176"
       ],
-      "acceptance": "Complete Cloudflare Vite-built VSN Builder merchant route graph; real Shopify SDK OAuth/App Bridge and session auth, durable migrated PrismaNeon persistence, paid-only mutations, tenant isolation and real Staging Shopify test-store E2E. Draft PRs #172-#175 only verify isolated SSR, synthetic generated route execution and real SDK/Neon module bundling; they do NOT meet this acceptance criterion."
+      "acceptance": "Full Cloudflare Vite-built VSN Builder merchant route graph; real Shopify OAuth/App Bridge and valid persisted PrismaNeon sessions after Staging migrations; signed webhooks, paid-only mutations, tenant isolation and actual Staging store E2E. PRs #172–#176 prove synthetic CI-only SSR, router, SDK/Neon compilation and an authenticated-gate-to-loader bridge using synthetic sessions; not actual merchant acceptance."
     },
     {
       "id": "T021",
