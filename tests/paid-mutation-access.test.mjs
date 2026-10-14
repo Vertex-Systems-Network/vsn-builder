@@ -21,6 +21,7 @@ test("missing, stale, unverified, retired Free and mismatched contracts are deni
     active({ subscription: { status: "active", planHandle: "unknown" } }),
     active({ subscription: { status: "active", planHandle: "gold" } }),
     active({ key: "inactive" }),
+    active({ key: "core", subscription: { status: "active", planHandle: "free" } }),
   ];
   for (const plan of cases) {
     const decision = evaluatePaidMutationAccess(plan, resolve);
@@ -37,4 +38,9 @@ test("paid gate stays in action, never read-only loader", async () => {
   assert.ok(loaderStart >= 0 && actionStart > loaderStart);
   assert.equal(source.slice(loaderStart, actionStart).includes("evaluatePaidMutationAccess("), false);
   assert.equal(source.slice(actionStart).includes("evaluatePaidMutationAccess("), true);
+});
+
+test("legacy resolver cannot turn Free into a paid entitlement", () => {
+  const legacyResolver = (handle) => ({ free: "core", sliver: "pro", gold: "cro" })[handle] || null;
+  assert.equal(evaluatePaidMutationAccess(active({ key: "core", subscription: { status: "active", planHandle: "free" } }), legacyResolver).allowed, false);
 });
