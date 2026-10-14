@@ -46,53 +46,53 @@ async function fetchConnection({ admin, source, query, after = null, first = 100
   if (source === "products" || source === "search") {
     const effectiveQuery = source === "search" ? (query.query || "") : (query.query || null);
     const result = await graphql(admin, `#graphql
-      query VsnLoopProducts($first:Int!,$after:String,$q:String){
-        products(first:$first,after:$after,query:$q,sortKey:${sortKey},reverse:${reverse ? "true" : "false"}){
+      query VsnLoopProducts($first:Int!,$after:String,$q:String,$sortKey:ProductSortKeys!,$reverse:Boolean!){
+        products(first:$first,after:$after,query:$q,sortKey:$sortKey,reverse:$reverse){
           nodes{ id title handle createdAt updatedAt vendor productType tags featuredImage{url altText width height} priceRangeV2{minVariantPrice{amount currencyCode}} variants(first:20){nodes{availableForSale}} }
           pageInfo{hasNextPage endCursor}
         }
-      }`, { ...commonVars, q: effectiveQuery }, "Loop products");
+      }`, { ...commonVars, q: effectiveQuery, sortKey, reverse }, "Loop products");
     return result.ok ? { ok: true, ...connectionPage(result.data.products) } : result;
   }
   if (source === "collections") {
     const result = await graphql(admin, `#graphql
-      query VsnLoopCollections($first:Int!,$after:String,$q:String){
-        collections(first:$first,after:$after,query:$q,sortKey:${sortKey},reverse:${reverse ? "true" : "false"}){
+      query VsnLoopCollections($first:Int!,$after:String,$q:String,$sortKey:CollectionSortKeys!,$reverse:Boolean!){
+        collections(first:$first,after:$after,query:$q,sortKey:$sortKey,reverse:$reverse){
           nodes{ id title handle description updatedAt image{url altText width height} productsCount{count} }
           pageInfo{hasNextPage endCursor}
         }
-      }`, commonVars, "Loop collections");
+      }`, { ...commonVars, sortKey, reverse }, "Loop collections");
     return result.ok ? { ok: true, ...connectionPage(result.data.collections) } : result;
   }
   if (source === "blogs") {
     const result = await graphql(admin, `#graphql
-      query VsnLoopBlogs($first:Int!,$after:String,$q:String){
-        blogs(first:$first,after:$after,query:$q,sortKey:${sortKey},reverse:${reverse ? "true" : "false"}){
+      query VsnLoopBlogs($first:Int!,$after:String,$q:String,$sortKey:BlogSortKeys!,$reverse:Boolean!){
+        blogs(first:$first,after:$after,query:$q,sortKey:$sortKey,reverse:$reverse){
           nodes{ id title handle updatedAt articlesCount{count} }
           pageInfo{hasNextPage endCursor}
         }
-      }`, commonVars, "Loop blogs");
+      }`, { ...commonVars, sortKey, reverse }, "Loop blogs");
     return result.ok ? { ok: true, ...connectionPage(result.data.blogs) } : result;
   }
   if (source === "articles") {
     const result = await graphql(admin, `#graphql
-      query VsnLoopArticles($first:Int!,$after:String,$q:String){
-        articles(first:$first,after:$after,query:$q,sortKey:${sortKey},reverse:${reverse ? "true" : "false"}){
+      query VsnLoopArticles($first:Int!,$after:String,$q:String,$sortKey:ArticleSortKeys!,$reverse:Boolean!){
+        articles(first:$first,after:$after,query:$q,sortKey:$sortKey,reverse:$reverse){
           nodes{ id title handle summary publishedAt image{url altText width height} blog{handle title} author{name} tags }
           pageInfo{hasNextPage endCursor}
         }
-      }`, commonVars, "Loop articles");
+      }`, { ...commonVars, sortKey, reverse }, "Loop articles");
     return result.ok ? { ok: true, ...connectionPage(result.data.articles) } : result;
   }
   if (source === "metaobjects") {
     if (!query.metaobjectType) return { ok: false, error: "Choose a metaobject type before previewing this query.", nodes: [] };
     const result = await graphql(admin, `#graphql
-      query VsnLoopMetaobjects($first:Int!,$after:String,$q:String,$type:String!){
-        metaobjects(first:$first,after:$after,query:$q,type:$type,sortKey:"${sortKey}",reverse:${reverse ? "true" : "false"}){
+      query VsnLoopMetaobjects($first:Int!,$after:String,$q:String,$type:String!,$sortKey:String!,$reverse:Boolean!){
+        metaobjects(first:$first,after:$after,query:$q,type:$type,sortKey:$sortKey,reverse:$reverse){
           nodes{ id handle type displayName updatedAt fields{key value type} }
           pageInfo{hasNextPage endCursor}
         }
-      }`, { ...commonVars, type: query.metaobjectType }, "Loop metaobjects");
+      }`, { ...commonVars, type: query.metaobjectType, sortKey, reverse }, "Loop metaobjects");
     return result.ok ? { ok: true, ...connectionPage(result.data.metaobjects) } : result;
   }
   return { ok: false, error: `Unsupported loop source: ${source}`, nodes: [] };
