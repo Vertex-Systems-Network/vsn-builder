@@ -1,0 +1,24 @@
+name: T026 Paid Mutation Guard Unit Tests
+on:
+  pull_request:
+    paths:
+      - "app/routes/app.pages.jsx"
+      - "app/utils/paid-mutation-access.js"
+      - "tests/paid-mutation-access.test.mjs"
+      - ".github/workflows/t026-paid-mutation-unit.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run T026 regression tests without dependency install
+        run: node --test tests/paid-mutation-access.test.mjs
+      - name: Enforce JavaScript syntax for isolated helper
+        run: node --check app/utils/paid-mutation-access.js
