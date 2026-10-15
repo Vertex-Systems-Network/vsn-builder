@@ -1,7 +1,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { inspectHostedNeonRuntimeUrl } from "../app/services/neon-target-policy.js";
+import { probeStagingHostedRuntime } from "./staging-hosted-http-proof.mjs";
 
-export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWranglerConfig = false, hasD1Adapter = false, hasNeonAdapter = false, hasWorkerMerchantRuntime = false } = {}) {
+export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWranglerConfig = false, hasD1Adapter = false, hasNeonAdapter = false, hasWorkerMerchantRuntime = false, httpProof = null } = {}) {
   const checks = [];
   const check = (name, ok, reason) => checks.push({ name, ok: Boolean(ok), ...(ok ? {} : { reason }) });
   const get = (key) => String(vars[key] || "").trim();
@@ -55,14 +56,22 @@ export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWra
     check("Worker merchant SSR/OAuth integration", hasWorkerMerchantRuntime,
       "Existing Worker placeholder is not a Shopify React Router merchant application");
     check("Worker app build/config", hasWranglerConfig, "No Wrangler Worker application deployment config");
-    check("Verified external HTTPS route", worker?.publicUrlVerified === true,
-      "workers.dev disabled or routed HTTPS application endpoint has not been verified");
+    check("Verified external HTTPS route", httpProof?.origin === apiUrl &&
+      httpProof?.liveness === true,
+      "Public Staging /healthz must be read successfully over matching HTTPS origin");
+    check("Hosted merchant readiness response", httpProof?.merchantReady === true,
+      "Public Staging /readyz must attest real Shopify OAuth, merchant routes and persistent sessions");
+    check("Hosted merchant /app route", httpProof?.merchantRoute === true,
+      "Public Staging /app is missing, locked or lacks safe auth response");
   } else if (platform === "node") {
     check("Persistent database configured", Boolean(get("DATABASE_URL")), "Node staging DATABASE_URL missing");
     check("Persistent SQLite volume attested", get("VSN_STAGING_PERSISTENT_STORAGE_VERIFIED") === "1",
       "File-backed SQLite on a disposable host risks losing sessions and customer data");
-    check("Staging host reachable", get("VSN_STAGING_HOST_HEALTH_VERIFIED") === "1",
-      "App-level health endpoint not verified from outside");
+    check("Staging host reachable", httpProof?.origin === apiUrl && httpProof?.liveness === true,
+      "App-level health endpoint must be checked from outside, not claimed by an env flag");
+    check("Node merchant runtime reachable", httpProof?.merchantReady === true &&
+      httpProof?.merchantRoute === true,
+      "Node staging needs real /readyz and /app route evidence");
   }
   return { target: "staging", platform, checks, ready: checks.every((row) => row.ok) };
 }
@@ -82,15 +91,14 @@ async function fetchWorkerEvidence() {
     const value = await response.json();
     return value.success ? value.result : null;
   };
-  const [settings, deployments, secrets, subdomain] = await Promise.all([
-    get("/script-settings"), get("/deployments"), get("/secrets"), get("/subdomain"),
+  const [settings, deployments, secrets] = await Promise.all([
+    get("/script-settings"), get("/deployments"), get("/secrets"),
   ]);
   return {
     exists: Boolean(settings || deployments),
     deployments: deployments?.deployments?.length || 0,
     bindings: (settings?.bindings || []).map((item) => ({ type: item.type, name: item.name })),
     secretNames: (Array.isArray(secrets) ? secrets : []).map((item) => item.name),
-    publicUrlVerified: subdomain?.enabled === true && process.env.VSN_STAGING_PUBLIC_URL_VERIFIED === "1",
   };
 }
 if (process.argv[1] && import.meta.url === new URL("file://" + process.argv[1]).href) {
@@ -101,7 +109,9 @@ if (process.argv[1] && import.meta.url === new URL("file://" + process.argv[1]).
   let worker = null;
   try { worker = await fetchWorkerEvidence(); }
   catch (error) { console.error("Cloudflare staging metadata lookup failed:", error.message); }
+  const httpProof = await probeStagingHostedRuntime(process.env.SHOPIFY_APP_URL);
   const report = assessStaging({
+    httpProof,
     vars: { ...process.env, VSN_TARGET_ENV: process.env.VSN_TARGET_ENV || "staging" },
     appConfig: existsSync(configPath) ? readFileSync(configPath, "utf8") : "",
     worker,
@@ -113,7 +123,7 @@ if (process.argv[1] && import.meta.url === new URL("file://" + process.argv[1]).
     hasWorkerMerchantRuntime: existsSync("workers/app.js") &&
       !readFileSync("workers/app.js", "utf8").includes("No storefront, OAuth, merchant mutations, billing, or editor routes"),
   });
-  writeFileSync("staging-hosted-readiness.json", JSON.stringify(report, null, 2) + "\n");
+  writeFileSync("staging-hosted-readiness.json", JSON.stringify({ ...report, httpProof }, null, 2) + "\n");
   for (const row of report.checks) console.log((row.ok ? "PASS" : "BLOCKED") + " " + row.name +
     (row.ok ? "" : ": " + row.reason));
   console.log("Staging hosted readiness:", report.ready ? "PASS" : "BLOCKED");
