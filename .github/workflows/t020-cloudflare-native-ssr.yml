@@ -49,7 +49,11 @@ jobs:
       - name: Build REAL Builder route graph in Cloudflare Vite SSR mode
         run: |
           ./node_modules/.bin/react-router build --config vite.full-merchant-cloudflare-ci.config.js
-          test -d build
+          test -s dist/server/index.js
+          test -s dist/server/wrangler.json
+          test -s dist/client/.vite/manifest.json
+          test -d dist/client/assets
+          test -s dist/server/.vite/manifest.json
       - name: Assert this test did not mutate dependency declarations
         if: always()
         run: git diff --exit-code -- package.json package-lock.json
