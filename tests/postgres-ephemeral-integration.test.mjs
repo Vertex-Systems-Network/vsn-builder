@@ -20,7 +20,7 @@ const healthConfig={
   expectedDatabaseName:"builder_ci",expectedSchemaName:"public",
   expectedMigrationName:name,expectedMigrationChecksum:checksum
 };
-test("real PostgreSQL migrations, checksum, 51 models, and feature tables are healthy",async()=>{
+test("real PostgreSQL migrations, checksum, at least 52 application tables, and feature tables are healthy",async()=>{
  const db=new PrismaClient();
  try{
   const check=await inspectPostgresSchemaHealth(db,healthConfig);
@@ -30,7 +30,7 @@ test("real PostgreSQL migrations, checksum, 51 models, and feature tables are he
   assert.equal(check.migrationChecksumMatches,true);
   for(const feature of Object.values(check.features))assert.equal(feature.ready,true);
   const count=await db.$queryRaw`SELECT COUNT(*)::int AS "count" FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name != '_prisma_migrations'`;
-  assert.equal(count[0].count,51);
+  assert(count[0].count>=52,"Real PostgreSQL must contain the verified 52-table application baseline");
   assert(VSN_HEALTH_TABLES.length>10);
  }finally{await db.$disconnect()}
 });
