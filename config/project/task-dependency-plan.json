@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "policy": "dependency_driven_evidence_first_no_phase_gating",
-  "updated_on": "2026-10-15",
+  "updated_on": "2026-10-16",
   "product": "VSN | Builder",
   "public_shopify_apps": 1,
   "commercial_plans": [
@@ -259,11 +259,15 @@
       "title": "Verify single public Shopify Builder app and internal Dev/Staging identities",
       "workstream": "Shopify Auth",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/159",
-      "evidence": [],
-      "acceptance": "One public VSN | Builder listing; Dev/Staging internal testing safely isolated; actual Partner app identity/ownership verified"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/blob/fix/t011-lint-runtime-correctness-20261015/docs/t015-shopify-app-identity-evidence-2026-10-16.md",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190"
+      ],
+      "acceptance": "One public VSN | Builder listing; Dev/Staging internal testing safely isolated; actual Partner app identity/ownership verified",
+      "progress_note": "Shopify Admin GraphQL verified one intended canonical public VSN Builder app (existing shopify.app.toml client ID), separate internal Staging and Development apps, and Builder installations on Staging/Production test stores. Fixed stale code that rejected canonical Live ID; protected readiness now maps all tier IDs. Dev app not installed, VSN Partner organization legal ownership unverified, callback hosts are placeholders, and actual Builder OAuth not accepted: final closure BLOCKED."
     },
     {
       "id": "T016",
