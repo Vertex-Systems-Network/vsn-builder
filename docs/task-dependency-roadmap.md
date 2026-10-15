@@ -10,7 +10,7 @@ Earlier eight-phase trackers are legacy historical evidence inventories. They do
 
 ## ACTIVE task counts (final closures removed)
 
-**28 ACTIVE** · **2 READY** · **7 IN REVIEW** · **19 WAITING**. The 13 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
+**28 ACTIVE** · **1 READY** · **8 IN REVIEW** · **19 WAITING**. The 13 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
 
 One public **VSN | Builder** app; Dev/Staging only internal testing. No Free plan.
 
@@ -25,7 +25,6 @@ One public **VSN | Builder** app; Dev/Staging only internal testing. No Free pla
 
 | ID | Priority | Startable task | Issue |
 | --- | --- | --- | --- |
-| `T014` | P0 | Configure/verify GitHub Environment secrets and tier variables | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T015` | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 
 ## Dependency graph (high-level)
@@ -57,7 +56,7 @@ flowchart TD
 | --- | --- | --- | --- | --- | --- | --- |
 | `T012` | Integration | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | None | IN REVIEW | [#157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | `T013` | Infrastructure | P0 | Protect development branch and verify GitHub required reviewers | None | IN REVIEW (read-only verifier CI; live branch still unprotected) | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
-| `T014` | Infrastructure | P0 | Configure/verify GitHub Environment secrets and tier variables | None | READY | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
+| `T014` | Infrastructure | P0 | Configure/verify GitHub Environment secrets and tier variables | None | IN REVIEW | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T015` | Shopify Auth | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | None | READY | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 | `T016` | Database | P0 | Real Neon Staging pooled/direct credentials and connectivity | `T014` | WAITING | [#160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | `T017` | Database | P0 | Live Neon snapshot/default/compute attestation in protected preflight | `T006` | IN REVIEW | [#160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
