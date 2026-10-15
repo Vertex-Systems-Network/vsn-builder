@@ -19,6 +19,10 @@ try {
   fs.writeFileSync(path.join(root,"{".repeat(90)+"bad","schema.graphql"),"type Query { sample: String }\n");
   fs.mkdirSync(path.join(root,"bad[glob]"),{recursive:true});
   fs.writeFileSync(path.join(root,"bad[glob]","schema.graphql"),"type Query { sample: String }\n");
+  fs.mkdirSync(path.join(root,"symlink-schema"),{recursive:true});
+  fs.symlinkSync(path.join(root,"safe-extension","schema.graphql"),path.join(root,"symlink-schema","schema.graphql"),"file");
+  fs.mkdirSync(path.join(root,"x".repeat(80)),{recursive:true});
+  fs.writeFileSync(path.join(root,"x".repeat(80),"schema.graphql"),"type Query { sample: String }\n");
   fs.symlinkSync(path.join(root,"safe-extension"),path.join(root,"aliased-safe"),"dir");
   process.chdir(temp);
   // Cache-bust so getConfig() reads the synthetic isolated extension directory.
@@ -27,6 +31,8 @@ try {
   assert(fixture.projects["safe-extension"],"Valid extension must be included");
   assert(!fixture.projects["bad[glob]"],"Glob syntax in filesystem name must be rejected");
   assert(!fixture.projects["{".repeat(90)+"bad"],"Unbounded brace nesting must be rejected");
+  assert(!fixture.projects["symlink-schema"],"Symlink schema files must not be followed");
+  assert(!fixture.projects["x".repeat(80)],"Unbounded directory names must be rejected");
   assert(!fixture.projects["aliased-safe"],"Filesystem symlinks must not be followed");
   assert.deepEqual(fixture.projects["safe-extension"].documents,["./extensions/safe-extension/**/*.graphql"]);
   console.log("PASS Shopify GraphQL codegen config and extension glob safety (synthetic fixtures)");
