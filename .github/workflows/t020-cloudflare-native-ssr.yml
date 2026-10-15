@@ -5,7 +5,10 @@ on:
       - "vite.full-merchant-cloudflare-ci.config.js"
       - "wrangler.full-merchant-vite-ci.jsonc"
       - "workers/full-merchant-vite-ci.js"
+      - "workers/full-merchant-ci-db-boundary.js"
+      - "workers/full-merchant-ci-shopify-boundary.js"
       - "tests/t020-cloudflare-native-ssr.test.mjs"
+      - "tests/t020-worker-native-boundaries.test.mjs"
       - ".github/workflows/t020-cloudflare-native-ssr.yml"
   workflow_dispatch:
 permissions:
@@ -48,8 +51,13 @@ jobs:
           node -e "console.log('Cloudflare Vite plugin:', require('./node_modules/@cloudflare/vite-plugin/package.json').version)"
           node -e "for(const p of ['wrangler','miniflare','workerd']) { try { console.log(p+':',require(p+'/package.json').version); } catch { console.log(p+': resolved transitively'); } }"
           git diff --exit-code -- package.json package-lock.json
-      - name: Enforce no-deploy full merchant SSR safety contracts
-        run: node --test tests/t020-cloudflare-native-ssr.test.mjs
+      - name: Enforce no-deploy full merchant SSR and fail-closed legacy boundary contracts
+        run: node --test tests/t020-cloudflare-native-ssr.test.mjs tests/t020-worker-native-boundaries.test.mjs
+      - name: Generate edge-only Neon Prisma client without connecting to a database
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
       - name: Build REAL Builder route graph in Cloudflare Vite SSR mode
         run: |
           set +e
