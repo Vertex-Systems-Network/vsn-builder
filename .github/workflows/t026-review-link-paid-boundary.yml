@@ -2,7 +2,7 @@ name: T026 Paid Review Comment Boundary (No Deploy)
 on:
   pull_request:
     paths:
-      - "app/routes/review.\$token.jsx"
+      - 'app/routes/review.$token.jsx'
       - "app/services/paid-mutation-guard.server.js"
       - "tests/builder-paid-mutation-guard.test.mjs"
       - ".github/workflows/t026-review-link-paid-boundary.yml"
