@@ -96,7 +96,10 @@ jobs:
         if: steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success'
         continue-on-error: true
         run: npm audit --include=dev --audit-level=high
-      - if: steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success' && steps.post_playwright_audit.outcome == 'success'
+      # PRs skip protected external browser E2E; installing all three browsers
+      # here only wastes runner time. Still install on trusted push/manual runs.
+      # The mandatory post-Playwright dependency audit above runs on EVERY PR.
+      - if: github.event_name != 'pull_request' && steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success' && steps.post_playwright_audit.outcome == 'success'
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Run external Playwright E2E with protected credentials
         if: github.event_name != 'pull_request' && steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success' && steps.post_playwright_audit.outcome == 'success'
