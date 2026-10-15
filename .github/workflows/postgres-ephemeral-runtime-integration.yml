@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "tests/worker-shopify-install-postgres-real.test.mjs"
+      - "tests/postgres-ephemeral-integration.test.mjs"
       - "tests/worker-shopify-install-session-storage.test.mjs"
       - "app/services/worker-shopify-install-session-storage.js"
       - "app/services/worker-shopify-uninstall-session-revoke.js"
