@@ -2,7 +2,7 @@
 
 ## Current active work and irreversible task closure (15 Oct 2026)
 
-**31 active atomic tasks only:** 6 READY, 6 IN_REVIEW, 19 WAITING. The 10 narrow-scope previously verified tasks have been **CLOSED FINAL**, removed from all active work tables and recorded in [the immutable audit archive](docs/closed-task-archive.md). A closed acceptance scope is never reopened or scheduled; any additional functionality requires a new task ID. [ACTIVE TASKS.md](TASKS.md) and [the canonical validator](scripts/task-dependency-check.mjs) enforce this policy; `--include-closed` is the explicit historical audit view.
+**31 active atomic tasks only:** 5 READY, 7 IN_REVIEW, 19 WAITING. The 10 narrow-scope previously verified tasks have been **CLOSED FINAL**, removed from all active work tables and recorded in [the immutable audit archive](docs/closed-task-archive.md). A closed acceptance scope is never reopened or scheduled; any additional functionality requires a new task ID. [ACTIVE TASKS.md](TASKS.md) and [the canonical validator](scripts/task-dependency-check.mjs) enforce this policy; `--include-closed` is the explicit historical audit view.
 
 **Engineering/release distinction:** CI on the candidate integration PR [#190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) passed the scoped security, local Cloudflare-native Workerd and QA checks. This does **not** close T011/T012/T020 or any real Shopify/Neon hosted task: the PR remains draft, development branch is not protected, hosted `/app` and `/auth/*` remain HTTP 503, Staging primary Neon is not migrated and real Shopify installation/billing remain unverified. No Live deployment or Shopify submission.
 
