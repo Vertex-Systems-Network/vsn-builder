@@ -15,8 +15,8 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.equal(result.summary.closed,13);
  assert.equal(result.summary.active,28);
  assert.equal(result.summary.verified,0);
- assert.equal(result.summary.in_review,7);
- assert.equal(result.summary.ready,2);
+ assert.equal(result.summary.in_review,8);
+ assert.equal(result.summary.ready,1);
  assert.equal(result.summary.waiting,19);
  assert.deepEqual(plan.closed_task_ids,[...Array.from({length:11},(_,i)=>"T"+String(i+1).padStart(3,"0")),"T026","T027"]);
  assert(result.rows.every(t=>t.status!=="closed"),"closed work must never appear in active queue");
@@ -32,7 +32,7 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
 test("unrelated workstreams run READY without an earlier phase or cloud prerequisites",()=>{
  const {rows}=inspectTaskPlan(fresh());
  const ready=new Set(rows.filter(r=>r.execution==="READY").map(r=>r.id));
- for(const id of ["T014","T015"])
+ for(const id of ["T015"])
   assert(ready.has(id),"Expected independent READY task "+id);
  for(const id of ["T018","T021","T023","T025","T029","T031","T037","T038","T041"])
   assert.equal(rows.find(r=>r.id===id).execution,"WAITING",id);
@@ -44,6 +44,7 @@ test("unrelated workstreams run READY without an earlier phase or cloud prerequi
  assert.equal(rows.some(r=>r.id==="T026"),false,"Server mutation entitlement is FINAL CLOSED");
  assert.equal(rows.find(r=>r.id==="T024").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T013").execution,"IN_REVIEW");
+ assert.equal(rows.find(r=>r.id==="T014").execution,"IN_REVIEW");
 });
 test("T026 stays permanently closed yet T029 cannot run without Shopify billing E2E",()=>{
  const plan=fresh();
@@ -56,6 +57,16 @@ test("T026 stays permanently closed yet T029 cannot run without Shopify billing 
  assert.equal(proof.rows.find(x=>x.id==="T029").execution,"WAITING");
  const reopened=fresh();find(reopened,"T026").status="todo";
  assert(inspectTaskPlan(reopened).errors.some(x=>x.includes("Immutable closed task was reopened")));
+});
+test("T014 Cloudflare settings are in review but T016/T019 protected credentials remain WAITING",()=>{
+ const plan=fresh();
+ assert.equal(find(plan,"T014").status,"in_review");
+ assert.equal(plan.closed_task_ids.length,13);
+ const proof=inspectTaskPlan(plan);
+ assert.deepEqual(proof.errors,[]);
+ assert.equal(proof.rows.find(x=>x.id==="T016").execution,"WAITING");
+ assert.equal(proof.rows.find(x=>x.id==="T019").execution,"WAITING");
+ assert.equal(proof.rows.find(x=>x.id==="T014").execution,"IN_REVIEW");
 });
 test("blocking one task cannot artificially block independent READY tasks",()=>{
  const plan=fresh();

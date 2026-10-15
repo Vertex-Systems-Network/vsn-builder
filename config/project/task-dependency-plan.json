@@ -244,11 +244,15 @@
       "title": "Configure/verify GitHub Environment secrets and tier variables",
       "workstream": "Infrastructure",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/158",
-      "evidence": [],
-      "acceptance": "Live GitHub scoped secret-name/reviewer/policy metadata and tier preflight verified without exposing values"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38757462226",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/205"
+      ],
+      "acceptance": "Live GitHub scoped secret-name/reviewer/policy metadata and tier preflight verified without exposing values",
+      "progress_note": "Read-only Cloudflare Staging audit verified ZERO secrets/bindings; encrypted Worker binding contract and 8 synthetic adversarial CI tests green. Still requires actual GitHub Environment reviewer/policy/secrets and protected development, so T014 stays IN_REVIEW not CLOSED. T019 remains WAITING."
     },
     {
       "id": "T015",
