@@ -129,7 +129,7 @@ test("unpaid merchant never reads staff settings or page data",async()=>{
 
 test("both hosted page-data routes require RBAC; verified-session is not page-data",()=>{
   const source=readFileSync("workers/app.js","utf8");
-  assert.equal((source.match(/requirePageViewPermission:true/g)||[]).length,2);
+  assert.equal((source.match(/requirePageViewPermission:true/g)||[]).length,3);
   assert.match(source,/enablePageSummary:true,\s*requireVerifiedPaidRead:true,\s*requirePageViewPermission:true/);
   assert.match(source,/enablePageMetadata:true,\s*requireVerifiedPaidRead:true,\s*requirePageViewPermission:true/);
   assert.match(source,/url\.pathname==="\/app\/__vsn\/verified-session"/);
