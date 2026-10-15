@@ -1,12 +1,25 @@
 # VSN Builder — ACTIVE Development Task Board
 
-**Verified state: 15 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
+**Verified state: 16 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
 **28 ACTIVE** of 41 tracked tasks · **1 READY** · **8 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 13 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **Work order:** dependency-first, not phase-first. Mandatory release and Shopify safeguards remain in place. One public VSN | Builder app; Starter $30, Sliver $100, Gold $150, Platinum $350 monthly/$3,000 annually; each 10-day Shopify trial, no Free tier.
 
 **Current integration evidence:** [draft PR #190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) is still **unmerged to `development`**; [T020 local Workerd](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990503), [T011 security](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990721) and [Production Confidence](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990508) CI passed on prior integration candidate, **not hosted merchant acceptance**. Worker `/app` and `/auth/*` still return 503, Staging Neon primary has no app tables, and `development` lacks enforced branch protection. Do not ship Live or submit to Shopify.
+
+## Current nine-task closure review (2026-10-16)
+
+**Batch audit performed: 9/9 assessed, 0 FINAL CLOSED.** Exact closure blockers, live provider metadata and next actions are in [nine-task evidence report](docs/nine-task-closure-audit-2026-10-16.md). Green local CI does not override the stated acceptance criteria.
+
+- `T012` remains IN_REVIEW: integration #190 is Draft and unmerged to unprotected `development`. `T013` remains IN_REVIEW because live `development.protected=false`.
+- `T014` remains IN_REVIEW: protected GitHub Environment policies unverified and Cloudflare Staging/Production Worker scripts currently have **0 secrets / 0 bindings**, workers.dev disabled.
+- `T015` remains the single READY task: connected Dev, Staging and Production stores authenticated via **Shopify ChatGPT MCP App**, not a verified VSN Builder Partner app; real Partner ownership, safe tier mapping and app-specific OAuth remain unverified.
+- `T017` remains IN_REVIEW: Neon Staging real restored snapshot, default branch and pooled endpoint verified; protected preflight still missing, and default Staging has **0 application tables**.
+- `T020` remains IN_REVIEW: exact-head source CI at `d8de1756a413cf0a7503d9ac80afcb6c636780f5` was **15/15 success**, but hosted Shopify OAuth, editor and Neon acceptance remain unavailable.
+- `T024`, `T032`, `T040` remain IN_REVIEW: missing signed installation-generation provenance; real supported-theme/forms/widgets fixture QA; real compliant listing screenshots, privacy/support and reviewer evidence.
+
+**Counts unchanged:** 13 historic FINAL CLOSED; 28 ACTIVE (1 READY, 8 IN_REVIEW, 19 WAITING). No merge/deployment/migration/Shopify submission was performed during this audit.
 
 ## Current actionable tasks
 
