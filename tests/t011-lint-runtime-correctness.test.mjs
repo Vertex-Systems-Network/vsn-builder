@@ -29,8 +29,8 @@ test("Canvas hooks run before conditional hidden-node return", () => {
 
 test("paid media resolver action has a real database binding",()=>{
   const source=readFileSync("app/routes/app.editor-media.jsx","utf8");
-  assert.match(source,/import db from ["']\\.\\.\\/db\\.server\\.js["']/);
-  assert.match(source,/const paidDenial=await paidMutationDenied\\(db,session\\.shop\\)/);
+  assert.ok(source.includes('import db from "../db.server.js";'));
+  assert.ok(source.includes("const paidDenial=await paidMutationDenied(db,session.shop)"));
   const importAt=source.indexOf("import db from");
   const guardAt=source.indexOf("paidMutationDenied(db,session.shop)");
   assert.ok(importAt>=0&&guardAt>importAt);
