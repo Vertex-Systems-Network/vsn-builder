@@ -36,7 +36,7 @@ test("Cloudflare-native target can neither publish nor bind real service secrets
   // cannot run the hosted 2026-10-13 date. Never relax live config.
   assert.equal(cfg.compatibility_date,"2026-06-23");
   const stage = JSON.parse(readFileSync("wrangler.staging.jsonc","utf8")
-    .replace(/^\\s*\\/\\/.*$/gm,""));
+    .replace(/^\s*\/\/.*$/gm,""));
   assert.notEqual(stage.name,cfg.name);
   assert.notEqual(stage.compatibility_date,cfg.compatibility_date);
   assert.equal(cfg.vars.APP_ENV,"test");
