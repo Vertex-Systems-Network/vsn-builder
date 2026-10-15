@@ -115,7 +115,7 @@ export function inspectTaskPlan(plan,{includeClosed=false}={}) {
   id:t.id,title:t.title,closed_on:t.closed_on,acceptance:t.acceptance,
   evidence:t.evidence,closure_note:t.closure_note,
  }));
- return {errors,rows,ready,closed_tasks:closedTasks,summary:{
+ return {errors,rows,ready,closed_tasks:includeClosed?closedTasks:[],summary:{
   total:tasks.length,active:tasks.length-statusCounts.closed,...statusCounts,
   ready:ready.length,waiting:rows.filter(x=>x.execution==="WAITING").length,
   in_review:statusCounts.in_review,
