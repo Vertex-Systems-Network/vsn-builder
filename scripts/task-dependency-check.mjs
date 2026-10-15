@@ -54,7 +54,7 @@ export function inspectTaskPlan(plan,{includeClosed=false}={}) {
    errors.push("Evidence must point to traceable same-repository issue/PR/workflow for "+t.id);
   if(accepted(t.status) && (!Array.isArray(t.evidence)||t.evidence.length===0))
    errors.push("Verified/closed task missing narrow-scope evidence for "+t.id);
-  if(t.status==="closed" && (!/^20\\d{2}-\\d{2}-\\d{2}$/.test(t.closed_on||"") ||
+  if(t.status==="closed" && (!/^20\d{2}-\d{2}-\d{2}$/.test(t.closed_on||"") ||
      !t.closure_note?.trim()))
    errors.push("Closed task missing immutable closure date or scope evidence: "+t.id);
   if(t.status!=="closed" && (t.closed_on||t.closure_note))
