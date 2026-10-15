@@ -23,6 +23,16 @@ function replaceOnce(source, pattern, replacement, label) {
   return source.replace(pattern, replacement);
 }
 
+function replaceHeaderField(source, pattern, replacement, label) {
+  // Header fields must be changed ONLY before the first TOML section:
+  // metaobject definitions legitimately contain many other "name" fields.
+  const end = source.search(/^\[/m);
+  if (end < 0) throw new Error("Shopify TOML section boundary missing");
+  const header = source.slice(0, end);
+  const tail = source.slice(end);
+  return replaceOnce(header, pattern, replacement, label) + tail;
+}
+
 export function createStagingShopifyConfig(baseToml, env = {}) {
   if (env.VSN_TARGET_ENV !== "staging") throw new Error("Only staging target is permitted");
   if (typeof baseToml !== "string" || !baseToml.includes("[webhooks]") ||
@@ -38,9 +48,9 @@ export function createStagingShopifyConfig(baseToml, env = {}) {
   if (env.SHOPIFY_PRODUCTION_CLIENT_ID && stageId.toLowerCase() === String(env.SHOPIFY_PRODUCTION_CLIENT_ID).toLowerCase())
     throw new Error("Staging Shopify Client ID matches explicit Production ID");
   let next = baseToml;
-  next = replaceOnce(next, /^client_id\s*=\s*"[^"]*"\s*$/m, "client_id = " + JSON.stringify(stageId), "client_id");
-  next = replaceOnce(next, /^name\s*=\s*"[^"]*"\s*$/m, "name = " + JSON.stringify(APP_NAME), "name");
-  next = replaceOnce(next, /^application_url\s*=\s*"[^"]*"\s*$/m, "application_url = " + JSON.stringify(origin), "application_url");
+  next = replaceHeaderField(next, /^client_id\s*=\s*"[^"]*"\s*$/m, "client_id = " + JSON.stringify(stageId), "client_id");
+  next = replaceHeaderField(next, /^name\s*=\s*"[^"]*"\s*$/m, "name = " + JSON.stringify(APP_NAME), "name");
+  next = replaceHeaderField(next, /^application_url\s*=\s*"[^"]*"\s*$/m, "application_url = " + JSON.stringify(origin), "application_url");
   next = replaceOnce(next, /^redirect_urls\s*=\s*\[[^\n]*\]\s*$/m,
     "redirect_urls = [ " + JSON.stringify(origin + "/auth/callback") + " ]", "OAuth callback");
   next = replaceOnce(next, /^automatically_update_urls_on_dev\s*=\s*(true|false)\s*$/m,
