@@ -2,6 +2,15 @@ name: VSN Dev GraphQL Dependency Security Certification (No Deploy)
 on:
   push:
     branches: [fix/builder-dev-graphql-tools-cve-20261013, development]
+  pull_request:
+    paths:
+      - ".graphqlrc.js"
+      - "scripts/check-shopify-graphql-codegen.mjs"
+      - "scripts/check-patched-graphql-tools.mjs"
+      - "tests/check-patched-graphql-tools.test.mjs"
+      - ".github/workflows/graphql-dev-security-certification.yml"
+      - "package.json"
+      - "package-lock.json"
 permissions:
   contents: read
 jobs:
@@ -27,6 +36,8 @@ jobs:
         run: npm ci
       - name: Ensure every GraphQL Tools utility copy is fixed
         run: node scripts/check-patched-graphql-tools.mjs
+      - name: Test removed dependency and nested vulnerable-copy rejection
+        run: node --test tests/check-patched-graphql-tools.test.mjs
       - name: Preserve real Shopify GraphQL codegen compatibility
         run: |
           node scripts/check-shopify-graphql-codegen.mjs
