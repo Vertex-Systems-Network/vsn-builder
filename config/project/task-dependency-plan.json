@@ -263,7 +263,7 @@
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/159",
       "evidence": [
-        "https://github.com/Vertex-Systems-Network/vsn-builder/blob/fix/t011-lint-runtime-correctness-20261015/docs/t015-shopify-app-identity-evidence-2026-10-16.md",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/159",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190"
       ],
       "acceptance": "One public VSN | Builder listing; Dev/Staging internal testing safely isolated; actual Partner app identity/ownership verified",
