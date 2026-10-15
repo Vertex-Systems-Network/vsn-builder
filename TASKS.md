@@ -2,30 +2,34 @@
 
 **Verified state: 16 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
-**28 ACTIVE** of 41 tracked tasks · **0 READY** · **9 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 13 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
+**27 ACTIVE** of 41 tracked tasks · **0 READY** · **8 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The 14 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **Work order:** dependency-first, not phase-first. Mandatory release and Shopify safeguards remain in place. One public VSN | Builder app; Starter $30, Sliver $100, Gold $150, Platinum $350 monthly/$3,000 annually; each 10-day Shopify trial, no Free tier.
 
-**Current integration evidence:** [draft PR #190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) is still **unmerged to `development`**; [T020 local Workerd](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990503), [T011 security](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990721) and [Production Confidence](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990508) CI passed on prior integration candidate, **not hosted merchant acceptance**. Worker `/app` and `/auth/*` still return 503, Staging Neon primary has no app tables, and `development` lacks enforced branch protection. Do not ship Live or submit to Shopify.
+**Current integration evidence:** [PR #190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) and post-merge [security PR #207](https://github.com/Vertex-Systems-Network/vsn-builder/pull/207) are **MERGED into `development`**, with exact source PR green CI (15/15 and 5/5 respectively) and corrected dedicated development GraphQL security check [PASS](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38809667953). This is source integration only, **not hosted merchant acceptance**. Worker `/app` and `/auth/*` still return 503, Staging Neon primary has no app tables, and `development` lacks enforced branch protection. Do not ship Live or submit to Shopify.
+
+## Source integration acceptance (16 October 2026)
+
+**T012 FINAL CLOSED:** [reviewed #190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) and [post-merge CI repair #207](https://github.com/Vertex-Systems-Network/vsn-builder/pull/207) were squash merged into `development` after their respective exact-source green checks; the independently triggered GraphQL dependency certification on merged development also passed. Stacked #152/#153/#155 are closed as superseded; no required source capability was discarded. **This does not grant Live/Staging release authority:** branch protection T013, Cloudflare/GitHub scoped secrets T014, and actual hosted Shopify/Neon validations remain open.
 
 ## Current nine-task closure review (2026-10-16)
 
 **Batch audit performed: 9/9 assessed, 0 FINAL CLOSED.** Exact closure blockers, live provider metadata and next actions are in [nine-task evidence report](docs/nine-task-closure-audit-2026-10-16.md). Green local CI does not override the stated acceptance criteria.
 
-- `T012` remains IN_REVIEW: integration #190 is Draft and unmerged to unprotected `development`. `T013` remains IN_REVIEW because live `development.protected=false`.
+- `T012` is FINAL CLOSED for source-only stacked PR integration, with #190 and #207 merged and the post-merge GraphQL certification passing. [Closure archive](docs/closed-task-archive.md). `T013` remains IN_REVIEW because live `development.protected=false`.
 - `T014` remains IN_REVIEW: protected GitHub Environment policies unverified and Cloudflare Staging/Production Worker scripts currently have **0 secrets / 0 bindings**, workers.dev disabled.
 - `T015` advanced to IN_REVIEW: Shopify Admin GraphQL separately discovered the real single intended public Builder app and both internal Dev/Staging apps; Staging and Production test-store installations exist, Dev installation does not. Old repository source wrongly rejected the canonical public Live client ID; CI-policy fix and [direct app evidence](docs/t015-shopify-app-identity-evidence-2026-10-16.md) added. Partner legal ownership, actual callbacks and Builder OAuth remain unverified.
 - `T017` remains IN_REVIEW: Neon Staging real restored snapshot, default branch and pooled endpoint verified; protected preflight still missing, and default Staging has **0 application tables**.
 - `T020` remains IN_REVIEW: exact-head source CI at `d8de1756a413cf0a7503d9ac80afcb6c636780f5` was **15/15 success**, but hosted Shopify OAuth, editor and Neon acceptance remain unavailable.
 - `T024`, `T032`, `T040` remain IN_REVIEW: missing signed installation-generation provenance; real supported-theme/forms/widgets fixture QA; real compliant listing screenshots, privacy/support and reviewer evidence.
 
-**Closures unchanged, review advanced:** 13 historic FINAL CLOSED; 28 ACTIVE (0 READY, 9 IN_REVIEW, 19 WAITING). No merge/deployment/migration/Shopify submission was performed during this audit.
+**Current disposition:** 14 FINAL CLOSED; 27 ACTIVE (0 READY, 8 IN_REVIEW, 19 WAITING). PR #190 and #207 were source-only merges; no Worker deployment, Neon migration or Shopify submission.
 
 ## Current actionable tasks
 
 **READY now:** none; all independent previously ready identity work is in verification review.
 
-**Code/merge IN_REVIEW:** `T012`, `T013`, `T014`, `T015`, `T017`, `T020`, `T024`, `T032`, `T040`.
+**IN_REVIEW:** `T013`, `T014`, `T015`, `T017`, `T020`, `T024`, `T032`, `T040`.
 
 **T024 in review:** [PR #193](https://github.com/Vertex-Systems-Network/vsn-builder/pull/193) hardens webhook read deadlines; real trusted generation and uninstall E2E still OPEN.
 
@@ -37,7 +41,7 @@
 
 **T026 FINAL CLOSED:** [PR #196](https://github.com/Vertex-Systems-Network/vsn-builder/pull/196) and audited mutation inventory close the server paid-access code scope. Live Shopify subscription/trial E2E is T029 and still pending.
 
-**New FINAL CLOSED:** T011 full-dev/production/post-Playwright security audits and T027 exact four paid plan **code contract**. These now appear solely in [audit archive](docs/closed-task-archive.md); release integration T012 and Shopify Partner pricing T028 remain open.
+**FINAL CLOSED:** T011 full dependency-security audits, T027 exact four paid plan code contract, and **T012 audited stacked PR source integration**. These appear in [audit archive](docs/closed-task-archive.md). GitHub branch protection T013 and Shopify Partner pricing T028 remain open.
 
 **T014 IN_REVIEW:** [PR #205](https://github.com/Vertex-Systems-Network/vsn-builder/pull/205) adds encrypted Cloudflare Worker binding checks. Real Staging audit found 0 Worker secrets and 0 bindings; GitHub Environment reviewers remain unverified. T019/T018 remain WAITING.
 
@@ -45,7 +49,6 @@
 
 | ID | Priority | Task | Status | Unmet dependency | Work package |
 | --- | --- | --- | --- | --- | --- |
-| T012 | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | IN_REVIEW | — | [issues/157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | T013 | P0 | Protect development branch and verify GitHub required reviewers | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | — | [issues/159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
