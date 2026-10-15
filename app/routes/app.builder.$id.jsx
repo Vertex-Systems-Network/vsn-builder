@@ -15,6 +15,7 @@ import { builderActor, getBuilderRole, getRoleActionAccess } from "../utils/buil
 import { canAccessBuilderAction, getBuilderRoleAccess } from "../utils/builder-permissions.server.js";
 import { finishObservation, startObservation } from "../utils/observability.server";
 import { safeAdminGraphql } from "../utils/admin-graphql.server.js";
+import { shopifyHandleQuery, selectShopifyContentByHandle } from "../utils/shopify-blog-handle.server.js";
 import { getWidgetDefinitions, loadWidgetSettings } from "../services/widget-settings.server";
 import { serializeLibraryItem } from "../services/library-presets.server";
 import { loadEditorTemplateBrowser, loadMerchantLibrary } from "../services/template-browser.server.js";
@@ -180,9 +181,10 @@ export async function loader({
 			const firstBlog = await safeAdminGraphql(admin, `#graphql\nquery FirstPreviewBlog { blogs(first:1, sortKey:TITLE){ nodes{ handle } } }`, {}, "first blog preview");
 			handle = firstBlog?.blogs?.nodes?.[0]?.handle || "";
 		}
-		if (handle) {
-			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewBlog($handle:String!){ blogByHandle(handle:$handle){ id title handle articles(first:12, sortKey:PUBLISHED_AT, reverse:true){ nodes{ id title handle excerpt publishedAt author{ name } image{ url altText } } } } }`, { handle }, "blog preview");
-			previewBlog = data?.blogByHandle || null;
+		const blogQuery = shopifyHandleQuery(handle);
+		if (blogQuery) {
+			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewBlog($query:String!){ blogs(first:5, query:$query){ nodes{ id title handle articles(first:12, sortKey:PUBLISHED_AT, reverse:true){ nodes{ id title handle excerpt:summary publishedAt author{ name } image{ url altText } } } } } }`, { query: blogQuery }, "blog preview");
+			previewBlog = selectShopifyContentByHandle(data?.blogs?.nodes, handle);
 		}
 	}
 
@@ -196,9 +198,12 @@ export async function loader({
 			if (blogNode?.handle && articleNode?.handle) resource = `${blogNode.handle}/${articleNode.handle}`;
 		}
 		const [blogHandle, articleHandle] = resource.split("/");
-		if (blogHandle && articleHandle) {
-			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewArticle($blog:String!,$query:String!){ blogByHandle(handle:$blog){ title handle articles(first:20, query:$query){ nodes{ id title handle contentHtml excerpt publishedAt tags author{ name } image{ url altText } } } } }`, { blog: blogHandle, query: `handle:${articleHandle}` }, "article preview");
-			previewArticle = data?.blogByHandle?.articles?.nodes?.[0] || null;
+		const blogQuery = shopifyHandleQuery(blogHandle);
+		const articleQuery = shopifyHandleQuery(articleHandle);
+		if (blogQuery && articleQuery) {
+			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewArticle($blogQuery:String!,$articleQuery:String!){ blogs(first:5, query:$blogQuery){ nodes{ title handle articles(first:20, query:$articleQuery){ nodes{ id title handle contentHtml:body excerpt:summary publishedAt tags author{ name } image{ url altText } } } } } }`, { blogQuery, articleQuery }, "article preview");
+			const blog = selectShopifyContentByHandle(data?.blogs?.nodes, blogHandle);
+			previewArticle = selectShopifyContentByHandle(blog?.articles?.nodes, articleHandle);
 			if (previewArticle) previewArticle.blogHandle = blogHandle;
 		}
 	}
