@@ -19,16 +19,15 @@ test("local requires Dev identity and test billing", () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /test mode|dedicated Dev/);
 });
-test("staging denies current Dev app even with a PostgreSQL URL", () => {
-  const result = verify("staging", { APP_ENV: "staging", SHOPIFY_BILLING_TEST_MODE: "true",
-    SHOPIFY_API_KEY: "997eae5a9961f21d131e5f31bbbe31d3", SHOPIFY_API_SECRET: "dummy",
-    SHOPIFY_APP_URL: "https://staging.example.org", DATABASE_URL: "postgresql://test.invalid/db",
-    DIRECT_URL: "postgresql://test.invalid/direct" });
-  assert.equal(result.status, 1);
-  assert.match(result.stderr, /canonical public Live app/);
-  // Gated hosted files exist now; rejection is for invalid merchant/Neon IDs,
-  // never an assertion that a file's existence proves hosted readiness.
-  assert.match(result.stderr, /canonical public Live app|Shopify Client ID/);
+test("staging rejects canonical Live Builder app even with otherwise valid tier inputs", () => {
+ const publicId="997eae5a9961f21d131e5f31bbbe31d3";
+ const result=identityPreflight("staging",{
+  SHOPIFY_STAGING_CLIENT_ID:publicId,
+  SHOPIFY_API_KEY:publicId,
+ });
+ assert.equal(result.status,1);
+ assert.match(result.stderr,/Shopify Client ID reuses canonical public Live app/);
+ assert(!result.stderr.includes(publicId));
 });
 test("production rejects billing-test mode even with verified public app identity", () => {
   const result = verify("production", { APP_ENV: "production", SHOPIFY_BILLING_TEST_MODE: "true",
