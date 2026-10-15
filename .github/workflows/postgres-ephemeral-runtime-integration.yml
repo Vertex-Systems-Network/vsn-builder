@@ -2,6 +2,15 @@ name: VSN PostgreSQL 18 Runtime Integration (Ephemeral CI Only)
 on:
   push:
     branches: [feat/builder-postgres-container-integration-20261013, feat/builder-postgres-restore-drill-20261013, feat/builder-edge-prisma-generator-20261013, feat/builder-neon-worker-adapter-20261013, feat/builder-worker-prisma-sessions-20261013, feat/builder-worker-real-shopify-sdk-20261013]
+  pull_request:
+    paths:
+      - "tests/worker-shopify-install-postgres-real.test.mjs"
+      - "tests/worker-shopify-install-session-storage.test.mjs"
+      - "app/services/worker-shopify-install-session-storage.js"
+      - "app/services/worker-shopify-uninstall-session-revoke.js"
+      - "app/services/worker-shopify-admin-gate.js"
+      - "prisma/cloud/**"
+      - ".github/workflows/postgres-ephemeral-runtime-integration.yml"
   workflow_dispatch:
 permissions:
   contents: read
@@ -71,6 +80,10 @@ jobs:
         run: node --test tests/shopify-prisma-storage-postgres.test.mjs
       - name: Official Shopify SDK with actual PostgreSQL Prisma session storage
         run: node --test tests/worker-real-shopify-sdk-postgres.test.mjs
+      - name: Verify official Shopify generation fences, tenant revocation and merchant POST rollback in disposable PostgreSQL
+        env:
+          APP_ENV: development
+        run: node --test tests/worker-shopify-install-postgres-real.test.mjs
       - name: Seed a disposable Shopify session before backup
         run: node scripts/seed-postgres-restore-fixture.mjs
       - name: Back up only disposable PostgreSQL database using PostgreSQL 18 pg_dump
