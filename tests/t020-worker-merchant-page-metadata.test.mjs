@@ -34,6 +34,12 @@ function fixture(verifiedShop=shop,{rowShop=verifiedShop,notFound=false,failure=
   }}},
   session:{async findUnique(){calls.push("session");return {...session,
    ...(expired?{expires:new Date("2025-01-01T00:00:00Z")}:{})}}},
+  builderSubscription:{async findUnique(){calls.push("verified-paid");return {
+   shop:verifiedShop,provider:"shopify-app-pricing",planKey:"starter",
+   planHandle:"starter",status:"active",verifiedAt:new Date(),
+   trialEndsAt:null,cancelEffectiveOn:null,
+  }}},
+  builderShopSetting:{async findUnique(){calls.push("role-view");return {roleAccessJson:null}}},
   builderPage:{async findFirst(args){calls.push({kind:"page",args});
    if(failure)throw Error("postgresql://secret@private-host");
    return notFound?null:row;
