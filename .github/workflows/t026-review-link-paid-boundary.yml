@@ -1,0 +1,40 @@
+name: T026 Paid Review Comment Boundary (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "app/routes/review.\$token.jsx"
+      - "app/services/paid-mutation-guard.server.js"
+      - "tests/builder-paid-mutation-guard.test.mjs"
+      - ".github/workflows/t026-review-link-paid-boundary.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paid-review-comment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      CI: "true"
+      DATABASE_URL: file:./t026-ci.sqlite
+    steps:
+      - name: Checkout exact source without persistent credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pinned Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: Require both mandatory dependency audits
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm audit --include=dev --audit-level=high
+      - name: Reject unpaid public review comment and test all merchant mutation guards
+        run: node --test tests/builder-paid-mutation-guard.test.mjs tests/builder-four-paid-plans.test.mjs
+      - name: Assert lockfile unchanged
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json
