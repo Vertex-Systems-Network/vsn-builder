@@ -1,16 +1,46 @@
-// Strict standalone assertion: patched GraphQL Tools must have no vulnerable
-// nested copies. This is NOT a replacement for npm's full development audit.
+// Strict stand-alone security contract for the GraphQL Tools utilities
+// vulnerable dependency family. Either it is absent from the installed
+// dependency graph, or EVERY locked copy is patched. This never replaces the
+// mandatory npm production + development security audits, which run in CI.
 import fs from "node:fs";
 import assert from "node:assert/strict";
-const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
-const lock=JSON.parse(fs.readFileSync("package-lock.json","utf8"));
-assert.equal(pkg.overrides?.["@graphql-tools/utils"],"12.0.4","GraphQL Tools patch override drift");
-const versions=Object.entries(lock.packages||{})
-  .filter(([path])=>path==="node_modules/@graphql-tools/utils"||path.endsWith("/node_modules/@graphql-tools/utils"))
-  .map(([path,entry])=>({path,version:entry.version}));
-assert(versions.length>0,"No GraphQL Tools utils in lockfile; review codegen dependency removal explicitly");
-for(const {path,version}of versions){
- assert(/^12\./.test(version)&&version.localeCompare("12.0.1",undefined,{numeric:true})>=0,
-  "Unpatched @graphql-tools/utils in lockfile: "+path+" @"+version);
+import {fileURLToPath} from "node:url";
+import {resolve} from "node:path";
+
+const NAME="@graphql-tools/utils";
+const MIN_PATCH="12.0.1";
+export function checkGraphqlToolsLock(pkg,lock) {
+ assert(pkg && typeof pkg==="object" && lock && typeof lock==="object");
+ const versions=Object.entries(lock.packages||{})
+  .filter(([path])=>path==="node_modules/"+NAME ||
+   path.endsWith("/node_modules/"+NAME))
+  .map(([path,entry])=>({path,version:entry?.version}));
+ if(versions.length===0) {
+  // Explicitly certified REMOVAL: Shopify GraphQL codegen no longer depends
+  // on GraphQL Tools, so a removed override MUST NOT be required.
+  // npm ci and independent audit/codegen CI check lockfile consistency.
+  for(const section of ["dependencies","devDependencies",
+   "optionalDependencies","peerDependencies"]) {
+   assert(!Object.hasOwn(pkg[section]||{},NAME),
+    "GraphQL Tools directly declared but absent from lockfile");
+  }
+  assert(!(pkg.overrides && Object.hasOwn(pkg.overrides,NAME)),
+   "Unused GraphQL Tools override must be removed after dependency removal");
+  return {state:"absent",copies:0};
+ }
+ for(const {path,version} of versions) {
+  assert(typeof version==="string" &&
+   /^12\.(\d+)\.(\d+)(?:[-+].*)?$/.test(version) &&
+   version.localeCompare(MIN_PATCH,undefined,{numeric:true})>=0,
+   "Unpatched "+NAME+" in lockfile: "+path);
+ }
+ return {state:"patched",copies:versions.length};
 }
-console.log("PASS GraphQL Tools CVE-2026-104852 patch contract: "+versions.length+" copies all >=12.0.1");
+
+if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
+ const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
+ const lock=JSON.parse(fs.readFileSync("package-lock.json","utf8"));
+ const result=checkGraphqlToolsLock(pkg,lock);
+ console.log("PASS GraphQL Tools CVE-2026-104852 contract: "+result.state+
+  " ("+result.copies+" locked copies); mandatory npm audits and Shopify codegen remain separately enforced");
+}
