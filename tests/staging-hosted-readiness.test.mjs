@@ -64,11 +64,11 @@ test("D1 alternative requires actual D1 and compatible Prisma and app runtime",(
 
 test("Production Neon connection URL is rejected by Staging even with matching project identifier",()=>{
   const wrong={...base.vars,
-    DATABASE_URL:"postgresql://u:secret@ep-jolly-truth-b3xbibzp-pooler.c-4.ap-southeast-1.aws.neon.tech/builder?sslmode=require"};
+    DATABASE_URL:"postgresql://u:pass-do-not-echo@ep-jolly-truth-b3xbibzp-pooler.c-4.ap-southeast-1.aws.neon.tech/builder?sslmode=require"};
   const report=assessStaging({...base,vars:wrong});
   assert.equal(report.ready,false);
   assert.ok(report.checks.some(x=>x.name==="Staging database URL matches isolated Neon host"&&!x.ok));
-  assert.ok(!JSON.stringify(report).includes("secret"),"No database credentials leaked in diagnostics");
+  assert.ok(!JSON.stringify(report).includes("pass-do-not-echo"),"No database credentials leaked in diagnostics");
 });
 test("TLS downgrade is rejected before hosted Shopify readiness",()=>{
   const wrong={...base.vars,DATABASE_URL:base.vars.DATABASE_URL.replace("sslmode=require","sslmode=disable")};
