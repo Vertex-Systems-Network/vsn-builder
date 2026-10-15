@@ -10,8 +10,9 @@ function isolateNodeServerBootstrapsForWorkerd() {
     name: "vsn-t020-native-worker-compat-ci-only",
     enforce: "pre",
     resolveId(id, importer) {
-      if (!importer || !/[/\\\\]app[/\\\\]/.test(importer)) return null;
-      const match = /(?:^|\\/)(db|shopify)\\.server(?:\\.js)?$/.exec(id);
+      if (!importer || !importer.replaceAll("\\", "/").includes("/app/")) return null;
+      const normalized = id.replaceAll("\\", "/");
+      const match = /(?:^|\/)(db|shopify)\.server(?:\.js)?$/.exec(normalized);
       if (!match) return null;
       return match[1] === "db" ? workerDbBoundary : workerShopifyBoundary;
     },
