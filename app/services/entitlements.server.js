@@ -2,6 +2,7 @@ import { COMMERCIAL_PLANS, UNSUBSCRIBED_PLAN, normalizePlanKey, planAtLeast, pla
 import { ENTITLEMENT_FEATURES, ENTITLEMENT_QUOTAS, ENTITLEMENT_VERSION, getEntitlementFeatureDefinition, getEntitlementQuotaDefinition } from "../config/entitlements.js";
 import { subscriptionMirrorIsTrusted } from "./shopify-subscription.server.js";
 import { resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
+import { isExplicitDevelopmentSimulation } from "../utils/paid-mutation-access.js";
 
 function monthStart(now = new Date()) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -50,7 +51,7 @@ export class EntitlementDeniedError extends Error {
 
 export async function resolveEntitlementPlan(db, shop, { now = new Date() } = {}) {
   const row = await db.builderSubscription.findUnique({ where: { shop } }).catch(() => null);
-  const developerMode = process.env.NODE_ENV !== "production";
+  const developerMode = isExplicitDevelopmentSimulation(process.env);
   const configuredDefault = process.env.VSN_DEFAULT_PLAN ? normalizePlanKey(process.env.VSN_DEFAULT_PLAN) : null;
   const developerActive = developerMode && row?.status === "active";
   const mirrorTrusted = !developerMode && subscriptionMirrorIsTrusted(row, now);
