@@ -106,11 +106,11 @@ test("CLI prints actionable tasks and blocks unverified terminal acceptance",()=
  assert.match(ok.stdout,/T011 P0 READY/);
  const md=spawnSync(process.execPath,["scripts/task-dependency-check.mjs","--format=markdown"],{encoding:"utf8"});
  assert.equal(md.status,0,md.stderr);
- assert.match(md.stdout,/\\| T041 \\|/);
- assert.doesNotMatch(md.stdout,/\\| T001 \\|/);
+ assert.match(md.stdout,/\| T041 \|/);
+ assert.doesNotMatch(md.stdout,/\| T001 \|/);
  const archive=spawnSync(process.execPath,["scripts/task-dependency-check.mjs","--format=markdown","--include-closed"],{encoding:"utf8"});
  assert.equal(archive.status,0,archive.stderr);
- assert.match(archive.stdout,/\\| T001 \\|/);
+ assert.match(archive.stdout,/\| T001 \|/);
  assert.match(archive.stdout,/CLOSED/);
  const deny=spawnSync(process.execPath,["scripts/task-dependency-check.mjs","--require-verified=T041"],{encoding:"utf8"});
  assert.equal(deny.status,1);
