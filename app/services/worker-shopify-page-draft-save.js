@@ -1,3 +1,6 @@
+import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
+import { hasVerifiedWorkerPaidReadAccess } from "./worker-shopify-paid-read.js";
+
 // T020: dormant transaction-only editor draft persistence contract.
 // This module deliberately defines NO HTTP route. A future POST integration
 // must use acceptWorkerShopifyAdminMutation's locked transaction AND verify
@@ -65,4 +68,26 @@ export async function saveVerifiedBuilderPageDraft({
     throw new BuilderDraftSaveError(503,"INVALID_DRAFT_STORAGE_ROW");
   return {ok:false,status:409,code:"DRAFT_VERSION_CONFLICT",
     currentVersion:existing.version};
+}
+
+// Only invoke from acceptWorkerShopifyAdminMutation's verified SDK callback,
+// after the installation-row lock and persisted-session revalidation.
+// No Worker HTTP write route is active.
+export async function authorizeAndSaveVerifiedWorkerDraft({
+  transaction,session,shop,pageId,expectedVersion,elements,
+}={}) {
+  if(!session || typeof shop!=="string" || !SHOP.test(shop) ||
+     session.shop!==shop || typeof session.id!=="string" ||
+     !session.id || typeof session.accessToken!=="string" ||
+     !session.accessToken || typeof session.isOnline!=="boolean")
+    throw new BuilderDraftSaveError(403,"DRAFT_SESSION_REQUIRED");
+  // All authorization reads and optimistic write must stay within the same
+  // uninstall-serialized transaction; neither URL shop nor plan is trusted.
+  if(!await hasVerifiedWorkerPaidReadAccess(transaction,shop))
+    throw new BuilderDraftSaveError(403,"DRAFT_SUBSCRIPTION_REQUIRED");
+  if(!await canAccessBuilderAction(transaction,session,"pages","edit"))
+    throw new BuilderDraftSaveError(403,"DRAFT_EDIT_PERMISSION_REQUIRED");
+  return saveVerifiedBuilderPageDraft({
+    transaction,shop,pageId,expectedVersion,elements,
+  });
 }
