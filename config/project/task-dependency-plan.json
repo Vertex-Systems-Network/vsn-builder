@@ -383,13 +383,17 @@
       "title": "Trusted uninstall-generation provenance and safe replay handling",
       "workstream": "Security",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [
         "T008"
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/163",
-      "evidence": [],
-      "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/193",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129"
+      ],
+      "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
+      "progress_note": "Bounded webhook total-read deadline and nonblocking cancel + 4 regression tests PASSED; not accepted as trusted-generation provenance. T024 remains IN_REVIEW/open until attested install generation implementation and real merchant E2E."
     },
     {
       "id": "T025",
