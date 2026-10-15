@@ -7,6 +7,7 @@ import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
 import { createVerifiedMerchantPageSummaryLease } from "./worker-shopify-page-summary.js";
 import { createVerifiedMerchantPageMetadataLease } from "./worker-shopify-page-metadata.js";
+import { createVerifiedMerchantPageContentLease } from "./worker-shopify-page-content.js";
 import { hasVerifiedWorkerPaidReadAccess } from "./worker-shopify-paid-read.js";
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 
@@ -178,7 +179,7 @@ async function securedMutationResponse(result) {
 
 async function guardedAdminRequest(request,env,{
   createSdkContext=createWorkerShopifySdkContext,onAuthenticated,
-  enablePageSummary=false,enablePageMetadata=false,
+  enablePageSummary=false,enablePageMetadata=false,enablePageContent=false,
   requireVerifiedPaidRead=false,requirePageViewPermission=false,
 }={},mutation=false) {
   if(!(request instanceof Request))return denied(400);
@@ -194,6 +195,7 @@ async function guardedAdminRequest(request,env,{
   let context;
   let pageReadLease;
   let metadataLease;
+  let contentLease;
   try {
     context=await createSdkContext(request,env);
     if(typeof context?.shopify?.authenticate?.admin!=="function" ||
@@ -267,7 +269,7 @@ async function guardedAdminRequest(request,env,{
       // A page-data capability is privileged by definition. Never rely on
       // callers remembering separate billing/RBAC flags when new routes are
       // added: selecting either reader automatically enforces both guards.
-      const needsPageAuthority=enablePageSummary || enablePageMetadata;
+      const needsPageAuthority=enablePageSummary || enablePageMetadata || enablePageContent;
       // No Free plan: do not hand any Builder page-data capability to an
       // authenticated but unpaid merchant, even on hosted Staging.
       // This is fail-closed and does not trust NODE_ENV or query parameters.
@@ -288,10 +290,14 @@ async function guardedAdminRequest(request,env,{
       if(enablePageMetadata){
         metadataLease=createVerifiedMerchantPageMetadataLease(context.database,shop);
       }
+      if(enablePageContent){
+        contentLease=createVerifiedMerchantPageContentLease(context.database,shop);
+      }
       response=await onAuthenticated({
         request,shop,session,admin:authenticated.admin,
         ...(pageReadLease?{pageSummary:pageReadLease.load}:{}),
         ...(metadataLease?{pageMetadata:metadataLease.get}:{}),
+        ...(contentLease?{pageContent:contentLease.get}:{}),
       });
     }
     if(!(response instanceof Response))return denied(503);
@@ -316,6 +322,7 @@ async function guardedAdminRequest(request,env,{
     // A leaked callback cannot query after this request's context is closed.
     pageReadLease?.revoke();
     metadataLease?.revoke();
+    contentLease?.revoke();
     try{await context?.close?.()}catch{ /* never log database secrets */ }
   }
 }
