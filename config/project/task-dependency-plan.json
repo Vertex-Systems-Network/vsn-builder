@@ -425,9 +425,12 @@
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/164",
       "evidence": [
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/170"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/170",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/196",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38744497246"
       ],
-      "acceptance": "Create/save/publish/widgets/forms/AI protected by trusted paid trial/subscription; no Free fallback"
+      "acceptance": "Create/save/publish/widgets/forms/AI protected by trusted paid trial/subscription; no Free fallback",
+      "progress_note": "Fix for paid write bypasses in app proxy and review link merged into PR #190 candidate, tests PASS; actual merchant paid E2E and protected release acceptance remain pending."
     },
     {
       "id": "T027",
@@ -505,13 +508,17 @@
       "title": "Templates/Widgets/theme app assets implementation and synthetic QA",
       "workstream": "Merchant Features",
       "priority": "P1",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [
         "T009"
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
-      "evidence": [],
-      "acceptance": "Template/widgets/form and theme app extension code/test verified on supported fixture themes"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/197",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38745149442"
+      ],
+      "acceptance": "Template/widgets/form and theme app extension code/test verified on supported fixture themes",
+      "progress_note": "26 Shopify Liquid app blocks/14 assets schema and dependency validation PASSED in PR #197; real supported-theme fixture rendering and templates/forms/widgets functional QA still pending; not final closed."
     },
     {
       "id": "T033",
@@ -628,11 +635,15 @@
       "title": "Shopify listing screenshots, privacy, support, scopes and review assets",
       "workstream": "App Store Review",
       "priority": "P1",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/168",
-      "evidence": [],
-      "acceptance": "One public Builder listing with compliant privacy/support/screenshots, four-plan details, test instructions"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/199",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746201729"
+      ],
+      "acceptance": "One public Builder listing with compliant privacy/support/screenshots, four-plan details, test instructions",
+      "progress_note": "Compliant one-public-app listing draft, 4 paid tiers, fail-closed privacy/support/screenshots evidence manifest and tests PASSED; real app captures, public verified privacy/support, Partner upload and reviewer proof missing; not final closed."
     },
     {
       "id": "T041",
