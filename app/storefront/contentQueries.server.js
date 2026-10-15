@@ -1,3 +1,4 @@
+import { shopifyHandleQuery, selectShopifyContentByHandle, selectShopifyArticleForBlog } from "../utils/shopify-blog-handle.server.js";
 export async function safeAdminData(admin, query, variables, label) {
   try {
     const response = await admin.graphql(query, { variables });
@@ -32,7 +33,7 @@ export async function getSearchData({ admin, query }) {
     ),
     safeAdminData(
       admin,
-      `#graphql\nquery SearchArticles($query:String!){articles(first:12,query:$query){nodes{id title handle excerpt blog{handle} image{url altText}}}}`,
+      `#graphql\nquery SearchArticles($query:String!){articles(first:12,query:$query){nodes{id title handle excerpt:summary blog{handle} image{url altText}}}}`,
       { query: q },
       "search articles",
     ),
@@ -69,13 +70,15 @@ export async function getSearchData({ admin, query }) {
 }
 
 export async function getBlogData({ admin, handle }) {
+  const query = shopifyHandleQuery(handle);
+  if (!query) return null;
   const data = await safeAdminData(
     admin,
-    `#graphql\nquery BlogData($handle:String!){blogByHandle(handle:$handle){id title handle articles(first:24,sortKey:PUBLISHED_AT,reverse:true){nodes{id title handle excerpt publishedAt author{name} image{url altText}}}}}`,
-    { handle },
+    `#graphql\nquery BlogData($query:String!){blogs(first:5,query:$query){nodes{id title handle articles(first:24,reverse:true){nodes{id title handle excerpt:summary publishedAt author{name} image{url altText}}}}}}`,
+    { query },
     "blog data",
   );
-  const blog = data?.blogByHandle;
+  const blog = selectShopifyContentByHandle(data?.blogs?.nodes, handle);
   if (!blog) return null;
   return {
     id: blog.id,
@@ -91,17 +94,20 @@ export async function getBlogData({ admin, handle }) {
 }
 
 export async function getArticleData({ admin, blogHandle, articleHandle }) {
+  const blogQuery = shopifyHandleQuery(blogHandle);
+  const articleQuery = shopifyHandleQuery(articleHandle);
+  if (!blogQuery || !articleQuery) return null;
   const data = await safeAdminData(
     admin,
-    `#graphql\nquery ArticleData($blog:String!,$query:String!){blogByHandle(handle:$blog){title handle articles(first:50,query:$query){nodes{id title handle contentHtml excerpt publishedAt tags author{name} image{url altText}}} allArticles:articles(first:50,sortKey:PUBLISHED_AT,reverse:true){nodes{id title handle excerpt publishedAt image{url altText}}}}}`,
-    { blog: blogHandle, query: `handle:${articleHandle}` },
+    `#graphql\nquery ArticleData($blogQuery:String!,$articleQuery:String!){blogs(first:5,query:$blogQuery){nodes{title handle articles(first:50,reverse:true){nodes{id title handle excerpt:summary publishedAt image{url altText}}}}} articles(first:20,query:$articleQuery){nodes{id title handle blog{handle} contentHtml:body excerpt:summary publishedAt tags author{name} image{url altText}}}}`,
+    { blogQuery, articleQuery },
     "article data",
   );
-  const blog = data?.blogByHandle;
-  const article = blog?.articles?.nodes?.[0];
-  if (!article) return null;
+  const blog = selectShopifyContentByHandle(data?.blogs?.nodes, blogHandle);
+  const article = selectShopifyArticleForBlog(data?.articles?.nodes, blogHandle, articleHandle);
+  if (!blog || !article) return null;
 
-  const all = blog.allArticles?.nodes || [];
+  const all = blog.articles?.nodes || [];
   const index = all.findIndex((item) => item.handle === article.handle);
   const previous = index >= 0 && index < all.length - 1 ? all[index + 1] : null;
   const next = index > 0 ? all[index - 1] : null;
