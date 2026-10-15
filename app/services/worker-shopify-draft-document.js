@@ -35,8 +35,12 @@ export function assertBoundedBuilderDraftDocument(elements) {
       if (value.length > MAX_ARRAY_ITEMS ||
           Object.keys(value).length !== value.length)
         throw new TypeError("Invalid Builder editor array");
-      for (let i = value.length - 1; i >= 0; i--)
-        stack.push({value: value[i], depth: depth + 1});
+      for (let i = value.length - 1; i >= 0; i--) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
+        if (!descriptor || !Object.hasOwn(descriptor, "value"))
+          throw new TypeError("Unsupported Builder editor array accessor");
+        stack.push({value: descriptor.value, depth: depth + 1});
+      }
       continue;
     }
     const prototype = Object.getPrototypeOf(value);
