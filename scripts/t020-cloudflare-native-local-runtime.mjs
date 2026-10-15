@@ -57,6 +57,7 @@ try{
   const response=await request("/__vsn/cf-vite-merchant-graph");
   if(response.status!==200){
     let category="UNCLASSIFIED_WORKER_RESPONSE";
+    let sanitizedCause="";
     try{
       const result=await response.json();
       const allowed=new Set([
@@ -66,9 +67,12 @@ try{
       ]);
       if(result?.ciOnly===true && allowed.has(result?.blocked))
         category=result.blocked;
+      if(result?.ciOnly===true && typeof result.ciCause==="string")
+        sanitizedCause=result.ciCause.slice(0,180);
     }catch{}
     throw new Error("Full merchant runtime import blocked: "+category+
-      ", HTTP "+response.status);
+      ", HTTP "+response.status+
+      (sanitizedCause?", redacted cause: "+safe(sanitizedCause):""));
   }
   const data=await response.json();
   assert.deepEqual(data,{ciOnly:true,actualMerchantGraphLoaded:true,
