@@ -5,6 +5,7 @@ const workerDbBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-db-bo
 const workerShopifyBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-shopify-boundary.js", import.meta.url));
 const workerHealthBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-database-health.js", import.meta.url));
 const workerLocationBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-database-location.js", import.meta.url));
+const workerPrismaNamespace = fileURLToPath(new URL("./workers/full-merchant-ci-prisma-namespace.js", import.meta.url));
 // This rewrite applies solely inside the app/ route dependency graph on the
 // CI-only Cloudflare Vite build. The Node/SQLite Local build is untouched.
 function isolateNodeServerBootstrapsForWorkerd() {
@@ -14,6 +15,10 @@ function isolateNodeServerBootstrapsForWorkerd() {
     resolveId(id, importer) {
       if (!importer || !importer.replaceAll("\\", "/").includes("/app/")) return null;
       const normalized = id.replaceAll("\\", "/");
+      if (id === "@prisma/client" &&
+          importer.replaceAll("\\", "/").endsWith("/app/services/dashboard-metrics.server.js")) {
+        return workerPrismaNamespace;
+      }
       if (normalized.endsWith("/database-health.server.js")) return workerHealthBoundary;
       if (normalized.endsWith("/database-location.server.js")) return workerLocationBoundary;
       const match = /(?:^|\/)(db|shopify)\.server(?:\.js)?$/.exec(normalized);
