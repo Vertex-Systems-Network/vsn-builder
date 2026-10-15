@@ -32,6 +32,13 @@ test("Cloudflare-native target can neither publish nor bind real service secrets
   assert.equal(cfg.name,"vsn-builder-full-merchant-vite-ci");
   assert.equal(cfg.workers_dev,false);
   assert.equal(cfg.preview_urls,false);
+  // Pin only this locked loopback Workerd: the CI binary from plugin 1.41.0
+  // cannot run the hosted 2026-10-13 date. Never relax live config.
+  assert.equal(cfg.compatibility_date,"2026-06-23");
+  const stage = JSON.parse(readFileSync("wrangler.staging.jsonc","utf8")
+    .replace(/^\\s*\\/\\/.*$/gm,""));
+  assert.notEqual(stage.name,cfg.name);
+  assert.notEqual(stage.compatibility_date,cfg.compatibility_date);
   assert.equal(cfg.vars.APP_ENV,"test");
   assert.equal(cfg.vars.VSN_BUILD_INTENT,"cloudflare-vite-full-merchant-ci");
   assert.notEqual(cfg.name,"vsn-builder-staging");
