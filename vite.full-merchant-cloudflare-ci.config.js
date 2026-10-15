@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 
 const workerDbBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-db-boundary.js", import.meta.url));
 const workerShopifyBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-shopify-boundary.js", import.meta.url));
+const workerHealthBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-database-health.js", import.meta.url));
+const workerLocationBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-database-location.js", import.meta.url));
 // This rewrite applies solely inside the app/ route dependency graph on the
 // CI-only Cloudflare Vite build. The Node/SQLite Local build is untouched.
 function isolateNodeServerBootstrapsForWorkerd() {
@@ -12,6 +14,8 @@ function isolateNodeServerBootstrapsForWorkerd() {
     resolveId(id, importer) {
       if (!importer || !importer.replaceAll("\\", "/").includes("/app/")) return null;
       const normalized = id.replaceAll("\\", "/");
+      if (normalized.endsWith("/database-health.server.js")) return workerHealthBoundary;
+      if (normalized.endsWith("/database-location.server.js")) return workerLocationBoundary;
       const match = /(?:^|\/)(db|shopify)\.server(?:\.js)?$/.exec(normalized);
       if (!match) return null;
       return match[1] === "db" ? workerDbBoundary : workerShopifyBoundary;
@@ -25,6 +29,12 @@ function isolateNodeServerBootstrapsForWorkerd() {
       }
       if (normalized.endsWith("/app/shopify.server.js")) {
         return `export * from ${JSON.stringify(workerShopifyBoundary)}; export { default } from ${JSON.stringify(workerShopifyBoundary)};`;
+      }
+      if (normalized.endsWith("/app/services/database-health.server.js")) {
+        return `export * from ${JSON.stringify(workerHealthBoundary)};`;
+      }
+      if (normalized.endsWith("/app/utils/database-location.server.js")) {
+        return `export * from ${JSON.stringify(workerLocationBoundary)};`;
       }
       return null;
     },
