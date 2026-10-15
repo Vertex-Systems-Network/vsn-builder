@@ -58,6 +58,12 @@ export default {
             ...DENY, "content-type": "application/json; charset=utf-8",
           } });
         }
+        return new Response(JSON.stringify({
+          ciOnly: true, fullMerchantModuleEvaluated: false,
+          blocked: "REACT_ROUTER_SERVER_BUILD_EXPORTS",
+        }), { status: 503, headers: {
+          ...DENY, "content-type": "application/json; charset=utf-8",
+        } });
       } catch (error) {
         // Diagnostics are intentionally restricted to the CI-only loopback
         // test route. Never serialize raw SDK errors, stack traces, tokens or
