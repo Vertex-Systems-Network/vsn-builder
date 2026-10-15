@@ -93,3 +93,47 @@ test("Shopify plan selection and support stay outside paid merchant action guard
  const guard=readFileSync("app/services/paid-mutation-guard.server.js","utf8");
  assert(!guard.includes("plan=null") && !guard.includes("...(plan?"),"Caller cannot inject a fake paid plan");
 });
+
+test("public review-link comments enforce verified paid plan BEFORE parsing or writing",()=>{
+ const review=readFileSync("app/routes/review.$token.jsx","utf8");
+ const action=review.slice(review.indexOf("export async function action"));
+ assert(action.length>0,"Review action must exist");
+ const verified=action.indexOf("const link = await validReviewLink(token)");
+ const guard=action.indexOf("await paidMutationDenied(db,link.shop");
+ const parse=action.indexOf("await request.formData()");
+ const commentWrite=action.indexOf("await db.builderComment.create(");
+ const auditWrite=action.indexOf("await db.builderAuditLog.create(");
+ assert(verified>=0&&guard>verified&&parse>guard&&commentWrite>parse&&auditWrite>commentWrite,
+   "Verified review token and merchant paid entitlement must gate BOTH database writes");
+ assert.match(action.slice(guard,parse),/if\s*\(unpaid\)\s*return unpaid/);
+ assert.doesNotMatch(action.slice(verified,commentWrite),/form\.get\(["']plan/i,
+   "Review link must never accept a client-supplied paid entitlement");
+});
+test("public review-link cannot reopen writes for unpaid, canceled or frozen merchant",{
+ concurrency:false
+},async()=>{
+ setProduction();
+ try {
+  const now=new Date();
+  for(const row of [
+   null,
+   {provider:"shopify-app-pricing",status:"canceled",planKey:"gold",
+    planHandle:"gold",verifiedAt:now},
+   {provider:"shopify-app-pricing",status:"frozen",planKey:"platinum",
+    planHandle:"platinum",verifiedAt:now},
+   {provider:"shopify-app-pricing",status:"active",planKey:"starter",
+    planHandle:"free",verifiedAt:now},
+  ]){
+   const denied=await paidMutationDenied(dbWith(row),"review-owner.myshopify.com",{
+    label:"VSN Builder review comments",
+   });
+   assert.equal(denied?.status,403);
+   assert.equal((await denied.json()).success,false);
+  }
+  const valid={provider:"shopify-app-pricing",status:"trialing",planKey:"starter",
+   planHandle:"starter",verifiedAt:now,trialEndsAt:new Date(now.getTime()+86400000)};
+  assert.equal(await paidMutationDenied(dbWith(valid),"review-owner.myshopify.com",{
+   label:"VSN Builder review comments",
+  }),null);
+ }finally{restoreMode();}
+});
