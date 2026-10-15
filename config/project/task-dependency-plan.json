@@ -425,7 +425,7 @@
       "title": "Enforce paid-tier authorization across every server-side merchant mutation",
       "workstream": "Security",
       "priority": "P0",
-      "status": "in_review",
+      "status": "closed",
       "depends_on": [
         "T007"
       ],
@@ -433,10 +433,14 @@
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/170",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/196",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38744497246"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38744497246",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746336058",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38747097492"
       ],
       "acceptance": "Create/save/publish/widgets/forms/AI protected by trusted paid trial/subscription; no Free fallback",
-      "progress_note": "Fix for paid write bypasses in app proxy and review link merged into PR #190 candidate, tests PASS; actual merchant paid E2E and protected release acceptance remain pending."
+      "progress_note": "Fix for paid write bypasses in app proxy and review link merged into PR #190 candidate, tests PASS; actual merchant paid E2E and protected release acceptance remain pending.",
+      "closed_on": "2026-10-15",
+      "closure_note": "FINAL source-code paid-mutation enforcement scope: every discovered authenticated merchant action has a server-side verified Shopify paid entitlement check or a narrowly documented pre-billing exemption; storefront app proxy and public review-link writes deny unpaid, canceled, frozen and retired Free subscriptions. Exact-head 30+ route inventory, static bypass tests, trusted subscription mirror and four-plan tests PASS without audit waiver. Real Shopify Partner billing publication, OAuth and subscription lifecycle E2E remain separately T023/T028/T029; no hosted readiness is claimed."
     },
     {
       "id": "T027",
@@ -686,6 +690,7 @@
     "T009",
     "T010",
     "T011",
+    "T026",
     "T027"
   ]
 }
