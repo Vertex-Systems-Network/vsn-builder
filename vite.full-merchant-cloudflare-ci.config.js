@@ -1,4 +1,22 @@
 import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
+
+const workerDbBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-db-boundary.js", import.meta.url));
+const workerShopifyBoundary = fileURLToPath(new URL("./workers/full-merchant-ci-shopify-boundary.js", import.meta.url));
+// This rewrite applies solely inside the app/ route dependency graph on the
+// CI-only Cloudflare Vite build. The Node/SQLite Local build is untouched.
+function isolateNodeServerBootstrapsForWorkerd() {
+  return {
+    name: "vsn-t020-native-worker-compat-ci-only",
+    enforce: "pre",
+    resolveId(id, importer) {
+      if (!importer || !/[/\\\\]app[/\\\\]/.test(importer)) return null;
+      const match = /(?:^|\\/)(db|shopify)\\.server(?:\\.js)?$/.exec(id);
+      if (!match) return null;
+      return match[1] === "db" ? workerDbBoundary : workerShopifyBoundary;
+    },
+  };
+}
 import { reactRouter } from "@react-router/dev/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
@@ -9,6 +27,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 // Cloudflare's SSR environment is used instead of the Node-targeted output.
 export default defineConfig({
   plugins: [
+    isolateNodeServerBootstrapsForWorkerd(),
     cloudflare({
       configPath: "./wrangler.full-merchant-vite-ci.jsonc",
       viteEnvironment: { name: "ssr" },
