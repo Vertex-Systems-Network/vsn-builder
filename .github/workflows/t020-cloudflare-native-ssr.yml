@@ -10,6 +10,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: t020-cf-vite-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   cloudflare-vite-full-merchant:
     runs-on: ubuntu-latest
@@ -64,6 +67,50 @@ jobs:
           test -d dist/client/assets
           test -d dist/server/assets
           test -n "$(find dist/server/assets -type f -name 'server-build*.js' -print -quit)"
+      - name: Upload real Cloudflare Worker build for isolated local runtime test
+        uses: actions/upload-artifact@v4
+        with:
+          name: t020-cloudflare-native-dist
+          path: dist/
+          if-no-files-found: error
       - name: Assert this test did not mutate dependency declarations
         if: always()
         run: git diff --exit-code -- package.json package-lock.json
+  local-workerd-ssr:
+    needs: cloudflare-vite-full-merchant
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      VSN_CLOUDFLARE_NATIVE_CI: "1"
+      SHOPIFY_APP_URL: http://localhost:3000
+    steps:
+      - name: Checkout source with no write credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Ensure no hosted Shopify, Cloudflare or Neon credentials
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_KEY:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DATABASE_URL:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Install project and pinned Cloudflare Vite runtime (no lock changes)
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.7.5
+          git diff --exit-code -- package.json package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: t020-cloudflare-native-dist
+          path: dist
+      - name: Test real full merchant ServerBuild inside LOCAL Workerd (no merchant routes)
+        run: node scripts/t020-cloudflare-native-local-runtime.mjs
