@@ -32,6 +32,10 @@ export function inspectTaskPlan(plan,{includeClosed=false}={}) {
  if(!Array.isArray(plan?.tasks)||plan.tasks.length<20)
    return {errors:[...errors,"Task inventory must be a complete atomic backlog"],rows:[],ready:[],summary:{}};
  const tasks=plan.tasks;
+ const registry=plan.closed_task_ids;
+ if(!Array.isArray(registry)||new Set(registry).size!==registry.length)
+  errors.push("Missing or duplicate immutable closed_task_ids registry");
+ const closedRegistry=new Set(Array.isArray(registry)?registry:[]);
  const byId=new Map(),statusCounts={closed:0,verified:0,in_review:0,todo:0};
  for(const t of tasks){
   if(!t || !/^T[0-9]{3}$/.test(t.id||"") || byId.has(t.id))
@@ -55,9 +59,15 @@ export function inspectTaskPlan(plan,{includeClosed=false}={}) {
    errors.push("Closed task missing immutable closure date or scope evidence: "+t.id);
   if(t.status!=="closed" && (t.closed_on||t.closure_note))
    errors.push("Active task illegally retains terminal closed metadata: "+t.id);
+  if(closedRegistry.has(t.id)&&t.status!=="closed")
+   errors.push("Immutable closed task was reopened: "+t.id);
+  if(t.status==="closed"&&!closedRegistry.has(t.id))
+   errors.push("Closed task missing from immutable registry: "+t.id);
   if(t.status==="in_review" && (!Array.isArray(t.evidence)||t.evidence.length===0))
    errors.push("In-review task missing PR/issue pointer for "+t.id);
  }
+ for(const registered of closedRegistry)if(!byId.has(registered))
+  errors.push("Archived closed task missing from manifest: "+registered);
  for(const task of tasks) {
   for(const dep of task.depends_on||[]){
    if(dep===task.id)errors.push("Self dependency "+task.id);
