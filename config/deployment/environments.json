@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "reference_repository": "Vertex-Systems-Network/vsn-stock-down-sort",
+  "promotion_order": [
+    "local",
+    "staging",
+    "production"
+  ],
+  "local": {
+    "source_branch": "development",
+    "shopify_configuration": "shopify.app.local.template.toml",
+    "database_provider": "sqlite",
+    "database_schema": "prisma/schema.prisma",
+    "billing_test_mode": true,
+    "hosting": "local Shopify CLI",
+    "status": "configuration_added_identity_requires_verification",
+    "generated_configuration": "shopify.app.local.toml",
+    "app_name": "VSN | Builder (Development)"
+  },
+  "staging": {
+    "source_branch": "development",
+    "github_environment": "cloudflare-staging",
+    "shopify_configuration": "shopify.app.staging.toml",
+    "database_provider": "postgresql",
+    "hosting": "Existing Cloudflare Worker placeholder; Shopify merchant runtime unverified",
+    "billing_test_mode": true,
+    "status": "schema_generated_default_neon_unmigrated_no_hosted_oauth",
+    "app_name": "VSN | Builder (Staging)",
+    "cloudflare_worker": "vsn-builder-staging",
+    "cloudflare_worker_state": "placeholder_deployed_2026-10-12_no_secrets_no_public_route",
+    "neon_project_id": "shiny-violet-61219572",
+    "neon_endpoint_host": "ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech",
+    "neon_default_branch_id": "br-square-mountain-b3ij6q2s",
+    "neon_recovery_source_branch_id": "br-wandering-queen-b3mmztjy",
+    "neon_pre_migration_snapshot_id": "snap-green-bar-b3m1btfb",
+    "neon_endpoint_id": "ep-little-dream-b3g6puj2",
+    "neon_pooler_enabled": true
+  },
+  "production": {
+    "source_branch": "main",
+    "github_environment": "cloudflare-production",
+    "shopify_configuration": "shopify.app.production.template.toml",
+    "generated_configuration": "shopify.app.production.toml",
+    "database_provider": "postgresql",
+    "hosting": "Existing Cloudflare Worker placeholder; production deployment locked",
+    "billing_test_mode": false,
+    "status": "blocked_staging_acceptance_postgresql_worker_runtime_live_identity_and_approval",
+    "app_name": "VSN | Builder",
+    "cloudflare_worker": "vsn-builder-production",
+    "cloudflare_worker_state": "placeholder_deployed_2026-10-12_no_secrets_no_public_route",
+    "neon_project_id": "nameless-violet-68750490",
+    "neon_endpoint_host": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech",
+    "neon_default_branch_id": "br-odd-credit-b3rzlpz9"
+  }
+}
