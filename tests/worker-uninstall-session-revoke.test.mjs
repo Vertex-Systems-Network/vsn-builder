@@ -9,7 +9,14 @@ const event=(shop="tenant-one.myshopify.com")=>({
 });
 // Synthetic attestation ONLY for exercising transaction semantics in CI.
 // The real request-scoped SDK context has no such verifier and refuses writes.
-const syntheticCiAttestor=async({shop})=>shop==="tenant-one.myshopify.com";
+const syntheticCiAttestor=async({shop,topic,webhookId})=>{
+ if(shop!=="tenant-one.myshopify.com" || topic!=="APP_UNINSTALLED")return null;
+ // Only the test's independent event-generation oracle links IDs to epochs.
+ // No issuer is installed in the real Shopify/Worker runtime.
+ const generation=webhookId==="signed-ci-1"?"2026-10-13T08:00:00Z":
+  webhookId==="signed-ci-2"?"2026-10-13T10:00:00Z":null;
+ return generation?{shop,topic,webhookId,installedAt:new Date(generation)}:null;
+};
 const invoke=(database,webhookEvent=event(),when=triggeredAt)=>
  revokeVerifiedWorkerShopifySessions({
   event:webhookEvent,
@@ -35,7 +42,9 @@ function fakeDatabase(){
      async updateMany(query){
       claims.push(query);
       const row=installs.get(query.where.shop);
-      if(!row || row.uninstalledAt || row.installedAt>query.where.installedAt.lte) return {count:0};
+      if(!row || row.uninstalledAt ||
+         row.installedAt.getTime()!==query.where.installedAt.getTime())
+        return {count:0};
       row.uninstalledAt=query.data.uninstalledAt;
       row.lastUninstallWebhookId=query.data.lastUninstallWebhookId;
       return {count:1};
@@ -57,7 +66,7 @@ function fakeDatabase(){
  };
  return {database,installs,sessions,claims,deletes};
 }
-test("signed body with forged or missing timestamp proof NEVER starts a destructive transaction",async()=>{
+test("signed body without exact independent generation proof NEVER starts a destructive transaction",async()=>{
  const db=fakeDatabase();
  const forged=new Date("2030-01-01T00:00:00Z");
  for(const context of [
@@ -74,6 +83,57 @@ test("signed body with forged or missing timestamp proof NEVER starts a destruct
  assert.equal(db.claims.length,0);
  assert.equal(db.deletes.length,0);
  assert.equal(db.sessions.length,3);
+});
+test("unbound boolean verifier or malformed/cross-shop attestation can never delete sessions",async()=>{
+ const db=fakeDatabase();
+ const bogus=[
+  true,false,undefined,
+  {shop:"other.myshopify.com",topic:"APP_UNINSTALLED",webhookId:"signed-ci-1",
+   installedAt:new Date("2026-10-13T08:00:00Z")},
+  {shop:"tenant-one.myshopify.com",topic:"APP_UNINSTALLED",webhookId:"forged",
+   installedAt:new Date("2026-10-13T08:00:00Z")},
+  {shop:"tenant-one.myshopify.com",topic:"APP_UNINSTALLED",webhookId:"signed-ci-1",
+   installedAt:"2026-10-13T08:00:00Z"},
+  {shop:"tenant-one.myshopify.com",topic:"APP_UNINSTALLED",webhookId:"signed-ci-1",
+   installedAt:new Date(NaN)},
+ ];
+ for(const bad of bogus){
+  const response=await revokeVerifiedWorkerShopifySessions({
+   event:event(),triggeredAt:new Date("2035-01-01T00:00:00Z"),
+   context:{database:db.database,verifyTrustedUninstallGeneration:async()=>bad},
+  });
+  assert.equal(response.status,503);
+ }
+ assert.equal(db.claims.length,0);
+ assert.equal(db.deletes.length,0);
+ assert.equal(db.sessions.length,3);
+});
+
+test("forged future triggered-at cannot revoke newly installed generation",async()=>{
+ const db=fakeDatabase();
+ const row=db.installs.get("tenant-one.myshopify.com");
+ row.installedAt=new Date("2026-10-13T10:00:00Z");
+ db.sessions.push({id:"current-session",shop:"tenant-one.myshopify.com"});
+ const response=await invoke(db.database,event(),new Date("2035-01-01T00:00:00Z"));
+ assert.equal(response.status,204,"stale attested generation is safe and idempotent");
+ assert.deepEqual(db.claims[0].where,{
+  shop:"tenant-one.myshopify.com",
+  installedAt:new Date("2026-10-13T08:00:00Z"),
+  uninstalledAt:null,
+ });
+ assert.equal(db.deletes.length,0);
+ assert.equal(db.sessions.length,4);
+ assert.equal(row.uninstalledAt,null);
+});
+test("fresh attested generation controls CAS even when unsigned header claims older time",async()=>{
+ const db=fakeDatabase();
+ const response=await invoke(db.database,event(),
+  new Date("2020-01-01T00:00:00Z"));
+ assert.equal(response.status,204);
+ assert.equal(db.deletes.length,1);
+ assert.equal(db.claims[0].where.installedAt.toISOString(),"2026-10-13T08:00:00.000Z");
+ assert(db.installs.get("tenant-one.myshopify.com").uninstalledAt.getTime()>
+  new Date("2020-01-01T00:00:00Z").getTime());
 });
 test("only signed uninstall merchant sessions deleted after atomic installation claim",async()=>{
  const db=fakeDatabase();
