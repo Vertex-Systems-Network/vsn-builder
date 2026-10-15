@@ -199,11 +199,18 @@
       "title": "Resolve mandatory full-dev dependency security audit (braces)",
       "workstream": "Security",
       "priority": "P0",
-      "status": "todo",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/96",
-      "evidence": [],
-      "acceptance": "npm audit --include=dev --audit-level=high and post-Playwright audit PASS on exact SHA; no bypass"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746335978",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746335819",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38747097410",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190"
+      ],
+      "acceptance": "npm audit --include=dev --audit-level=high and post-Playwright audit PASS on exact SHA; no bypass",
+      "closed_on": "2026-10-15",
+      "closure_note": "FINAL complete only for dependency remediation and mandatory exact-head audit policy: pinned npm dependency tree/codegen eliminates high-severity findings, npm ci plus production/full-development audits and post-Playwright audit were green on the same audited integration candidate SHA 356b321. Subsequent exact-SHA release audit enforcement remains an independent T012 protected merge gate. No Shopify OAuth, hosting, primary Neon migration or Live certification is implied."
     },
     {
       "id": "T012",
@@ -674,6 +681,7 @@
     "T007",
     "T008",
     "T009",
-    "T010"
+    "T010",
+    "T011"
   ]
 }
