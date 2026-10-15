@@ -6,14 +6,15 @@ import { createWorkerShopifySdkContext } from "../app/services/shopify-worker-sd
 import { renderWorkerDocument } from "../app/services/worker-ssr-webstream.js";
 import { SHOPIFY_EXPECTED_SCOPES } from "../app/config/shopifyIntegration.js";
 
+const canonicalLiveClientId="997eae5a9961f21d131e5f31bbbe31d3";
 const tierEnv = (tier="staging") => ({
  APP_ENV:tier,
  VSN_WORKER_NAME:tier==="staging"?"vsn-builder-staging":"vsn-builder-production",
  NEON_PROJECT_ID:tier==="staging"?"shiny-violet-61219572":"nameless-violet-68750490",
  SHOPIFY_BILLING_TEST_MODE:tier==="staging"?"true":"false",
- SHOPIFY_API_KEY:tier==="staging"?"a".repeat(32):"b".repeat(32),
+ SHOPIFY_API_KEY:tier==="staging"?"a".repeat(32):canonicalLiveClientId,
  SHOPIFY_API_SECRET:"fake-sdk-secret-must-not-be-logged",
- SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+ SHOPIFY_PRODUCTION_CLIENT_ID:canonicalLiveClientId,
  SHOPIFY_APP_URL:tier==="staging"?"https://staging.builder.example.org":"https://builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
  DATABASE_URL:"postgresql://test-user:fake-ci-password@"+(tier==="staging"?"ep-little-dream-b3g6puj2":"ep-jolly-truth-b3xbibzp")+".c-4.ap-southeast-1.aws.neon.tech/no_real_db?sslmode=require",
@@ -67,8 +68,10 @@ test("official SDK cannot render an unscoped Shopify iframe without a merchant s
   }),/Content-Security-Policy/);
  }finally{await scoped.close()}
 });
-test("separate Production SDK uses a different configured Client ID and billing tier",async()=>{
+test("Production Shopify SDK uses the single canonical public Builder app and Live billing tier",async()=>{
  const env=tierEnv("production"),ctx=mockContext();
+ assert.equal(env.SHOPIFY_API_KEY,canonicalLiveClientId);
+ assert.equal(env.SHOPIFY_BILLING_TEST_MODE,"false");
  const scoped=await createWorkerShopifySdkContext(request(env,"different.myshopify.com"),env,{createSessionContext:async()=>ctx,distribution:AppDistribution.AppStore});
  assert.equal(scoped.shopify.sessionStorage,ctx.sessionStorage);
  await scoped.close();
