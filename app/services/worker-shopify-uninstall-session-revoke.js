@@ -40,12 +40,14 @@ export async function revokeVerifiedWorkerShopifySessions({event,context,trigger
   // Require a concrete independent attestation to one exact installation,
   // never an unbound boolean "verified". The trusted issuer must determine
   // the event's install generation independently of request headers.
+  // Never pass the unsigned Triggered-At header to this verifier: it is
+  // validated for syntax only and must not become a generation oracle.
   // Its implementation is NOT provided by the SDK or deployed runtime yet.
   let attestedGeneration;
   try {
     const evidence=await context.verifyTrustedUninstallGeneration({
       shop,topic:event.topic,webhookId:event.webhookId,
-      payload,triggeredAt:when,
+      payload,
     });
     if(!evidence || typeof evidence!=="object" ||
        evidence.shop!==shop || evidence.topic!==event.topic ||
