@@ -128,3 +128,64 @@ test("verified callback failure still closes SDK session context",async()=>{
  assert.equal(c.opened,1);
  assert.equal(c.closed,1);
 });
+
+const streamWebhook=(stream,overrides={})=>{
+ const sample=webhook();
+ return new Request(sample.url,{
+  method:"POST",
+  headers:{...Object.fromEntries(sample.headers),...overrides},
+  body:stream,
+  duplex:"half",
+ });
+};
+test("stalled signed webhook body times out before any database or Shopify SDK creation",async()=>{
+ let cancelled=false;
+ const source=new ReadableStream({
+  start(controller){controller.enqueue(new Uint8Array([65]))},
+  cancel(){cancelled=true;return new Promise(()=>{})},
+ });
+ const c=context();
+ const started=Date.now();
+ const data=await result(streamWebhook(source),env,c);
+ assert.equal(data.status,408);
+ assert.equal(c.opened,0);
+ assert.equal(cancelled,true);
+ assert(Date.now()-started<6000,"deadline must not await malicious cancellation");
+});
+test("slow trickle cannot reset the TOTAL signed webhook read deadline",async()=>{
+ let pulls=0;
+ const source=new ReadableStream({
+  async pull(controller){
+   await new Promise(resolve=>setTimeout(resolve,120));
+   pulls++;
+   controller.enqueue(new Uint8Array([65]));
+  },
+ });
+ const c=context(),started=Date.now();
+ const data=await result(streamWebhook(source),env,c);
+ assert.equal(data.status,408);
+ assert.equal(c.opened,0);
+ assert(pulls>2,"test must deliver multiple chunks");
+ assert(Date.now()-started<6000,"trickle must not extend lifetime indefinitely");
+});
+test("oversized webhook stream with non-settling cancel is rejected without waiting",async()=>{
+ let cancelled=false;
+ const source=new ReadableStream({
+  start(controller){controller.enqueue(new Uint8Array(65537))},
+  cancel(){cancelled=true;return new Promise(()=>{})},
+ });
+ const c=context(),started=Date.now();
+ const data=await result(streamWebhook(source),env,c);
+ assert.equal(data.status,413);
+ assert.equal(c.opened,0);
+ assert.equal(cancelled,true);
+ assert(Date.now()-started<2000);
+});
+test("declared impossible webhook length fails before reading body or starting SDK",async()=>{
+ const c=context();
+ const data=await result(streamWebhook(new ReadableStream({
+  pull(){throw Error("must not read")},
+ }),{"content-length":"65537"}),env,c);
+ assert.equal(data.status,413);
+ assert.equal(c.opened,0);
+});
