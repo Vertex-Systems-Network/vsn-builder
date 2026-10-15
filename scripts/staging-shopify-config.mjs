@@ -38,6 +38,8 @@ export function createStagingShopifyConfig(baseToml, env = {}) {
   if (typeof baseToml !== "string" || !baseToml.includes("[webhooks]") ||
       !baseToml.includes("[app_proxy]") || !baseToml.includes("[access_scopes]"))
     throw new Error("Full canonical Shopify app TOML required");
+  const allClientIds = [...baseToml.matchAll(/^client_id\s*=\s*"[^"]*"\s*$/gm)];
+  if (allClientIds.length !== 1) throw new Error("Expected exactly one canonical Shopify client identity");
   const baseMatch = baseToml.match(/^client_id\s*=\s*"([0-9a-f]{32})"\s*$/m);
   if (!baseMatch) throw new Error("Current Shopify app identity is missing/ambiguous");
   const stageId = String(env.SHOPIFY_API_KEY || "").trim();
