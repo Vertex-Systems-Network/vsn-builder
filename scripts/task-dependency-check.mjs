@@ -4,14 +4,15 @@ import {fileURLToPath} from "node:url";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const DEFAULT_FILE=path.join(ROOT,"config/project/task-dependency-plan.json");
-export const STATUS=Object.freeze(["verified","in_review","todo"]);
+export const STATUS=Object.freeze(["closed","verified","in_review","todo"]);
+const accepted=(status)=>status==="verified"||status==="closed";
 export const PRIORITIES=Object.freeze(["P0","P1","P2"]);
 const URL=/^https:\/\/github\.com\/Vertex-Systems-Network\/vsn-builder\/(?:issues|pull|actions\/runs)\/[0-9]+$/;
 
 export function readTaskPlan(file=DEFAULT_FILE) {
  return JSON.parse(fs.readFileSync(file,"utf8"));
 }
-export function inspectTaskPlan(plan) {
+export function inspectTaskPlan(plan,{includeClosed=false}={}) {
  const errors=[];
  if(plan?.schema_version!==1 ||
    plan?.policy!=="dependency_driven_evidence_first_no_phase_gating")
@@ -31,7 +32,7 @@ export function inspectTaskPlan(plan) {
  if(!Array.isArray(plan?.tasks)||plan.tasks.length<20)
    return {errors:[...errors,"Task inventory must be a complete atomic backlog"],rows:[],ready:[],summary:{}};
  const tasks=plan.tasks;
- const byId=new Map(),statusCounts={verified:0,in_review:0,todo:0};
+ const byId=new Map(),statusCounts={closed:0,verified:0,in_review:0,todo:0};
  for(const t of tasks){
   if(!t || !/^T[0-9]{3}$/.test(t.id||"") || byId.has(t.id))
    errors.push("Duplicate or invalid task ID: "+String(t?.id));
@@ -47,8 +48,13 @@ export function inspectTaskPlan(plan) {
    errors.push("Missing explicit GitHub issue for "+t.id);
   if(!Array.isArray(t.evidence)||t.evidence.some(x=>!URL.test(x)))
    errors.push("Evidence must point to traceable same-repository issue/PR/workflow for "+t.id);
-  if(t.status==="verified" && (!Array.isArray(t.evidence)||t.evidence.length===0))
-   errors.push("Verified task missing narrow-scope evidence for "+t.id);
+  if(accepted(t.status) && (!Array.isArray(t.evidence)||t.evidence.length===0))
+   errors.push("Verified/closed task missing narrow-scope evidence for "+t.id);
+  if(t.status==="closed" && (!/^20\\d{2}-\\d{2}-\\d{2}$/.test(t.closed_on||"") ||
+     !t.closure_note?.trim()))
+   errors.push("Closed task missing immutable closure date or scope evidence: "+t.id);
+  if(t.status!=="closed" && (t.closed_on||t.closure_note))
+   errors.push("Active task illegally retains terminal closed metadata: "+t.id);
   if(t.status==="in_review" && (!Array.isArray(t.evidence)||t.evidence.length===0))
    errors.push("In-review task missing PR/issue pointer for "+t.id);
  }
@@ -56,8 +62,8 @@ export function inspectTaskPlan(plan) {
   for(const dep of task.depends_on||[]){
    if(dep===task.id)errors.push("Self dependency "+task.id);
    if(!byId.has(dep))errors.push("Missing dependency "+dep+" on "+task.id);
-   if(task.status==="verified" && byId.has(dep)&&byId.get(dep).status!=="verified")
-    errors.push("Verified task has unverified prerequisite: "+task.id+" -> "+dep);
+   if(accepted(task.status) && byId.has(dep)&&!accepted(byId.get(dep).status))
+    errors.push("Verified/closed task has unverified prerequisite: "+task.id+" -> "+dep);
   }
  }
  const color=new Map();
@@ -81,9 +87,12 @@ export function inspectTaskPlan(plan) {
   if(!task||needed.some(x=>!task.depends_on.includes(x)))
    errors.push("Missing required Live/Shopify safety dependency in "+id);
  }
- const rows=tasks.map(t=>{
-  const waiting=(t.depends_on||[]).filter(x=>byId.get(x)?.status!=="verified");
-  const execution=t.status==="verified"?"VERIFIED":
+ // Closed tasks remain canonical history and satisfy DAG dependencies, but are
+ // excluded from every ordinary active/READY/WAITING task list.
+ const rows=tasks.filter(t=>includeClosed||t.status!=="closed").map(t=>{
+  const waiting=(t.depends_on||[]).filter(x=>!accepted(byId.get(x)?.status));
+  const execution=t.status==="closed"?"CLOSED":
+    t.status==="verified"?"VERIFIED":
     t.status==="in_review"?"IN_REVIEW":
     waiting.length?"WAITING":"READY";
   return {id:t.id,title:t.title,priority:t.priority,status:t.status,
@@ -92,12 +101,19 @@ export function inspectTaskPlan(plan) {
  }).sort((a,b)=>PRIORITIES.indexOf(a.priority)-PRIORITIES.indexOf(b.priority)||
     a.id.localeCompare(b.id));
  const ready=rows.filter(x=>x.execution==="READY");
- return {errors,rows,ready,summary:{total:tasks.length,...statusCounts,
+ const closedTasks=tasks.filter(t=>t.status==="closed").map(t=>({
+  id:t.id,title:t.title,closed_on:t.closed_on,acceptance:t.acceptance,
+  evidence:t.evidence,closure_note:t.closure_note,
+ }));
+ return {errors,rows,ready,closed_tasks:closedTasks,summary:{
+  total:tasks.length,active:tasks.length-statusCounts.closed,...statusCounts,
   ready:ready.length,waiting:rows.filter(x=>x.execution==="WAITING").length,
-  in_review:statusCounts.in_review}};
+  in_review:statusCounts.in_review,
+ }};
 }
 function run() {
- const inspected=inspectTaskPlan(readTaskPlan());
+ const plan=readTaskPlan();
+ const inspected=inspectTaskPlan(plan,{includeClosed:process.argv.includes("--include-closed")});
  if(inspected.errors.length){
   for(const e of inspected.errors)console.error("DEPENDENCY ERROR: "+e);
   process.exitCode=1;
@@ -106,7 +122,7 @@ function run() {
  const required=process.argv.find(x=>x.startsWith("--require-verified="));
  if(required) {
   const id=required.slice("--require-verified=".length);
-  if(!inspected.rows.some(x=>x.id===id&&x.status==="verified")){
+  if(!plan.tasks.some(x=>x.id===id&&accepted(x.status))){
    console.error("BLOCKED: "+id+" has NOT met narrow-scope verified evidence; no release authorization");
    process.exitCode=1;
   }
@@ -120,9 +136,9 @@ function run() {
    x.title.replace(/\|/g,"/")+" | "+(x.depends_on.join(", ")||"None")+" | "+x.execution+" |");
  }else {
   const s=inspected.summary;
-  console.log("Dependency graph VALID; verified "+s.verified+"/"+s.total+
-    " narrow tasks, "+s.ready+" READY, "+s.in_review+" IN_REVIEW, "+
-    s.waiting+" WAITING. No phases.");
+  console.log("Dependency graph VALID; "+s.closed+" FINAL CLOSED (archived), "+
+    s.active+" ACTIVE of "+s.total+" total; "+s.ready+" READY, "+
+    s.in_review+" IN_REVIEW, "+s.waiting+" WAITING. No phases.");
   for(const task of inspected.ready)console.log(task.id+" "+task.priority+" READY: "+task.title);
   console.log("This checker does not verify live GitHub, Shopify, Neon or Cloudflare services.");
  }
