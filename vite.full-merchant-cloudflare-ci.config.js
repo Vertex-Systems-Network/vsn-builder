@@ -13,12 +13,18 @@ function isolateNodeServerBootstrapsForWorkerd() {
     name: "vsn-t020-native-worker-compat-ci-only",
     enforce: "pre",
     resolveId(id, importer) {
-      if (!importer || !importer.replaceAll("\\", "/").includes("/app/")) return null;
+      if (!importer) return null;
+      const origin = importer.replaceAll("\\", "/");
+      const isApp = origin.includes("/app/");
+      const isOfficialSdk = origin.includes("/node_modules/@shopify/") ||
+        origin.includes("/node_modules/@prisma/");
+      // Shopify's official dependency tree may import the Node Prisma
+      // default runtime even when the app's own loaders use the Edge client.
+      // This alias exists ONLY in the locked test-only Cloudflare build.
+      if ((id === "@prisma/client" || id === "@prisma/client/default") &&
+          (isApp || isOfficialSdk)) return workerPrismaNamespace;
+      if (!isApp) return null;
       const normalized = id.replaceAll("\\", "/");
-      if (id === "@prisma/client" &&
-          importer.replaceAll("\\", "/").endsWith("/app/services/dashboard-metrics.server.js")) {
-        return workerPrismaNamespace;
-      }
       if (normalized.endsWith("/database-health.server.js")) return workerHealthBoundary;
       if (normalized.endsWith("/database-location.server.js")) return workerLocationBoundary;
       const match = /(?:^|\/)(db|shopify)\.server(?:\.js)?$/.exec(normalized);
@@ -29,6 +35,10 @@ function isolateNodeServerBootstrapsForWorkerd() {
       // Catch tsconfig-expanded, absolute and virtual route imports that
       // bypass resolveId; do not initialize Node SQLite or Node Shopify.
       const normalized = id.split("?")[0].replaceAll("\\", "/");
+      if (normalized.endsWith("/node_modules/@prisma/client/default.js") ||
+          normalized.endsWith("/node_modules/.prisma/client/default.js")) {
+        return `export * from ${JSON.stringify(workerPrismaNamespace)};`;
+      }
       if (normalized.endsWith("/app/db.server.js")) {
         return `export * from ${JSON.stringify(workerDbBoundary)}; export { default } from ${JSON.stringify(workerDbBoundary)};`;
       }
