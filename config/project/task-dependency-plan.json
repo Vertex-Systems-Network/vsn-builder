@@ -216,13 +216,18 @@
       "title": "Review/rebase/merge stacked PRs with mandatory exact-SHA CI",
       "workstream": "Integration",
       "priority": "P0",
-      "status": "in_review",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/157",
       "evidence": [
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/171"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/207",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38809667953",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/157"
       ],
-      "acceptance": "Reconcile PR #152/#153/#155; no merge with red mandatory checks, retain protected release gates"
+      "acceptance": "Reconcile PR #152/#153/#155; no merge with red mandatory checks, retain protected release gates",
+      "closed_on": "2026-10-16",
+      "closure_note": "FINAL source integration: reviewed and squash merged 339-file consolidated PR #190 into development at 15a6736 after 15/15 exact-head green PR workflows. PR #152/#153/#155 independently reconciled, redundant branches closed as superseded; billing reinstall mirror note preserved. Postmerge GitHub push exposed previously unrun strict GraphQL dependency/codegen checks; source fixes PR #207 merged at 3c523e2 after 5/5 exact-head green PR workflows, and dev GraphQL push workflow #38809667953 passed. No Cloudflare/Shopify/Neon migration or Live release. T013 branch protection and all external hosted/release acceptance stay OPEN independent tasks."
     },
     {
       "id": "T013",
@@ -698,6 +703,7 @@
     "T009",
     "T010",
     "T011",
+    "T012",
     "T026",
     "T027"
   ]
