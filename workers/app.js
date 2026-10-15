@@ -69,6 +69,20 @@ export default {
         onAuthenticated:async ({shop})=>safeJson({authenticated:true,shop,tier:env.APP_ENV}),
       });
     }
+    if(url.pathname==="/app/__vsn/page-summary" && request.method==="GET") {
+      // An incremental REAL read-only hosted route (not the merchant UI).
+      // Only the official Shopify SDK, persisted installation and the
+      // request-scoped Neon session can authorize this capability.
+      if([...url.searchParams.keys()].some(key=>key!=="shop") ||
+         url.searchParams.getAll("shop").length>1)return locked(404);
+      return acceptWorkerShopifyAdminRequest(request,env,{
+        enablePageSummary:true,
+        onAuthenticated:async ({shop,pageSummary})=>{
+          const pages=await pageSummary();
+          return safeJson({shop,tier:env.APP_ENV,pages});
+        },
+      });
+    }
     if(url.pathname==="/webhooks/app/uninstalled") {
       try {
         return await acceptWorkerShopifyUninstallWebhook(request,env,{
