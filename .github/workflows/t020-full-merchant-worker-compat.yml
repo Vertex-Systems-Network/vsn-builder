@@ -19,6 +19,7 @@ on:
       - "tests/t020-worker-page-rbac.test.mjs"
       - "tests/t020-worker-editor-hydration.test.mjs"
       - "tests/t020-worker-draft-save-contract.test.mjs"
+      - "tests/shopify-worker-configuration.test.mjs"
       - "prisma/cloud/**"
       - "vite.config.js"
       - "package.json"
@@ -88,6 +89,8 @@ jobs:
         run: node --test tests/t020-worker-merchant-page-metadata.test.mjs
       - name: Verify paid-only hosted merchant GET authorizations and expired-plan denial
         run: node --test tests/t020-worker-paid-read-access.test.mjs
+      - name: Verify canonical public Builder Shopify Worker identity and internal Staging isolation
+        run: node --test tests/shopify-worker-configuration.test.mjs
       - name: Verify Shopify staff roles restrict authenticated Worker page metadata and summaries
         run: node --test tests/t020-worker-page-rbac.test.mjs
       - name: Verify bounded tenant-scoped editor draft hydration and fail-closed page reader
