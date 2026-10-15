@@ -1,9 +1,10 @@
 // VSN Builder hosted Worker entry — gated Staging integration boundary.
 // This is NOT the React Router merchant UI and is not authorized for Live.
-// No merchant editor, billing mutations, or Shopify App Store review is enabled.
+// Staging draft-save is gated OFF; no billing, public editor or Shopify review.
 import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
 import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
-import { acceptWorkerShopifyAdminRequest } from "../app/services/worker-shopify-admin-gate.js";
+import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } from "../app/services/worker-shopify-admin-gate.js";
+import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-draft-save-request.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
 import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
 
@@ -85,9 +86,25 @@ export default {
         },
       });
     }
+    if(url.pathname.startsWith("/app/__vsn/pages/") && request.method==="POST") {
+      // Source-integrated save contract is intentionally unavailable without
+      // an EXPLICIT Staging-only activation. Never enable for Production.
+      // The current Staging Worker has no secret/binding for this switch.
+      if(env.APP_ENV!=="staging" ||
+         env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
+      const match=/^\/app\/__vsn\/pages\/([a-zA-Z0-9_-]{1,64})\/content$/.exec(url.pathname);
+      if(!match || [...url.searchParams.keys()].some(key=>key!=="shop") ||
+         url.searchParams.getAll("shop").length>1)return locked(404);
+      return acceptWorkerShopifyAdminMutation(request,env,{
+        onAuthenticated:({request:authorizedRequest,session,shop,transaction})=>
+          handleVerifiedWorkerDraftSave({
+            request:authorizedRequest,session,shop,transaction,pageId:match[1],
+          }),
+      });
+    }
     if(url.pathname.startsWith("/app/__vsn/pages/") && request.method==="GET") {
       // Authenticated, paid, RBAC-protected page metadata or editor hydration.
-      // No POST/PUT/PATCH or public draft contents are exposed.
+      // No public draft contents are exposed; POST stays Staging flag-locked.
       const rawPath=url.pathname.slice("/app/__vsn/pages/".length);
       const isContent=rawPath.endsWith("/content");
       const rawId=isContent?rawPath.slice(0,-"/content".length):rawPath;
@@ -124,7 +141,7 @@ export default {
         return error instanceof Response ? error : locked();
       }
     }
-    // No storefront, OAuth, merchant mutations, billing, or editor routes are
+    // No storefront, OAuth, public merchant editor, or billing routes are
     // enabled until full Cloudflare React Router/Shopify integration is proved.
     if(url.pathname==="/app" || url.pathname.startsWith("/app/") ||
        url.pathname.startsWith("/auth/"))return locked();
