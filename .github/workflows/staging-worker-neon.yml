@@ -1,0 +1,31 @@
+name: VSN Builder Staging Neon Worker Boundary
+on:
+  pull_request:
+    paths:
+      - "app/services/staging-worker-neon.server.js"
+      - "app/services/neon-target-policy.js"
+      - "config/deployment/environments.json"
+      - "tests/staging-worker-neon.test.mjs"
+      - ".github/workflows/staging-worker-neon.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage-only-client-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate Staging-only Worker adapter construction and Neon endpoint isolation
+        run: |
+          node --check app/services/staging-worker-neon.server.js
+          node --test tests/staging-worker-neon.test.mjs
+      - name: Assert no Staging or Production credentials used
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${DATABASE_URL:-}"
+          test -z "${DIRECT_URL:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
