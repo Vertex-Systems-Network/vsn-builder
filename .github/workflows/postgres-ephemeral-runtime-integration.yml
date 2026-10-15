@@ -6,6 +6,7 @@ on:
     paths:
       - "tests/worker-shopify-install-postgres-real.test.mjs"
       - "tests/postgres-ephemeral-integration.test.mjs"
+      - "tests/postgres-ephemeral-restore.test.mjs"
       - "tests/shopify-prisma-storage-postgres.test.mjs"
       - "tests/worker-real-shopify-sdk-postgres.test.mjs"
       - "tests/worker-shopify-install-session-storage.test.mjs"
