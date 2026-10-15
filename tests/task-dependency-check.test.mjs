@@ -12,17 +12,17 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.deepEqual(result.errors,[]);
  assert.equal(plan.policy,"dependency_driven_evidence_first_no_phase_gating");
  assert.equal(plan.tasks.length,41);
- assert.equal(result.summary.closed,12);
- assert.equal(result.summary.active,29);
+ assert.equal(result.summary.closed,13);
+ assert.equal(result.summary.active,28);
  assert.equal(result.summary.verified,0);
- assert.equal(result.summary.in_review,8);
+ assert.equal(result.summary.in_review,7);
  assert.equal(result.summary.ready,2);
  assert.equal(result.summary.waiting,19);
- assert.deepEqual(plan.closed_task_ids,[...Array.from({length:11},(_,i)=>"T"+String(i+1).padStart(3,"0")),"T027"]);
+ assert.deepEqual(plan.closed_task_ids,[...Array.from({length:11},(_,i)=>"T"+String(i+1).padStart(3,"0")),"T026","T027"]);
  assert(result.rows.every(t=>t.status!=="closed"),"closed work must never appear in active queue");
  assert.equal(result.closed_tasks.length,0,"closed evidence must not appear in default JSON output");
  const withArchive=inspectTaskPlan(plan,{includeClosed:true});
- assert.equal(withArchive.closed_tasks.length,12);
+ assert.equal(withArchive.closed_tasks.length,13);
  assert(withArchive.closed_tasks.every(t=>t.closed_on==="2026-10-15"&&t.evidence.length>0));
  assert.equal(plan.public_shopify_apps,1);
  assert.deepEqual(plan.commercial_plans.map(p=>p.id),["starter","sliver","gold","platinum"]);
@@ -41,9 +41,21 @@ test("unrelated workstreams run READY without an earlier phase or cloud prerequi
  assert.equal(rows.find(r=>r.id==="T020").execution,"IN_REVIEW");
  assert.equal(rows.some(r=>r.id==="T027"),false,"Source pricing contract is FINAL CLOSED");
  assert.equal(rows.some(r=>r.id==="T011"),false,"Dependency audit is FINAL CLOSED");
- assert.equal(rows.find(r=>r.id==="T026").execution,"IN_REVIEW");
+ assert.equal(rows.some(r=>r.id==="T026"),false,"Server mutation entitlement is FINAL CLOSED");
  assert.equal(rows.find(r=>r.id==="T024").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T013").execution,"IN_REVIEW");
+});
+test("T026 stays permanently closed yet T029 cannot run without Shopify billing E2E",()=>{
+ const plan=fresh();
+ const t=find(plan,"T026");
+ assert.equal(t.status,"closed");
+ assert(t.evidence.some(x=>x.includes("38746336058")));
+ const proof=inspectTaskPlan(plan);
+ assert.deepEqual(proof.errors,[]);
+ assert.equal(proof.rows.some(x=>x.id==="T026"),false);
+ assert.equal(proof.rows.find(x=>x.id==="T029").execution,"WAITING");
+ const reopened=fresh();find(reopened,"T026").status="todo";
+ assert(inspectTaskPlan(reopened).errors.some(x=>x.includes("Immutable closed task was reopened")));
 });
 test("blocking one task cannot artificially block independent READY tasks",()=>{
  const plan=fresh();
@@ -106,8 +118,8 @@ test("CLI prints actionable tasks and blocks unverified terminal acceptance",()=
  const ok=spawnSync(process.execPath,["scripts/task-dependency-check.mjs"],{encoding:"utf8"});
  assert.equal(ok.status,0,ok.stderr);
  assert.match(ok.stdout,/dependency graph VALID/i);
- assert.match(ok.stdout,/12 FINAL CLOSED/);
- assert.match(ok.stdout,/29 ACTIVE/);
+ assert.match(ok.stdout,/13 FINAL CLOSED/);
+ assert.match(ok.stdout,/28 ACTIVE/);
  assert.doesNotMatch(ok.stdout,/T001 P0/);
  assert.doesNotMatch(ok.stdout,/T011 P0 READY/);
  const md=spawnSync(process.execPath,["scripts/task-dependency-check.mjs","--format=markdown"],{encoding:"utf8"});
@@ -135,7 +147,7 @@ test("final CLOSED is terminal, removed from active view, but satisfies downstre
  assert.equal(result.rows.find(x=>x.id==="T024").execution,"IN_REVIEW");
  assert.equal(result.rows.find(x=>x.id==="T022").waiting_on.includes("T002"),false);
  const withHistory=inspectTaskPlan(plan,{includeClosed:true});
- assert.equal(withHistory.rows.filter(t=>t.execution==="CLOSED").length,12);
+ assert.equal(withHistory.rows.filter(t=>t.execution==="CLOSED").length,13);
  assert.equal(withHistory.ready.length,result.ready.length);
 });
 test("CLOSED cannot silently reopen, disappear, lose closure proof or bypass dependency safety",()=>{
