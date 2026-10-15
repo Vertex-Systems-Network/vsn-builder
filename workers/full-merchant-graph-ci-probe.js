@@ -58,8 +58,25 @@ export default {
             ...DENY, "content-type": "application/json; charset=utf-8",
           } });
         }
-      } catch {
-        // Do not reveal Prisma URLs, Node import stack traces or SDK errors.
+      } catch (error) {
+        // Diagnostics are intentionally restricted to the CI-only loopback
+        // test route. Never serialize raw SDK errors, stack traces, tokens or
+        // connection URLs. The category identifies the migration frontier.
+        const detail = String(error?.message || "");
+        const classification =
+          /api.?key|api.?secret|shopify.*config|app.?url/i.test(detail)
+            ? "SHOPIFY_APP_BOOTSTRAP_CONFIGURATION" :
+          /prisma|database|sqlite|wasm|engine/i.test(detail)
+            ? "DATABASE_CLIENT_RUNTIME_INITIALIZATION" :
+          /process\.env|node:|module|import|require/i.test(detail)
+            ? "NODE_MODULE_RUNTIME_COMPATIBILITY" :
+            "MERCHANT_SERVER_MODULE_EVALUATION";
+        return new Response(JSON.stringify({
+          ciOnly: true, fullMerchantModuleEvaluated: false,
+          blocked: classification,
+        }), { status: 503, headers: {
+          ...DENY, "content-type": "application/json; charset=utf-8",
+        } });
       }
     }
     return new Response(null, { status: 503, headers: DENY });
