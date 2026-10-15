@@ -18,6 +18,7 @@ jobs:
       CI: "true"
       NODE_ENV: test
       APP_ENV: development
+      VSN_CLOUDFLARE_NATIVE_CI: "1"
       SHOPIFY_APP_URL: http://localhost:3000
       DATABASE_URL: file:./t020-cloudflare-vite-ci.sqlite
     steps:
