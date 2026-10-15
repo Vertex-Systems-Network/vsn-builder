@@ -1,6 +1,7 @@
-// T020 CI-only native Prisma namespace for the actual Builder route graph.
-// Dashboard metrics uses Prisma.sql for SELECT 1; no PrismaClient is created.
-// The production Worker must still inject an authenticated Neon adapter DB
-// before any merchant query/mutation, enforced by the locked Worker entry.
-import { Prisma } from "../generated/prisma-edge/client.ts";
-export { Prisma };
+// CI-only Worker mapping of the real Prisma Edge client.
+// The Node @prisma/client package resolves to .prisma/client/default which
+// cannot load in Cloudflare Workerd. SDK-dependency imports must use the
+// generated PostgreSQL/Neon-compatible Prisma runtime for this isolated test.
+// Never instantiate a PrismaClient here: audited request-scoped Neon adapter
+// binding is required separately to access any merchant data.
+export { Prisma, PrismaClient } from "../generated/prisma-edge/client.ts";
