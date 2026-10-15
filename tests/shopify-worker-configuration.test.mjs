@@ -6,14 +6,15 @@ import {
 } from "../app/services/shopify-worker-configuration.js";
 import {SHOPIFY_EXPECTED_SCOPES} from "../app/config/shopifyIntegration.js";
 
+const publicBuilderClientId="997eae5a9961f21d131e5f31bbbe31d3";
 const envFor=(tier)=>({
  APP_ENV:tier,
  VSN_WORKER_NAME:tier==="staging"?"vsn-builder-staging":"vsn-builder-production",
  NEON_PROJECT_ID:tier==="staging"?"shiny-violet-61219572":"nameless-violet-68750490",
  SHOPIFY_BILLING_TEST_MODE:tier==="staging"?"true":"false",
- SHOPIFY_API_KEY:tier==="staging"?"a".repeat(32):"b".repeat(32),
+ SHOPIFY_API_KEY:tier==="staging"?"a".repeat(32):publicBuilderClientId,
  SHOPIFY_API_SECRET:"synthetic-secret-must-not-be-logged",
- SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+ SHOPIFY_PRODUCTION_CLIENT_ID:publicBuilderClientId,
  SHOPIFY_APP_URL:tier==="staging"?"https://staging.builder.example.org":"https://builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(",")
 });
@@ -53,6 +54,31 @@ test("production client ID cannot be reused in Staging",()=>{
  const env=envFor("staging"); env.SHOPIFY_API_KEY=env.SHOPIFY_PRODUCTION_CLIENT_ID;
  assert.equal(inspectWorkerShopifyConfiguration(request(env),env).ready,false);
 });
+test("one verified public app accepted only in Production Worker; internal Staging remains isolated",()=>{
+ const prod=envFor("production");
+ assert.equal(inspectWorkerShopifyConfiguration(request(prod),prod).ready,true);
+ const fromCase={...prod,SHOPIFY_API_KEY:publicBuilderClientId.toUpperCase(),
+  SHOPIFY_PRODUCTION_CLIENT_ID:publicBuilderClientId.toUpperCase()};
+ assert.equal(inspectWorkerShopifyConfiguration(request(fromCase),fromCase).ready,true);
+ for(const bad of [
+  {...prod,SHOPIFY_API_KEY:"b".repeat(32),SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32)},
+  {...prod,SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32)},
+ ]){
+  const result=inspectWorkerShopifyConfiguration(request(prod),bad);
+  assert.equal(result.ready,false);
+  assert(result.issues.some(x=>/canonical|mismatch/.test(x)));
+ }
+ const staging=envFor("staging");
+ for(const candidate of [
+  {...staging,SHOPIFY_API_KEY:publicBuilderClientId},
+  {...staging,SHOPIFY_API_KEY:publicBuilderClientId.toUpperCase()},
+ ]){
+  const result=inspectWorkerShopifyConfiguration(request(staging),candidate);
+  assert.equal(result.ready,false);
+  assert(result.issues.some(x=>x.includes("Staging")));
+ }
+});
+
 test("cross-tier Worker/Neon IDs, production billing and Client ID mismatches fail",()=>{
  const env=envFor("production");
  const check=inspectWorkerShopifyConfiguration(request(env),{...env,
