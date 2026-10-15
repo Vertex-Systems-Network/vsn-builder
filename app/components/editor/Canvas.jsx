@@ -497,14 +497,16 @@ function RenderNode({
   const componentStack = useContext(ComponentStackContext);
   const responsiveConfig = useContext(ResponsiveConfigContext);
   const widgetTemplates = useContext(WidgetTemplateContext);
+  // Hooks must run even when a node becomes hidden between renders.
+  // Changing editor visibility must not change the component's hook order.
+  const [dropPosition, setDropPosition] = useState("");
+  const dragFrameRef = useRef(0);
+  const pendingDropPositionRef = useRef("");
   if (node?.meta?.hidden === true) return null;
   node = applyPreviewDynamicSource(node, { previewCollection, previewProduct, previewBlog, previewArticle, previewSearch });
   node = applyDynamicBindings(node, { loop: loopContext, product: previewProduct, collection: previewCollection, blog: previewBlog, article: previewArticle, search: previewSearch, customer: { name: "Customer", email: "customer@example.com" } });
   node = applyResponsiveNode(node, previewMode, responsiveConfig);
   const selected = selectedId === node.id;
-  const [dropPosition, setDropPosition] = useState("");
-  const dragFrameRef = useRef(0);
-  const pendingDropPositionRef = useRef("");
   const style = cssFromStyles(node.styles);
   const interactions = normalizeElementInteractions(node.interactions);
   const stickyActive = isStickyEnabledForDevice(interactions, previewMode);
