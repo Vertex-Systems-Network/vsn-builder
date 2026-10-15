@@ -78,6 +78,7 @@ export default {
       return acceptWorkerShopifyAdminRequest(request,env,{
         enablePageSummary:true,
         requireVerifiedPaidRead:true,
+        requirePageViewPermission:true,
         onAuthenticated:async ({shop,pageSummary})=>{
           const pages=await pageSummary();
           return safeJson({shop,tier:env.APP_ENV,pages});
@@ -95,6 +96,7 @@ export default {
       return acceptWorkerShopifyAdminRequest(request,env,{
         enablePageMetadata:true,
         requireVerifiedPaidRead:true,
+        requirePageViewPermission:true,
         onAuthenticated:async ({pageMetadata})=>{
           const record=await pageMetadata(rawId);
           return record===null?locked(404):safeJson({page:record});
