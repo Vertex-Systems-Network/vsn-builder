@@ -96,6 +96,8 @@ jobs:
         if: steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success'
         continue-on-error: true
         run: npm audit --include=dev --audit-level=high
+      - name: Assert no PR browser install while mandatory post-install audit remains enforced
+        run: node --test tests/ci-browser-install-guard.test.mjs
       # PRs skip protected external browser E2E; installing all three browsers
       # here only wastes runner time. Still install on trusted push/manual runs.
       # The mandatory post-Playwright dependency audit above runs on EVERY PR.
