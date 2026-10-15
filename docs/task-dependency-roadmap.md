@@ -10,7 +10,7 @@ Earlier eight-phase trackers are legacy historical evidence inventories. They do
 
 ## ACTIVE task counts (final closures removed)
 
-**29 ACTIVE** · **2 READY** · **8 IN REVIEW** · **19 WAITING**. The 12 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
+**28 ACTIVE** · **2 READY** · **7 IN REVIEW** · **19 WAITING**. The 13 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
 
 One public **VSN | Builder** app; Dev/Staging only internal testing. No Free plan.
 
@@ -51,7 +51,7 @@ flowchart TD
   LIVE --> SUBMIT
 ```
 
-## All 29 ACTIVE atomic tasks (final CLOSED tasks excluded)
+## All 28 ACTIVE atomic tasks (final CLOSED tasks excluded)
 
 | ID | Workstream | Priority | Task | Depends on | Computed status | Issue |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -69,7 +69,6 @@ flowchart TD
 | `T023` | Shopify Auth | P0 | Real Staging Shopify OAuth, App Bridge ID token and session lifecycle | `T015`, `T021`, `T022` | WAITING | [#162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
 | `T024` | Security | P0 | Trusted uninstall-generation provenance and safe replay handling | `T008` | IN REVIEW (webhook deadline sub-scope; trusted generation still pending) | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | `T025` | Security | P0 | Real signed Shopify webhook retry/uninstall/reinstall E2E | `T018`, `T023`, `T024` | WAITING | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
-| `T026` | Security | P0 | Enforce paid-tier authorization across every server-side merchant mutation | `T007` | IN REVIEW | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T028` | Billing | P0 | Create/verify exactly four public plans in Shopify Partner Dashboard | `T015` | WAITING | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T029` | Billing | P0 | Real subscription/trial lifecycle and plan limits E2E | `T023`, `T026`, `T027`, `T028` | WAITING | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T030` | Merchant Features | P1 | Real Dev create/edit/save/preview and reload persistence | `T022` | WAITING | [#165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
