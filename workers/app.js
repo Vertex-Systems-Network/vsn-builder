@@ -83,6 +83,22 @@ export default {
         },
       });
     }
+    if(url.pathname.startsWith("/app/__vsn/pages/") && request.method==="GET") {
+      // An exact-page metadata read, never content JSON or a write path.
+      // The Shopify SDK + persisted installation and session are the ONLY
+      // authority for the tenant-scoped Prisma lookup.
+      const rawId=url.pathname.slice("/app/__vsn/pages/".length);
+      if(!/^[a-zA-Z0-9_-]{1,64}$/.test(rawId) ||
+         [...url.searchParams.keys()].some(key=>key!=="shop") ||
+         url.searchParams.getAll("shop").length>1)return locked(404);
+      return acceptWorkerShopifyAdminRequest(request,env,{
+        enablePageMetadata:true,
+        onAuthenticated:async ({pageMetadata})=>{
+          const record=await pageMetadata(rawId);
+          return record===null?locked(404):safeJson({page:record});
+        },
+      });
+    }
     if(url.pathname==="/webhooks/app/uninstalled") {
       try {
         return await acceptWorkerShopifyUninstallWebhook(request,env,{
