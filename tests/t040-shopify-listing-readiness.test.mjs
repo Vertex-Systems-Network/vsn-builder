@@ -44,7 +44,8 @@ test("duplicate, fake or missing screenshot paths cannot certify listing",()=>{
   "stable_live_https","reviewer_access","real_shopify_oauth_e2e",
   "real_shopify_billing_e2e","real_theme_browser_e2e","production_release_accepted"])
   plan.verified[key]=true;
- plan.verified.privacy_policy_url="https://vsn-test.example/privacy";
+ // Syntactically eligible URL only: this fixture deliberately does NOT certify the page exists.
+ plan.verified.privacy_policy_url="https://vertexsystemsnetwork.com/privacy-policy";
  plan.verified.support_email="shopify-support@vsn-test.example";
  plan.verified.screenshots=["docs/launch/evidence/one.png","docs/launch/evidence/one.png"];
  const result=inspectListingReadiness(plan,{screenshotExists:()=>true});
