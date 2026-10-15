@@ -35,6 +35,33 @@ export default {
         mandatoryDependencies.length !== 4) {
       return new Response(null, { status: 503, headers: DENY });
     }
+    // CI-only local Workerd proof; this loads the real merchant build module
+    // but NEVER dispatches a merchant route or supplies Shopify credentials.
+    let url;
+    try { url = new URL(request.url); } catch { return new Response(null, { status: 503, headers: DENY }); }
+    const isLocal = url.protocol === "http:" &&
+      (url.hostname === "127.0.0.1" || url.hostname === "localhost");
+    if (isLocal && request.method === "GET" &&
+        url.pathname === "/__vsn/full-merchant-module-proof" &&
+        !url.search && !url.hash &&
+        !request.headers.has("cookie") &&
+        !request.headers.has("authorization") &&
+        !request.headers.has("x-shopify-hmac-sha256")) {
+      try {
+        const build = await loadFullMerchantBuild();
+        const routes = build?.routes && Object.keys(build.routes).length;
+        if (Number.isInteger(routes) && routes > 10 && build?.entry) {
+          return new Response(JSON.stringify({
+            ciOnly: true, fullMerchantModuleEvaluated: true,
+            routeManifestPresent: true,
+          }), { status: 200, headers: {
+            ...DENY, "content-type": "application/json; charset=utf-8",
+          } });
+        }
+      } catch {
+        // Do not reveal Prisma URLs, Node import stack traces or SDK errors.
+      }
+    }
     return new Response(null, { status: 503, headers: DENY });
   },
 };
