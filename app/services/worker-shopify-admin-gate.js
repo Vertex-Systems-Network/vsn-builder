@@ -51,12 +51,59 @@ const rollback=(status)=>{throw new RollbackResponse(denied(status))};
 // modifying them after Prisma commits would otherwise return an HTTP 503
 // despite persisting merchant writes. Construct a new Response with a
 // mutable header copy while the transaction is still reversible.
-function securedResponse(result) {
+// A streamed GET loader can still be reading from authenticated Shopify or
+// Neon after its callback returns. Returning the original body closes the
+// request-scoped SDK/database in finally BEFORE the stream is consumed.
+// Complete bounded read responses while that context is still alive.
+// Larger app datasets must be paginated instead of retaining live DB clients.
+const MAX_READ_RESPONSE_BYTES=8*1024*1024;
+const MAX_READ_RESPONSE_MS=7000;
+async function securedReadResponse(result) {
   if(!(result instanceof Response))throw new TypeError("Missing HTTP Response");
+  // Never expose a callback's internal 5xx body (possibly driver diagnostics).
+  if(result.status>=500 || result.status<200)throw new TypeError("Unsafe GET response");
   const headers=new Headers(result.headers);
   headers.set("cache-control","no-store");
   headers.set("x-content-type-options","nosniff");
-  return new Response(result.body,{
+  headers.delete("content-length");
+  if(result.body===null) return new Response(null,{
+    status:result.status,statusText:result.statusText,headers,
+  });
+  const advertised=Number(result.headers.get("content-length"));
+  if(Number.isFinite(advertised) && advertised>MAX_READ_RESPONSE_BYTES)
+    throw new RangeError("GET response too large");
+  const reader=result.body.getReader();
+  const chunks=[];
+  let length=0;
+  const deadline=Date.now()+MAX_READ_RESPONSE_MS;
+  try {
+    while(true) {
+      const remaining=deadline-Date.now();
+      if(remaining<=0)throw new RangeError("GET response timed out");
+      let timer;
+      const next=await Promise.race([
+        reader.read(),
+        new Promise((_,reject)=>{
+          timer=setTimeout(()=>reject(new RangeError("GET response timed out")),remaining);
+        }),
+      ]).finally(()=>clearTimeout(timer));
+      if(next.done)break;
+      if(!(next.value instanceof Uint8Array))throw new TypeError("Invalid GET chunk");
+      length+=next.value.byteLength;
+      if(length>MAX_READ_RESPONSE_BYTES)throw new RangeError("GET response too large");
+      chunks.push(next.value);
+    }
+  }catch(error) {
+    // Never block the SDK/Neon cleanup waiting on a hostile source's cancel().
+    try{void reader.cancel().catch(()=>{})}catch{}
+    throw error;
+  }finally{
+    try{reader.releaseLock()}catch{}
+  }
+  const bytes=new Uint8Array(length);
+  let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+  return new Response(bytes,{
     status:result.status,statusText:result.statusText,headers,
   });
 }
@@ -218,7 +265,7 @@ async function guardedAdminRequest(request,env,{
     if(!(response instanceof Response))return denied(503);
     // POST responses were already secured inside the still-open transaction.
     // Do not perform any throwable processing after PostgreSQL COMMIT.
-    return mutation?response:securedResponse(response);
+    return mutation?response:await securedReadResponse(response);
   } catch(error) {
     if(error instanceof RollbackResponse){
       // The database transaction has already been rolled back. Preserve
