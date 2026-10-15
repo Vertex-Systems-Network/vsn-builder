@@ -52,7 +52,7 @@ function validateStoredRolePolicy(value) {
 export async function getBuilderRoleAccess(db,shop){
   if(!db||!shop)return normalizeBuilderRoleAccess(DEFAULT_BUILDER_ROLE_ACCESS);
   const settings=await db.builderShopSetting.findUnique({where:{shop},select:{roleAccessJson:true}});
-  if(!settings?.roleAccessJson)return normalizeBuilderRoleAccess(DEFAULT_BUILDER_ROLE_ACCESS);
+  if(settings?.roleAccessJson==null)return normalizeBuilderRoleAccess(DEFAULT_BUILDER_ROLE_ACCESS);
   // Do not downgrade invalid stored restrictions to permissive defaults.
   return normalizeBuilderRoleAccess(validateStoredRolePolicy(JSON.parse(settings.roleAccessJson)));
 }
