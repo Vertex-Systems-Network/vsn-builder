@@ -2,7 +2,7 @@
 
 **Verified state: 16 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
-**28 ACTIVE** of 41 tracked tasks · **1 READY** · **8 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 13 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
+**28 ACTIVE** of 41 tracked tasks · **0 READY** · **9 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 13 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **Work order:** dependency-first, not phase-first. Mandatory release and Shopify safeguards remain in place. One public VSN | Builder app; Starter $30, Sliver $100, Gold $150, Platinum $350 monthly/$3,000 annually; each 10-day Shopify trial, no Free tier.
 
@@ -14,24 +14,24 @@
 
 - `T012` remains IN_REVIEW: integration #190 is Draft and unmerged to unprotected `development`. `T013` remains IN_REVIEW because live `development.protected=false`.
 - `T014` remains IN_REVIEW: protected GitHub Environment policies unverified and Cloudflare Staging/Production Worker scripts currently have **0 secrets / 0 bindings**, workers.dev disabled.
-- `T015` remains the single READY task: connected Dev, Staging and Production stores authenticated via **Shopify ChatGPT MCP App**, not a verified VSN Builder Partner app; real Partner ownership, safe tier mapping and app-specific OAuth remain unverified.
+- `T015` advanced to IN_REVIEW: Shopify Admin GraphQL separately discovered the real single intended public Builder app and both internal Dev/Staging apps; Staging and Production test-store installations exist, Dev installation does not. Old repository source wrongly rejected the canonical public Live client ID; CI-policy fix and [direct app evidence](docs/t015-shopify-app-identity-evidence-2026-10-16.md) added. Partner legal ownership, actual callbacks and Builder OAuth remain unverified.
 - `T017` remains IN_REVIEW: Neon Staging real restored snapshot, default branch and pooled endpoint verified; protected preflight still missing, and default Staging has **0 application tables**.
 - `T020` remains IN_REVIEW: exact-head source CI at `d8de1756a413cf0a7503d9ac80afcb6c636780f5` was **15/15 success**, but hosted Shopify OAuth, editor and Neon acceptance remain unavailable.
 - `T024`, `T032`, `T040` remain IN_REVIEW: missing signed installation-generation provenance; real supported-theme/forms/widgets fixture QA; real compliant listing screenshots, privacy/support and reviewer evidence.
 
-**Counts unchanged:** 13 historic FINAL CLOSED; 28 ACTIVE (1 READY, 8 IN_REVIEW, 19 WAITING). No merge/deployment/migration/Shopify submission was performed during this audit.
+**Closures unchanged, review advanced:** 13 historic FINAL CLOSED; 28 ACTIVE (0 READY, 9 IN_REVIEW, 19 WAITING). No merge/deployment/migration/Shopify submission was performed during this audit.
 
 ## Current actionable tasks
 
-**READY now:** `T015`.
+**READY now:** none; all independent previously ready identity work is in verification review.
 
-**Code/merge IN_REVIEW:** `T012`, `T013`, `T014`, `T017`, `T020`, `T024`, `T032`, `T040`.
+**Code/merge IN_REVIEW:** `T012`, `T013`, `T014`, `T015`, `T017`, `T020`, `T024`, `T032`, `T040`.
 
 **T024 in review:** [PR #193](https://github.com/Vertex-Systems-Network/vsn-builder/pull/193) hardens webhook read deadlines; real trusted generation and uninstall E2E still OPEN.
 
 **T013 in review:** [PR #194](https://github.com/Vertex-Systems-Network/vsn-builder/pull/194) tests effective GitHub branch policy; live development protection still missing. No deployment approval.
 
-**T032 IN_REVIEW:** [PR #197](https://github.com/Vertex-Systems-Network/vsn-builder/pull/197) passes 26 Liquid blocks/14 asset static checks; actual supported theme fixtures still pending.
+**T032 IN_REVIEW:** [PR #197](https://github.com/Vertex-Systems-Network/vsn-builder/pull/197) passes 26 Liquid blocks/14 asset static checks. Real Horizon theme exists in Dev and Staging test stores and their main-page section allows @app blocks with a content_for renderer; Builder extension installation and browser/Forms/Widgets acceptance are still pending.
 
 **T040 IN_REVIEW:** [PR #199](https://github.com/Vertex-Systems-Network/vsn-builder/pull/199) contains listing draft and fails closed on missing privacy/support/screenshots; no Partner upload or submission.
 
@@ -48,7 +48,7 @@
 | T012 | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | IN_REVIEW | — | [issues/157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | T013 | P0 | Protect development branch and verify GitHub required reviewers | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
-| T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | READY | — | [issues/159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
+| T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | — | [issues/159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 | T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | WAITING | T014 | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T017 | P0 | Live Neon snapshot/default/compute attestation in protected preflight | IN_REVIEW | — | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T018 | P0 | Protected Staging Prisma migrate deploy and data restore drill | WAITING | T011, T012, T013, T014, T016, T017 | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
