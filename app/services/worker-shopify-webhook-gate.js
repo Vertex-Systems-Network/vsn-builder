@@ -7,39 +7,56 @@ import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
 
 const MAX_WEBHOOK_BYTES = 65536;
+// Keep a single wall-clock deadline for the entire raw HMAC body, not a
+// per-chunk timeout that a slow trickle can extend indefinitely.
+const MAX_WEBHOOK_READ_MS = 3000;
 const SHOP_PATTERN = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const SIGNATURE_PATTERN = /^[A-Za-z0-9+/]{43}=$/;
 const denied = (status) => new Response(null, { status });
 
 async function boundedWebhookBody(request) {
   const claimedLength=request.headers.get("content-length");
-  if(claimedLength!==null && (!/^\d+$/.test(claimedLength) ||
+  if(claimedLength!==null && (!/^[0-9]+$/.test(claimedLength) ||
      Number(claimedLength)>MAX_WEBHOOK_BYTES))throw denied(413);
   const reader=request.body?.getReader();
   if(!reader)throw denied(400);
   const chunks=[];
   let length=0;
+  let shouldCancel=true;
+  const deadline=Date.now()+MAX_WEBHOOK_READ_MS;
   try {
     while(true) {
-      const {done,value}=await reader.read();
-      if(done)break;
-      length+=value.byteLength;
-      if(length>MAX_WEBHOOK_BYTES) {
-        await reader.cancel().catch(()=>{});
-        throw denied(413);
-      }
-      chunks.push(value);
+      const remaining=deadline-Date.now();
+      if(remaining<=0)throw denied(408);
+      let timer;
+      const next=await Promise.race([
+        reader.read(),
+        new Promise((_,reject)=>{
+          timer=setTimeout(()=>reject(denied(408)),remaining);
+        }),
+      ]).finally(()=>clearTimeout(timer));
+      if(next.done)break;
+      if(!(next.value instanceof Uint8Array))throw denied(400);
+      length+=next.value.byteLength;
+      if(length>MAX_WEBHOOK_BYTES)throw denied(413);
+      chunks.push(next.value);
     }
+    if(length===0)throw denied(400);
+    shouldCancel=false;
   }catch(e) {
     if(e instanceof Response)throw e;
     throw denied(400);
-  }finally {
+  }finally{
+    if(shouldCancel) {
+      // A malicious stream can return a never-settling cancel() promise.
+      // Never await cancellation while the incoming request holds a Worker.
+      try{void reader.cancel().catch(()=>{})}catch{}
+    }
     try{reader.releaseLock()}catch{}
   }
-  if(length===0)throw denied(400);
   const body=new Uint8Array(length);
   let offset=0;
-  for(const chunk of chunks){body.set(chunk,offset);offset+=chunk.length}
+  for(const chunk of chunks){body.set(chunk,offset);offset+=chunk.byteLength}
   return body;
 }
 

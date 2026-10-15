@@ -10,7 +10,7 @@ Earlier eight-phase trackers are legacy historical evidence inventories. They do
 
 ## ACTIVE task counts (final closures removed)
 
-**31 ACTIVE** · **7 READY** · **5 IN REVIEW** · **19 WAITING**. The 10 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
+**31 ACTIVE** · **6 READY** · **6 IN REVIEW** · **19 WAITING**. The 10 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
 
 One public **VSN | Builder** app; Dev/Staging only internal testing. No Free plan.
 
@@ -29,7 +29,6 @@ One public **VSN | Builder** app; Dev/Staging only internal testing. No Free pla
 | `T013` | P0 | Protect development branch and verify GitHub required reviewers | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T014` | P0 | Configure/verify GitHub Environment secrets and tier variables | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T015` | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
-| `T024` | P0 | Trusted uninstall-generation provenance and safe replay handling | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | `T032` | P1 | Templates/Widgets/theme app assets implementation and synthetic QA | [#165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
 | `T040` | P1 | Shopify listing screenshots, privacy, support, scopes and review assets | [#168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 
@@ -73,7 +72,7 @@ flowchart TD
 | `T021` | Runtime | P0 | Staging Worker deploy and stable HTTPS callback acceptance | `T011`, `T012`, `T013`, `T018`, `T019`, `T020` | WAITING | [#161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
 | `T022` | Shopify Auth | P0 | Real Dev Shopify test-store install, OAuth and session acceptance | `T002`, `T015` | WAITING | [#162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
 | `T023` | Shopify Auth | P0 | Real Staging Shopify OAuth, App Bridge ID token and session lifecycle | `T015`, `T021`, `T022` | WAITING | [#162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
-| `T024` | Security | P0 | Trusted uninstall-generation provenance and safe replay handling | `T008` | READY | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
+| `T024` | Security | P0 | Trusted uninstall-generation provenance and safe replay handling | `T008` | IN REVIEW (webhook deadline sub-scope; trusted generation still pending) | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | `T025` | Security | P0 | Real signed Shopify webhook retry/uninstall/reinstall E2E | `T018`, `T023`, `T024` | WAITING | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | `T026` | Security | P0 | Enforce paid-tier authorization across every server-side merchant mutation | `T007` | IN REVIEW | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T027` | Billing | P0 | Review and integrate exact four-plan pricing code PR #153 | None | IN REVIEW | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
@@ -95,6 +94,8 @@ flowchart TD
 **In-review update:** T012 source reconciliation has [Draft PR #171](https://github.com/Vertex-Systems-Network/vsn-builder/pull/171), merging code evidence from PR #153/#155/#169/#170 without Live release; acceptance is pending. T026 server-side paid merchant mutation guards now have [Draft PR #170](https://github.com/Vertex-Systems-Network/vsn-builder/pull/170) with 30 protected action routes and synthetic tests. This is code in review, NOT verified merchant acceptance or a release authorization.
 
 **T020 progress:** isolated Cloudflare Web Streams SSR proof [Draft PR #172](https://github.com/Vertex-Systems-Network/vsn-builder/pull/172) is IN REVIEW. Full hosted Shopify OAuth, real merchant routes and persistent Neon are still unverified.
+
+**T024 webhook body-hardening review:** [PR #193](https://github.com/Vertex-Systems-Network/vsn-builder/pull/193), [CI](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129). The total-read deadline fix does not provide trusted generation attestation; final T024 closure remains blocked.
 
 ## Current external blockers
 
