@@ -10,6 +10,7 @@ export function inspectStagingCloudClient({ schema, sqliteSchema, ignoreFile, ex
     localStillSQLite: /datasource\s+db\s*\{[^}]*provider\s*=\s*"sqlite"/m.test(sqliteSchema),
     isolatedNodeClient: /generator\s+client\s*\{[^}]*output\s*=\s*"\.\.\/\.\.\/generated\/prisma-cloud"/s.test(schema),
     rustlessWorkerClient: /generator\s+workerClient\s*\{[^}]*engineType\s*=\s*"client"/s.test(schema),
+    workerdRustless: /generator\s+workerEdge\s*\{[^}]*engineType\s*=\s*"client"/s.test(schema),
     workerdTarget: /generator\s+workerEdge\s*\{[^}]*runtime\s*=\s*"workerd"/s.test(schema),
     workerdESM: /generator\s+workerEdge\s*\{[^}]*moduleFormat\s*=\s*"esm"/s.test(schema),
     exactCloudModelCount: cloudModels.length === expected && localModels.length === expected - 1,
