@@ -1,0 +1,51 @@
+name: T011 Runtime Correctness ESLint Remediation (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "app/components/editor/Canvas.jsx"
+      - "app/routes/app.editor-media.jsx"
+      - "app/data/sectionPresets.js"
+      - "tests/t011-lint-runtime-correctness.test.mjs"
+      - "scripts/t011-lint-runtime-correctness-gate.mjs"
+      - ".github/workflows/t011-lint-runtime-correctness.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lint-runtime-correctness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      SHOPIFY_APP_URL: http://localhost:3000
+      DATABASE_URL: file:./t011-ci.sqlite
+    steps:
+      - name: Checkout test source without repository write credential
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Ensure no hosted merchant or Neon credentials
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Install exact locked project dependencies
+        run: npm ci
+      - name: Run actual runtime-correctness regression tests
+        run: node --test tests/t011-lint-runtime-correctness.test.mjs
+      - name: Run original ESLint rules without disabling or waiving any rules
+        run: node scripts/t011-lint-runtime-correctness-gate.mjs
+      - name: Confirm TypeScript and generated route contract
+        run: npm run typecheck
+      - name: Compile existing Local/Dev app
+        run: npm run build
+      - name: Verify no tracked dependency modification
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json
