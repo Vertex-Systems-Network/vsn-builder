@@ -4,6 +4,7 @@ import db from "../db.server.js";
 import PreviewRenderer from "../components/editor/PreviewRenderer.jsx";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { extractMentions } from "../services/collaboration.server.js";
 
 function parseContent(value) {
@@ -44,6 +45,12 @@ export async function action({ request, params }) {
   const authorName = String(form.get("name") || "Reviewer").trim().slice(0,80) || "Reviewer";
   const body = String(form.get("body") || "").trim().slice(0,5000);
   if (!body) return Response.json({success:false,error:"Comment cannot be empty."},{status:400});
+  // Review-link tokens grant only a comment capability, not a free-plan bypass.
+  // Do not reveal a store's subscription details to public reviewers.
+  const entitlementBlock = await paidMutationDenied(db, link.shop);
+  if (entitlementBlock) return Response.json({
+    success:false,error:"Comments are currently unavailable.",
+  },{status:403,headers:{"cache-control":"no-store"}});
   await db.builderComment.create({ data:{ shop:link.shop,pageId:link.pageId,authorName,authorRole:"commenter",body,mentionsJson:JSON.stringify(extractMentions(body)) } });
   await db.builderAuditLog.create({ data:{ shop:link.shop,pageId:link.pageId,actor:authorName,role:"commenter",action:"comment.created",details:JSON.stringify({summary:"Review-link comment"}) } });
   return Response.json({success:true,message:"Comment added."});
