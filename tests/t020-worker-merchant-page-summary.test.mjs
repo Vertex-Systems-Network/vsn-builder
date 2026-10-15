@@ -29,6 +29,12 @@ function fx(id=shop,{databaseError=false,invalidRow=false}={}){
    shop:id,installedAt:new Date("2026-10-15T10:00:00Z"),uninstalledAt:null,
   }}},
   session:{async findUnique(){calls.push("session");return sdkSession}},
+  builderSubscription:{async findUnique(){calls.push("verified-paid");return {
+   shop:id,provider:"shopify-app-pricing",planKey:"starter",
+   planHandle:"starter",status:"active",verifiedAt:new Date(),
+   trialEndsAt:null,cancelEffectiveOn:null,
+  }}},
+  builderShopSetting:{async findUnique(){calls.push("role-view");return {roleAccessJson:null}}},
   builderPage:{
    async count({where}){
     calls.push({method:"count",where});
