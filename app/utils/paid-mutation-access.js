@@ -25,3 +25,14 @@ export function evaluatePaidMutationAccess(plan, resolveHandle) {
   const allowed = Boolean(trusted && paidState && tierMatches);
   return { allowed, code: allowed ? "VSN_ENTITLEMENT_ALLOWED" : "VSN_PAID_SUBSCRIPTION_REQUIRED" };
 }
+
+/**
+ * Billing-free simulation is available only in an explicitly isolated
+ * Development runtime. A missing NODE_ENV or an accidentally non-production
+ * NODE_ENV on Staging/Live must never bypass Shopify paid entitlements.
+ * These values are server environment configuration, not request parameters.
+ */
+export function isExplicitDevelopmentSimulation(env = {}) {
+  return env.APP_ENV === "development" &&
+    (env.NODE_ENV === "development" || env.NODE_ENV === "test");
+}
