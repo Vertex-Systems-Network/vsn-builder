@@ -38,6 +38,9 @@ test("the full merchant build rewrites only app/ legacy Node imports",()=>{
   assert.match(native,/isolateNodeServerBootstrapsForWorkerd\(\)/);
   assert.match(native,/workerDbBoundary/);
   assert.match(native,/workerShopifyBoundary/);
+  assert.match(native,/load\(id\)/);
+  assert.match(native,/normalized\.endsWith\("\/app\/db\.server\.js"\)/);
+  assert.match(native,/normalized\.endsWith\("\/app\/shopify\.server\.js"\)/);
   assert.match(native,/\.includes\("\/app\/"\)/);
   const regular=readFileSync("vite.config.js","utf8");
   assert.doesNotMatch(regular,/full-merchant-ci-db-boundary/);
