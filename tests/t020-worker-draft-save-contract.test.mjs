@@ -138,7 +138,8 @@ test("save contract is dormant: HTTP Worker exposes no draft mutation route",()=
  assert.match(worker,/request.method==="GET"/);
 });
 
-function authorizedFixture({paid=true,disabled=false,owner=false,subscriptionFailure=false}={}){
+function authorizedFixture({paid=true,disabled=false,owner=false,subscriptionFailure=false,
+ roleAccessJson=undefined}={}){
  const f=fixture();
  const calls=[];
  f.transaction.builderSubscription={async findUnique(args){
@@ -151,8 +152,8 @@ function authorizedFixture({paid=true,disabled=false,owner=false,subscriptionFai
  }};
  f.transaction.builderShopSetting={async findUnique(args){
   calls.push("permission");
-  return {roleAccessJson:disabled
-   ? JSON.stringify({actions:{editor:{pages:{edit:false}}}}):null};
+  return {roleAccessJson:roleAccessJson!==undefined?roleAccessJson:
+   (disabled?JSON.stringify({actions:{editor:{pages:{edit:false}}}}):null)};
  }};
  const session={shop,id:"offline_"+shop,accessToken:"VALID_SDK_SESSION",
   isOnline:false,accountOwner:owner};
@@ -193,6 +194,21 @@ test("unpaid, role-disabled, invalid SDK session deny before any draft mutation"
  }
 });
 
+test("corrupt persisted role policy cannot authorize transactional page draft writes",async()=>{
+ for(const invalid of ["", "{bad", "null", "[]",
+  '{"editor":"false"}',
+  '{"systems":{"editor":{"pages":"true"}}}',
+  '{"actions":{"editor":{"pages":{"edit":"true"}}}}',
+ ]){
+  const x=authorizedFixture({roleAccessJson:invalid});
+  await assert.rejects(gatedSave(x),error=>
+   error instanceof SyntaxError || error instanceof TypeError);
+  assert.deepEqual(x.calls,["subscription","permission"]);
+  assert.equal(x.f.calls.length,0,"No page mutation after corrupt role policy");
+  assert.equal(x.f.row.version,2);
+  assert.equal(x.f.row.contentJson,"[]");
+ }
+});
 test("verified shop owner may edit despite staff flags, but never without paid plan",async()=>{
  const owner=authorizedFixture({owner:true,disabled:true});
  assert.deepEqual(await gatedSave(owner),{ok:true,id:pageId,version:3});
