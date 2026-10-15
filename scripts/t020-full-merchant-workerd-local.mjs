@@ -55,9 +55,22 @@ try {
   }
   assert(reachable,"Full merchant local Workerd never started: "+scrub(log));
   const result=await get("/__vsn/full-merchant-module-proof");
-  assert.equal(result.status,200,
-    "The entire merchant ServerBuild cannot yet evaluate in actual Workerd: "+
-    scrub(log));
+  if(result.status!==200) {
+    let reason="WORKER_REQUEST_NOT_READY";
+    try {
+      const response = await result.json();
+      const categories = new Set([
+        "SHOPIFY_APP_BOOTSTRAP_CONFIGURATION",
+        "DATABASE_CLIENT_RUNTIME_INITIALIZATION",
+        "NODE_MODULE_RUNTIME_COMPATIBILITY",
+        "MERCHANT_SERVER_MODULE_EVALUATION",
+      ]);
+      if(response?.ciOnly===true && categories.has(response.blocked))
+        reason=response.blocked;
+    } catch {}
+    throw Error("Full merchant ServerBuild runtime import blocked: "+reason+
+      ", HTTP "+result.status);
+  }
   const proof=await result.json();
   assert.deepEqual(proof,{ciOnly:true,fullMerchantModuleEvaluated:true,
     routeManifestPresent:true});
