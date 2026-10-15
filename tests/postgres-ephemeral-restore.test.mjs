@@ -27,7 +27,7 @@ test("restored PostgreSQL database passes all schema and migration health gates"
   assert.equal(health.ready,true,JSON.stringify(health));
   assert.deepEqual(health.missingTables,[]);
   const count=await db.$queryRaw`SELECT COUNT(*)::int AS "count" FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name!='_prisma_migrations'`;
-  assert.equal(count[0].count,51);
+  assert(count[0].count>=52,"Restored PostgreSQL must retain the full 52-table application baseline");
  }finally{await db.$disconnect()}
 });
 
