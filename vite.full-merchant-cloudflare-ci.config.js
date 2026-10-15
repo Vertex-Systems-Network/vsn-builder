@@ -17,5 +17,13 @@ export default defineConfig({
     tailwindcss(),
     tsconfigPaths(),
   ],
+  // React Router v7 finalizer reads the server Vite manifest under
+  // <buildDirectory>/server/.vite, whereas the CF SSR environment defaults
+  // to <buildDirectory>/ssr. Explicitly align the real output paths.
+  environments: {
+    ssr: {
+      build: { outDir: "dist/server" },
+    },
+  },
   build: { assetsInlineLimit: 0 },
 });
