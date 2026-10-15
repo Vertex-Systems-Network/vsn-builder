@@ -45,6 +45,12 @@ export async function verifyStagingNeonControlPlane(env={},{
     if(defaults.length!==1 || current?.id!==target.neon_default_branch_id ||
        current?.project_id!==target.neon_project_id)
       throw blocked("Staging default Neon branch changed since independently reviewed restoration");
+    // GitHub branch rules do not protect the PostgreSQL primary itself.
+    // Neon may reject protected=true on quota-limited plans (confirmed
+    // HTTP 422 for this Staging project). Do not allow its migration merely
+    // because Github or environment approval is later enabled.
+    if(current?.protected!==true)
+      throw blocked("Staging default Neon primary branch is not protected");
     const original=branches.find(b=>
       b.id===target.neon_recovery_source_branch_id &&
       b.project_id===target.neon_project_id && b.default!==true
@@ -71,7 +77,7 @@ export async function verifyStagingNeonControlPlane(env={},{
     // Success only certifies metadata. Prisma migration and real SQL checks
     // are subsequent protected steps and must not be skipped.
     return {ready:true,projectId:target.neon_project_id,
-      defaultBranchId:current.id,snapshotId:backup.id,
+      defaultBranchId:current.id,primaryProtected:true,snapshotId:backup.id,
       computeId:compute[0].id,poolerEnabled:true,
     };
   }catch(err) {
