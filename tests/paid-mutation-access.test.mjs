@@ -1,7 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { evaluatePaidMutationAccess } from "../app/utils/paid-mutation-access.js";
+import { evaluatePaidMutationAccess, isExplicitDevelopmentSimulation } from "../app/utils/paid-mutation-access.js";
 
+test("only explicit Development test/dev runtimes allow simulated paid mutations", () => {
+  for (const nodeEnv of ["test", "development"]) {
+    assert.equal(isExplicitDevelopmentSimulation({ APP_ENV: "development", NODE_ENV: nodeEnv }), true);
+  }
+  for (const env of [
+    {}, { APP_ENV: "development" },
+    { APP_ENV: "staging", NODE_ENV: "development" },
+    { APP_ENV: "production", NODE_ENV: "development" },
+    { NODE_ENV: "test" },
+    { APP_ENV: "development", NODE_ENV: "production" },
+    { APP_ENV: "development", NODE_ENV: "staging" },
+  ]) {
+    assert.equal(isExplicitDevelopmentSimulation(env), false, JSON.stringify(env));
+  }
+});
 const resolve = (handle) => ({ starter: "starter", sliver: "sliver", gold: "gold", platinum: "platinum" })[handle] || null;
 const active = (changes = {}) => ({
   key: "starter", subscriptionMirrorTrusted: true, entitlementVerified: true,
@@ -89,7 +104,9 @@ test("paid gate stays in action, never read-only loader for twenty-two merchant 
 test("server helper explicitly fails closed in production", async () => {
   const { readFile } = await import("node:fs/promises");
   const source = await readFile(new URL("../app/utils/paid-mutation-guard.server.js", import.meta.url), "utf8");
-  assert.match(source, /process\.env\.NODE_ENV !== "production"/);
+  assert.ok(source.includes("if (isExplicitDevelopmentSimulation(process.env)) return;"));
+  const entitlements = await readFile(new URL("../app/services/entitlements.server.js", import.meta.url), "utf8");
+  assert.ok(entitlements.includes("const developerMode = isExplicitDevelopmentSimulation(process.env);"));
   assert.match(source, /evaluatePaidMutationAccess\(plan, resolveInternalPlanKeyFromHandle\)/);
   assert.match(source, /status: 403/);
 });
