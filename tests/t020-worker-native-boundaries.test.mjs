@@ -38,6 +38,7 @@ test("the full merchant build rewrites only app/ legacy Node imports",()=>{
   assert.match(native,/isolateNodeServerBootstrapsForWorkerd\(\)/);
   assert.match(native,/workerDbBoundary/);
   assert.match(native,/workerShopifyBoundary/);
+  assert.match(native,/workerPrismaNamespace/);
   assert.match(native,/load\(id\)/);
   assert.match(native,/normalized\.endsWith\("\/app\/db\.server\.js"\)/);
   assert.match(native,/normalized\.endsWith\("\/app\/shopify\.server\.js"\)/);
@@ -51,4 +52,7 @@ test("the full merchant build rewrites only app/ legacy Node imports",()=>{
   const shopSrc=readFileSync("workers/full-merchant-ci-shopify-boundary.js","utf8");
   assert.doesNotMatch(shopSrc,/adapters\/node/);
   assert.match(shopSrc,/createWorkerShopifySdkContext/);
+  const prismaNs = readFileSync("workers/full-merchant-ci-prisma-namespace.js","utf8");
+  assert.match(prismaNs,/generated\\/prisma-edge\\/client\\.ts/);
+  assert.doesNotMatch(prismaNs,/from\\s+["']@prisma\\/client/);
 });
