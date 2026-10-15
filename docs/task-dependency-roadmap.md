@@ -10,7 +10,7 @@ Earlier eight-phase trackers are legacy historical evidence inventories. They do
 
 ## ACTIVE task counts (final closures removed)
 
-**31 ACTIVE** · **3 READY** · **9 IN REVIEW** · **19 WAITING**. The 10 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
+**29 ACTIVE** · **2 READY** · **8 IN REVIEW** · **19 WAITING**. The 12 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
 
 One public **VSN | Builder** app; Dev/Staging only internal testing. No Free plan.
 
@@ -25,7 +25,6 @@ One public **VSN | Builder** app; Dev/Staging only internal testing. No Free pla
 
 | ID | Priority | Startable task | Issue |
 | --- | --- | --- | --- |
-| `T011` | P0 | Resolve mandatory full-dev dependency security audit (braces) | [#96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) |
 | `T014` | P0 | Configure/verify GitHub Environment secrets and tier variables | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T015` | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 
@@ -52,11 +51,10 @@ flowchart TD
   LIVE --> SUBMIT
 ```
 
-## All 31 ACTIVE atomic tasks (final CLOSED tasks excluded)
+## All 29 ACTIVE atomic tasks (final CLOSED tasks excluded)
 
 | ID | Workstream | Priority | Task | Depends on | Computed status | Issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| `T011` | Security | P0 | Resolve mandatory full-dev dependency security audit (braces) | None | READY | [#96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) |
 | `T012` | Integration | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | None | IN REVIEW | [#157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | `T013` | Infrastructure | P0 | Protect development branch and verify GitHub required reviewers | None | IN REVIEW (read-only verifier CI; live branch still unprotected) | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T014` | Infrastructure | P0 | Configure/verify GitHub Environment secrets and tier variables | None | READY | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
@@ -72,7 +70,6 @@ flowchart TD
 | `T024` | Security | P0 | Trusted uninstall-generation provenance and safe replay handling | `T008` | IN REVIEW (webhook deadline sub-scope; trusted generation still pending) | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | `T025` | Security | P0 | Real signed Shopify webhook retry/uninstall/reinstall E2E | `T018`, `T023`, `T024` | WAITING | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | `T026` | Security | P0 | Enforce paid-tier authorization across every server-side merchant mutation | `T007` | IN REVIEW | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
-| `T027` | Billing | P0 | Review and integrate exact four-plan pricing code PR #153 | None | IN REVIEW | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T028` | Billing | P0 | Create/verify exactly four public plans in Shopify Partner Dashboard | `T015` | WAITING | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T029` | Billing | P0 | Real subscription/trial lifecycle and plan limits E2E | `T023`, `T026`, `T027`, `T028` | WAITING | [#164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | `T030` | Merchant Features | P1 | Real Dev create/edit/save/preview and reload persistence | `T022` | WAITING | [#165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
