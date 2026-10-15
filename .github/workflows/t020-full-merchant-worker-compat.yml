@@ -18,6 +18,7 @@ on:
       - "tests/t020-worker-paid-read-access.test.mjs"
       - "tests/t020-worker-page-rbac.test.mjs"
       - "tests/t020-worker-editor-hydration.test.mjs"
+      - "tests/t020-worker-draft-document-bounds.test.mjs"
       - "tests/t020-worker-draft-save-contract.test.mjs"
       - "tests/t020-worker-draft-save-request.test.mjs"
       - "tests/shopify-worker-configuration.test.mjs"
@@ -95,7 +96,7 @@ jobs:
       - name: Verify Shopify staff roles restrict authenticated Worker page metadata and summaries
         run: node --test tests/t020-worker-page-rbac.test.mjs
       - name: Verify bounded tenant-scoped editor draft hydration and fail-closed page reader
-        run: node --test tests/t020-worker-editor-hydration.test.mjs
+        run: node --test tests/t020-worker-editor-hydration.test.mjs tests/t020-worker-draft-document-bounds.test.mjs
       - name: Verify dormant transactional editor save contract, tenant isolation and optimistic concurrency
         run: node --test tests/t020-worker-draft-save-contract.test.mjs
       - name: Verify explicit Staging-only draft save transport, strict JSON, auth and upload deadline

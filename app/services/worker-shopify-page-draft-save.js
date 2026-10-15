@@ -1,5 +1,6 @@
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 import { hasVerifiedWorkerPaidReadAccess } from "./worker-shopify-paid-read.js";
+import { assertBoundedBuilderDraftDocument } from "./worker-shopify-draft-document.js";
 
 // T020: dormant transaction-only editor draft persistence contract.
 // This module deliberately defines NO HTTP route. A future POST integration
@@ -9,7 +10,6 @@ import { hasVerifiedWorkerPaidReadAccess } from "./worker-shopify-paid-read.js";
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const PAGE_ID=/^[a-zA-Z0-9_-]{1,64}$/;
 const MAX_DRAFT_BYTES=1024*1024;
-const MAX_TOP_LEVEL_NODES=5000;
 const MAX_VERSION=2147483646;
 
 export class BuilderDraftSaveError extends Error {
@@ -22,8 +22,8 @@ export class BuilderDraftSaveError extends Error {
 }
 
 export function encodeVerifiedBuilderDraft(elements) {
-  if(!Array.isArray(elements) || elements.length>MAX_TOP_LEVEL_NODES)
-    throw new BuilderDraftSaveError(400,"INVALID_DRAFT_NODES");
+  try { assertBoundedBuilderDraftDocument(elements); }
+  catch { throw new BuilderDraftSaveError(400,"INVALID_DRAFT_NODES"); }
   let contentJson;
   try{contentJson=JSON.stringify(elements)}
   catch{throw new BuilderDraftSaveError(400,"INVALID_DRAFT_JSON")}
