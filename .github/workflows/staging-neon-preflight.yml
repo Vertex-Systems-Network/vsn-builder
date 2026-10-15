@@ -1,0 +1,56 @@
+name: VSN Builder Protected Staging Neon Preflight
+on:
+  pull_request:
+    paths:
+      - "scripts/phase3-staging-migration-preflight.mjs"
+      - "scripts/phase3-staging-neon-live-proof.mjs"
+      - "tests/phase3-staging-migration-preflight.test.mjs"
+      - "tests/phase3-staging-neon-live-proof.test.mjs"
+      - "app/services/neon-target-policy.js"
+      - "config/deployment/environments.json"
+      - ".github/workflows/staging-neon-preflight.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  policy-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify backup, project identity and no cross-tier migration safeguards
+        run: node --test tests/phase3-staging-migration-preflight.test.mjs tests/phase3-staging-neon-live-proof.test.mjs
+  protected-control-plane-proof:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Protected Staging-only preflight — does not execute SQL
+        env:
+          APP_ENV: staging
+          NEON_PROJECT_ID: shiny-violet-61219572
+          SHOPIFY_BILLING_TEST_MODE: "true"
+          STAGING_MIGRATION_APPROVED: ${{ vars.STAGING_MIGRATION_APPROVED }}
+          VSN_STAGING_BACKUP_EVIDENCE: ${{ vars.VSN_STAGING_BACKUP_EVIDENCE }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: node scripts/phase3-staging-migration-preflight.mjs
+      - name: Attest real Neon recovery snapshot and staging compute with read-only API
+        env:
+          APP_ENV: staging
+          NEON_PROJECT_ID: shiny-violet-61219572
+          SHOPIFY_BILLING_TEST_MODE: "true"
+          STAGING_MIGRATION_APPROVED: ${{ vars.STAGING_MIGRATION_APPROVED }}
+          VSN_STAGING_BACKUP_EVIDENCE: ${{ vars.VSN_STAGING_BACKUP_EVIDENCE }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: node scripts/phase3-staging-neon-live-proof.mjs
