@@ -1,6 +1,7 @@
 // T014/T019: NO-DEPLOY verification of Cloudflare's actual Staging bindings.
 // Never log, return or persist a Cloudflare binding value or secret payload.
 import {pathToFileURL} from "node:url";
+import {SHOPIFY_EXPECTED_SCOPES,normalizeShopifyScopes} from "../app/config/shopifyIntegration.js";
 
 export const WORKER="vsn-builder-staging";
 export const PROJECT="shiny-violet-61219572";
@@ -27,9 +28,9 @@ function safeOrigin(value){
   return url.protocol==="https:"&&!url.username&&!url.password&&!url.port&&
     url.pathname==="/"&&!url.search&&!url.hash&&
     url.hostname.includes(".") &&
-    !/(?:^|\\.)(?:localhost|invalid|test)$/.test(url.hostname) &&
-    !/(?:^|\\.)example\\.(?:com|org|net)$/.test(url.hostname) &&
-    !/\\.(?:trycloudflare\\.com|ngrok-free\\.app|ngrok\\.io|loca\\.lt)$/.test(url.hostname);
+    !/(?:^|[.])(?:localhost|invalid|test)$/.test(url.hostname) &&
+    !/(?:^|[.])example[.](?:com|org|net)$/.test(url.hostname) &&
+    !/[.](?:trycloudflare[.]com|ngrok-free[.]app|ngrok[.]io|loca[.]lt)$/.test(url.hostname);
  }catch{return false;}
 }
 
@@ -45,7 +46,7 @@ export function auditStagingWorkerBindings({settings,secrets,subdomain}={}){
   nameMap.set(item.name,(nameMap.get(item.name)||0)+1);
  }
  for(const [name,count] of nameMap)if(count>1)
-  errors.push(code("DUPLICATE_BINDING_"+name));
+  errors.push(code("DUPLICATE_BINDING_METADATA"));
  const find=(name)=>bindingRows.find(x=>x?.name===name);
  const metadata=new Map(secretRows.map(item=>[item?.name,item?.type]));
  for(const name of SECRET_NAMES){
@@ -65,7 +66,7 @@ export function auditStagingWorkerBindings({settings,secrets,subdomain}={}){
    errors.push(code("NO_STABLE_STAGING_HTTPS_ORIGIN"));
  const scopes=find("SCOPES");
  if(!scopes || !BINDING_TYPES.has(scopes.type) ||
-    !/^read_products,write_products,read_orders,write_metaobject_definitions,write_metaobjects$/.test(String(scopes.text||"")))
+    normalizeShopifyScopes(scopes.text).join(",")!==normalizeShopifyScopes(SHOPIFY_EXPECTED_SCOPES).join(","))
    errors.push(code("MISSING_APPROVED_SHOPIFY_SCOPES"));
  for(const name of FORBIDDEN)
   if(find(name)||metadata.has(name))errors.push(code("FORBIDDEN_WORKER_BINDING_"+name));
