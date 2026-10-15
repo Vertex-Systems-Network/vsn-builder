@@ -38,6 +38,14 @@ test("the full merchant build rewrites only app/ legacy Node imports",()=>{
   assert.match(native,/isolateNodeServerBootstrapsForWorkerd\(\)/);
   assert.match(native,/workerDbBoundary/);
   assert.match(native,/workerShopifyBoundary/);
+  assert.match(native,/isOfficialSdk/);
+  assert.match(native,/id === "@prisma\\/client"/);
+  assert.match(native,/workerPrismaNamespace/);
+  const edge = readFileSync("workers/full-merchant-ci-prisma-namespace.js","utf8");
+  assert.match(edge,/PrismaClient/);
+  assert.match(edge,/generated\\/prisma-edge\\/client\\.ts/);
+  assert.doesNotMatch(edge,/new PrismaClient\\(/);
+
   assert.match(native,/workerPrismaNamespace/);
   assert.match(native,/load\(id\)/);
   assert.match(native,/normalized\.endsWith\("\/app\/db\.server\.js"\)/);
