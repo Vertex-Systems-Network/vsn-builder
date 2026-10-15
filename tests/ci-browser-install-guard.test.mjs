@@ -8,7 +8,11 @@ function stepBefore(command) {
   const index=lines.findIndex(line=>line.trim()===command);
   assert.notEqual(index,-1, `Missing CI command: ${command}`);
   for(let i=index-1;i>=0;i--){
-    if(lines[i].trim().startsWith("- if:"))return lines[i].trim();
+    const line=lines[i].trim();
+    // GitHub YAML uses both standalone "- if:" steps and named steps
+    // with an indented "if:" before their "run:" command.
+    if(line.startsWith("- if:") || line.startsWith("if:"))return line;
+    if(line.startsWith("- name:") || line.startsWith("- run:"))break;
   }
   throw new Error(`No adjacent event guard for ${command}`);
 }
