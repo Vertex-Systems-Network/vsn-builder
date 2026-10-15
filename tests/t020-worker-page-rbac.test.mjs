@@ -128,6 +128,7 @@ test("corrupt persisted role JSON fails closed instead of restoring privileged d
   '{"systems":{"editor":{"pages":"false"}}}',
   '{"actions":{"editor":{"pages":{"view":"false"}}}}',
   '{"actions":{"editor":{"pages":[]}}}',
+  '{"editor":true,"excessive":"'+ "🦋".repeat(33000) +'"}',
  ];
  for(const roleAccessJson of invalid){
   const f=fixture({roleAccessJson});
