@@ -4,6 +4,8 @@ on:
     branches: [fix/builder-dev-graphql-tools-cve-20261013, development]
   pull_request:
     paths:
+      - ".graphqlrc.js"
+      - "scripts/check-shopify-graphql-codegen.mjs"
       - "scripts/check-patched-graphql-tools.mjs"
       - "tests/check-patched-graphql-tools.test.mjs"
       - ".github/workflows/graphql-dev-security-certification.yml"
