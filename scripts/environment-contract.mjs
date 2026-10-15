@@ -120,8 +120,8 @@ if (mode === "staging" || mode === "production") {
   );
   for (const [tier, id] of Object.entries(ids)) {
     assert(/^[a-f0-9]{32}$/i.test(id), tier + " Shopify Client ID format is invalid.");
-    assert(canonicalIds[tier] !== sourceClientId.toLowerCase(),
-      tier + " Shopify Client ID reuses the unclassified default app.");
+    assert(tier === "production" ? canonicalIds[tier] === sourceClientId.toLowerCase() : canonicalIds[tier] !== sourceClientId.toLowerCase(),
+      tier === "production" ? "Production Shopify Client ID must match canonical public VSN Builder app." : tier + " Shopify Client ID reuses canonical public Live app.");
   }
   assert(new Set(Object.values(canonicalIds)).size === 3,
     "Development, Staging and Production Shopify Client IDs must be distinct.");
@@ -130,9 +130,9 @@ if (mode === "staging" || mode === "production") {
     mode + " SHOPIFY_API_KEY does not match scoped Shopify Client ID.");
   const localClientId = exists("shopify.app.local.toml") ?
     parseValue(read("shopify.app.local.toml"), "client_id") : "";
-  assert(clientId.toLowerCase() !== sourceClientId.toLowerCase() &&
+  assert((mode === "production" ? clientId.toLowerCase() === sourceClientId.toLowerCase() : clientId.toLowerCase() !== sourceClientId.toLowerCase()) &&
     (!localClientId || clientId.toLowerCase() !== localClientId.toLowerCase()),
-    mode + " must use a dedicated non-Dev Shopify app.");
+    mode + " Shopify app must match its distinct verified tier identity.");
 
   if (mode === "production") {
     assert(!String(process.env.VSN_DEFAULT_PLAN || "").trim(),
