@@ -145,7 +145,7 @@ test("no trust in request-controlled shop, invalid shop or invalid test clock",a
 
 test("hosted page-data routes require paid mirrors; verified-session remains separate",()=>{
   const src=readFileSync("workers/app.js","utf8");
-  assert.equal((src.match(/requireVerifiedPaidRead:true/g)||[]).length,2);
+  assert.equal((src.match(/requireVerifiedPaidRead:true/g)||[]).length,3);
   assert.match(src,/enablePageSummary:true,\s*requireVerifiedPaidRead:true/);
   assert.match(src,/enablePageMetadata:true,\s*requireVerifiedPaidRead:true/);
   assert.match(src,/url\.pathname==="\/app\/__vsn\/verified-session"/);
