@@ -42,9 +42,9 @@ jobs:
           test -z "${DIRECT_URL:-}"
       - name: Install exact unchanged VSN Builder dependencies
         run: npm ci
-      - name: Check Cloudflare Vite plugin 1.7.5 supports locked Vite 6 without committing deps
+      - name: Check Cloudflare Vite plugin 1.41.0 supports locked Vite 6 without committing deps
         run: |
-          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.7.5
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.41.0
           node -e "console.log('Cloudflare Vite plugin:', require('./node_modules/@cloudflare/vite-plugin/package.json').version)"
           git diff --exit-code -- package.json package-lock.json
       - name: Enforce no-deploy full merchant SSR safety contracts
@@ -109,7 +109,7 @@ jobs:
       - name: Install project and pinned Cloudflare Vite runtime (no lock changes)
         run: |
           npm ci
-          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.7.5
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.41.0
           git diff --exit-code -- package.json package-lock.json
       - uses: actions/download-artifact@v4
         with:
