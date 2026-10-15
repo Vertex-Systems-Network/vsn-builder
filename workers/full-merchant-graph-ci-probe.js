@@ -81,10 +81,11 @@ export default {
         // Redact URL, secret, and high-entropy tokens before exposing even a
         // short exception summary; never include an exception stack.
         const ciCause = detail
-          .replace(/\\b(?:https?|postgres(?:ql)?):\\/\\/[^\\s"']+/gi, "[URL]")
-          .replace(/(?:api[-_]?key|secret|token|password)\\s*[:=]\\s*[^\\s,"']+/gi, "[SECRET]")
-          .replace(/\\b[0-9a-f]{32,}\\b/gi, "[HEX]")
-          .replace(/\\s+/g, " ").slice(0, 180);
+          .replace(/\b(?:https?|postgres(?:ql)?):\/\/[^\s"']+/gi, "[URL]")
+          .replace(/(?:api[-_]?key|secret|token|password)\s*[:=]\s*[^\s,"']+/gi, "[SECRET]")
+          .replace(/\b[0-9a-f]{32,}\b/gi, "[HEX]")
+          .replace(/\s+/g, " ").slice(0, 180);
+
         return new Response(JSON.stringify({
           ciOnly: true, fullMerchantModuleEvaluated: false,
           blocked: classification, ciCause,
