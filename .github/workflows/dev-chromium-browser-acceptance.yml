@@ -63,6 +63,14 @@ jobs:
           path: dev-browser-artifacts/
           if-no-files-found: ignore
           retention-days: 5
+      - name: Generate disposable Prisma Edge client for source-only Worker contract tests
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
+        run: |
+          # prisma generate is offline: no Neon access, migration or Worker deploy.
+          npx prisma generate --schema prisma/cloud/schema.prisma
+          node scripts/verify-prisma-worker-client.mjs --generated
       - name: Verify isolated Development test and guarded hosted Worker source (No Deploy)
         shell: bash
         run: |
