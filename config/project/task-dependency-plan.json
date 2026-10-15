@@ -199,11 +199,17 @@
       "title": "Resolve mandatory full-dev dependency security audit (braces)",
       "workstream": "Security",
       "priority": "P0",
-      "status": "todo",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/96",
-      "evidence": [],
-      "acceptance": "npm audit --include=dev --audit-level=high and post-Playwright audit PASS on exact SHA; no bypass"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746335819",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746335978",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746336058"
+      ],
+      "acceptance": "npm audit --include=dev --audit-level=high and post-Playwright audit PASS on exact SHA; no bypass",
+      "closed_on": "2026-10-15",
+      "closure_note": "FINAL source-security acceptance: on exact source candidate SHA 356b321, npm ci, both full-dev and production high-severity audits, mandatory post-Playwright dependency audit, audited GraphQL codegen and ESLint runtime remediation PASS without waivers. T012 separately governs merging protected development; no Shopify/hosted readiness implied."
     },
     {
       "id": "T012",
@@ -437,13 +443,17 @@
       "title": "Review and integrate exact four-plan pricing code PR #153",
       "workstream": "Billing",
       "priority": "P0",
-      "status": "in_review",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/164",
       "evidence": [
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/153"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/153",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746336058",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/196"
       ],
-      "acceptance": "Starter/sliver/gold/platinum handles and 30/100/150/350 USD; Platinum 3000/year; 10-day trial, no Free"
+      "acceptance": "Starter/sliver/gold/platinum handles and 30/100/150/350 USD; Platinum 3000/year; 10-day trial, no Free",
+      "closed_on": "2026-10-15",
+      "closure_note": "FINAL code-contract acceptance: exactly four merchant-facing canonical public handles starter/sliver/gold/platinum with 30/100/150/350 USD monthly, platinum 3000 USD yearly, 10-day official trial, no Free fallback; source integration candidate and four-plan/paid guard tests PASS. Partner publication is separately T028; actual Shopify billing E2E is T029; protected mainline merge remains T012."
     },
     {
       "id": "T028",
@@ -674,6 +684,8 @@
     "T007",
     "T008",
     "T009",
-    "T010"
+    "T010",
+    "T011",
+    "T027"
   ]
 }
