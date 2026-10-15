@@ -7,6 +7,7 @@ on:
       - ".graphqlrc.js"
       - "scripts/t011-*.mjs"
       - "app/routes/app.builder.$id.jsx"
+      - "app/storefront/contentQueries.server.js"
       - "app/utils/shopify-blog-handle.server.js"
       - "tests/t011-shopify-admin-blog-preview.test.mjs"
       - ".github/workflows/t011-secure-worker-dependencies.yml"
