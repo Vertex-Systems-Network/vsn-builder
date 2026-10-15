@@ -1,0 +1,36 @@
+name: T017 Neon Protected Staging Primary Policy (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "scripts/phase3-staging-neon-live-proof.mjs"
+      - "scripts/phase3-staging-migration-preflight.mjs"
+      - "tests/phase3-staging-neon-live-proof.test.mjs"
+      - "tests/phase3-staging-migration-preflight.test.mjs"
+      - ".github/workflows/t017-neon-primary-protection.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  neon-control-plane-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (read only, no cached token)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pinned Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Validate protected Github + Neon primary and reviewed backup before DDL
+        run: node --test tests/phase3-staging-neon-live-proof.test.mjs tests/phase3-staging-migration-preflight.test.mjs
+      - name: Assert real migration is NEVER dispatched by this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- prisma/cloud/migrations
+          test -z "${NEON_API_KEY:-}"
+          test -z "${DATABASE_URL:-}"
+          test -z "${DIRECT_URL:-}"
+          echo "PASS source-only Neon protected-primary policy (no API calls, secrets, SQL, or deployment)"
