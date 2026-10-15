@@ -1,7 +1,7 @@
 // T020 read-only Shopify merchant dashboard slice for the hosted Worker.
 // Scoped by the *verified Shopify SDK session*, never a shop URL parameter.
 // It does not implement full editor routing, OAuth, billing, or mutation access.
-const SHOP=/^[a-z0-9][a-z0-9-]*\\.myshopify\\.com$/;
+const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const PROJECTION=Object.freeze({
   id:true,title:true,template:true,status:true,updatedAt:true,
 });
