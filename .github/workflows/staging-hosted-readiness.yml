@@ -4,6 +4,7 @@ on:
     paths:
       - "scripts/staging-hosted-readiness.mjs"
       - "tests/staging-hosted-readiness.test.mjs"
+      - "scripts/staging-shopify-config.mjs"
       - "tests/hosted-neon-url-policy.test.mjs"
       - "app/services/neon-target-policy.js"
       - "config/deployment/environments.json"
@@ -44,6 +45,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Materialize dedicated Staging Shopify app callback from protected identity
+        env:
+          VSN_TARGET_ENV: staging
+          SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+          SHOPIFY_PRODUCTION_CLIENT_ID: ${{ vars.SHOPIFY_PRODUCTION_CLIENT_ID }}
+          SHOPIFY_APP_URL: ${{ vars.SHOPIFY_APP_URL }}
+        run: node scripts/staging-shopify-config.mjs --write
       - name: Check real Staging hosting and protected credentials without deployment
         env:
           VSN_TARGET_ENV: staging
@@ -60,6 +68,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           VSN_STAGING_PUBLIC_URL_VERIFIED: ${{ vars.VSN_STAGING_PUBLIC_URL_VERIFIED }}
         run: node scripts/staging-hosted-readiness.mjs --require-ready
+      - name: Remove generated Staging Shopify identity before job exit
+        if: always()
+        run: rm -f shopify.app.staging.toml
       - name: Save non-secret hosted readiness evidence
         if: always()
         uses: actions/upload-artifact@v4
