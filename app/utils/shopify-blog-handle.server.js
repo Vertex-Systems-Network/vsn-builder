@@ -21,3 +21,15 @@ export function selectShopifyContentByHandle(nodes, raw) {
     typeof node?.handle === "string" && node.handle.toLowerCase() === handle
   ) || null;
 }
+
+export function selectShopifyArticleForBlog(nodes, rawBlogHandle, rawArticleHandle) {
+  const blogHandle = normalizeShopifyContentHandle(rawBlogHandle);
+  const articleHandle = normalizeShopifyContentHandle(rawArticleHandle);
+  if (!blogHandle || !articleHandle || !Array.isArray(nodes)) return null;
+  return nodes.find((node) =>
+    typeof node?.handle === "string" &&
+    node.handle.toLowerCase() === articleHandle &&
+    typeof node?.blog?.handle === "string" &&
+    node.blog.handle.toLowerCase() === blogHandle
+  ) || null;
+}
