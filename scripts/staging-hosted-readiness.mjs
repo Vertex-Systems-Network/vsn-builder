@@ -7,6 +7,7 @@ export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWra
   const check = (name, ok, reason) => checks.push({ name, ok: Boolean(ok), ...(ok ? {} : { reason }) });
   const get = (key) => String(vars[key] || "").trim();
   const apiUrl = get("SHOPIFY_APP_URL");
+  const targetOrigin = (() => { try { return new URL(apiUrl).origin; } catch { return null; } })();
   const stage = get("VSN_TARGET_ENV");
   const isHttps = (value) => {
     try {
@@ -56,7 +57,7 @@ export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWra
     check("Worker merchant SSR/OAuth integration", hasWorkerMerchantRuntime,
       "Existing Worker placeholder is not a Shopify React Router merchant application");
     check("Worker app build/config", hasWranglerConfig, "No Wrangler Worker application deployment config");
-    check("Verified external HTTPS route", httpProof?.origin === apiUrl &&
+    check("Verified external HTTPS route", httpProof?.origin === targetOrigin &&
       httpProof?.liveness === true,
       "Public Staging /healthz must be read successfully over matching HTTPS origin");
     check("Hosted merchant readiness response", httpProof?.merchantReady === true,
@@ -67,7 +68,7 @@ export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWra
     check("Persistent database configured", Boolean(get("DATABASE_URL")), "Node staging DATABASE_URL missing");
     check("Persistent SQLite volume attested", get("VSN_STAGING_PERSISTENT_STORAGE_VERIFIED") === "1",
       "File-backed SQLite on a disposable host risks losing sessions and customer data");
-    check("Staging host reachable", httpProof?.origin === apiUrl && httpProof?.liveness === true,
+    check("Staging host reachable", httpProof?.origin === targetOrigin && httpProof?.liveness === true,
       "App-level health endpoint must be checked from outside, not claimed by an env flag");
     check("Node merchant runtime reachable", httpProof?.merchantReady === true &&
       httpProof?.merchantRoute === true,
