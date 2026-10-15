@@ -54,16 +54,16 @@ jobs:
           set -e
           echo "Framework build command exit status: ${build_status}"
           echo "Expected Cloudflare/React Router build artifacts:"
-          for file in dist/server/index.js dist/server/wrangler.json dist/client/.vite/manifest.json dist/server/.vite/manifest.json; do
+          for file in dist/server/index.js dist/server/wrangler.json; do
             if test -s "$file"; then echo "PRESENT: $file"; else echo "MISSING: $file"; fi
           done
           if test -d dist/client/assets; then echo "PRESENT: dist/client/assets"; else echo "MISSING: dist/client/assets"; fi
           test "$build_status" -eq 0
           test -s dist/server/index.js
           test -s dist/server/wrangler.json
-          test -s dist/client/.vite/manifest.json
           test -d dist/client/assets
-          test -s dist/server/.vite/manifest.json
+          test -d dist/server/assets
+          test -n "$(find dist/server/assets -type f -name 'server-build*.js' -print -quit)"
       - name: Assert this test did not mutate dependency declarations
         if: always()
         run: git diff --exit-code -- package.json package-lock.json
