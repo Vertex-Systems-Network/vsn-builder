@@ -114,7 +114,7 @@ test("stolen page lookup capability is revoked as soon as Shopify/Neon request e
  let stolen;
  const res=await authorize(f,req(),async({shop:verified,pageMetadata,...rest})=>{
   assert.equal(verified,shop);
-  assert.deepEqual(rest,{request:req()}.request===null?{}:Object.keys(rest).sort().length?rest:{});
+  assert.deepEqual(Object.keys(rest).sort(),["admin","request","session"]);
   stolen=pageMetadata;
   return Response.json({page:await pageMetadata(pageId)});
  });
@@ -161,7 +161,7 @@ test("hosted Worker only exposes exact GET page metadata subroute, not editor mu
  assert.match(src,/url\.pathname\.startsWith\("\/app\/__vsn\/pages\/"\)/);
  assert.match(src,/enablePageMetadata:true/);
  assert.match(src,/await pageMetadata\(rawId\)/);
- assert.match(src,/url\.pathname\.startsWith\("\/auth\/ "\)/.source?src:/url\.pathname\.startsWith\("\/auth\/"/);
+ assert.match(src,/url\.pathname\.startsWith\("\/auth\/"/);
  const lacking=await worker.fetch(new Request(origin+"/app/__vsn/pages/"+pageId),{
   APP_ENV:"staging",VSN_WORKER_NAME:"not-the-staging-worker",
  });
