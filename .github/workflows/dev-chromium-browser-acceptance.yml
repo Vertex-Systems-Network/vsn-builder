@@ -57,8 +57,20 @@ jobs:
           path: dev-browser-artifacts/
           if-no-files-found: ignore
           retention-days: 5
-      - name: Ensure no hosted deploy config was produced
+      - name: Verify isolated Development test and guarded hosted Worker source (No Deploy)
+        shell: bash
         run: |
-          test ! -e wrangler.staging.jsonc
-          test ! -e wrangler.production.jsonc
-          test ! -e workers/app.js
+          set -euo pipefail
+          # The reviewed Staging/Production Worker manifests are source files,
+          # not evidence of a deployment. Never require these files to be
+          # absent: verify that they are fail-closed instead.
+          test "$APP_ENV" = development
+          test "$DATABASE_URL" = file:./ci.sqlite
+          test "$SHOPIFY_APP_URL" = http://127.0.0.1:3473
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${NEON_API_KEY:-}"
+          test -z "${NEON_DATABASE_URL:-}"
+          node --test tests/phase34-hosted-worker-gate.test.mjs
+          node --test tests/t020-worker-draft-save-contract.test.mjs
+          git diff --exit-code -- workers/app.js wrangler.staging.jsonc wrangler.production.jsonc
+          echo "PASS synthetic Chromium acceptance never touched hosted Worker source or deployed."
