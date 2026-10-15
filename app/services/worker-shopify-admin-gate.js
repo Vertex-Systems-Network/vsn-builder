@@ -5,6 +5,7 @@
 import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
+import { createVerifiedMerchantPageSummaryLease } from "./worker-shopify-page-summary.js";
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const denied=status=>new Response(null,{
@@ -174,6 +175,7 @@ async function securedMutationResponse(result) {
 
 async function guardedAdminRequest(request,env,{
   createSdkContext=createWorkerShopifySdkContext,onAuthenticated,
+  enablePageSummary=false,
 }={},mutation=false) {
   if(!(request instanceof Request))return denied(400);
   if(request.method!==(mutation?"POST":"GET"))return denied(405);
@@ -186,6 +188,7 @@ async function guardedAdminRequest(request,env,{
   const hintedShop=url.searchParams.get("shop");
   if(hintedShop!==null && !SHOP.test(hintedShop))return denied(400);
   let context;
+  let pageReadLease;
   try {
     context=await createSdkContext(request,env);
     if(typeof context?.shopify?.authenticate?.admin!=="function" ||
@@ -256,10 +259,15 @@ async function guardedAdminRequest(request,env,{
         return finalized;
       },{maxWait:5000,timeout:12000});
     }else{
-      // GET is for loaders/read-only data. Do not expose the mutable DB
-      // handle to read callbacks. Never use GET for merchant mutations.
+      // A narrowly scoped read-only page capability is optional. Create it
+      // ONLY after official Shopify auth, persisted session and installation
+      // verification; no raw Prisma handle reaches the route callback.
+      if(enablePageSummary){
+        pageReadLease=createVerifiedMerchantPageSummaryLease(context.database,shop);
+      }
       response=await onAuthenticated({
-        request,shop,session,admin:authenticated.admin
+        request,shop,session,admin:authenticated.admin,
+        ...(pageReadLease?{pageSummary:pageReadLease.load}:{}),
       });
     }
     if(!(response instanceof Response))return denied(503);
@@ -281,6 +289,8 @@ async function guardedAdminRequest(request,env,{
     if(error instanceof Response)return error;
     return denied(503);
   } finally {
+    // A leaked callback cannot query after this request's context is closed.
+    pageReadLease?.revoke();
     try{await context?.close?.()}catch{ /* never log database secrets */ }
   }
 }
