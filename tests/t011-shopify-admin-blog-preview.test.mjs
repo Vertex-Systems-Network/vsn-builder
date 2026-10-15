@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { getBlogData, getArticleData } from "../app/storefront/contentQueries.server.js";
+import { loadBuilderBlogPreview, loadBuilderArticlePreview } from "../app/services/builder-content-preview.server.js";
 import {
   normalizeShopifyContentHandle,
   shopifyHandleQuery,
@@ -44,7 +45,10 @@ test("Article query cannot disclose content from the wrong blog even with identi
 });
 
 test("actual builder preview GraphQL uses Admin blogs, not Storefront blogByHandle", () => {
-  const source = readFileSync("app/routes/app.builder.$id.jsx", "utf8");
+  const route = readFileSync("app/routes/app.builder.$id.jsx", "utf8");
+  assert.match(route,/loadBuilderBlogPreview/);
+  assert.match(route,/loadBuilderArticlePreview/);
+  const source = readFileSync("app/services/builder-content-preview.server.js", "utf8");
   assert.doesNotMatch(source, /blogByHandle\s*\(/);
   assert.match(source, /query PreviewBlog\(\$query:String!\)/);
   assert.match(source, /query PreviewArticle\(\$articleQuery:String!\)/);
@@ -100,4 +104,33 @@ test("Admin article search requires the correct owning blog and preserves summar
   assert.equal(article?.blogHandle,"news");
   assert.equal(article?.contentHtml,"<p>Body</p>");
   assert.equal(article?.related?.[0]?.url,"/blogs/news/other");
+});
+
+test("Builder editor previews run through isolated Admin module and preserve exact handles", async()=>{
+  const requests=[];
+  const admin={graphql:async(document,{variables})=>{
+    requests.push({document,variables});
+    if(document.includes("PreviewBlog"))
+      return {json:async()=>({data:{blogs:{nodes:[
+        {id:"wrong",handle:"other"},
+        {id:"correct",handle:"news",articles:{nodes:[]}},
+      ]}}})};
+    if(document.includes("PreviewArticle"))
+      return {json:async()=>({data:{articles:{nodes:[
+        {id:"cross",handle:"launch",blog:{handle:"other"}},
+        {id:"match",handle:"launch",blog:{handle:"news"}},
+      ]}}})};
+    throw Error("Unexpected preview operation");
+  }};
+  const blog=await loadBuilderBlogPreview({admin,requestedHandle:"NEWS"});
+  assert.equal(blog?.id,"correct");
+  const article=await loadBuilderArticlePreview({admin,requestedHandle:"news/launch"});
+  assert.equal(article?.id,"match");
+  assert.equal(article?.blogHandle,"news");
+  assert.equal(requests.length,2);
+  assert.equal(requests[0].variables.query,"handle:news");
+  assert.equal(requests[1].variables.articleQuery,"handle:launch");
+  const blocked=await loadBuilderArticlePreview({admin,requestedHandle:"news/launch/forged"});
+  assert.equal(blocked,null);
+  assert.equal(requests.length,2);
 });
