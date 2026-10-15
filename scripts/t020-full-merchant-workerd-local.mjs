@@ -64,6 +64,7 @@ try {
         "DATABASE_CLIENT_RUNTIME_INITIALIZATION",
         "NODE_MODULE_RUNTIME_COMPATIBILITY",
         "MERCHANT_SERVER_MODULE_EVALUATION",
+        "REACT_ROUTER_SERVER_BUILD_EXPORTS",
       ]);
       if(response?.ciOnly===true && categories.has(response.blocked))
         reason=response.blocked;
