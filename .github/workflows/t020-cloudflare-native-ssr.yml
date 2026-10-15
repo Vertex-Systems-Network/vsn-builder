@@ -7,6 +7,9 @@ on:
       - "workers/full-merchant-vite-ci.js"
       - "workers/full-merchant-ci-db-boundary.js"
       - "workers/full-merchant-ci-shopify-boundary.js"
+      - "workers/full-merchant-ci-database-health.js"
+      - "workers/full-merchant-ci-database-location.js"
+      - "tests/t020-worker-neon-schema-boundary.test.mjs"
       - "tests/t020-cloudflare-native-ssr.test.mjs"
       - "tests/t020-worker-native-boundaries.test.mjs"
       - ".github/workflows/t020-cloudflare-native-ssr.yml"
@@ -52,7 +55,7 @@ jobs:
           node -e "for(const p of ['wrangler','miniflare','workerd']) { try { console.log(p+':',require(p+'/package.json').version); } catch { console.log(p+': resolved transitively'); } }"
           git diff --exit-code -- package.json package-lock.json
       - name: Enforce no-deploy full merchant SSR and fail-closed legacy boundary contracts
-        run: node --test tests/t020-cloudflare-native-ssr.test.mjs tests/t020-worker-native-boundaries.test.mjs
+        run: node --test tests/t020-cloudflare-native-ssr.test.mjs tests/t020-worker-native-boundaries.test.mjs tests/t020-worker-neon-schema-boundary.test.mjs
       - name: Generate edge-only Neon Prisma client without connecting to a database
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
@@ -78,7 +81,7 @@ jobs:
           test -n "$(find dist/server/assets -type f -name 'server-build*.js' -print -quit)"
       - name: Inspect only safe marker names in real SSR graph (no bundle disclosure)
         run: |
-          for marker in "Worker route database needs authenticated" "Worker Shopify SDK must be initialized" "resolveVsnDatabaseLocation" "PrismaClientInitializationError"; do
+          for marker in "Worker route database needs authenticated" "Worker Shopify SDK must be initialized" "SQLite filesystem helpers cannot execute" "sqlite_master" "PRAGMA database_list" "PrismaClientInitializationError"; do
             if grep -R -F -q --include="*.js" "$marker" dist/server; then
               echo "PRESENT marker: $marker"
             else
