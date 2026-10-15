@@ -6,6 +6,9 @@ on:
       - "package-lock.json"
       - ".graphqlrc.js"
       - "scripts/t011-*.mjs"
+      - "app/routes/app.builder.$id.jsx"
+      - "app/utils/shopify-blog-handle.server.js"
+      - "tests/t011-shopify-admin-blog-preview.test.mjs"
       - ".github/workflows/t011-secure-worker-dependencies.yml"
   workflow_dispatch:
 permissions:
@@ -62,6 +65,8 @@ jobs:
           "
       - name: Verify audited standalone GraphQL codegen compatibility
         run: node scripts/t011-codegen-compatibility.mjs
+      - name: Verify Shopify Admin 2026-07 blog handle safety and preview contracts
+        run: node --test tests/t011-shopify-admin-blog-preview.test.mjs
       - name: Generate real Shopify operation types, not stub files
         run: npm run graphql-codegen
       - name: Require generated operation typing and parser evidence
