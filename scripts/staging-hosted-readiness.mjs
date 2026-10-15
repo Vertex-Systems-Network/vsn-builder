@@ -109,7 +109,7 @@ if (process.argv[1] && import.meta.url === new URL("file://" + process.argv[1]).
     hasD1Adapter: Boolean(pkg.dependencies?.["@prisma/adapter-d1"] || pkg.devDependencies?.["@prisma/adapter-d1"]) &&
       clientSources.includes("PrismaD1"),
     hasNeonAdapter: Boolean(pkg.dependencies?.["@prisma/adapter-neon"]) &&
-      existsSync("app/services/db-worker-neon.js") && existsSync("generated/prisma-edge/client.ts"),
+      existsSync("app/services/staging-worker-neon.server.js") && existsSync("generated/prisma-edge/client.ts"),
     hasWorkerMerchantRuntime: existsSync("workers/app.js") &&
       !readFileSync("workers/app.js", "utf8").includes("No storefront, OAuth, merchant mutations, billing, or editor routes"),
   });
