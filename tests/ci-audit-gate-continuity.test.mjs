@@ -36,5 +36,5 @@ test("external Shopify QA, browser installs and E2E cannot run with red audits",
   assert.match(play,/id: post_playwright_audit/);
   assert.match(play,/run: npm audit --include=dev --audit-level=high/);
   assert.match(yaml,/if: steps\.production_audit\.outcome == 'success' && steps\.development_audit\.outcome == 'success'\n\s+run: npm install --no-save/);
-  assert.match(yaml,/if: github\\.event_name != 'pull_request' && steps\.production_audit\.outcome == 'success' && steps\.development_audit\.outcome == 'success' && steps\.post_playwright_audit\.outcome == 'success'\n\s+run: npx playwright install/);
+  assert.match(yaml,/if: github\.event_name != 'pull_request' && steps\.production_audit\.outcome == 'success' && steps\.development_audit\.outcome == 'success' && steps\.post_playwright_audit\.outcome == 'success'\n\s+run: npx playwright install/);
 });
