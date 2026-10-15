@@ -12,6 +12,9 @@ const base = {
   worker: { exists: true, deployments: 1, secretNames: ["SHOPIFY_API_KEY","SHOPIFY_API_SECRET","DATABASE_URL"],
     bindings: [], publicUrlVerified: true },
   hasWranglerConfig: true, hasNeonAdapter: true, hasWorkerMerchantRuntime: true,
+  httpProof: { origin:"https://builder-stage.example.org", liveness:true,
+    merchantReady:true, merchantRoute:true, healthStatus:200, readyStatus:200,
+    merchantStatus:302 },
 };
 test("fully evidenced Cloudflare staging readiness is accepted", () => {
   const report = assessStaging(base);
@@ -37,8 +40,8 @@ test("placeholder and ephemeral URLs are rejected", () => {
 test("Node staging requires durable SQLite and externally verified health", () => {
   const b = { ...base, vars: { ...base.vars, VSN_STAGING_PLATFORM:"node", DATABASE_URL:"file:./staging.db" } };
   assert.equal(assessStaging(b).ready, false);
-  assert.equal(assessStaging({ ...b, vars: { ...b.vars, VSN_STAGING_PERSISTENT_STORAGE_VERIFIED:"1",
-    VSN_STAGING_HOST_HEALTH_VERIFIED:"1" } }).ready, true);
+  assert.equal(assessStaging({ ...b, vars: { ...b.vars,
+    VSN_STAGING_PERSISTENT_STORAGE_VERIFIED:"1" } }).ready, true);
 });
 
 test("Neon default branch without migration proof blocks Shopify staging", () => {
@@ -73,4 +76,23 @@ test("Production Neon connection URL is rejected by Staging even with matching p
 test("TLS downgrade is rejected before hosted Shopify readiness",()=>{
   const wrong={...base.vars,DATABASE_URL:base.vars.DATABASE_URL.replace("sslmode=require","sslmode=disable")};
   assert.equal(assessStaging({...base,vars:wrong}).ready,false);
+});
+
+test("missing live HTTP proof blocks false green even if all Worker config flags are true", () => {
+  const report = assessStaging({ ...base, httpProof: null,
+    worker: { ...base.worker, publicUrlVerified: true } });
+  assert.equal(report.ready, false);
+  assert.ok(report.checks.some(x => x.name === "Verified external HTTPS route" && !x.ok));
+  assert.ok(report.checks.some(x => x.name === "Hosted merchant readiness response" && !x.ok));
+  assert.ok(report.checks.some(x => x.name === "Hosted merchant /app route" && !x.ok));
+});
+test("database-only live HTTP readiness never certifies Shopify", () => {
+  const report = assessStaging({ ...base, httpProof: { ...base.httpProof,
+    merchantReady: false, readyStatus:503 } });
+  assert.equal(report.ready, false);
+});
+test("a live route for a different staging URL cannot validate target origin", () => {
+  const report = assessStaging({ ...base, httpProof: { ...base.httpProof,
+    origin: "https://other.example.org" } });
+  assert.equal(report.ready, false);
 });
