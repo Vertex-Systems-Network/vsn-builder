@@ -1,0 +1,75 @@
+name: T011 Audited Codegen and Worker Dependencies (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".graphqlrc.js"
+      - "scripts/t011-*.mjs"
+      - ".github/workflows/t011-secure-worker-dependencies.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audited-locked-dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      SHOPIFY_APP_URL: http://localhost:3000
+      DATABASE_URL: file:./t011-ci.sqlite
+    steps:
+      - name: Checkout immutable source without write token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22.18.0'
+          cache: npm
+      - name: Require no Staging, Live, Shopify or Neon secrets in CI
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DIRECT_URL:-}"
+          test -z "${NEON_API_KEY:-}"
+      - name: Reproduce actual locked root dependencies
+        run: npm ci
+      - name: Mandatory full development security audit (zero high findings)
+        run: npm audit --include=dev --audit-level=high
+      - name: Mandatory runtime dependency security audit (zero high findings)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Require no legacy vulnerable GraphQL codegen CLI
+        run: |
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            const p=JSON.parse(fs.readFileSync('package.json'));
+            const lock=JSON.parse(fs.readFileSync('package-lock.json'));
+            for(const name of ['@shopify/api-codegen-preset','graphql-config']){
+              if(p.devDependencies?.[name]) throw Error('Legacy codegen dependency still declared: '+name);
+            }
+            for(const pkg of Object.keys(lock.packages)){
+              if(pkg==='node_modules/braces'||pkg.startsWith('node_modules/@graphql-codegen/'))
+                throw Error('Legacy vulnerable GraphQL tree remains in lockfile');
+            }
+            if(!p.dependencies?.['@prisma/adapter-neon']||
+              !lock.packages['node_modules/@prisma/adapter-neon'])
+              throw Error('Required Workerd Neon adapter removed');
+          "
+      - name: Verify audited standalone GraphQL codegen compatibility
+        run: node scripts/t011-codegen-compatibility.mjs
+      - name: Generate real Shopify operation types, not stub files
+        run: npm run graphql-codegen
+      - name: Require generated operation typing and parser evidence
+        run: node scripts/t011-codegen-type-smoke.mjs
+      - name: Compile application with generated types
+        run: npm run typecheck
+      - name: Build actual Node local application
+        run: npm run build
+      - name: Verify no undeclared dependency changes
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json
