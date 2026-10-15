@@ -1,0 +1,36 @@
+name: T040 Shopify Listing Draft Gate (No Submission)
+on:
+  pull_request:
+    paths:
+      - "docs/launch/shopify-builder-app-store-listing-draft.md"
+      - "scripts/t040-shopify-listing-gate.mjs"
+      - "tests/t040-shopify-listing-gate.test.mjs"
+      - "app/config/commercialPlans.js"
+      - ".github/workflows/t040-shopify-listing-gate.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  listing-draft-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout no deploy credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Validate exact four-plan one-app listing draft and pending proofs
+        run: |
+          node --test tests/t040-shopify-listing-gate.test.mjs
+          node scripts/t040-shopify-listing-gate.mjs
+      - name: Assert release submission is explicitly NOT certified by drafting docs
+        run: |
+          if node scripts/t040-shopify-listing-gate.mjs --assert-ready > /tmp/t040-check.txt 2>&1; then
+            echo "::error::Unverified listing was marked release-ready"
+            exit 1
+          fi
+          grep -q "Shopify release-listing READY: NO" /tmp/t040-check.txt
