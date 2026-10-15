@@ -7,6 +7,7 @@ import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
 import { createVerifiedMerchantPageSummaryLease } from "./worker-shopify-page-summary.js";
 import { createVerifiedMerchantPageMetadataLease } from "./worker-shopify-page-metadata.js";
+import { hasVerifiedWorkerPaidReadAccess } from "./worker-shopify-paid-read.js";
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const denied=status=>new Response(null,{
@@ -177,6 +178,7 @@ async function securedMutationResponse(result) {
 async function guardedAdminRequest(request,env,{
   createSdkContext=createWorkerShopifySdkContext,onAuthenticated,
   enablePageSummary=false,enablePageMetadata=false,
+  requireVerifiedPaidRead=false,
 }={},mutation=false) {
   if(!(request instanceof Request))return denied(400);
   if(request.method!==(mutation?"POST":"GET"))return denied(405);
@@ -261,6 +263,11 @@ async function guardedAdminRequest(request,env,{
         return finalized;
       },{maxWait:5000,timeout:12000});
     }else{
+      // No Free plan: do not hand any Builder page-data capability to an
+      // authenticated but unpaid merchant, even on hosted Staging.
+      // This is fail-closed and does not trust NODE_ENV or query parameters.
+      if(requireVerifiedPaidRead &&
+         !await hasVerifiedWorkerPaidReadAccess(context.database,shop))return denied(403);
       // A narrowly scoped read-only page capability is optional. Create it
       // ONLY after official Shopify auth, persisted session and installation
       // verification; no raw Prisma handle reaches the route callback.
