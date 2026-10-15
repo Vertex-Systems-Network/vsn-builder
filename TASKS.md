@@ -2,7 +2,7 @@
 
 **Verified state: 15 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
-**31 ACTIVE** of 41 tracked tasks · **7 READY** · **5 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 10 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
+**31 ACTIVE** of 41 tracked tasks · **6 READY** · **6 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 10 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **Work order:** dependency-first, not phase-first. Mandatory release and Shopify safeguards remain in place. One public VSN | Builder app; Starter $30, Sliver $100, Gold $150, Platinum $350 monthly/$3,000 annually; each 10-day Shopify trial, no Free tier.
 
@@ -10,9 +10,11 @@
 
 ## Current actionable tasks
 
-**READY now:** `T011`, `T013`, `T014`, `T015`, `T024`, `T032`, `T040`.
+**READY now:** `T011`, `T013`, `T014`, `T015`, `T032`, `T040`.
 
-**Code/merge IN_REVIEW:** `T012`, `T017`, `T020`, `T026`, `T027`.
+**Code/merge IN_REVIEW:** `T012`, `T017`, `T020`, `T024`, `T026`, `T027`.
+
+**T024 in review:** [PR #193](https://github.com/Vertex-Systems-Network/vsn-builder/pull/193) hardens webhook read deadlines; real trusted generation and uninstall E2E still OPEN.
 
 ## Entire ACTIVE queue (CLOSED tasks removed)
 
@@ -31,7 +33,7 @@
 | T021 | P0 | Staging Worker deploy and stable HTTPS callback acceptance | WAITING | T011, T012, T013, T018, T019, T020 | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
 | T022 | P0 | Real Dev Shopify test-store install, OAuth and session acceptance | WAITING | T015 | [issues/162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
 | T023 | P0 | Real Staging Shopify OAuth, App Bridge ID token and session lifecycle | WAITING | T015, T021, T022 | [issues/162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
-| T024 | P0 | Trusted uninstall-generation provenance and safe replay handling | READY | — | [issues/163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
+| T024 | P0 | Trusted uninstall-generation provenance and safe replay handling | IN_REVIEW | — | [issues/163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | T025 | P0 | Real signed Shopify webhook retry/uninstall/reinstall E2E | WAITING | T018, T023, T024 | [issues/163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | T026 | P0 | Enforce paid-tier authorization across every server-side merchant mutation | IN_REVIEW | — | [issues/164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | T027 | P0 | Review and integrate exact four-plan pricing code PR #153 | IN_REVIEW | — | [issues/164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
