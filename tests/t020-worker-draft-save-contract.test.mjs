@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
-  saveVerifiedBuilderPageDraft,encodeVerifiedBuilderDraft,BuilderDraftSaveError,
+  saveVerifiedBuilderPageDraft,authorizeAndSaveVerifiedWorkerDraft,
+  encodeVerifiedBuilderDraft,BuilderDraftSaveError,
 } from "../app/services/worker-shopify-page-draft-save.js";
 
 const shop="merchant.myshopify.com";
@@ -135,4 +136,78 @@ test("save contract is dormant: HTTP Worker exposes no draft mutation route",()=
  assert.doesNotMatch(worker,/saveVerifiedBuilderPageDraft/);
  assert.doesNotMatch(worker,/acceptWorkerShopifyAdminMutation/);
  assert.match(worker,/request.method==="GET"/);
+});
+
+function authorizedFixture({paid=true,disabled=false,owner=false,subscriptionFailure=false}={}){
+ const f=fixture();
+ const calls=[];
+ f.transaction.builderSubscription={async findUnique(args){
+  calls.push("subscription");
+  if(subscriptionFailure)throw new Error("Private database connector failure");
+  if(!paid)return null;
+  return {shop,provider:"shopify-app-pricing",planKey:"starter",
+    planHandle:"starter",status:"active",verifiedAt:new Date(),
+    trialEndsAt:null,cancelEffectiveOn:null};
+ }};
+ f.transaction.builderShopSetting={async findUnique(args){
+  calls.push("permission");
+  return {roleAccessJson:disabled
+   ? JSON.stringify({actions:{editor:{pages:{edit:false}}}}):null};
+ }};
+ const session={shop,id:"offline_"+shop,accessToken:"VALID_SDK_SESSION",
+  isOnline:false,accountOwner:owner};
+ return {f,calls,session};
+}
+const gatedSave=(x,overrides={})=>authorizeAndSaveVerifiedWorkerDraft({
+ transaction:x.f.transaction,session:x.session,
+ shop,pageId,expectedVersion:2,elements,...overrides,
+});
+
+test("paid authorized editor draft save checks subscription and pages.edit within transaction",async()=>{
+ const x=authorizedFixture();
+ assert.deepEqual(await gatedSave(x),{ok:true,id:pageId,version:3});
+ assert.deepEqual(x.calls,["subscription","permission"]);
+ assert.equal(x.f.row.version,3);
+ assert.equal(x.f.row.publishedJson,"LIVE_MUST_NOT_CHANGE");
+});
+
+test("unpaid, role-disabled, invalid SDK session deny before any draft mutation",async()=>{
+ for(const config of [{paid:false,code:"DRAFT_SUBSCRIPTION_REQUIRED"},
+  {disabled:true,code:"DRAFT_EDIT_PERMISSION_REQUIRED"}]){
+  const x=authorizedFixture(config);
+  await assert.rejects(gatedSave(x),error=>
+   error.status===403 && error.code===config.code);
+  assert.equal(x.f.calls.length,0);
+  assert.equal(x.f.row.version,2);
+ }
+ for(const badSession of [
+  {shop:"evil.myshopify.com",id:"offline_wrong",accessToken:"token",isOnline:false},
+  {shop,id:"offline_"+shop,accessToken:"",isOnline:false},
+  {shop,id:"offline_"+shop,accessToken:"token"},
+ ]){
+  const x=authorizedFixture();
+  await assert.rejects(gatedSave(x,{session:badSession}),error=>
+   error.status===403 && error.code==="DRAFT_SESSION_REQUIRED");
+  assert.deepEqual(x.calls,[]);
+  assert.deepEqual(x.f.calls,[]);
+ }
+});
+
+test("verified shop owner may edit despite staff flags, but never without paid plan",async()=>{
+ const owner=authorizedFixture({owner:true,disabled:true});
+ assert.deepEqual(await gatedSave(owner),{ok:true,id:pageId,version:3});
+ assert.deepEqual(owner.calls,["subscription"]);
+ const unpaidOwner=authorizedFixture({owner:true,paid:false});
+ await assert.rejects(gatedSave(unpaidOwner),error=>
+  error.status===403 && error.code==="DRAFT_SUBSCRIPTION_REQUIRED");
+ assert.equal(unpaidOwner.f.calls.length,0);
+});
+
+test("billing authority read failure aborts before mutation without error disclosures",async()=>{
+ const x=authorizedFixture({subscriptionFailure:true});
+ await assert.rejects(gatedSave(x),/Private database connector failure/);
+ assert.equal(x.f.calls.length,0);
+ assert.equal(x.f.row.contentJson,"[]");
+ // HTTP integration must sanitize failures using guardedAdminRequest's
+ // existing 503 response; no Worker POST route is enabled here.
 });
