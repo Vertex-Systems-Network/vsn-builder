@@ -7,6 +7,7 @@ on:
       - ".graphqlrc.js"
       - "scripts/t011-*.mjs"
       - "app/routes/app.builder.$id.jsx"
+      - "app/services/builder-content-preview.server.js"
       - "app/storefront/contentQueries.server.js"
       - "app/utils/shopify-blog-handle.server.js"
       - "tests/t011-shopify-admin-blog-preview.test.mjs"
