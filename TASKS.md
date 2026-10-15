@@ -2,15 +2,17 @@
 
 **Verified state: 15 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
-**31 ACTIVE** of 41 tracked tasks · **3 READY** · **9 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 10 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
+**30 ACTIVE** of 41 tracked tasks · **2 READY** · **9 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 11 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **Work order:** dependency-first, not phase-first. Mandatory release and Shopify safeguards remain in place. One public VSN | Builder app; Starter $30, Sliver $100, Gold $150, Platinum $350 monthly/$3,000 annually; each 10-day Shopify trial, no Free tier.
 
-**Current integration evidence:** [draft PR #190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) is still **unmerged to `development`**; [T020 local Workerd](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990503), [T011 security](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990721) and [Production Confidence](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990508) CI passed on prior integration candidate, **not hosted merchant acceptance**. Worker `/app` and `/auth/*` still return 503, Staging Neon primary has no app tables, and `development` lacks enforced branch protection. Do not ship Live or submit to Shopify.
+**Current integration evidence:** [draft PR #190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) is still **unmerged to `development`**; [T020 local Workerd](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990503), [T011 dependency-remediation closure](docs/closed-task-archive.md) and [Production Confidence](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990508) CI passed on prior integration candidate, **not hosted merchant acceptance**. Worker `/app` and `/auth/*` still return 503, Staging Neon primary has no app tables, and `development` lacks enforced branch protection. Do not ship Live or submit to Shopify.
+
+**T011 FINAL CLOSED:** Full-development/production/post-Playwright dependency audits and pinned codegen remediation are finished for the reviewed candidate. Future protected merge/release CI remains T012; this does NOT unlock actual Staging merchant readiness.
 
 ## Current actionable tasks
 
-**READY now:** `T011`, `T014`, `T015`.
+**READY now:** `T014`, `T015`.
 
 **Code/merge IN_REVIEW:** `T012`, `T013`, `T017`, `T020`, `T024`, `T026`, `T027`, `T032`, `T040`.
 
@@ -28,17 +30,16 @@
 
 | ID | Priority | Task | Status | Unmet dependency | Work package |
 | --- | --- | --- | --- | --- | --- |
-| T011 | P0 | Resolve mandatory full-dev dependency security audit (braces) | READY | — | [issues/96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) |
 | T012 | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | IN_REVIEW | — | [issues/157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | T013 | P0 | Protect development branch and verify GitHub required reviewers | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | READY | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | READY | — | [issues/159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 | T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | WAITING | T014 | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T017 | P0 | Live Neon snapshot/default/compute attestation in protected preflight | IN_REVIEW | — | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
-| T018 | P0 | Protected Staging Prisma migrate deploy and data restore drill | WAITING | T011, T012, T013, T014, T016, T017 | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
+| T018 | P0 | Protected Staging Prisma migrate deploy and data restore drill | WAITING | T012, T013, T014, T016, T017 | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T019 | P0 | Bind and verify real Cloudflare Staging secrets and tier variables | WAITING | T014, T015, T016 | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
 | T020 | P0 | Implement functional hosted React Router/Shopify Worker adapter | IN_REVIEW | — | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
-| T021 | P0 | Staging Worker deploy and stable HTTPS callback acceptance | WAITING | T011, T012, T013, T018, T019, T020 | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
+| T021 | P0 | Staging Worker deploy and stable HTTPS callback acceptance | WAITING | T012, T013, T018, T019, T020 | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
 | T022 | P0 | Real Dev Shopify test-store install, OAuth and session acceptance | WAITING | T015 | [issues/162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
 | T023 | P0 | Real Staging Shopify OAuth, App Bridge ID token and session lifecycle | WAITING | T015, T021, T022 | [issues/162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
 | T024 | P0 | Trusted uninstall-generation provenance and safe replay handling | IN_REVIEW | — | [issues/163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
@@ -48,10 +49,10 @@
 | T028 | P0 | Create/verify exactly four public plans in Shopify Partner Dashboard | WAITING | T015 | [issues/164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | T029 | P0 | Real subscription/trial lifecycle and plan limits E2E | WAITING | T023, T026, T027, T028 | [issues/164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | T036 | P0 | Staging deployment rollback and post-migration restore acceptance | WAITING | T018, T021, T035 | [issues/166](https://github.com/Vertex-Systems-Network/vsn-builder/issues/166) |
-| T037 | P0 | Production Neon isolated migration, backup and recovery proof | WAITING | T011, T012, T013, T014, T035, T036 | [issues/167](https://github.com/Vertex-Systems-Network/vsn-builder/issues/167) |
-| T038 | P0 | Authorized production Worker/promoted exact SHA and secrets | WAITING | T011, T012, T014, T020, T036, T037 | [issues/167](https://github.com/Vertex-Systems-Network/vsn-builder/issues/167) |
+| T037 | P0 | Production Neon isolated migration, backup and recovery proof | WAITING | T012, T013, T014, T035, T036 | [issues/167](https://github.com/Vertex-Systems-Network/vsn-builder/issues/167) |
+| T038 | P0 | Authorized production Worker/promoted exact SHA and secrets | WAITING | T012, T014, T020, T036, T037 | [issues/167](https://github.com/Vertex-Systems-Network/vsn-builder/issues/167) |
 | T039 | P0 | Live merchant smoke, safety rollback and payment verification | WAITING | T029, T038 | [issues/167](https://github.com/Vertex-Systems-Network/vsn-builder/issues/167) |
-| T041 | P0 | Attempt Shopify App Store submission only after release certification | WAITING | T011, T025, T029, T035, T039, T040 | [issues/168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
+| T041 | P0 | Attempt Shopify App Store submission only after release certification | WAITING | T025, T029, T035, T039, T040 | [issues/168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 | T030 | P1 | Real Dev create/edit/save/preview and reload persistence | WAITING | T022 | [issues/165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
 | T031 | P1 | Real Staging create/edit/save/publish Shopify page persistence | WAITING | T018, T023, T026, T030 | [issues/165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
 | T032 | P1 | Templates/Widgets/theme app assets implementation and synthetic QA | IN_REVIEW | — | [issues/165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
