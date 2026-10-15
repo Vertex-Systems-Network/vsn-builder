@@ -2,7 +2,9 @@
 
 ## Current active work and irreversible task closure (15 Oct 2026)
 
-**29 active atomic tasks only:** 2 READY, 8 IN_REVIEW, 19 WAITING. The 12 narrow-scope previously verified tasks have been **CLOSED FINAL**, removed from all active work tables and recorded in [the immutable audit archive](docs/closed-task-archive.md). A closed acceptance scope is never reopened or scheduled; any additional functionality requires a new task ID. [ACTIVE TASKS.md](TASKS.md) and [the canonical validator](scripts/task-dependency-check.mjs) enforce this policy; `--include-closed` is the explicit historical audit view.
+**T026 FINAL CLOSED:** Paid-mutation protection code, verified Shopify entitlement mirror and storefront/review-link guards have passed exhaustive source inventory tests. Actual billing, store install and trial/cancel/reinstall merchant acceptance still belongs to T029.
+
+**28 active atomic tasks only:** 2 READY, 7 IN_REVIEW, 19 WAITING. The 13 narrow-scope previously verified tasks have been **CLOSED FINAL**, removed from all active work tables and recorded in [the immutable audit archive](docs/closed-task-archive.md). A closed acceptance scope is never reopened or scheduled; any additional functionality requires a new task ID. [ACTIVE TASKS.md](TASKS.md) and [the canonical validator](scripts/task-dependency-check.mjs) enforce this policy; `--include-closed` is the explicit historical audit view.
 
 **Engineering/release distinction:** CI on the candidate integration PR [#190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) passed the scoped security, local Cloudflare-native Workerd and QA checks. The T011 source audit and T027 four-plan code contract are **FINAL CLOSED** within the audited integration candidate; this does **not** close T012/T020, real Shopify/Neon hosted tasks or Partner pricing publication: the PR remains draft, development branch is not protected, hosted `/app` and `/auth/*` remain HTTP 503, Staging primary Neon is not migrated and real Shopify installation/billing remain unverified. No Live deployment or Shopify submission.
 
