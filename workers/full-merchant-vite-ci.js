@@ -58,10 +58,10 @@ export default {
       // Only this test-only localhost route may read sanitized diagnostics.
       // Do not include original stack traces, environment objects or URLs.
       const ciCause=message
-        .replace(/\\b(?:https?|postgres(?:ql)?):\\/\\/[^\\s"'<>]+/gi,"[URL]")
-        .replace(/(?:api[-_]?key|secret|token|password)\\s*[:=]\\s*[^\\s,"']+/gi,"[SECRET]")
-        .replace(/\\b[0-9a-f]{32,}\\b/gi,"[HEX]")
-        .replace(/\\s+/g," ").slice(0,180);
+        .replace(/\b(?:https?|postgres(?:ql)?):\/\/[^\s"'<>]+/gi,"[URL]")
+        .replace(/(?:api[-_]?key|secret|token|password)\s*[:=]\s*[^\s,"']+/gi,"[SECRET]")
+        .replace(/\b[0-9a-f]{32,}\b/gi,"[HEX]")
+        .replace(/\s+/g," ").slice(0,180);
       return new Response(JSON.stringify({
         ciOnly:true,actualMerchantGraphLoaded:false,blocked,ciCause,
       }),{status:503,headers:{...SAFE_HEADERS,
