@@ -96,6 +96,7 @@ function renderVariables(operation) {
 const graphqlHelpers = await import("graphql");
 const entries = report.results.filter((item) => item.valid);
 const exclusions = [];
+const schemaFailures = [];
 const declarations = [];
 const operations = [];
 for (const item of entries) {
@@ -107,7 +108,10 @@ for (const item of entries) {
     continue;
   }
   const errors = validate(schema, doc);
-  if (errors.length) throw new Error("T011 Shopify Admin schema failure " + item.file + ": " + errors.map((e) => e.message).join("; "));
+  if (errors.length) {
+    schemaFailures.push({ file: item.file, errors: errors.map((e) => e.message) });
+    continue;
+  }
   const fragments = new Map(doc.definitions.filter((d) => d.kind === "FragmentDefinition").map((d) => [d.name.value, d]));
   for (const operation of doc.definitions.filter((d) => d.kind === "OperationDefinition")) {
     const root = operation.operation === "query" ? schema.getQueryType()
@@ -120,6 +124,18 @@ for (const item of entries) {
     declarations.push("export type " + prefix + "Variables = " + renderVariables(operation) + ";");
     operations.push({ id, file: item.file, name: operation.name?.value || null, kind: operation.operation });
   }
+}
+// Aggregate EVERY failing operation before erroring, so developers can fix
+// the whole Shopify Admin schema drift in a single audited CI cycle.
+// Never generate partial types or report this run as a pass.
+if (schemaFailures.length) {
+  const messages = schemaFailures.map((failure) =>
+    failure.file + ": " + failure.errors.join("; ")
+  );
+  throw new Error(
+    "T011 Shopify Admin schema validation FAILED for " +
+    schemaFailures.length + " GraphQL documents:\\n" + messages.join("\\n")
+  );
 }
 const renderedInputs = new Set();
 let next;
