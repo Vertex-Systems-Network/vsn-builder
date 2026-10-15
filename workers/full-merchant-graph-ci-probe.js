@@ -77,9 +77,17 @@ export default {
           /process\.env|node:|module|import|require/i.test(detail)
             ? "NODE_MODULE_RUNTIME_COMPATIBILITY" :
             "MERCHANT_SERVER_MODULE_EVALUATION";
+        // CI-only loopback diagnostic. No runtime credential bindings exist.
+        // Redact URL, secret, and high-entropy tokens before exposing even a
+        // short exception summary; never include an exception stack.
+        const ciCause = detail
+          .replace(/\\b(?:https?|postgres(?:ql)?):\\/\\/[^\\s"']+/gi, "[URL]")
+          .replace(/(?:api[-_]?key|secret|token|password)\\s*[:=]\\s*[^\\s,"']+/gi, "[SECRET]")
+          .replace(/\\b[0-9a-f]{32,}\\b/gi, "[HEX]")
+          .replace(/\\s+/g, " ").slice(0, 180);
         return new Response(JSON.stringify({
           ciOnly: true, fullMerchantModuleEvaluated: false,
-          blocked: classification,
+          blocked: classification, ciCause,
         }), { status: 503, headers: {
           ...DENY, "content-type": "application/json; charset=utf-8",
         } });
