@@ -14,11 +14,47 @@ import {
  * pure role helpers live in builder-permissions.js so route UI never imports a
  * *.server module into the browser graph.
  */
+// A missing shop policy uses the established default role contract. A policy
+// which EXISTS but is corrupt must never silently grant those defaults to
+// Shopify staff or collaborators. Only the store owner bypasses role checks.
+const isPolicyRecord=value=>value!==null && typeof value==="object" &&
+ !Array.isArray(value) && Object.getPrototypeOf(value)===Object.prototype;
+function validateStoredRolePolicy(value) {
+ if(!isPolicyRecord(value))throw new TypeError("Invalid persisted Builder role policy");
+ for(const role of ["admin","editor","collaborator","viewer"]) {
+  if(Object.hasOwn(value,role) && typeof value[role]!=="boolean")
+   throw new TypeError("Invalid persisted Builder role policy");
+ }
+ for(const groupName of ["systems","actions"]) {
+  if(!Object.hasOwn(value,groupName))continue;
+  const group=value[groupName];
+  if(!isPolicyRecord(group))
+   throw new TypeError("Invalid persisted Builder role policy");
+  for(const roleName of Object.keys(group)){
+   if(!isPolicyRecord(group[roleName]))
+    throw new TypeError("Invalid persisted Builder role policy");
+   for(const key of Object.keys(group[roleName])){
+    const entry=group[roleName][key];
+    if(groupName==="systems") {
+     if(typeof entry!=="boolean")
+      throw new TypeError("Invalid persisted Builder role policy");
+    } else {
+     if(!isPolicyRecord(entry) ||
+        Object.values(entry).some(flag=>typeof flag!=="boolean"))
+      throw new TypeError("Invalid persisted Builder role policy");
+    }
+   }
+  }
+ }
+ return value;
+}
+
 export async function getBuilderRoleAccess(db,shop){
   if(!db||!shop)return normalizeBuilderRoleAccess(DEFAULT_BUILDER_ROLE_ACCESS);
   const settings=await db.builderShopSetting.findUnique({where:{shop},select:{roleAccessJson:true}});
   if(!settings?.roleAccessJson)return normalizeBuilderRoleAccess(DEFAULT_BUILDER_ROLE_ACCESS);
-  try{return normalizeBuilderRoleAccess(JSON.parse(settings.roleAccessJson));}catch{return normalizeBuilderRoleAccess(DEFAULT_BUILDER_ROLE_ACCESS);}
+  // Do not downgrade invalid stored restrictions to permissive defaults.
+  return normalizeBuilderRoleAccess(validateStoredRolePolicy(JSON.parse(settings.roleAccessJson)));
 }
 
 export async function canAccessBuilderEditor(db,session){return canAccessBuilderSystem(db,session,"pages");}
