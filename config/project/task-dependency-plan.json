@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "policy": "dependency_driven_evidence_first_no_phase_gating",
-  "updated_on": "2026-10-14",
+  "updated_on": "2026-10-15",
   "product": "VSN | Builder",
   "public_shopify_apps": 1,
   "commercial_plans": [
@@ -35,7 +35,8 @@
     }
   ],
   "notes": [
-    "Statuses are scope-specific: a passed local CI does not mean merchant/hosted acceptance; in_review is not verified.",
+    "CLOSED is final/immutable for its exact written acceptance scope. It is excluded from every active task queue while retained as audit history and as a satisfied prerequisite.",
+    "Closed local/CI tasks do NOT certify Shopify hosted merchant functionality or a completed release.",
     "The legacy eight-phase manifest stays archival only; phases never determine work order.",
     "Ready tasks are computed from direct dependencies, never manually forced by phase.",
     "GitHub issue and PR links are evidence pointers only; do not infer live deployment or merge.",
@@ -47,130 +48,151 @@
       "title": "Environment isolation and fail-closed config templates",
       "workstream": "Infrastructure",
       "priority": "P0",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/94",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/94"
       ],
-      "acceptance": "Historical configuration/synthetic identity checks only; no external Shopify account or secret proof"
+      "acceptance": "Historical configuration/synthetic identity checks only; no external Shopify account or secret proof",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Historical configuration/synthetic identity checks only; no external Shopify account or secret proof. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T002",
       "title": "Local SQLite migration and synthetic desktop/mobile browser acceptance",
       "workstream": "Local QA",
       "priority": "P0",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/114",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/114"
       ],
-      "acceptance": "Local CI only, real Dev test-store not included"
+      "acceptance": "Local CI only, real Dev test-store not included",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Local CI only, real Dev test-store not included. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T003",
       "title": "PostgreSQL schema parity, disposable SQL CRUD/rollback",
       "workstream": "Database",
       "priority": "P0",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/141",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/141"
       ],
-      "acceptance": "Disposable PostgreSQL acceptance, not Neon primary migration"
+      "acceptance": "Disposable PostgreSQL acceptance, not Neon primary migration",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Disposable PostgreSQL acceptance, not Neon primary migration. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T004",
       "title": "Local Workerd SDK/Prisma SSR and Wrangler dry-run compile",
       "workstream": "Runtime",
       "priority": "P0",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/155",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38475181411"
       ],
-      "acceptance": "Actual CI Workerd + disposable Postgres success; NO deployed Worker"
+      "acceptance": "Actual CI Workerd + disposable Postgres success; NO deployed Worker",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Actual CI Workerd + disposable Postgres success; NO deployed Worker. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T005",
       "title": "Neon Staging shadow-branch SQL migration/savepoint rollback",
       "workstream": "Database",
       "priority": "P0",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155"
       ],
-      "acceptance": "171 SQL statements on isolated QA branch; 52 tables; NOT Prisma migration history/default branch"
+      "acceptance": "171 SQL statements on isolated QA branch; 52 tables; NOT Prisma migration history/default branch",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: 171 SQL statements on isolated QA branch; 52 tables; NOT Prisma migration history/default branch. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T006",
       "title": "Staging pre-migration root snapshot and empty-baseline restore",
       "workstream": "Database",
       "priority": "P0",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155"
       ],
-      "acceptance": "Real snapshot and default-branch switch; restore contains 0 app tables, not migrated schema"
+      "acceptance": "Real snapshot and default-branch switch; restore contains 0 app tables, not migrated schema",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Real snapshot and default-branch switch; restore contains 0 app tables, not migrated schema. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T007",
       "title": "Shopify official SDK synthetic session and tenant gate",
       "workstream": "Shopify Auth",
       "priority": "P0",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/162",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/135"
       ],
-      "acceptance": "Synthetic SDK CI tests only; no real merchant login"
+      "acceptance": "Synthetic SDK CI tests only; no real merchant login",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Synthetic SDK CI tests only; no real merchant login. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T008",
       "title": "Webhook HMAC and transactional mutation synthetic security",
       "workstream": "Security",
       "priority": "P0",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/163",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/141"
       ],
-      "acceptance": "Synthetic signed-webhook and rollback tests only; trusted install attestation not implemented"
+      "acceptance": "Synthetic signed-webhook and rollback tests only; trusted install attestation not implemented",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Synthetic signed-webhook and rollback tests only; trusted install attestation not implemented. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T009",
       "title": "Internal editor/components/AI QA scripts",
       "workstream": "Merchant Features",
       "priority": "P1",
-      "status": "verified",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38411932985"
       ],
-      "acceptance": "Internal code QA only; real merchant create/publish not accepted"
+      "acceptance": "Internal code QA only; real merchant create/publish not accepted",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Internal code QA only; real merchant create/publish not accepted. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T010",
       "title": "Adopt dependency-based task board, validator, issue mapping",
       "workstream": "Engineering Planning",
       "priority": "P0",
-      "status": "in_review",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/156",
       "evidence": [
-        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/156"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/156",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990514"
       ],
-      "acceptance": "Plan PR must pass task graph tests; no silent phase-based scheduling"
+      "acceptance": "Plan PR must pass task graph tests; no silent phase-based scheduling",
+      "closure_note": "Dependency-driven 41-task manifest, deterministic validator, exact four-plan contract, and release gate tests passed on integration candidate. This closes ONLY the planning/validator implementation; the board remains open for outstanding deliverables.",
+      "closed_on": "2026-10-15"
     },
     {
       "id": "T011",
