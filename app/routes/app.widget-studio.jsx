@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { canBuilder, getBuilderRole } from "../utils/builder-permissions.js";
@@ -21,6 +22,7 @@ export async function action({request}){
   assertTrustedMutationRequest(request);
   const {session}=await authenticate.admin(request);
   if(!(await canAccessBuilderSystem(db,session,"widgetStudio")))return Response.json({ok:false,error:"Your role does not have access to Widget Studio."},{status:403});
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   const role=getBuilderRole(session);if(!canBuilder(role,"edit"))return Response.json({ok:false,error:"Your role cannot change widgets."},{status:403});
   const form=await request.formData();const intent=String(form.get("intent")||"");
   try{

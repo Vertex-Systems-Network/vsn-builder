@@ -1,4 +1,6 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server";
+import db from "../db.server.js";
 
 function json(data, status = 200) {
   return Response.json(data, { status });
@@ -318,6 +320,7 @@ export async function loader({ request }) {
 
 export async function action({ request }) {
   const { admin, session } = await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   let payload;
   try {
     payload = await request.json();

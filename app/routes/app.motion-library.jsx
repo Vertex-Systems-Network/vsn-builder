@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { canBuilder, getBuilderRole } from "../utils/builder-permissions.js";
@@ -19,6 +20,7 @@ export async function loader({ request }) {
 
 export async function action({ request }) {
   const { session } = await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   if (!(await canAccessBuilderEditor(db, session))) return Response.json({ ok:false, error:"Your role does not have access to Motion Library." }, { status:403 });
   const role = getBuilderRole(session);
   if (!canBuilder(role, "edit")) return Response.json({ ok:false, error:"Your role cannot edit animations." }, { status:403 });

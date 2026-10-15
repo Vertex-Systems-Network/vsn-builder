@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { isRouteErrorResponse, useFetcher, useLoaderData, useRouteError } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -412,6 +413,7 @@ export async function action({ request }) {
   const actor = builderActor(session);
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
+  if(intent!=="run-diagnostics"){const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;}
   const deny = (message) => Response.json({ success: false, error: message }, { status: 403 });
 
   if (intent === "save-tokens") {

@@ -1,0 +1,44 @@
+name: T026 Merchant Mutation Paid-Only Surface (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "app/routes/**"
+      - "app/services/paid-mutation-guard.server.js"
+      - "app/services/entitlements.server.js"
+      - "tests/t026-mutation-surface-inventory.test.mjs"
+      - "tests/builder-paid-mutation-guard.test.mjs"
+      - "tests/builder-four-paid-plans.test.mjs"
+      - ".github/workflows/t026-merchant-mutation-surface.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paid-only-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      NODE_ENV: test
+      SHOPIFY_API_SECRET: ""
+      CLOUDFLARE_API_TOKEN: ""
+    steps:
+      - name: Checkout immutable PR without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pinned Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Audit every app action, external storefront write and real paid mirror
+        run: node --test tests/t026-mutation-surface-inventory.test.mjs tests/builder-paid-mutation-guard.test.mjs tests/builder-four-paid-plans.test.mjs
+      - name: Full and production dependency audits without waivers
+        run: |
+          npm audit --include=dev --audit-level=high
+          npm audit --omit=dev --audit-level=high
+      - name: No dependency lock mutation
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json

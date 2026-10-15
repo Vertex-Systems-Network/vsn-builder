@@ -33,7 +33,7 @@ export function LicenseSummary({ darkMode, plan, entitlements, shop, billingUrl,
   const text = darkMode ? '#F9FAFB' : '#1A1F36';
   const muted = darkMode ? '#9CA3AF' : '#6B7280';
   const border = darkMode ? '#2D3748' : '#E5E7EB';
-  const current = plan || { key:'core', name:'Free', maxPages:5, forms:true, globalLibrary:false, backups:false, subscription:null, developerMode:true };
+  const current = plan || { key:'inactive', name:'No active subscription', maxPages:0, forms:false, globalLibrary:false, backups:false, subscription:null, developerMode:false };
   const lifecycle = buildBillingLifecycle(current);
   const tone = statusColors(lifecycle.statusTone, darkMode);
   const syncConfig = subscriptionSync?.config || null;
@@ -81,7 +81,7 @@ export function LicenseSummary({ darkMode, plan, entitlements, shop, billingUrl,
 
       {lifecycle.trialEndsAt ? <div style={{ marginTop:12, padding:'11px 12px', borderRadius:9, border:'1px solid #BFDBFE', background:darkMode?'rgba(59,130,246,.08)':'#EFF6FF', color:darkMode?'#BFDBFE':'#1D4ED8', fontSize:11.5, display:'flex', alignItems:'center', gap:8 }}><Clock3 size={14}/>Trial ends {formatDate(lifecycle.trialEndsAt)}{lifecycle.trialDaysRemaining?` · ${lifecycle.trialDaysRemaining} day${lifecycle.trialDaysRemaining===1?'':'s'} remaining`:''}</div> : null}
 
-      {lifecycle.pendingKind ? <div style={{ marginTop:12, padding:'11px 12px', borderRadius:9, border:'1px solid #FDE68A', background:darkMode?'rgba(245,158,11,.08)':'#FFFBEB', color:darkMode?'#FCD34D':'#92400E', fontSize:11.5, display:'flex', alignItems:'flex-start', gap:8 }}><ArrowRightLeft size={14} style={{ marginTop:1 }}/><div><strong>{pendingTitle(lifecycle.pendingKind)}</strong>{lifecycle.pendingKind==='cancellation' ? <> · access moves to Free{lifecycle.cancelEffectiveOn?` on ${formatDate(lifecycle.cancelEffectiveOn)}`:lifecycle.currentCycleEnd?` after ${formatDate(lifecycle.currentCycleEnd)}`:''}.</> : <> · {lifecycle.currentName} → {lifecycle.pendingName}{lifecycle.pendingBillingPeriodLabel?` · ${lifecycle.pendingBillingPeriodLabel}`:''}{lifecycle.pendingHandle?` · Shopify key ${lifecycle.pendingHandle}`:''}.</>}</div></div> : null}
+      {lifecycle.pendingKind ? <div style={{ marginTop:12, padding:'11px 12px', borderRadius:9, border:'1px solid #FDE68A', background:darkMode?'rgba(245,158,11,.08)':'#FFFBEB', color:darkMode?'#FCD34D':'#92400E', fontSize:11.5, display:'flex', alignItems:'flex-start', gap:8 }}><ArrowRightLeft size={14} style={{ marginTop:1 }}/><div><strong>{pendingTitle(lifecycle.pendingKind)}</strong>{lifecycle.pendingKind==='cancellation' ? <> · paid access ends{lifecycle.cancelEffectiveOn?` on ${formatDate(lifecycle.cancelEffectiveOn)}`:lifecycle.currentCycleEnd?` after ${formatDate(lifecycle.currentCycleEnd)}`:''}.</> : <> · {lifecycle.currentName} → {lifecycle.pendingName}{lifecycle.pendingBillingPeriodLabel?` · ${lifecycle.pendingBillingPeriodLabel}`:''}{lifecycle.pendingHandle?` · Shopify key ${lifecycle.pendingHandle}`:''}.</>}</div></div> : null}
 
       {pricingReturn?.pendingVerification ? <div style={{ marginTop:12, color:muted, fontSize:11.5, display:'flex', alignItems:'center', gap:8 }}><ShieldCheck size={13}/>Shopify returned key <code>{pricingReturn.planHandle}</code>; VSN is waiting for Partner API verification before changing entitlements.</div> : null}
 

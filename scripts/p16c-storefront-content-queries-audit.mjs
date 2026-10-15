@@ -94,8 +94,9 @@ equal(search, {
 const blogAdmin = {
   async graphql(query, { variables }) {
     ok(query.includes("BlogData"), "Blog loader keeps BlogData query");
-    equal(variables, { handle: "journal" }, "Blog loader keeps handle variable");
-    return { async json() { return { data: { blogByHandle: {
+    equal(variables, { query: "handle:journal" }, "Blog loader applies validated Admin handle search");
+    ok(query.includes("blogs(first:5,query:$query)"), "Blog loader uses supported Admin blogs connection");
+    return { async json() { return { data: { blogs: { nodes: [{
       id: "blog1",
       title: "Journal",
       handle: "journal",
@@ -103,7 +104,7 @@ const blogAdmin = {
         { id: "a1", title: "First", handle: "first", excerpt: "E1", publishedAt: "2026-01-01", author: { name: "A" }, image: null },
         { id: "a2", title: "Second", handle: "second", excerpt: "E2", publishedAt: "2025-01-01", author: null, image: null },
       ] },
-    } } }; } };
+    }] } } }; } };
   },
 };
 equal(await getBlogData({ admin: blogAdmin, handle: "journal" }), {
@@ -120,11 +121,24 @@ equal(await getBlogData({ admin: blogAdmin, handle: "journal" }), {
 const articleAdmin = {
   async graphql(query, { variables }) {
     ok(query.includes("ArticleData"), "Article loader keeps ArticleData query");
-    equal(variables, { blog: "journal", query: "handle:middle" }, "Article loader keeps blog/query variables");
-    return { async json() { return { data: { blogByHandle: {
-      title: "Journal",
-      handle: "journal",
+    equal(variables, { blogQuery: "handle:journal", articleQuery: "handle:middle" }, "Article loader uses validated blog/article handle searches");
+    ok(query.includes("articles(first:20,query:$articleQuery)"), "Article loader uses top-level Admin articles connection");
+    return { async json() { return { data: {
+      blogs: { nodes: [{
+        title: "Journal",
+        handle: "journal",
+        articles: { nodes: [
+          { id: "new-id", title: "Newer", handle: "newer", excerpt: "N", publishedAt: "2026-01-01", image: null },
+          { id: "middle-id", title: "Middle", handle: "middle", excerpt: "M", publishedAt: "2025-06-01", image: null },
+          { id: "old-id", title: "Older", handle: "older", excerpt: "O", publishedAt: "2025-01-01", image: null },
+          { id: "old2-id", title: "Old Two", handle: "old-two", excerpt: "O2", publishedAt: "2024-06-01", image: null },
+          { id: "old3-id", title: "Old Three", handle: "old-three", excerpt: "O3", publishedAt: "2024-01-01", image: null },
+        ] },
+      }] },
       articles: { nodes: [{
+        id: "cross-blog", title: "Wrong", handle: "middle", blog: { handle: "unrelated" },
+      }, {
+        blog: { handle: "journal" },
         id: "middle-id",
         title: "Middle",
         handle: "middle",
@@ -135,14 +149,7 @@ const articleAdmin = {
         author: { name: "Writer" },
         image: null,
       }] },
-      allArticles: { nodes: [
-        { id: "new-id", title: "Newer", handle: "newer", excerpt: "N", publishedAt: "2026-01-01", image: null },
-        { id: "middle-id", title: "Middle", handle: "middle", excerpt: "M", publishedAt: "2025-06-01", image: null },
-        { id: "old-id", title: "Older", handle: "older", excerpt: "O", publishedAt: "2025-01-01", image: null },
-        { id: "old2-id", title: "Old Two", handle: "old-two", excerpt: "O2", publishedAt: "2024-06-01", image: null },
-        { id: "old3-id", title: "Old Three", handle: "old-three", excerpt: "O3", publishedAt: "2024-01-01", image: null },
-      ] },
-    } } }; } };
+    } }; } };
   },
 };
 

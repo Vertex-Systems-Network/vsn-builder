@@ -1,0 +1,15 @@
+{
+  // CI-only target for genuine @cloudflare/vite-plugin SSR graph.
+  // Do not deploy, promote, or bind Shopify/Neon secrets.\n  // This pinned local Workerd CI binary supports at most 2026-06-23;\n  // do not copy this test-only compatibility date to Staging/Live.
+  "name": "vsn-builder-full-merchant-vite-ci",
+  "main": "./workers/full-merchant-vite-ci.js",
+  "compatibility_date": "2026-06-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "send_metrics": false,
+  "vars": {
+    "APP_ENV": "test",
+    "VSN_BUILD_INTENT": "cloudflare-vite-full-merchant-ci"
+  }
+}

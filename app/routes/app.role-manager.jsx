@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useMemo, useState } from "react";
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
@@ -33,6 +34,7 @@ export async function loader({request}){
 export async function action({request}){
   assertTrustedMutationRequest(request);
   const{session}=await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   requireOwner(session);
   const form=await request.formData();
   const intent=String(form.get("intent")||"toggle-role");

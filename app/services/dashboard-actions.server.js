@@ -1,3 +1,4 @@
+import { paidMutationDenied, isUnpaidDashboardExempt } from "./paid-mutation-guard.server.js";
 import db from "../db.server.js";
 import { authenticate } from "../shopify.server";
 import { builderActor, getBuilderRole, isBuilderOwner } from "../utils/builder-permissions.js";
@@ -49,6 +50,10 @@ export async function handleDashboardAction({ request }) {
   const intent = String(formData.get("intent") || "");
   const actor = builderActor(session);
   const role = getBuilderRole(session);
+  if (!isUnpaidDashboardExempt(intent)) {
+    const paidDenial=await paidMutationDenied(db,session.shop);
+    if(paidDenial)return paidDenial;
+  }
 
   try {
     if (intent === "app-uninstall") {

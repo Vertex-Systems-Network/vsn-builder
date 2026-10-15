@@ -25,7 +25,7 @@ export function quotaAllows(limit, used, extra = 1) {
   return Number(used || 0) + Number(extra || 0) <= value;
 }
 
-export function entitlementMessage(plan, featureLabel, requiredPlan = "pro") {
+export function entitlementMessage(plan, featureLabel, requiredPlan = "sliver") {
   return `${featureLabel} is not included in the ${plan?.name || "current"} plan. Choose ${BUILDER_PLANS[normalizePlanKey(requiredPlan)]?.name || requiredPlan} or higher in Plans & License.`;
 }
 

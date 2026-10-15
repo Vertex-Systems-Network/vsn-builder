@@ -1,0 +1,3 @@
+# Hosted PostgreSQL Prisma migration history. Not applied to Neon.
+# Provider is intentionally separate from Local SQLite migration history.
+provider = "postgresql"

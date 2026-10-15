@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "observed_on": "2026-10-13",
+  "source": "authorized_read_only_cloudflare_and_neon_connector_metadata",
+  "scope": "resource_inventory_only_not_deployment_or_shopify_identity_attestation",
+  "neon": {
+    "staging": {
+      "project_id": "shiny-violet-61219572",
+      "project_name": "vsn-builder-staging",
+      "region_id": "aws-ap-southeast-1",
+      "postgres_version": 18,
+      "primary_branch_name": "production",
+      "primary_branch_protected": false
+    },
+    "production": {
+      "project_id": "nameless-violet-68750490",
+      "project_name": "vsn-builder-production",
+      "region_id": "aws-ap-southeast-1",
+      "postgres_version": 18,
+      "primary_branch_name": "production",
+      "primary_branch_protected": false
+    }
+  },
+  "cloudflare": {
+    "staging": {
+      "account_name": "Vertex Systems Network",
+      "script_name": "vsn-builder-staging",
+      "script_exists": true,
+      "secret_binding_names": [],
+      "script_setting_binding_names": [],
+      "deployment_record_count": 1
+    },
+    "production": {
+      "account_name": "Vertex Systems Network",
+      "script_name": "vsn-builder-production",
+      "script_exists": true,
+      "secret_binding_names": [],
+      "script_setting_binding_names": [],
+      "deployment_record_count": 1
+    }
+  },
+  "not_verified": [
+    "Shopify Partner app registration or Dev/Staging/Live Client ID ownership",
+    "GitHub Environment protection and scoped secrets",
+    "working Shopify OAuth credentials or actual billing",
+    "connected Neon schema migrations or hosted Worker runtime",
+    "full tier-specific preflight"
+  ]
+}

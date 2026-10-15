@@ -1,0 +1,142 @@
+name: T020 Full Merchant Graph Workerd Compatibility (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "workers/full-merchant-graph-ci-probe.js"
+      - "wrangler.full-merchant-graph-ci.jsonc"
+      - "workers/full-merchant-vite-ci.js"
+      - "vite.full-merchant-cloudflare-ci.config.js"
+      - "wrangler.full-merchant-vite-ci.jsonc"
+      - "scripts/t020-cloudflare-native-local-runtime.mjs"
+      - "tests/t020-full-merchant-graph.test.mjs"
+      - "scripts/t020-full-merchant-workerd-local.mjs"
+      - ".github/workflows/t020-full-merchant-worker-compat.yml"
+      - "app/**"
+      - "workers/app.js"
+      - "tests/t020-worker-merchant-page-summary.test.mjs"
+      - "tests/t020-worker-merchant-page-metadata.test.mjs"
+      - "tests/t020-worker-paid-read-access.test.mjs"
+      - "tests/t020-worker-page-rbac.test.mjs"
+      - "tests/t020-worker-editor-hydration.test.mjs"
+      - "tests/t020-worker-draft-save-contract.test.mjs"
+      - "tests/t020-worker-draft-save-request.test.mjs"
+      - "tests/shopify-worker-configuration.test.mjs"
+      - "prisma/cloud/**"
+      - "vite.config.js"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  full-security-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22.18.0'
+          cache: npm
+      - run: npm ci
+      - name: Mandatory production dependencies security audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Mandatory all-dependencies security audit (no waivers)
+        run: npm audit --include=dev --audit-level=high
+  full-merchant-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      SHOPIFY_APP_URL: http://localhost:3000
+      DATABASE_URL: file:./t020-ci.sqlite
+    steps:
+      - name: Checkout immutable source, no write token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22.18.0'
+          cache: npm
+      - name: Require CI has no Cloudflare, Neon or Shopify credentials
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Install immutable dependencies
+        run: npm ci
+      - name: Generate actual Cloudflare/Neon Prisma client without connecting to Neon
+        env:
+          DATABASE_URL: postgresql://nope:unused@localhost:5432/unused
+          DIRECT_URL: postgresql://nope:unused@localhost:5432/unused
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Build actual full merchant React Router route graph
+        run: |
+          npm run build
+          test -s build/server/index.js
+      - name: Verify isolated compatibility Worker never dispatches merchant routes
+        run: node --test tests/t020-full-merchant-graph.test.mjs
+      - name: Assert authenticated GET stream completes before Shopify and Neon teardown
+        run: node --test tests/worker-shopify-admin-gate.test.mjs
+      - name: Verify read-only page data stays scoped to persisted merchant session
+        run: node --test tests/t020-worker-merchant-page-summary.test.mjs
+      - name: Verify signed per-page read-only metadata isolation, expiry and request teardown
+        run: node --test tests/t020-worker-merchant-page-metadata.test.mjs
+      - name: Verify paid-only hosted merchant GET authorizations and expired-plan denial
+        run: node --test tests/t020-worker-paid-read-access.test.mjs
+      - name: Verify canonical public Builder Shopify Worker identity and internal Staging isolation
+        run: node --test tests/shopify-worker-configuration.test.mjs
+      - name: Verify Shopify staff roles restrict authenticated Worker page metadata and summaries
+        run: node --test tests/t020-worker-page-rbac.test.mjs
+      - name: Verify bounded tenant-scoped editor draft hydration and fail-closed page reader
+        run: node --test tests/t020-worker-editor-hydration.test.mjs
+      - name: Verify dormant transactional editor save contract, tenant isolation and optimistic concurrency
+        run: node --test tests/t020-worker-draft-save-contract.test.mjs
+      - name: Verify explicit Staging-only draft save transport, strict JSON, auth and upload deadline
+        run: node --test tests/t020-worker-draft-save-request.test.mjs
+      - name: Compile FULL merchant route graph + official Shopify SDK + PrismaNeon for Workerd
+        run: |
+          npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.full-merchant-graph-ci.jsonc --dry-run --outdir /tmp/vsn-t020-merchant-graph-compat
+          test -n "$(find /tmp/vsn-t020-merchant-graph-compat -type f -name '*.js' -print -quit)"
+      # Node-targeted build/server/index.js contains node:stream and filesystem
+      # bootstrap. It is valid ONLY for Local/Dev, not for Workerd. Never mark
+      # Workerd ready by importing that incompatible Node output.
+      # Preserve the independent Node build/tests and Wrangler SDK/Neon dry-run
+      # above; now require a separate REAL Cloudflare-targeted graph below.
+      - name: Install isolated Cloudflare Vite runtime without lockfile mutation
+        run: |
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.64.0
+          git diff --exit-code -- package.json package-lock.json
+      - name: Assert real Worker app, Shopify SDK and Neon module safety contracts
+        env:
+          VSN_CLOUDFLARE_NATIVE_CI: "1"
+        run: node --test tests/t020-cloudflare-native-ssr.test.mjs tests/t020-worker-native-boundaries.test.mjs tests/t020-worker-neon-schema-boundary.test.mjs
+      - name: Build actual Cloudflare-native merchant SSR and refuse Node Prisma imports
+        env:
+          VSN_CLOUDFLARE_NATIVE_CI: "1"
+        run: |
+          ./node_modules/.bin/react-router build --config vite.full-merchant-cloudflare-ci.config.js
+          test -s dist/server/index.js
+          test -s dist/server/wrangler.json
+          test -d dist/client/assets
+          test -d dist/server/assets
+          test -s .wrangler/deploy/config.json
+          if grep -R -F -q --include='*.js' '.prisma/client/default' dist/server; then
+            echo '::error::Cloudflare Worker SSR imports Node Prisma'
+            exit 1
+          fi
+      - name: Evaluate real full merchant ServerBuild plus official Shopify SDK and Neon in LOCAL Workerd
+        env:
+          VSN_CLOUDFLARE_NATIVE_CI: "1"
+          DATABASE_URL: ""
+          DIRECT_URL: ""
+        run: node scripts/t020-cloudflare-native-local-runtime.mjs
+      - name: Ensure no generated files modified tracked dependency lockfile
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json

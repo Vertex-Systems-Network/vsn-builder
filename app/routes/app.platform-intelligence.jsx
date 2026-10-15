@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useEffect, useMemo, useState } from 'react';
 import { useFetcher, useLoaderData, useOutletContext } from 'react-router';
 import { Activity, Boxes, Database, GitBranch, Search, Sparkles, Tag, WandSparkles } from 'lucide-react';
@@ -25,6 +26,7 @@ export async function loader({ request }) {
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   if (!(await canAccessBuilderSystem(db, session, 'platformIntelligence'))) return Response.json({ok:false,error:'Platform Intelligence permission denied.'},{status:403});
   const form = await request.formData();
   const intent = String(form.get('intent') || '');

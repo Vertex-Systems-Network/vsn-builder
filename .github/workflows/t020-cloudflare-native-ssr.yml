@@ -1,0 +1,155 @@
+name: T020 Cloudflare Native Merchant SSR Compatibility (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "vite.full-merchant-cloudflare-ci.config.js"
+      - "package.json"
+      - "package-lock.json"
+      - ".graphqlrc.js"
+      - "scripts/t011-graphql-*.mjs"
+      - "wrangler.full-merchant-vite-ci.jsonc"
+      - "workers/full-merchant-vite-ci.js"
+      - "workers/full-merchant-ci-db-boundary.js"
+      - "workers/full-merchant-ci-shopify-boundary.js"
+      - "workers/full-merchant-ci-database-health.js"
+      - "workers/full-merchant-ci-database-location.js"
+      - "workers/full-merchant-ci-prisma-namespace.js"
+      - "tests/t020-worker-neon-schema-boundary.test.mjs"
+      - "tests/t020-cloudflare-native-ssr.test.mjs"
+      - "tests/t020-worker-native-boundaries.test.mjs"
+      - ".github/workflows/t020-cloudflare-native-ssr.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: t020-cf-vite-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  cloudflare-vite-full-merchant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      VSN_CLOUDFLARE_NATIVE_CI: "1"
+      SHOPIFY_APP_URL: http://localhost:3000
+      DATABASE_URL: file:./t020-cloudflare-vite-ci.sqlite
+    steps:
+      - name: Checkout pinned source without write credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Assert real service credentials unavailable
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Install exact unchanged VSN Builder dependencies
+        run: npm ci
+      - name: Check Cloudflare Vite plugin 1.64.0 supports locked Vite 6 without committing deps
+        run: |
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.64.0
+          node -e "console.log('Cloudflare Vite plugin:', require('./node_modules/@cloudflare/vite-plugin/package.json').version)"
+          node -e "for(const p of ['wrangler','miniflare','workerd']) { try { console.log(p+':',require(p+'/package.json').version); } catch { console.log(p+': resolved transitively'); } }"
+          git diff --exit-code -- package.json package-lock.json
+      - name: Enforce no-deploy full merchant SSR and fail-closed legacy boundary contracts
+        run: node --test tests/t020-cloudflare-native-ssr.test.mjs tests/t020-worker-native-boundaries.test.mjs tests/t020-worker-neon-schema-boundary.test.mjs
+      - name: Generate edge-only Neon Prisma client without connecting to a database
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/ci?sslmode=require
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Build REAL Builder route graph in Cloudflare Vite SSR mode
+        run: |
+          set +e
+          ./node_modules/.bin/react-router build --config vite.full-merchant-cloudflare-ci.config.js
+          build_status=$?
+          set -e
+          echo "Framework build command exit status: ${build_status}"
+          echo "Expected Cloudflare/React Router build artifacts:"
+          for file in dist/server/index.js dist/server/wrangler.json; do
+            if test -s "$file"; then echo "PRESENT: $file"; else echo "MISSING: $file"; fi
+          done
+          if test -d dist/client/assets; then echo "PRESENT: dist/client/assets"; else echo "MISSING: dist/client/assets"; fi
+          test "$build_status" -eq 0
+          test -s dist/server/index.js
+          test -s dist/server/wrangler.json
+          test -d dist/client/assets
+          test -d dist/server/assets
+          test -n "$(find dist/server/assets -type f -name 'server-build*.js' -print -quit)"
+      - name: Inspect only safe marker names in real SSR graph (no bundle disclosure)
+        run: |
+          for marker in "Worker route database needs authenticated" "Worker Shopify SDK must be initialized" "SQLite filesystem helpers cannot execute" "sqlite_master" "PRAGMA database_list" "PrismaClientInitializationError"; do
+            if grep -R -F -q --include="*.js" "$marker" dist/server; then
+              echo "PRESENT marker: $marker"
+            else
+              echo "ABSENT marker: $marker"
+            fi
+          done
+      - name: Refuse unresolved Node Prisma default import in actual Worker SSR bundle
+        run: |
+          if grep -R -F -q --include="*.js" ".prisma/client/default" dist/server; then
+            echo "::error::Worker SSR still imports Node default Prisma client"
+            exit 1
+          fi
+      - name: Upload real Cloudflare Worker build for isolated local runtime test
+        uses: actions/upload-artifact@v4
+        with:
+          name: t020-cloudflare-native-dist
+          path: |
+            dist/
+            .wrangler/deploy/config.json
+          include-hidden-files: true
+          if-no-files-found: error
+      - name: Assert this test did not mutate dependency declarations
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json
+  local-workerd-ssr:
+    needs: cloudflare-vite-full-merchant
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      VSN_CLOUDFLARE_NATIVE_CI: "1"
+      SHOPIFY_APP_URL: http://localhost:3000
+    steps:
+      - name: Checkout source with no write credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Ensure no hosted Shopify, Cloudflare or Neon credentials
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_KEY:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DATABASE_URL:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Install project and pinned Cloudflare Vite runtime (no lock changes)
+        run: |
+          npm ci
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.64.0
+          git diff --exit-code -- package.json package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: t020-cloudflare-native-dist
+          path: .
+      - name: Verify Vite-generated Cloudflare metadata restored
+        run: |
+          test -s dist/server/index.js
+          test -s .wrangler/deploy/config.json
+      - name: Test real full merchant ServerBuild inside LOCAL Workerd (no merchant routes)
+        run: node scripts/t020-cloudflare-native-local-runtime.mjs

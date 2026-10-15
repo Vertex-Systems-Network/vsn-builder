@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server.js";
 import db from "../db.server.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
@@ -75,6 +76,7 @@ export async function action({ request }) {
   if (!aiEnabled()) return Response.json({ ok: false, code: "AI_DISABLED", error: "AI Builder is disabled." }, { status: 404 });
   const { session } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) return Response.json({ ok: false, error: "Your role cannot use AI Builder." }, { status: 403 });
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   if (!process.env.OPENAI_API_KEY) return Response.json({ ok: false, code: "AI_NOT_CONFIGURED", error: "AI Builder is not configured for this developer environment. Add OPENAI_API_KEY to your .env file and restart Shopify CLI." }, { status: 503 });
 
   try {

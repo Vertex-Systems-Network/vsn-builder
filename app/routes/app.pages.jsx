@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { redirect, useFetcher, useLoaderData, useNavigate, useLocation } from "react-router";
 import { useCallback, useEffect, useState } from "react";
 
@@ -188,6 +189,8 @@ export async function action({ request }) {
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
 		throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
 	}
+	const paidDenial = await paidMutationDenied(db, session.shop);
+	if (paidDenial) return paidDenial;
 	const builderRole = getBuilderRole(session);
 	const builderActorName = builderActor(session);
 

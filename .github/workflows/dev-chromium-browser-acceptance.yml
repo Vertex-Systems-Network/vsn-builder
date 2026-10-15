@@ -1,0 +1,64 @@
+name: VSN Builder Development Chromium Browser Acceptance (No Deploy)
+on:
+  push:
+    branches: [feat/builder-dev-browser-acceptance-20261013, fix/builder-dev-graphql-tools-cve-20261013, development]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: vsn-builder-dev-chromium-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chromium-local:
+    name: Built SQLite Dev app in real Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      APP_ENV: development
+      SHOPIFY_BILLING_TEST_MODE: 'true'
+      SHOPIFY_API_KEY: '0123456789abcdef0123456789abcdef'
+      SHOPIFY_API_SECRET: synthetic-ci-only-shopify-secret
+      SHOPIFY_APP_URL: http://127.0.0.1:3473
+      DATABASE_URL: file:./ci.sqlite
+    steps:
+      - name: Checkout read-only without git credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Install exact app dependencies
+        run: npm ci
+      - name: Check Dev-only isolation and production package security
+        run: npm run env:check && npm run env:test && npm audit --omit=dev --audit-level=high
+      - name: Build disposable SQLite schema
+        run: |
+          npm run prisma -- generate
+          npm run prisma -- migrate deploy
+      - name: Build the actual React Router application
+        run: npm run build
+      - name: Install pinned Playwright browser tooling outside tracked lockfile
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.64.0
+          npx playwright install chromium --with-deps
+          git diff --exit-code -- package.json package-lock.json
+      - name: Run real desktop/mobile Chromium UI and protected route acceptance
+        run: node scripts/dev-browser-chromium.mjs
+      - name: Upload synthetic local-only browser screenshots
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vsn-builder-development-browser-evidence
+          path: dev-browser-artifacts/
+          if-no-files-found: ignore
+          retention-days: 5
+      - name: Ensure no hosted deploy config was produced
+        run: |
+          test ! -e wrangler.staging.jsonc
+          test ! -e wrangler.production.jsonc
+          test ! -e workers/app.js

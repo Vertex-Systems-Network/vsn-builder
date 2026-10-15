@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { Form, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -52,6 +53,7 @@ export async function loader({ request }) {
 
 export async function action({ request }) {
   const { admin, session } = await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   const form = await request.formData();
   const intent = String(form.get("intent") || "");
   const experimentId = String(form.get("experimentId") || "");

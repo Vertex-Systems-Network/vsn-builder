@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -38,6 +39,7 @@ export async function loader({ request }) {
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   const role = getBuilderRole(session);
   if (!canBuilder(role, "settings")) return Response.json({ ok: false, error: "Only the store owner can change form security and integration settings." }, { status: 403 });
 

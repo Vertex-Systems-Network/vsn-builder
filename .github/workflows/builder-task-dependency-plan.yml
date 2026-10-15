@@ -1,0 +1,48 @@
+name: VSN Builder Dependency Task Graph — No Deploy
+on:
+  pull_request:
+    paths:
+      - "config/project/task-dependency-plan.json"
+      - "scripts/task-dependency-check.mjs"
+      - "tests/task-dependency-check.test.mjs"
+      - "docs/task-dependency-roadmap.md"
+      - "docs/README.md"
+      - ".github/workflows/builder-task-dependency-plan.yml"
+  push:
+    branches: [plan/builder-dependency-first-task-board-20261014]
+    paths:
+      - "config/project/task-dependency-plan.json"
+      - "scripts/task-dependency-check.mjs"
+      - "tests/task-dependency-check.test.mjs"
+      - ".github/workflows/builder-task-dependency-plan.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dependency-graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+      - name: Validate dependency checker source syntax (no npm install, no network access)
+        run: |
+          node --check scripts/task-dependency-check.mjs
+          node --check tests/task-dependency-check.test.mjs
+      - name: Assert task DAG and Shopify four-plan contract
+        run: node --test tests/task-dependency-check.test.mjs
+      - name: Display currently executable work regardless of historical phases
+        run: |
+          node scripts/task-dependency-check.mjs
+          node scripts/task-dependency-check.mjs --format=markdown
+      - name: Preserve actual Live/Shopify submission release gate
+        run: |
+          if node scripts/task-dependency-check.mjs --require-verified=T041; then
+            echo "Unexpectedly certified Shopify review submission from a planning PR" >&2
+            exit 1
+          fi
+          echo "PASS Shopify review and Live deployment remain guarded"

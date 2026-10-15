@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -28,7 +29,7 @@ export async function loader({ request }) {
 }
 
 export async function action({ request }) {
-  const { session } = await authenticate.admin(request); const form = await request.formData(); const intent=String(form.get("intent")||""); const id=String(form.get("id")||"");
+  const { session } = await authenticate.admin(request); const paidDenial=await paidMutationDenied(db,session.shop); if(paidDenial)return paidDenial; const form = await request.formData(); const intent=String(form.get("intent")||""); const id=String(form.get("id")||"");
   const item = id ? await db.builderFormSubmission.findFirst({ where:{ id, shop:session.shop } }) : null;
   if (id && !item) return Response.json({ok:false,error:"Submission not found."},{status:404});
   if (intent === "read") await db.builderFormSubmission.update({ where:{id}, data:{readAt:new Date()} });
