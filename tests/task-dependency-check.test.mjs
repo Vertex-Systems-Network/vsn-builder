@@ -20,8 +20,10 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.equal(result.summary.waiting,19);
  assert.deepEqual(plan.closed_task_ids,Array.from({length:10},(_,i)=>"T"+String(i+1).padStart(3,"0")));
  assert(result.rows.every(t=>t.status!=="closed"),"closed work must never appear in active queue");
- assert.equal(result.closed_tasks.length,10);
- assert(result.closed_tasks.every(t=>t.closed_on==="2026-10-15"&&t.evidence.length>0));
+ assert.equal(result.closed_tasks.length,0,"closed evidence must not appear in default JSON output");
+ const withArchive=inspectTaskPlan(plan,{includeClosed:true});
+ assert.equal(withArchive.closed_tasks.length,10);
+ assert(withArchive.closed_tasks.every(t=>t.closed_on==="2026-10-15"&&t.evidence.length>0));
  assert.equal(plan.public_shopify_apps,1);
  assert.deepEqual(plan.commercial_plans.map(p=>p.id),["starter","sliver","gold","platinum"]);
  assert(plan.commercial_plans.every(p=>p.trial_days===10));
