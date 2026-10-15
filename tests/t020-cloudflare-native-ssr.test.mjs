@@ -19,6 +19,10 @@ test("Cloudflare Vite SSR config compiles real merchant application (no fixture)
 test("Cloudflare-native Worker uses virtual real ServerBuild and never dispatches /app", () => {
   const code = readFileSync(workerFile,"utf8");
   assert.match(code,/virtual:react-router\/server-build/);
+  assert.match(code,/shopify-worker-sdk-context\.js/);
+  assert.match(code,/db-worker-neon\.js/);
+  assert.match(code,/typeof createWorkerShopifySdkContext === "function"/);
+  assert.match(code,/typeof createWorkerNeonPrisma === "function"/);
   assert.match(code,/Object\.keys\(build\?\.routes \|\| \{\}\)/);
   assert.doesNotMatch(code,/handler\(request,|authenticate\.admin\(request\)|DATABASE_URL/);
   assert.match(code,/url\.hostname === "127\.0\.0\.1"/);
