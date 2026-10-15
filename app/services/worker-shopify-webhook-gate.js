@@ -16,7 +16,7 @@ const denied = (status) => new Response(null, { status });
 
 async function boundedWebhookBody(request) {
   const claimedLength=request.headers.get("content-length");
-  if(claimedLength!==null && (!/^\\d+$/.test(claimedLength) ||
+  if(claimedLength!==null && (!/^[0-9]+$/.test(claimedLength) ||
      Number(claimedLength)>MAX_WEBHOOK_BYTES))throw denied(413);
   const reader=request.body?.getReader();
   if(!reader)throw denied(400);
