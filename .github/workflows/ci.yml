@@ -79,7 +79,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Run external phase-1 QA with protected credentials
-        if: github.event_name != 'pull_request' && steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success'
+        if: github.event_name != 'pull_request' && github.ref_protected == true && (github.ref == 'refs/heads/development' || github.ref == 'refs/heads/main') && steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success'
         run: npm run qa:phase1
         env:
           VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}
@@ -96,10 +96,15 @@ jobs:
         if: steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success'
         continue-on-error: true
         run: npm audit --include=dev --audit-level=high
-      - if: steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success' && steps.post_playwright_audit.outcome == 'success'
+      - name: Assert no PR browser install while mandatory post-install audit remains enforced
+        run: node --test tests/ci-browser-install-guard.test.mjs
+      # Only protected, allowlisted branches may reach external Shopify E2E.
+      # PRs and unprotected feature pushes cannot use hosted test credentials.
+      # The mandatory post-Playwright dependency audit above runs on EVERY PR.
+      - if: github.event_name != 'pull_request' && github.ref_protected == true && (github.ref == 'refs/heads/development' || github.ref == 'refs/heads/main') && steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success' && steps.post_playwright_audit.outcome == 'success'
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Run external Playwright E2E with protected credentials
-        if: github.event_name != 'pull_request' && steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success' && steps.post_playwright_audit.outcome == 'success'
+        if: github.event_name != 'pull_request' && github.ref_protected == true && (github.ref == 'refs/heads/development' || github.ref == 'refs/heads/main') && steps.production_audit.outcome == 'success' && steps.development_audit.outcome == 'success' && steps.post_playwright_audit.outcome == 'success'
         run: npm run e2e:playwright
         env:
           VSN_E2E_STORE_URL: ${{ secrets.VSN_E2E_STORE_URL }}

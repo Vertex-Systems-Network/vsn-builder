@@ -36,5 +36,17 @@ test("external Shopify QA, browser installs and E2E cannot run with red audits",
   assert.match(play,/id: post_playwright_audit/);
   assert.match(play,/run: npm audit --include=dev --audit-level=high/);
   assert.match(yaml,/if: steps\.production_audit\.outcome == 'success' && steps\.development_audit\.outcome == 'success'\n\s+run: npm install --no-save/);
-  assert.match(yaml,/if: steps\.production_audit\.outcome == 'success' && steps\.development_audit\.outcome == 'success' && steps\.post_playwright_audit\.outcome == 'success'\n\s+run: npx playwright install/);
+  const lines=yaml.split("\n");
+  const browserIndex=lines.findIndex(line=>line.includes("run: npx playwright install --with-deps"));
+  assert.notEqual(browserIndex,-1);
+  const guard=lines[browserIndex-1];
+  for(const requirement of [
+    "github.event_name != 'pull_request'",
+    "github.ref_protected == true",
+    "github.ref == 'refs/heads/development'",
+    "github.ref == 'refs/heads/main'",
+    "steps.production_audit.outcome == 'success'",
+    "steps.development_audit.outcome == 'success'",
+    "steps.post_playwright_audit.outcome == 'success'",
+  ]) assert.ok(guard.includes(requirement),"Missing browser release requirement: "+requirement);
 });
