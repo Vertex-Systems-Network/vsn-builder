@@ -263,3 +263,17 @@ test("unrecognized source SHA is denied before promotion", () => {
   assert.equal(run.status, 1);
   assert.match(run.stderr, /40-character/);
 });
+
+test("protected read-only preflight forwards all tier IDs, worker and Neon identity vars",()=>{
+ const source=readFileSync(".github/workflows/environment-readiness.yml","utf8");
+ for(const key of ["SHOPIFY_DEVELOPMENT_CLIENT_ID","SHOPIFY_STAGING_CLIENT_ID",
+   "SHOPIFY_PRODUCTION_CLIENT_ID"]){
+  assert(source.includes(key+": ${{ secrets."+key+" }}"),key+" secret mapping");
+ }
+ for(const key of ["NEON_PROJECT_ID","CLOUDFLARE_WORKER_NAME"]){
+  assert(source.includes(key+": ${{ vars."+key+" }}"),key+" scoped variable mapping");
+ }
+ assert(source.includes("VERIFY_ONLY_NO_DEPLOY"));
+ assert.match(source,/--environment="\$TARGET_ENVIRONMENT"/);
+ assert.doesNotMatch(source,/wrangler deploy|shopify app deploy|prisma migrate deploy/);
+});
