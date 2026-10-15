@@ -37,12 +37,23 @@ export async function revokeVerifiedWorkerShopifySessions({event,context,trigger
   // aware event attestation service may authorize it; no live issuer exists.
   if(typeof context?.verifyTrustedUninstallGeneration!=="function")
     return reject(503);
+  // Require a concrete independent attestation to one exact installation,
+  // never an unbound boolean "verified". The trusted issuer must determine
+  // the event's install generation independently of request headers.
+  // Its implementation is NOT provided by the SDK or deployed runtime yet.
+  let attestedGeneration;
   try {
-    const attested=await context.verifyTrustedUninstallGeneration({
+    const evidence=await context.verifyTrustedUninstallGeneration({
       shop,topic:event.topic,webhookId:event.webhookId,
       payload,triggeredAt:when,
     });
-    if(attested!==true)return reject(503);
+    if(!evidence || typeof evidence!=="object" ||
+       evidence.shop!==shop || evidence.topic!==event.topic ||
+       evidence.webhookId!==event.webhookId ||
+       !(evidence.installedAt instanceof Date) ||
+       !Number.isFinite(evidence.installedAt.getTime()))
+      return reject(503);
+    attestedGeneration=evidence.installedAt;
   }catch{return reject(503)}
   if(typeof context?.database?.$transaction!=="function")return reject(503);
 
@@ -57,9 +68,15 @@ export async function revokeVerifiedWorkerShopifySessions({event,context,trigger
          typeof tx?.session?.deleteMany!=="function") {
         throw new Error("Durable installation fence unavailable");
       }
+      const closedAt=new Date();
+      if(!Number.isFinite(closedAt.getTime()) ||
+         closedAt.getTime()<attestedGeneration.getTime())
+        throw new Error("Invalid trusted installation time");
       const claimed=await fence.updateMany({
-        where:{shop,installedAt:{lte:when},uninstalledAt:null},
-        data:{uninstalledAt:when,lastUninstallWebhookId:event.webhookId},
+        // Compare-and-swap the exact signed-generation claim; X-Shopify-
+        // Triggered-At is unsigned and NEVER used in authorization.
+        where:{shop,installedAt:attestedGeneration,uninstalledAt:null},
+        data:{uninstalledAt:closedAt,lastUninstallWebhookId:event.webhookId},
       });
       if(!claimed || !Number.isSafeInteger(claimed.count)) {
         throw new Error("Invalid installation fence claim result");
@@ -80,9 +97,12 @@ export async function revokeVerifiedWorkerShopifySessions({event,context,trigger
          !Number.isFinite(current.installedAt.getTime())) {
         throw new Error("Installation generation missing");
       }
-      if(current.installedAt.getTime()>when.getTime())return ok();
-      if(current.uninstalledAt instanceof Date &&
+      if(current.installedAt.getTime()>attestedGeneration.getTime())return ok();
+      if(current.installedAt.getTime()===attestedGeneration.getTime() &&
+         current.uninstalledAt instanceof Date &&
          Number.isFinite(current.uninstalledAt.getTime()))return ok();
+      // The row is from a previous generation or is otherwise inconsistent
+      // with the trusted proof. Never delete sessions on this ambiguity.
       // Unknown/conflicting lifecycle state: retry rather than delete.
       throw new Error("Unverified installation lifecycle");
     });
