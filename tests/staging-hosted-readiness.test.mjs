@@ -6,7 +6,8 @@ const base = {
     SHOPIFY_API_KEY: "test-key", SHOPIFY_API_SECRET: "test-secret",
     SHOPIFY_APP_URL: "https://builder-stage.example.org",
     VSN_STAGING_DATABASE_PROVIDER:"neon-postgresql", NEON_PROJECT_ID:"shiny-violet-61219572",
-    VSN_STAGING_NEON_SCHEMA_VERIFIED:"1", VSN_STAGING_NEON_MIGRATIONS_VERIFIED:"1" },
+    VSN_STAGING_NEON_SCHEMA_VERIFIED:"1", VSN_STAGING_NEON_MIGRATIONS_VERIFIED:"1",
+    DATABASE_URL:"postgresql://test_user:fake-ci@ep-little-dream-b3g6puj2-pooler.c-4.ap-southeast-1.aws.neon.tech/builder?sslmode=require" },
   appConfig: 'name = "VSN | Builder (Staging)"\napplication_url = "https://builder-stage.example.org"\nredirect_urls = ["https://builder-stage.example.org/auth/callback"]',
   worker: { exists: true, deployments: 1, secretNames: ["SHOPIFY_API_KEY","SHOPIFY_API_SECRET","DATABASE_URL"],
     bindings: [], publicUrlVerified: true },
@@ -59,4 +60,17 @@ test("D1 alternative requires actual D1 and compatible Prisma and app runtime",(
   assert.equal(assessStaging({...base,vars:v}).ready,false);
   const r=assessStaging({...base,vars:v,hasD1Adapter:true,worker:{...base.worker,bindings:[{type:"d1_database",name:"DB"}]}});
   assert.equal(r.ready,true);
+});
+
+test("Production Neon connection URL is rejected by Staging even with matching project identifier",()=>{
+  const wrong={...base.vars,
+    DATABASE_URL:"postgresql://u:secret@ep-jolly-truth-b3xbibzp-pooler.c-4.ap-southeast-1.aws.neon.tech/builder?sslmode=require"};
+  const report=assessStaging({...base,vars:wrong});
+  assert.equal(report.ready,false);
+  assert.ok(report.checks.some(x=>x.name==="Staging database URL matches isolated Neon host"&&!x.ok));
+  assert.ok(!JSON.stringify(report).includes("secret"),"No database credentials leaked in diagnostics");
+});
+test("TLS downgrade is rejected before hosted Shopify readiness",()=>{
+  const wrong={...base.vars,DATABASE_URL:base.vars.DATABASE_URL.replace("sslmode=require","sslmode=disable")};
+  assert.equal(assessStaging({...base,vars:wrong}).ready,false);
 });
