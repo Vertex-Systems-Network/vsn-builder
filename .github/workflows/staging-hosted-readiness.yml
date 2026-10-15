@@ -38,7 +38,8 @@ jobs:
           path: staging-hosted-readiness.json
           if-no-files-found: warn
   hosted-readiness:
-    if: github.event_name == 'workflow_dispatch'
+    # Never read privileged Staging secrets from a PR or unprotected branch.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development' && github.ref_protected == true
     runs-on: ubuntu-latest
     environment: cloudflare-staging
     timeout-minutes: 10
