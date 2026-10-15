@@ -107,7 +107,7 @@ test("CLI prints actionable tasks and blocks unverified terminal acceptance",()=
  assert.equal(ok.status,0,ok.stderr);
  assert.match(ok.stdout,/dependency graph VALID/i);
  assert.match(ok.stdout,/12 FINAL CLOSED/);
- assert.match(ok.stdout,/31 ACTIVE/);
+ assert.match(ok.stdout,/29 ACTIVE/);
  assert.doesNotMatch(ok.stdout,/T001 P0/);
  assert.doesNotMatch(ok.stdout,/T011 P0 READY/);
  const md=spawnSync(process.execPath,["scripts/task-dependency-check.mjs","--format=markdown"],{encoding:"utf8"});
@@ -135,7 +135,7 @@ test("final CLOSED is terminal, removed from active view, but satisfies downstre
  assert.equal(result.rows.find(x=>x.id==="T024").execution,"IN_REVIEW");
  assert.equal(result.rows.find(x=>x.id==="T022").waiting_on.includes("T002"),false);
  const withHistory=inspectTaskPlan(plan,{includeClosed:true});
- assert.equal(withHistory.rows.filter(t=>t.execution==="CLOSED").length,10);
+ assert.equal(withHistory.rows.filter(t=>t.execution==="CLOSED").length,12);
  assert.equal(withHistory.ready.length,result.ready.length);
 });
 test("CLOSED cannot silently reopen, disappear, lose closure proof or bypass dependency safety",()=>{
