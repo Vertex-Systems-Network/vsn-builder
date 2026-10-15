@@ -134,7 +134,7 @@ if (schemaFailures.length) {
   );
   throw new Error(
     "T011 Shopify Admin schema validation FAILED for " +
-    schemaFailures.length + " GraphQL documents:\\n" + messages.join("\\n")
+    schemaFailures.length + " GraphQL documents:\n" + messages.join("\n")
   );
 }
 const renderedInputs = new Set();
