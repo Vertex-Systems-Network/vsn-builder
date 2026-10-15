@@ -264,15 +264,19 @@ async function guardedAdminRequest(request,env,{
         return finalized;
       },{maxWait:5000,timeout:12000});
     }else{
+      // A page-data capability is privileged by definition. Never rely on
+      // callers remembering separate billing/RBAC flags when new routes are
+      // added: selecting either reader automatically enforces both guards.
+      const needsPageAuthority=enablePageSummary || enablePageMetadata;
       // No Free plan: do not hand any Builder page-data capability to an
       // authenticated but unpaid merchant, even on hosted Staging.
       // This is fail-closed and does not trust NODE_ENV or query parameters.
-      if(requireVerifiedPaidRead &&
+      if((needsPageAuthority || requireVerifiedPaidRead) &&
          !await hasVerifiedWorkerPaidReadAccess(context.database,shop))return denied(403);
       // The Worker read routes must respect the SAME persisted staff and
       // collaborator permissions as Local/Dev /app/pages. A valid Shopify
       // token and paid subscription do not grant every staff user visibility.
-      if(requirePageViewPermission &&
+      if((needsPageAuthority || requirePageViewPermission) &&
          !await canAccessBuilderAction(context.database,session,"pages","view"))
         return denied(403);
       // A narrowly scoped read-only page capability is optional. Create it
