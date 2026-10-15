@@ -56,7 +56,7 @@ check("Legacy Enterprise internal alias resolves to Platinum",normalizePlanKey("
 check("Plan ranking supports higher-tier entitlements",planAtLeast("agency","pro")&&planAtLeast("cro","pro")&&!planAtLeast("core","pro"));
 
 check("Plan usage covers pages, Marketplace, AI, CRO and team",["pages:","templates:","ai:","experiments:","team:"].every((token)=>planServer.includes(token)));
-check("Developer Mode defaults to full testing access unless explicitly overridden",entitlementService.includes('process.env.NODE_ENV !== "production"')&&entitlementService.includes('configuredDefault || "platinum"'));
+check("Explicit Development Mode defaults to full testing access unless explicitly overridden",entitlementService.includes('isExplicitDevelopmentSimulation(process.env)')&&entitlementService.includes('configuredDefault || "platinum"'));
 check("Production fallback is no-access inactive",entitlementService.includes('key = "inactive"')&&entitlementService.includes('source = "production-no-subscription"'));
 check("Page creation enforces plan capacity",pagesRoute.includes("getQuotaDecision")&&pagesRoute.includes('"pages"'));
 check("Marketplace enforces install quota",marketplace.includes("getQuotaDecision")&&marketplace.includes('"marketplaceInstalls"'));
