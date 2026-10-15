@@ -77,6 +77,7 @@ export default {
          url.searchParams.getAll("shop").length>1)return locked(404);
       return acceptWorkerShopifyAdminRequest(request,env,{
         enablePageSummary:true,
+        requireVerifiedPaidRead:true,
         onAuthenticated:async ({shop,pageSummary})=>{
           const pages=await pageSummary();
           return safeJson({shop,tier:env.APP_ENV,pages});
@@ -93,6 +94,7 @@ export default {
          url.searchParams.getAll("shop").length>1)return locked(404);
       return acceptWorkerShopifyAdminRequest(request,env,{
         enablePageMetadata:true,
+        requireVerifiedPaidRead:true,
         onAuthenticated:async ({pageMetadata})=>{
           const record=await pageMetadata(rawId);
           return record===null?locked(404):safeJson({page:record});
