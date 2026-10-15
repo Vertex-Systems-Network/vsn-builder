@@ -16,6 +16,18 @@ function isolateNodeServerBootstrapsForWorkerd() {
       if (!match) return null;
       return match[1] === "db" ? workerDbBoundary : workerShopifyBoundary;
     },
+    load(id) {
+      // Catch tsconfig-expanded, absolute and virtual route imports that
+      // bypass resolveId; do not initialize Node SQLite or Node Shopify.
+      const normalized = id.split("?")[0].replaceAll("\\", "/");
+      if (normalized.endsWith("/app/db.server.js")) {
+        return `export * from ${JSON.stringify(workerDbBoundary)}; export { default } from ${JSON.stringify(workerDbBoundary)};`;
+      }
+      if (normalized.endsWith("/app/shopify.server.js")) {
+        return `export * from ${JSON.stringify(workerShopifyBoundary)}; export { default } from ${JSON.stringify(workerShopifyBoundary)};`;
+      }
+      return null;
+    },
   };
 }
 import { reactRouter } from "@react-router/dev/vite";
