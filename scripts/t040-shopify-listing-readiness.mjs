@@ -12,8 +12,26 @@ const needs=[
  "real_shopify_billing_e2e","real_theme_browser_e2e","production_release_accepted",
 ];
 const SCREENS=5;
-const https=url=>{try{return new URL(url).protocol==="https:" && Boolean(new URL(url).hostname) &&
- !/(?:^|\.)(example\.com|example\.org|example\.net|invalid|localhost)$/.test(new URL(url).hostname)}catch{return false}};
+// A public policy must be an actual public HTTPS page, not loopback,
+// RFC1918, special-use DNS, credentials-in-URL or a homepage placeholder.
+// These checks validate URL SHAPE only; external HTTP/Shopify attestations
+// remain mandatory separately and can never be inferred from config flags.
+const https=url=>{
+ if(typeof url!=="string" || url.length>2048)return false;
+ try{
+  const parsed=new URL(url);
+  const hostname=parsed.hostname.toLowerCase().replace(/\.$/,"");
+  if(parsed.protocol!=="https:" || parsed.username || parsed.password ||
+     parsed.search || parsed.hash || parsed.port || !hostname.includes(".") ||
+     /^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname) ||
+     hostname.startsWith("[") ||
+     /(?:^|\.)(?:localhost|local|internal|test|example|invalid)$/.test(hostname) ||
+     /(?:^|\.)example\.(?:com|net|org)$/.test(hostname) ||
+     !/^[-a-z0-9.]+$/.test(hostname) ||
+     !parsed.pathname || parsed.pathname==="/")return false;
+  return true;
+ }catch{return false}
+};
 export function inspectListingReadiness(config,{screenshotExists=existsSync}={}){
  const errors=[];
  if(config.public_app!=="VSN | Builder"||config.public_app_count!==1)
@@ -57,8 +75,12 @@ const main=()=>{
  for(const e of proof.errors)console.error("::error::T040 "+e);
  if(proof.errors.length){process.exitCode=1;return}
  const strict=process.argv.includes("--strict");
- if(strict && !proof.metadataComplete){
-  console.error("::error::T040 NOT READY; missing independently certified listing evidence: "+proof.missing.join(", "));
+ if(strict && (!proof.metadataComplete || !proof.externallyVerified)){
+  // Declaring all flags 'true' cannot self-attest Shopify Partner ownership,
+  // live URLs, screenshot provenance, real billing, or merchant E2E.
+  // This CLI does not yet have an authenticated external issuer. Fail CLOSED.
+  const missing=[...proof.missing,...(!proof.externallyVerified?["external_partner_and_merchant_attestation"]:[])];
+  console.error("::error::T040 NOT READY; missing independently certified listing evidence: "+missing.join(", "));
   process.exitCode=1;
   return;
  }
