@@ -10,6 +10,9 @@ import {
 
 const equal=(a,b)=>a.length===b.length && a.every((x,i)=>x===b[i]);
 const EXPECTED=normalizeShopifyScopes(SHOPIFY_EXPECTED_SCOPES);
+// Read-only Shopify Admin appByKey verification: exactly ONE intended public
+// Builder app, with separate internal Development/Staging app registrations.
+const PUBLIC_BUILDER_CLIENT_ID="997eae5a9961f21d131e5f31bbbe31d3";
 function getOrigin(value) {
   try {
     const uri=new URL(String(value||""));
@@ -29,7 +32,11 @@ export function inspectWorkerShopifyConfiguration(request, env={}) {
   if(env.NEON_PROJECT_ID!==target.neon_project_id)issues.push("Shopify Worker Neon project mismatch");
   if(env.SHOPIFY_BILLING_TEST_MODE!==(tier==="staging"?"true":"false"))issues.push("Shopify billing tier mismatch");
   const key=String(env.SHOPIFY_API_KEY||"").trim();
-  if(!/^[0-9a-f]{32}$/i.test(key) || key==="997eae5a9961f21d131e5f31bbbe31d3")issues.push("Shopify Client ID invalid or unclassified");
+  if(!/^[0-9a-f]{32}$/i.test(key))issues.push("Shopify Client ID invalid");
+  if(tier==="production" && key.toLowerCase()!==PUBLIC_BUILDER_CLIENT_ID)
+    issues.push("Production must use canonical public Builder app");
+  if(tier==="staging" && key.toLowerCase()===PUBLIC_BUILDER_CLIENT_ID)
+    issues.push("Staging cannot use canonical public Builder app");
   if(!String(env.SHOPIFY_API_SECRET||"").trim())issues.push("Shopify secret missing");
   const publicOrigin=getOrigin(env.SHOPIFY_APP_URL);
   if(!publicOrigin)issues.push("Shopify app URL must be stable HTTPS origin");
@@ -39,10 +46,10 @@ export function inspectWorkerShopifyConfiguration(request, env={}) {
   }
   if(tier==="production"){
     const id=String(env.SHOPIFY_PRODUCTION_CLIENT_ID||"").trim();
-    if(!id||id!==key)issues.push("Production Shopify Client ID mismatch");
+    if(!id||id.toLowerCase()!==key.toLowerCase())issues.push("Production Shopify Client ID mismatch");
   }else{
     const id=String(env.SHOPIFY_PRODUCTION_CLIENT_ID||"").trim();
-    if(id&&id===key)issues.push("Staging cannot reuse Production Shopify Client ID");
+    if(id&&id.toLowerCase()===key.toLowerCase())issues.push("Staging cannot reuse Production Shopify Client ID");
   }
   if(!equal(normalizeShopifyScopes(env.SCOPES),EXPECTED))issues.push("Shopify scopes do not match canonical approved permissions");
   return {ready:issues.length===0,tier,issues};
