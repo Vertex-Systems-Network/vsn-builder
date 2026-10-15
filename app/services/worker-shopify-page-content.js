@@ -1,9 +1,10 @@
+import { assertBoundedBuilderDraftDocument } from "./worker-shopify-draft-document.js";
+
 // T020: bounded, tenant-scoped Builder editor draft hydration.
 // Deliberately not a storefront/published endpoint or a mutation capability.
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const PAGE_ID=/^[a-zA-Z0-9_-]{1,64}$/;
 const MAX_CONTENT_BYTES=1024*1024;
-const MAX_NODES=5000;
 const FIELDS=Object.freeze({
   id:true,shop:true,version:true,updatedAt:true,contentJson:true,
 });
@@ -38,8 +39,7 @@ export function createVerifiedMerchantPageContentLease(database,verifiedShop) {
       throw new RangeError("Builder editor draft is not safely bounded");
     let elements;
     try{elements=JSON.parse(raw)}catch{throw new TypeError("Invalid Builder editor JSON")}
-    if(!Array.isArray(elements) || elements.length>MAX_NODES)
-      throw new TypeError("Invalid Builder editor document");
+    assertBoundedBuilderDraftDocument(elements);
     ensureActive();
     return {id:item.id,version:item.version,
       updatedAt:item.updatedAt.toISOString(),elements};
