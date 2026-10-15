@@ -10,7 +10,7 @@ Earlier eight-phase trackers are legacy historical evidence inventories. They do
 
 ## ACTIVE task counts (final closures removed)
 
-**28 ACTIVE** · **1 READY** · **8 IN REVIEW** · **19 WAITING**. The 13 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
+**27 ACTIVE** · **0 READY** · **8 IN REVIEW** · **19 WAITING**. The 14 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
 
 One public **VSN | Builder** app; Dev/Staging only internal testing. No Free plan.
 
@@ -25,7 +25,7 @@ One public **VSN | Builder** app; Dev/Staging only internal testing. No Free pla
 
 | ID | Priority | Startable task | Issue |
 | --- | --- | --- | --- |
-| `T015` | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
+| — | — | None currently READY: remaining identity/hosting tasks are in verification or waiting for external acceptance | — |
 
 ## Dependency graph (high-level)
 
@@ -50,14 +50,13 @@ flowchart TD
   LIVE --> SUBMIT
 ```
 
-## All 28 ACTIVE atomic tasks (final CLOSED tasks excluded)
+## All 27 ACTIVE atomic tasks (final CLOSED tasks excluded)
 
 | ID | Workstream | Priority | Task | Depends on | Computed status | Issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| `T012` | Integration | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | None | IN REVIEW | [#157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | `T013` | Infrastructure | P0 | Protect development branch and verify GitHub required reviewers | None | IN REVIEW (read-only verifier CI; live branch still unprotected) | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | `T014` | Infrastructure | P0 | Configure/verify GitHub Environment secrets and tier variables | None | IN REVIEW | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
-| `T015` | Shopify Auth | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | None | READY | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
+| `T015` | Shopify Auth | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | None | IN REVIEW (apps verified, Partner/Dev install/OAuth still pending) | [#159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 | `T016` | Database | P0 | Real Neon Staging pooled/direct credentials and connectivity | `T014` | WAITING | [#160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | `T017` | Database | P0 | Live Neon snapshot/default/compute attestation in protected preflight | `T006` | IN REVIEW | [#160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | `T018` | Database | P0 | Protected Staging Prisma migrate deploy and data restore drill | `T011`, `T012`, `T013`, `T014`, `T016`, `T017` | WAITING | [#160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
@@ -83,9 +82,9 @@ flowchart TD
 | `T040` | App Store Review | P1 | Shopify listing screenshots, privacy, support, scopes and review assets | None | IN REVIEW (copy drafted; real screenshots/contact/Partner proof missing) | [#168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 | `T041` | App Store Review | P0 | Attempt Shopify App Store submission only after release certification | `T011`, `T025`, `T029`, `T035`, `T039`, `T040` | WAITING | [#168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 
-**In-review update:** T012 source reconciliation has [Draft PR #171](https://github.com/Vertex-Systems-Network/vsn-builder/pull/171), merging code evidence from PR #153/#155/#169/#170 without Live release; acceptance is pending. T026 server-side paid merchant mutation guards now have [Draft PR #170](https://github.com/Vertex-Systems-Network/vsn-builder/pull/170) with 30 protected action routes and synthetic tests. This is code in review, NOT verified merchant acceptance or a release authorization.
+**Integration closure:** T012 source-only integration is FINAL CLOSED: audited PR [#190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) squash merged after 15/15 PR CI checks, and the newly exposed development-only GraphQL checks were repaired in [#207](https://github.com/Vertex-Systems-Network/vsn-builder/pull/207) (5/5 PR CI, post-merge GraphQL security PASS). Stacked #152/#153/#155 reconciled and superseded, with any missing billing reinstate-safety documentation preserved. T013 branch protection remains open; no Staging/Live or Shopify submission occurred.
 
-**T020 progress:** isolated Cloudflare Web Streams SSR proof [Draft PR #172](https://github.com/Vertex-Systems-Network/vsn-builder/pull/172) is IN REVIEW. Full hosted Shopify OAuth, real merchant routes and persistent Neon are still unverified.
+**T020 progress:** the integrated hosted Worker source includes authenticated paid/RBAC-protected page reads and a **Staging-only, default-OFF** draft-save HTTP contract with scoped CAS; source/Workerd CI passes. Real Shopify OAuth, Neon primary migrations, Cloudflare Worker secret bindings and merchant browser E2E are still unaccepted.
 
 **T024 webhook body-hardening review:** [PR #193](https://github.com/Vertex-Systems-Network/vsn-builder/pull/193), [CI](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129). The total-read deadline fix does not provide trusted generation attestation; final T024 closure remains blocked.
 
