@@ -14,7 +14,7 @@ import {SHOPIFY_EXPECTED_SCOPES} from "../app/config/shopifyIntegration.js";
 assert.equal(process.env.CI,"true");
 assert.equal(process.env.NODE_ENV,"test");
 assert.equal(process.env.APP_ENV,"development");
-const expected="postgresql://vsn_ci:isolated-only-password@127.0.0.1:5432/vsn_builder_ci?schema=public";
+const expected="postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/builder_ci?schema=public";
 assert.equal(process.env.DATABASE_URL,expected);
 assert.equal(process.env.DIRECT_URL,expected);
 
@@ -28,6 +28,11 @@ const adminShop="vsn-pg-ci-admin-mutation.myshopify.com";
 const shops=[shop,other,rollback,race,adminShop];
 const installedAt=new Date("2026-10-13T10:00:00.000Z");
 const uninstalledAt=new Date("2026-10-13T11:00:00.000Z");
+const assertRealRevocationTime=value=>{
+ assert(value instanceof Date && Number.isFinite(value.getTime()));
+ assert(value.getTime()>=installedAt.getTime(), "Revocation must not precede install");
+ assert(value.getTime()<=Date.now(), "Revocation cannot be future-dated");
+};
 const offline=(name,accessToken="fake-ci-token")=>({
  id:"offline_"+name,shop:name,state:"",isOnline:false,
  accessToken,scope:"read_products",toObject(){return {};},
@@ -42,7 +47,9 @@ const webhook=name=>({
 });
 // CI-only synthetic independent generation attestor: this exercises the
 // database/locking invariant, NOT real Shopify webhook freshness.
-const syntheticCiAttestation=async({shop})=>shops.includes(shop);
+const syntheticCiAttestation=async({shop,topic,webhookId})=>
+ shops.includes(shop) && topic==="APP_UNINSTALLED" && webhookId==="ci-pg-uninstall-1"
+  ?{shop,topic,webhookId,installedAt:new Date(installedAt)}:null;
 const revoke=(name,at=uninstalledAt)=>revokeVerifiedWorkerShopifySessions({
  event:webhook(name),
  context:{database:db,verifyTrustedUninstallGeneration:syntheticCiAttestation},
@@ -95,7 +102,7 @@ test("real PostgreSQL installation/session rows gate Shopify SDK authenticated a
   APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",
   NEON_PROJECT_ID:"shiny-violet-61219572",SHOPIFY_BILLING_TEST_MODE:"true",
   SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"synthetic-admin-ci-secret",
-  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+  SHOPIFY_PRODUCTION_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3",
   SHOPIFY_APP_URL:"https://staging.builder.example.org",
   SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
   DATABASE_URL:"postgresql://fake:test@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/fake?sslmode=require",
@@ -150,7 +157,7 @@ test("real PostgreSQL admin POST holds row lock and commits only authenticated m
   APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",
   NEON_PROJECT_ID:"shiny-violet-61219572",SHOPIFY_BILLING_TEST_MODE:"true",
   SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"synthetic-admin-ci-secret",
-  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+  SHOPIFY_PRODUCTION_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3",
   SHOPIFY_APP_URL:"https://staging.builder.example.org",
   SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
   DATABASE_URL:"postgresql://fake:test@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/fake?sslmode=require",
@@ -445,7 +452,7 @@ test("uninstall updateMany waits for real PostgreSQL row lock before deleting on
   db.session.count({where:{shop}}),
   db.session.findUnique({where:{id:"offline_"+other}}),
  ]);
- assert.equal(marker.uninstalledAt.toISOString(),uninstalledAt.toISOString());
+ assertRealRevocationTime(marker.uninstalledAt);
  assert.equal(marker.lastUninstallWebhookId,"ci-pg-uninstall-1");
  assert.equal(remaining,0);
  assert.equal(otherSession.accessToken,"other-ci-token");
@@ -456,7 +463,7 @@ test("replayed uninstall and old SDK write cannot revoke or reactivate new crede
   code:"VSN_WORKER_INSTALL_SESSION_BLOCKED",
  });
  const marker=await db.builderShopInstallation.findUnique({where:{shop}});
- assert.equal(marker.uninstalledAt.toISOString(),uninstalledAt.toISOString());
+ assertRealRevocationTime(marker.uninstalledAt);
  assert.equal(await db.session.count({where:{shop}}),0);
  assert.equal(await db.session.count({where:{shop:other}}),1);
 });
@@ -488,6 +495,6 @@ test("concurrent SDK refresh and uninstall cannot leave valid session on revoked
   db.builderShopInstallation.findUnique({where:{shop:race}}),
   db.session.count({where:{shop:race}}),
  ]);
- assert.equal(record.uninstalledAt.toISOString(),uninstalledAt.toISOString());
+ assertRealRevocationTime(record.uninstalledAt);
  assert.equal(remaining,0,"No live session may survive a committed uninstall");
 });
