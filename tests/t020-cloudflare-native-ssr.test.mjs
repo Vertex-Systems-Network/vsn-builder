@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 
 const configFile = "vite.full-merchant-cloudflare-ci.config.js";
 const workerFile = "workers/full-merchant-vite-ci.js";
@@ -44,4 +45,21 @@ test("Local and hosted production Vite configuration remain separate",()=>{
   assert.match(local,/reactRouter\(\)/);
   const hosted = readFileSync("wrangler.staging.jsonc","utf8");
   assert.doesNotMatch(hosted,/full-merchant-vite-ci/);
+});
+
+test("Cloudflare output directory must be opt-in; Node build defaults to build",()=>{
+  const evalConfig = vars => {
+    const child=spawnSync(process.execPath,[
+      "--input-type=module","--eval",
+      "import config from './react-router.config.js'; process.stdout.write(config.buildDirectory);"
+    ],{env:{...process.env,...vars},encoding:"utf8",timeout:5000});
+    assert.equal(child.status,0,child.stderr);
+    return child.stdout;
+  };
+  assert.equal(evalConfig({
+    CI:"true",NODE_ENV:"test",APP_ENV:"development",VSN_CLOUDFLARE_NATIVE_CI:"1",
+  }),"dist");
+  assert.equal(evalConfig({VSN_CLOUDFLARE_NATIVE_CI:"0"}),"build");
+  assert.equal(evalConfig({CI:"false",VSN_CLOUDFLARE_NATIVE_CI:"1"}),"build");
+  assert.equal(evalConfig({APP_ENV:"staging",VSN_CLOUDFLARE_NATIVE_CI:"1"}),"build");
 });
