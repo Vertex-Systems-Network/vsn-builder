@@ -1,7 +1,7 @@
 // T032 static theme-app extension contract: no Shopify/theme-store calls.
 // This proves schema and local asset consistency, NOT live theme compatibility.
 import {readdirSync,readFileSync} from "node:fs";
-import {join} from "node:path";
+import {join,resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 
 const BLOCK_DIR="extensions/vsn-page-builder-theme/blocks";
@@ -66,7 +66,7 @@ export function inspectThemeExtension({root="."}={}){
   // Target definitions are NOT downloaded theme fixtures or real-store tests.
   fixtureThemesVerified:false,hostedThemeCompatibilityVerified:false};
 }
-if(process.argv[1] && fileURLToPath(import.meta.url)===process.argv[1]){
+if(process.argv[1] && fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  const result=inspectThemeExtension();
  for(const reason of result.failures)console.error("::error::T032 "+reason);
  if(result.failures.length)process.exitCode=1;
