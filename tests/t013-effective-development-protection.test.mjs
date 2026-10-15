@@ -61,7 +61,7 @@ test("the verifier sends exactly 2 read-only requests and never trusts supplied 
  const fetcher=async(url,opts)=>{
   calls.push({url,method:opts.method,redirect:opts.redirect,accept:opts.headers.Accept,
    auth:opts.headers.Authorization});
-  return {ok:true,json:async()=>url.endsWith("/branches/development")?branch():rules()};
+  return {ok:true,json:async()=>url.includes("/rules/branches/")?rules():branch()};
  };
  const result=await verifyEffectiveDevelopmentProtection({
   token:secret,fetcher,repo:TARGET_REPO
