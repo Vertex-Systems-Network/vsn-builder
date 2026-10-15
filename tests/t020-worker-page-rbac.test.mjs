@@ -134,3 +134,25 @@ test("both hosted page-data routes require RBAC; verified-session is not page-da
   assert.match(source,/enablePageMetadata:true,\s*requireVerifiedPaidRead:true,\s*requirePageViewPermission:true/);
   assert.match(source,/url\.pathname==="\/app\/__vsn\/verified-session"/);
 });
+
+test("page capabilities enforce paid and staff-view guards even if a new route forgets both flags",async()=>{
+  for(const feature of ["enablePageMetadata","enablePageSummary"]){
+    for(const config of [
+      {paid:false},
+      {roleAccessJson:denied({actions:{editor:{pages:{view:false}}}})},
+    ]){
+      const f=fixture(config);
+      // No requireVerifiedPaidRead/requirePageViewPermission supplied on purpose.
+      let called=false;
+      const response=await acceptWorkerShopifyAdminRequest(request(),env,{
+        [feature]:true,
+        createSdkContext:async()=>f.ctx,
+        onAuthenticated:async()=>{called=true;return Response.json({ok:true});},
+      });
+      assert.equal(response.status,403,feature+" "+JSON.stringify(config));
+      assert.equal(called,false);
+      assert.equal(f.calls.includes("page"),false);
+      assert.equal(f.calls.at(-1),"close");
+    }
+  }
+});
