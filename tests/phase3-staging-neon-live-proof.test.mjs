@@ -21,7 +21,7 @@ function credentials(extra={}) {
 function fixtures() {
  return {
   branches:[
-   {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true},
+   {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true,primary:true,protected:true},
    {id:stage.neon_recovery_source_branch_id,project_id:stage.neon_project_id,default:false},
   ],
   snapshots:[{id:stage.neon_pre_migration_snapshot_id,
@@ -52,6 +52,7 @@ test("real API snapshot and restored default compute prove shape without any mut
  assert.equal(result.ready,true);
  assert.equal(result.snapshotId,stage.neon_pre_migration_snapshot_id);
  assert.equal(result.defaultBranchId,stage.neon_default_branch_id);
+ assert.equal(result.primaryProtected,true);
  assert.deepEqual(a.called.sort(),["branches","endpoints","snapshots"]);
 });
 test("missing secrets, unprotected branch and invented snapshot block BEFORE API calls",async()=>{
@@ -72,6 +73,10 @@ test("real API response must certify original backup, restored branch, endpoint 
   a=>{a.snapshots=[]},
   a=>{a.snapshots[0].source_branch_id=stage.neon_default_branch_id},
   a=>{a.snapshots[0].created_at="bad-date"},
+  a=>{a.branches[0].protected=false},
+  a=>{delete a.branches[0].protected},
+  a=>{a.branches[0].protected="true"},
+  a=>{a.branches[0].protected=null},
   a=>{a.branches[0].default=false},
   a=>{a.branches[0].id=stage.neon_recovery_source_branch_id},
   a=>{a.branches[1].id="br-unknown"},
@@ -87,6 +92,18 @@ test("real API response must certify original backup, restored branch, endpoint 
   }),/Staging Neon control-plane proof blocked/);
  }
 });
+test("GitHub protected workflow alone NEVER authorizes an unprotected Neon Staging primary",async()=>{
+ const branch=fixtures();
+ branch.branches[0].protected=false;
+ const observed=fakeApi(branch);
+ await assert.rejects(
+  verifyStagingNeonControlPlane(credentials(),{fetchImpl:observed.fn}),
+  error=>error?.code==="VSN_STAGING_NEON_CONTROL_PLANE_NOT_VERIFIED" &&
+   /primary branch is not protected/.test(error.message),
+ );
+ assert.deepEqual(observed.called.sort(),["branches","endpoints","snapshots"]);
+});
+
 test("Neon API errors, truncated metadata or missing collection fail closed",async()=>{
  await assert.rejects(verifyStagingNeonControlPlane(credentials(),{
   fetchImpl:fakeApi(fixtures(),{status:401}).fn,
