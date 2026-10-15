@@ -8,7 +8,6 @@ import {fileURLToPath} from "node:url";
 import {resolve} from "node:path";
 
 const NAME="@graphql-tools/utils";
-const MIN_PATCH="12.0.1";
 export function checkGraphqlToolsLock(pkg,lock) {
  assert(pkg && typeof pkg==="object" && lock && typeof lock==="object");
  assert(Number.isSafeInteger(lock.lockfileVersion) && lock.lockfileVersion>=2 &&
@@ -32,10 +31,14 @@ export function checkGraphqlToolsLock(pkg,lock) {
   return {state:"absent",copies:0};
  }
  for(const {path,version} of versions) {
-  assert(typeof version==="string" &&
-   /^12\.(\d+)\.(\d+)(?:[-+].*)?$/.test(version) &&
-   version.localeCompare(MIN_PATCH,undefined,{numeric:true})>=0,
-   "Unpatched "+NAME+" in lockfile: "+path);
+  const match=typeof version==="string" ?
+   /^12\\.(\\d+)\\.(\\d+)$/.exec(version) : null;
+  // Only stable 12.x.y is currently certified for the locked Shopify tooling.
+  // Pre-release 12.0.1-rc is NOT patched; use numeric semver parts, never a
+  // localeCompare lexicographic comparison against 12.0.1.
+  const patched=Boolean(match && (Number(match[1])>0 ||
+   Number(match[2])>=1));
+  assert(patched,"Unpatched "+NAME+" in lockfile: "+path);
  }
  return {state:"patched",copies:versions.length};
 }
