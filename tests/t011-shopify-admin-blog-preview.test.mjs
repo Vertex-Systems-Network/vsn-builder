@@ -5,6 +5,7 @@ import {
   normalizeShopifyContentHandle,
   shopifyHandleQuery,
   selectShopifyContentByHandle,
+  selectShopifyArticleForBlog,
 } from "../app/utils/shopify-blog-handle.server.js";
 
 test("Shopify Admin blog/article handles are constrained, not interpolated into GraphQL", () => {
@@ -31,11 +32,24 @@ test("Admin search results cannot substitute another tenant resource or fuzzy ha
   assert.equal(selectShopifyContentByHandle([{handle: "news-2026-plus"}], "news-2026"), null);
 });
 
+test("Article query cannot disclose content from the wrong blog even with identical handle", () => {
+  const rows = [
+    { handle:"launch", blog:{handle:"different"}, id:"wrong" },
+    { handle:"launch", blog:{handle:"news-2026"}, id:"correct" },
+  ];
+  assert.equal(selectShopifyArticleForBlog(rows,"news-2026","launch")?.id,"correct");
+  assert.equal(selectShopifyArticleForBlog(rows,"unknown","launch"),null);
+  assert.equal(selectShopifyArticleForBlog(rows,"news-2026","missing"),null);
+});
+
 test("actual builder preview GraphQL uses Admin blogs, not Storefront blogByHandle", () => {
   const source = readFileSync("app/routes/app.builder.$id.jsx", "utf8");
   assert.doesNotMatch(source, /blogByHandle\s*\(/);
   assert.match(source, /query PreviewBlog\(\$query:String!\)/);
-  assert.match(source, /query PreviewArticle\(\$blogQuery:String!,\$articleQuery:String!\)/);
+  assert.match(source, /query PreviewArticle\(\$articleQuery:String!\)/);
+  assert.match(source, /articles\(first:20, query:\$articleQuery\)/);
+  assert.doesNotMatch(source, /articles\(first:\d+, sortKey:/);
+  assert.match(source, /selectShopifyArticleForBlog/);
   assert.match(source, /contentHtml:body/);
   assert.match(source, /excerpt:summary/);
   assert.match(source, /selectShopifyContentByHandle/);
