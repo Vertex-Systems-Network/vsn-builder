@@ -136,7 +136,7 @@ test("both hosted page-data routes require RBAC; verified-session is not page-da
 });
 
 test("page capabilities enforce paid and staff-view guards even if a new route forgets both flags",async()=>{
-  for(const feature of ["enablePageMetadata","enablePageSummary"]){
+  for(const feature of ["enablePageMetadata","enablePageSummary","enablePageContent"]){
     for(const config of [
       {paid:false},
       {roleAccessJson:denied({actions:{editor:{pages:{view:false}}}})},
