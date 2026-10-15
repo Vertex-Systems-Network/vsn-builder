@@ -47,7 +47,7 @@ jobs:
         run: node --test tests/t020-cloudflare-native-ssr.test.mjs
       - name: Build REAL Builder route graph in Cloudflare Vite SSR mode
         run: |
-          ./node_modules/.bin/vite build --config vite.full-merchant-cloudflare-ci.config.js
+          ./node_modules/.bin/react-router build --config vite.full-merchant-cloudflare-ci.config.js
           test -d build
       - name: Assert this test did not mutate dependency declarations
         if: always()
