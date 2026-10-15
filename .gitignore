@@ -38,3 +38,6 @@ shopify.app.production.toml
 /generated/prisma-cloud/
 /generated/prisma-worker/
 /generated/prisma-edge/
+
+# Staging Shopify identity materialized locally from protected environment
+shopify.app.staging.toml
