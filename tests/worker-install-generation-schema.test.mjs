@@ -35,7 +35,9 @@ test("both forward SQL migrations create only isolated lifecycle table",()=>{
 test("session revocation remains behind transactional per-shop generation claim",()=>{
  assert.match(revoker,/context\.database\.\$transaction\(async\(tx\)/);
  assert.match(revoker,/builderShopInstallation\.updateMany|const fence=tx\?\.builderShopInstallation/);
- assert.match(revoker,/installedAt:\{lte:when\}/);
+ assert.match(revoker,/installedAt:attestedGeneration/);
+ assert.doesNotMatch(revoker,/installedAt:\{lte:when\}/,"Unsigned timestamp must never authorize revocation");
+ assert.match(revoker,/evidence\.webhookId!==event\.webhookId/);
  assert.match(revoker,/uninstalledAt:null/);
  assert.match(revoker,/await tx\.session\.deleteMany\(\{where:\{shop\}\}\)/);
  assert(!/context\.database\.session\.deleteMany/.test(revoker),"Never bypass transactional fence");
