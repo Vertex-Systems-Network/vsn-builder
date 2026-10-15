@@ -224,3 +224,73 @@ test("actual official Shopify SDK does NOT trust a bare query shop as an authent
  assert(fx.calls.some(([action])=>action==="close"),"Real SDK context must close after reject/reauth");
  assert([200,302,401,403,503].includes(response.status));
 });
+
+test("GET waits for authenticated streamed body before disconnecting Neon session",async()=>{
+ const order=[];
+ const fx=fixture();
+ let closed=false;
+ const response=await acceptWorkerShopifyAdminRequest(request(),env,{
+   createSdkContext:async()=>({
+     ...fx.context,
+     async close(){closed=true;order.push("disconnect");await fx.context.close();},
+   }),
+   async onAuthenticated(){
+     return new Response(new ReadableStream({
+       async pull(controller){
+         assert.equal(closed,false,"database must outlive GET body consumption");
+         order.push("stream-pull");
+         await Promise.resolve();
+         controller.enqueue(new TextEncoder().encode('{"verified":true}'));
+         controller.close();
+       },
+     }),{headers:{"content-type":"application/json","content-length":"17"}});
+   },
+ });
+ assert.equal(response.status,200);
+ assert.equal(await response.text(),'{"verified":true}');
+ assert.equal(response.headers.get("content-length"),null);
+ assert.deepEqual(order,["stream-pull","disconnect"]);
+ assert.equal(fx.calls.at(-1)[0],"close");
+});
+
+test("GET rejects broken streaming payload and closes session without leaking errors",async()=>{
+ const fx=fixture();
+ const response=await acceptWorkerShopifyAdminRequest(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated(){
+     return new Response(new ReadableStream({
+       pull(controller){controller.error(new Error("postgresql://secret:token@host"));},
+     }),{status:200});
+   },
+ });
+ assert.equal(response.status,503);
+ assert.equal(await response.text(),"");
+ assert.equal(fx.calls.at(-1)[0],"close");
+});
+
+test("GET fails closed on oversized responses before returning any partial merchant data",async()=>{
+ const fx=fixture();
+ const response=await acceptWorkerShopifyAdminRequest(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated(){
+     return new Response(new Uint8Array(8*1024*1024+1),{status:200,
+       headers:{"content-type":"application/octet-stream"}});
+   },
+ });
+ assert.equal(response.status,503);
+ assert.equal(await response.text(),"");
+ assert.equal(fx.calls.at(-1)[0],"close");
+});
+
+test("GET callback 5xx body never exposes internal Shopify/Neon diagnostics",async()=>{
+ const fx=fixture();
+ const response=await acceptWorkerShopifyAdminRequest(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated(){
+     return new Response("DATABASE_URL=postgresql://private:user@host",{status:500});
+   },
+ });
+ assert.equal(response.status,503);
+ assert.equal(await response.text(),"");
+ assert.equal(fx.calls.at(-1)[0],"close");
+});
