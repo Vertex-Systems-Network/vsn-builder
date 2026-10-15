@@ -2,7 +2,7 @@
 
 **Verified state: 15 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
-**28 ACTIVE** of 41 tracked tasks · **2 READY** · **7 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 13 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
+**28 ACTIVE** of 41 tracked tasks · **1 READY** · **8 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The historical 13 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **Work order:** dependency-first, not phase-first. Mandatory release and Shopify safeguards remain in place. One public VSN | Builder app; Starter $30, Sliver $100, Gold $150, Platinum $350 monthly/$3,000 annually; each 10-day Shopify trial, no Free tier.
 
@@ -10,9 +10,9 @@
 
 ## Current actionable tasks
 
-**READY now:** `T014`, `T015`.
+**READY now:** `T015`.
 
-**Code/merge IN_REVIEW:** `T012`, `T013`, `T017`, `T020`, `T024`, `T032`, `T040`.
+**Code/merge IN_REVIEW:** `T012`, `T013`, `T014`, `T017`, `T020`, `T024`, `T032`, `T040`.
 
 **T024 in review:** [PR #193](https://github.com/Vertex-Systems-Network/vsn-builder/pull/193) hardens webhook read deadlines; real trusted generation and uninstall E2E still OPEN.
 
@@ -26,13 +26,15 @@
 
 **New FINAL CLOSED:** T011 full-dev/production/post-Playwright security audits and T027 exact four paid plan **code contract**. These now appear solely in [audit archive](docs/closed-task-archive.md); release integration T012 and Shopify Partner pricing T028 remain open.
 
+**T014 IN_REVIEW:** [PR #205](https://github.com/Vertex-Systems-Network/vsn-builder/pull/205) adds encrypted Cloudflare Worker binding checks. Real Staging audit found 0 Worker secrets and 0 bindings; GitHub Environment reviewers remain unverified. T019/T018 remain WAITING.
+
 ## Entire ACTIVE queue (CLOSED tasks removed)
 
 | ID | Priority | Task | Status | Unmet dependency | Work package |
 | --- | --- | --- | --- | --- | --- |
 | T012 | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | IN_REVIEW | — | [issues/157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | T013 | P0 | Protect development branch and verify GitHub required reviewers | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
-| T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | READY | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
+| T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | READY | — | [issues/159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 | T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | WAITING | T014 | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T017 | P0 | Live Neon snapshot/default/compute attestation in protected preflight | IN_REVIEW | — | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
