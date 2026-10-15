@@ -83,7 +83,7 @@ test("verified merchant can read only its scoped page summary; no contentJson or
  const reads=f.calls.filter(x=>typeof x==="object");
  assert.equal(reads.length,4);
  assert(reads.every(x=>x.where?.shop===shop||x.args?.where?.shop===shop));
- assert(reads.every(x=>(x.where?.deletedAt??x.args?.where?.deletedAt)===null));
+ assert(reads.every(x=>("where" in x?x.where.deletedAt:x.args.where.deletedAt)===null));
  assert.equal(reads.find(x=>x.method==="findMany").args.take,5);
  assert.deepEqual(reads.find(x=>x.method==="findMany").args.select,
   {id:true,title:true,template:true,status:true,updatedAt:true});
