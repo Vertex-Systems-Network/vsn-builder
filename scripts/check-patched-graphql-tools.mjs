@@ -32,7 +32,7 @@ export function checkGraphqlToolsLock(pkg,lock) {
  }
  for(const {path,version} of versions) {
   const match=typeof version==="string" ?
-   /^12\\.(\\d+)\\.(\\d+)$/.exec(version) : null;
+   /^12\.(\d+)\.(\d+)$/.exec(version) : null;
   // Only stable 12.x.y is currently certified for the locked Shopify tooling.
   // Pre-release 12.0.1-rc is NOT patched; use numeric semver parts, never a
   // localeCompare lexicographic comparison against 12.0.1.
