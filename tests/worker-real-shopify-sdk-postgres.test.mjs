@@ -17,7 +17,7 @@ const env={
  APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",
  NEON_PROJECT_ID:"shiny-violet-61219572",SHOPIFY_BILLING_TEST_MODE:"true",
  SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"fake-sdk-secret",
- SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+ SHOPIFY_PRODUCTION_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3",
  SHOPIFY_APP_URL:"https://staging.builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
  DATABASE_URL:"postgresql://unused:fake@ep-ci.aws.neon.tech/unused?sslmode=require"
@@ -26,7 +26,7 @@ const req=new Request("https://staging.builder.example.org/app?shop=tenant-ci.my
 const sessionCtx=(request,e)=>createWorkerShopifySessionContext(request,e,{createDatabase:()=>new PrismaClient()});
 test("official Shopify React Router SDK persists a synthetic session using real PostgreSQL Prisma storage",async()=>{
  const scoped=await createWorkerShopifySdkContext(req,env,{createSessionContext:sessionCtx});
- const id="builder-real-sdk-integration-test";
+ const id="offline_tenant-ci.myshopify.com";
  try{
   assert.equal(typeof scoped.shopify.authenticate.admin,"function");
   assert.equal(typeof scoped.shopify.authenticate.webhook,"function");
