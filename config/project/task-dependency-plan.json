@@ -223,11 +223,15 @@
       "title": "Protect development branch and verify GitHub required reviewers",
       "workstream": "Infrastructure",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/158",
-      "evidence": [],
-      "acceptance": "GitHub live metadata shows protected development, required checks and scoped environment reviewer restrictions"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/194",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38737803817"
+      ],
+      "acceptance": "GitHub live metadata shows protected development, required checks and scoped environment reviewer restrictions",
+      "progress_note": "Read-only effective GitHub branch rules verifier and 7/7 adversarial tests passed. Live development is currently unprotected. T013 remains IN_REVIEW until actual protection and environment reviewer evidence are authenticated."
     },
     {
       "id": "T014",
