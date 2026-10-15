@@ -117,7 +117,7 @@ test("API errors, missing token or malformed account always fail closed without 
   /T014_ACCOUNT_ID_INVALID/);
  await assert.rejects(verifyStagingWorkerBindings({token:"",accountId:"a".repeat(32)}),
   /T014_READ_TOKEN_MISSING/);
- const bad=async()=>({ok:false,status:403,json:async()=>({success:false,errors:[{message:"secrets!"]})});
+ const bad=async()=>({ok:false,status:403,json:async()=>({success:false,errors:[{message:"secrets!"}]})});
  await assert.rejects(verifyStagingWorkerBindings({token:"private",accountId:"a".repeat(32),fetcher:bad}),
   e=>e.message==="T014_CLOUDFLARE_READ_UNAVAILABLE"&&!e.message.includes("private"));
 });
