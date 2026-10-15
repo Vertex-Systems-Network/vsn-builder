@@ -76,6 +76,15 @@ jobs:
           test -d dist/client/assets
           test -d dist/server/assets
           test -n "$(find dist/server/assets -type f -name 'server-build*.js' -print -quit)"
+      - name: Inspect only safe marker names in real SSR graph (no bundle disclosure)
+        run: |
+          for marker in "Worker route database needs authenticated" "Worker Shopify SDK must be initialized" "resolveVsnDatabaseLocation" "PrismaClientInitializationError"; do
+            if grep -R -F -q --include="*.js" "$marker" dist/server; then
+              echo "PRESENT marker: $marker"
+            else
+              echo "ABSENT marker: $marker"
+            fi
+          done
       - name: Upload real Cloudflare Worker build for isolated local runtime test
         uses: actions/upload-artifact@v4
         with:
