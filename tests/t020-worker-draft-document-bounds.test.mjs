@@ -66,5 +66,10 @@ test("non-JSON values and executing getters are rejected before serialization",(
     invoked=true;throw Error("must never execute editor getter");
   }});
   deniesSave([untrusted]);
+  const accessorArray=[0];
+  Object.defineProperty(accessorArray,"0",{enumerable:true,get(){
+    invoked=true;throw Error("must never execute array getter");
+  }});
+  deniesSave([accessorArray]);
   assert.equal(invoked,false);
 });
