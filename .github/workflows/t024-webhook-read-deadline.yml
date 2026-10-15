@@ -6,6 +6,7 @@ on:
       - "app/services/worker-shopify-uninstall-session-revoke.js"
       - "tests/worker-shopify-webhook-gate.test.mjs"
       - "tests/worker-uninstall-session-revoke.test.mjs"
+      - "tests/worker-install-generation-schema.test.mjs"
       - ".github/workflows/t024-webhook-read-deadline.yml"
   workflow_dispatch:
 permissions:
@@ -42,7 +43,7 @@ jobs:
           DIRECT_URL: postgresql://ci:unused@localhost:5432/ci?sslmode=require
         run: npx prisma generate --schema prisma/cloud/schema.prisma
       - name: Assert bounded webhook HMAC, total read deadline and safe uninstall fences
-        run: node --test tests/worker-shopify-webhook-gate.test.mjs tests/worker-uninstall-session-revoke.test.mjs
+        run: node --test tests/worker-shopify-webhook-gate.test.mjs tests/worker-uninstall-session-revoke.test.mjs tests/worker-install-generation-schema.test.mjs
       - name: Confirm official Shopify SDK context behavior
         run: node --test tests/worker-real-shopify-sdk.test.mjs
       - name: Refuse high-severity npm audit exceptions
