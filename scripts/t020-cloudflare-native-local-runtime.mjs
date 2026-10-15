@@ -53,8 +53,21 @@ try{
   }
   assert(live,"Native local preview never reached locked Worker: "+safe(logs));
   const response=await request("/__vsn/cf-vite-merchant-graph");
-  assert.equal(response.status,200,
-    "Real Cloudflare-compiled merchant module cannot initialize in workerd: "+safe(logs));
+  if(response.status!==200){
+    let category="UNCLASSIFIED_WORKER_RESPONSE";
+    try{
+      const result=await response.json();
+      const allowed=new Set([
+        "REACT_ROUTER_MANIFEST_INVALID","NODE_FILE_URL_BOOTSTRAP",
+        "NODE_DATABASE_CLIENT","SHOPIFY_MODULE_BOOTSTRAP",
+        "NODE_MODULE_IMPORT","MERCHANT_SERVER_MODULE",
+      ]);
+      if(result?.ciOnly===true && allowed.has(result?.blocked))
+        category=result.blocked;
+    }catch{}
+    throw new Error("Full merchant runtime import blocked: "+category+
+      ", HTTP "+response.status);
+  }
   const data=await response.json();
   assert.deepEqual(data,{ciOnly:true,actualMerchantGraphLoaded:true,
     routeCountAboveMinimum:true});
