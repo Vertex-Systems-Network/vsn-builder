@@ -1,5 +1,6 @@
 import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server";
+import db from "../db.server.js";
 
 function json(data, status = 200) {
   return Response.json(data, { status });
