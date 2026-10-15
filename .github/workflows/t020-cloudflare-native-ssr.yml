@@ -9,6 +9,7 @@ on:
       - "workers/full-merchant-ci-shopify-boundary.js"
       - "workers/full-merchant-ci-database-health.js"
       - "workers/full-merchant-ci-database-location.js"
+      - "workers/full-merchant-ci-prisma-namespace.js"
       - "tests/t020-worker-neon-schema-boundary.test.mjs"
       - "tests/t020-cloudflare-native-ssr.test.mjs"
       - "tests/t020-worker-native-boundaries.test.mjs"
@@ -88,6 +89,12 @@ jobs:
               echo "ABSENT marker: $marker"
             fi
           done
+      - name: Refuse unresolved Node Prisma default import in actual Worker SSR bundle
+        run: |
+          if grep -R -F -q --include="*.js" ".prisma/client/default" dist/server; then
+            echo "::error::Worker SSR still imports Node default Prisma client"
+            exit 1
+          fi
       - name: Upload real Cloudflare Worker build for isolated local runtime test
         uses: actions/upload-artifact@v4
         with:
