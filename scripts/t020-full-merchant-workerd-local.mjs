@@ -57,8 +57,11 @@ try {
   const result=await get("/__vsn/full-merchant-module-proof");
   if(result.status!==200) {
     let reason="WORKER_REQUEST_NOT_READY";
+    let diagnostic="";
     try {
       const response = await result.json();
+      if(response?.ciOnly===true && typeof response.ciCause==="string")
+        diagnostic = response.ciCause.slice(0, 180);
       const categories = new Set([
         "SHOPIFY_APP_BOOTSTRAP_CONFIGURATION",
         "DATABASE_CLIENT_RUNTIME_INITIALIZATION",
@@ -70,7 +73,7 @@ try {
         reason=response.blocked;
     } catch {}
     throw Error("Full merchant ServerBuild runtime import blocked: "+reason+
-      ", HTTP "+result.status);
+      ", HTTP "+result.status+(diagnostic ? ", sanitized cause: "+diagnostic : ""));
   }
   const proof=await result.json();
   assert.deepEqual(proof,{ciOnly:true,fullMerchantModuleEvaluated:true,
