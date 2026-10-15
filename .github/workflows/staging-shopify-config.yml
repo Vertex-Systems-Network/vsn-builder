@@ -1,0 +1,51 @@
+name: VSN Builder Stage-only Shopify Config
+on:
+  pull_request:
+    paths:
+      - "scripts/staging-shopify-config.mjs"
+      - "tests/staging-shopify-config.test.mjs"
+      - ".github/workflows/staging-shopify-config.yml"
+      - ".gitignore"
+      - ".dockerignore"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate full Shopify scopes, callback and production identity isolation
+        run: node --test tests/staging-shopify-config.test.mjs
+      - name: Reject stage identity in Git index
+        run: |
+          if git ls-files --error-unmatch shopify.app.staging.toml >/dev/null 2>&1; then
+            echo "BLOCKED: generated staging TOML has been committed"
+            exit 1
+          fi
+          git check-ignore -q shopify.app.staging.toml
+  protected-materialization:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Stage-only config (no Shopify network request or deployment)
+        env:
+          VSN_TARGET_ENV: staging
+          SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+          SHOPIFY_PRODUCTION_CLIENT_ID: ${{ vars.SHOPIFY_PRODUCTION_CLIENT_ID }}
+          SHOPIFY_APP_URL: ${{ vars.SHOPIFY_APP_URL }}
+        run: |
+          node scripts/staging-shopify-config.mjs --write
+          test -s shopify.app.staging.toml
+          git check-ignore -q shopify.app.staging.toml
+          rm shopify.app.staging.toml
