@@ -15,8 +15,8 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.equal(result.summary.closed,13);
  assert.equal(result.summary.active,28);
  assert.equal(result.summary.verified,0);
- assert.equal(result.summary.in_review,8);
- assert.equal(result.summary.ready,1);
+ assert.equal(result.summary.in_review,9);
+ assert.equal(result.summary.ready,0);
  assert.equal(result.summary.waiting,19);
  assert.deepEqual(plan.closed_task_ids,[...Array.from({length:11},(_,i)=>"T"+String(i+1).padStart(3,"0")),"T026","T027"]);
  assert(result.rows.every(t=>t.status!=="closed"),"closed work must never appear in active queue");
@@ -29,11 +29,11 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert(plan.commercial_plans.every(p=>p.trial_days===10));
  assert.equal(plan.commercial_plans[3].annual_usd,3000);
 });
-test("unrelated workstreams run READY without an earlier phase or cloud prerequisites",()=>{
+test("independent discovered Shopify app task moves to IN_REVIEW without unlocking release dependents",()=>{
  const {rows}=inspectTaskPlan(fresh());
  const ready=new Set(rows.filter(r=>r.execution==="READY").map(r=>r.id));
- for(const id of ["T015"])
-  assert(ready.has(id),"Expected independent READY task "+id);
+ assert.equal(ready.size,0,"No independently ready tasks remain after T015 identity discovery enters review");
+ assert.equal(rows.find(r=>r.id==="T015").execution,"IN_REVIEW");
  for(const id of ["T018","T021","T023","T025","T029","T031","T037","T038","T041"])
   assert.equal(rows.find(r=>r.id===id).execution,"WAITING",id);
  assert.equal(rows.find(r=>r.id==="T017").execution,"IN_REVIEW");
