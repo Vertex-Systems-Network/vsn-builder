@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { inspectHostedNeonRuntimeUrl } from "../app/services/neon-target-policy.js";
 
 export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWranglerConfig = false, hasD1Adapter = false, hasNeonAdapter = false, hasWorkerMerchantRuntime = false } = {}) {
   const checks = [];
@@ -37,6 +38,9 @@ export function assessStaging({ vars = {}, appConfig = "", worker = null, hasWra
         "Use the existing isolated vsn-builder-staging Neon project");
       check("Worker Neon DATABASE_URL secret", names.has("DATABASE_URL"),
         "Bind Staging Neon PostgreSQL connection string as a protected Worker secret");
+      check("Staging database URL matches isolated Neon host",
+        inspectHostedNeonRuntimeUrl("staging", get("DATABASE_URL")).ready,
+        "Protected staging DATABASE_URL absent or targets a different Neon host / lacks TLS");
       check("Worker Neon Prisma adapter", hasNeonAdapter,
         "Worker edge Prisma/Neon adapter and PostgreSQL client bundle not integrated");
       check("Neon default branch schema attested", get("VSN_STAGING_NEON_SCHEMA_VERIFIED") === "1",
