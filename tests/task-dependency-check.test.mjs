@@ -12,17 +12,17 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.deepEqual(result.errors,[]);
  assert.equal(plan.policy,"dependency_driven_evidence_first_no_phase_gating");
  assert.equal(plan.tasks.length,41);
- assert.equal(result.summary.closed,10);
- assert.equal(result.summary.active,31);
+ assert.equal(result.summary.closed,11);
+ assert.equal(result.summary.active,30);
  assert.equal(result.summary.verified,0);
  assert.equal(result.summary.in_review,9);
- assert.equal(result.summary.ready,3);
+ assert.equal(result.summary.ready,2);
  assert.equal(result.summary.waiting,19);
- assert.deepEqual(plan.closed_task_ids,Array.from({length:10},(_,i)=>"T"+String(i+1).padStart(3,"0")));
+ assert.deepEqual(plan.closed_task_ids,Array.from({length:11},(_,i)=>"T"+String(i+1).padStart(3,"0")));
  assert(result.rows.every(t=>t.status!=="closed"),"closed work must never appear in active queue");
  assert.equal(result.closed_tasks.length,0,"closed evidence must not appear in default JSON output");
  const withArchive=inspectTaskPlan(plan,{includeClosed:true});
- assert.equal(withArchive.closed_tasks.length,10);
+ assert.equal(withArchive.closed_tasks.length,11);
  assert(withArchive.closed_tasks.every(t=>t.closed_on==="2026-10-15"&&t.evidence.length>0));
  assert.equal(plan.public_shopify_apps,1);
  assert.deepEqual(plan.commercial_plans.map(p=>p.id),["starter","sliver","gold","platinum"]);
@@ -32,7 +32,7 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
 test("unrelated workstreams run READY without an earlier phase or cloud prerequisites",()=>{
  const {rows}=inspectTaskPlan(fresh());
  const ready=new Set(rows.filter(r=>r.execution==="READY").map(r=>r.id));
- for(const id of ["T011","T014","T015"])
+ for(const id of ["T014","T015"])
   assert(ready.has(id),"Expected independent READY task "+id);
  for(const id of ["T018","T021","T023","T025","T029","T031","T037","T038","T041"])
   assert.equal(rows.find(r=>r.id===id).execution,"WAITING",id);
@@ -43,6 +43,19 @@ test("unrelated workstreams run READY without an earlier phase or cloud prerequi
  assert.equal(rows.find(r=>r.id==="T026").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T024").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T013").execution,"IN_REVIEW");
+});
+test("T011 dependency security remediation is irrevocably archived without unblocking hosted migration",()=>{
+ const plan=fresh();
+ const t=find(plan,"T011");
+ assert.equal(t.status,"closed");
+ assert(t.evidence.some(x=>x.includes("38746335978")));
+ assert(t.evidence.some(x=>x.includes("38746335819")));
+ const board=inspectTaskPlan(plan);
+ assert.deepEqual(board.errors,[]);
+ assert.equal(board.rows.some(x=>x.id==="T011"),false);
+ assert.equal(board.rows.find(x=>x.id==="T018").execution,"WAITING");
+ const reopened=fresh();find(reopened,"T011").status="in_review";
+ assert(inspectTaskPlan(reopened).errors.some(x=>x.includes("Immutable closed task was reopened")));
 });
 test("blocking one task cannot artificially block independent READY tasks",()=>{
  const plan=fresh();
