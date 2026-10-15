@@ -5,6 +5,7 @@ import PreviewRenderer from "../components/editor/PreviewRenderer.jsx";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { extractMentions } from "../services/collaboration.server.js";
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 
 function parseContent(value) {
   try {
@@ -39,6 +40,10 @@ export async function action({ request, params }) {
   const token = String(params.token || "");
   const link = await validReviewLink(token);
   if (!link) return Response.json({success:false,error:"This review link is invalid, expired or revoked."},{status:404});
+  // Review comments persist merchant data. A shared review token is not a
+  // Shopify subscription and must never grant paid Builder write access.
+  const unpaid = await paidMutationDenied(db,link.shop,{label:"VSN Builder review comments"});
+  if (unpaid) return unpaid;
   const form = await request.formData();
   if (String(form.get("intent")||"") !== "comment") return Response.json({success:false,error:"Unsupported action."},{status:400});
   const authorName = String(form.get("name") || "Reviewer").trim().slice(0,80) || "Reviewer";
