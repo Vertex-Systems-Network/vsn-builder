@@ -19,6 +19,14 @@ test("PR does not download unused browser binaries; trusted E2E still can",()=>{
   const e2e=stepBefore("run: npm run e2e:playwright");
   assert.match(e2e,/github\.event_name != 'pull_request'/);
   assert.match(e2e,/post_playwright_audit\.outcome == 'success'/);
+  const phase1=stepBefore("run: npm run qa:phase1");
+  for(const guard of [install,e2e,phase1]){
+    for(const required of [
+      "github.ref_protected == true",
+      "github.ref == 'refs/heads/development'",
+      "github.ref == 'refs/heads/main'",
+    ]) assert.ok(guard.includes(required),"Unsafe external CI branch policy: "+required);
+  }
 });
 test("security checks run before browser gating and still enforce full post-install audit",()=>{
   assert.match(workflow,/id: post_playwright_audit[\s\S]*?run: npm audit --include=dev --audit-level=high/);
