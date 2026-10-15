@@ -1,0 +1,15 @@
+{
+  // CI-only full application dependency graph compatibility experiment.
+  // This NEVER deploys; all HTTP requests return 503.
+  "name": "vsn-builder-full-merchant-graph-ci",
+  "main": "./workers/full-merchant-graph-ci-probe.js",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "send_metrics": false,
+  "vars": {
+    "APP_ENV": "test",
+    "VSN_BUILD_INTENT": "full-merchant-graph-compat"
+  }
+}
