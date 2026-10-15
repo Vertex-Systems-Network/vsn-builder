@@ -2,9 +2,11 @@
 
 ## Current active work and irreversible task closure (15 Oct 2026)
 
-**31 active atomic tasks only:** 3 READY, 9 IN_REVIEW, 19 WAITING. The 10 narrow-scope previously verified tasks have been **CLOSED FINAL**, removed from all active work tables and recorded in [the immutable audit archive](docs/closed-task-archive.md). A closed acceptance scope is never reopened or scheduled; any additional functionality requires a new task ID. [ACTIVE TASKS.md](TASKS.md) and [the canonical validator](scripts/task-dependency-check.mjs) enforce this policy; `--include-closed` is the explicit historical audit view.
+**T011 FINAL CLOSED:** Audited dependency/codegen remediation and post-Playwright security checks passed on the audited candidate. Mandatory re-audit during future protected release merge is still enforced under T012; never infer Shopify merchant readiness.
 
-**Engineering/release distinction:** CI on the candidate integration PR [#190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) passed the scoped security, local Cloudflare-native Workerd and QA checks. This does **not** close T011/T012/T020 or any real Shopify/Neon hosted task: the PR remains draft, development branch is not protected, hosted `/app` and `/auth/*` remain HTTP 503, Staging primary Neon is not migrated and real Shopify installation/billing remain unverified. No Live deployment or Shopify submission.
+**30 active atomic tasks only:** 2 READY, 9 IN_REVIEW, 19 WAITING. The 11 narrow-scope previously verified tasks have been **CLOSED FINAL**, removed from all active work tables and recorded in [the immutable audit archive](docs/closed-task-archive.md). A closed acceptance scope is never reopened or scheduled; any additional functionality requires a new task ID. [ACTIVE TASKS.md](TASKS.md) and [the canonical validator](scripts/task-dependency-check.mjs) enforce this policy; `--include-closed` is the explicit historical audit view.
+
+**Engineering/release distinction:** CI on the candidate integration PR [#190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) passed the scoped security, local Cloudflare-native Workerd and QA checks. This does **not** close T012/T020 or any real Shopify/Neon hosted task: the PR remains draft, development branch is not protected, hosted `/app` and `/auth/*` remain HTTP 503, Staging primary Neon is not migrated and real Shopify installation/billing remain unverified. No Live deployment or Shopify submission.
 
 VSN Builder is a Shopify page-builder application. This repository is being separated into **Local/Development**, **Staging**, and **Production/Live** environments with independent Shopify identities, databases, billing modes and Cloudflare Workers.
 
