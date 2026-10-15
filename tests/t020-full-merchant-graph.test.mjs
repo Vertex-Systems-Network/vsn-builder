@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
 import worker from "../workers/full-merchant-graph-ci-probe.js";
 
 const origin = "https://vsn-builder-ci.test";
@@ -12,7 +12,14 @@ const allowed = {
 test("full actual merchant React Router build was generated first", () => {
   const file = "build/server/index.js";
   assert.equal(existsSync(file), true, "npm run build must produce actual merchant ServerBuild");
-  assert.ok(statSync(file).size > 1000, "not an empty synthetic server bundle");
+  const list = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = dir + "/" + entry.name;
+    return entry.isDirectory() ? list(path) : entry.name.endsWith(".js") ? [path] : [];
+  });
+  const chunks = list("build/server");
+  const graphBytes = chunks.reduce((bytes, path) => bytes + statSync(path).size, 0);
+  assert.ok(chunks.includes(file) && graphBytes > 1000,
+    "expected nonempty generated merchant server graph, including Vite chunks");
 });
 
 test("CI Workerd runtime denies every request including synthetic health and auth", async () => {
