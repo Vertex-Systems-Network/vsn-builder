@@ -131,10 +131,14 @@ test("concurrent edits compare-and-swap; exactly one wins and no lost update",as
    .includes(f.row.contentJson));
 });
 
-test("save contract is dormant: HTTP Worker exposes no draft mutation route",()=>{
+test("Staging draft POST requires explicit opt-in and SDK-locked transactional authorization",()=>{
  const worker=readFileSync("workers/app.js","utf8");
- assert.doesNotMatch(worker,/saveVerifiedBuilderPageDraft/);
- assert.doesNotMatch(worker,/acceptWorkerShopifyAdminMutation/);
+ assert.match(worker,/env.APP_ENV!=="staging"/);
+ assert.match(worker,/env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true"/);
+ assert.match(worker,/acceptWorkerShopifyAdminMutation\(request,env/);
+ assert.match(worker,/handleVerifiedWorkerDraftSave/);
+ assert.doesNotMatch(worker,/saveVerifiedBuilderPageDraft\(/,
+  "Never call raw page writer directly from Worker entry");
  assert.match(worker,/request.method==="GET"/);
 });
 
