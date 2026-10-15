@@ -33,3 +33,8 @@ shopify.app.production.toml
 
 # Generated AI eval comparison/result artifacts
 /artifacts/ai-evals/
+
+# Isolated Prisma Cloud/PostgreSQL generated clients; never commit engine artifacts
+/generated/prisma-cloud/
+/generated/prisma-worker/
+/generated/prisma-edge/
