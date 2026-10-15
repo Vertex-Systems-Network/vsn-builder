@@ -36,9 +36,29 @@ export default {
         }),{status:200,headers:{...SAFE_HEADERS,
           "content-type":"application/json; charset=utf-8"}});
       }
-    } catch {
-      // No error details, secret values or stack traces over HTTP.
+      // A manifest too small for the real Builder is not merchant readiness.
+      return new Response(JSON.stringify({
+        ciOnly:true,actualMerchantGraphLoaded:false,
+        blocked:"REACT_ROUTER_MANIFEST_INVALID",
+      }),{status:503,headers:{...SAFE_HEADERS,
+        "content-type":"application/json; charset=utf-8"}});
+    } catch (error) {
+      // This enum is exposed only to localhost with an exact synthetic test
+      // identity. Never serialize exceptions, stack traces or secrets.
+      const message=String(error?.message||"");
+      const blocked=/fileURLToPath|path.*argument/i.test(message)
+        ? "NODE_FILE_URL_BOOTSTRAP" :
+        /prisma|sqlite|database|engine/i.test(message)
+        ? "NODE_DATABASE_CLIENT" :
+        /shopify|api.?key|session/i.test(message)
+        ? "SHOPIFY_MODULE_BOOTSTRAP" :
+        /import|module|require|node:/i.test(message)
+        ? "NODE_MODULE_IMPORT" :
+        "MERCHANT_SERVER_MODULE";
+      return new Response(JSON.stringify({
+        ciOnly:true,actualMerchantGraphLoaded:false,blocked,
+      }),{status:503,headers:{...SAFE_HEADERS,
+        "content-type":"application/json; charset=utf-8"}});
     }
-    return locked();
   },
 };
