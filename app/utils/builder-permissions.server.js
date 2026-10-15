@@ -54,7 +54,12 @@ export async function getBuilderRoleAccess(db,shop){
   const settings=await db.builderShopSetting.findUnique({where:{shop},select:{roleAccessJson:true}});
   if(settings?.roleAccessJson==null)return normalizeBuilderRoleAccess(DEFAULT_BUILDER_ROLE_ACCESS);
   // Do not downgrade invalid stored restrictions to permissive defaults.
-  return normalizeBuilderRoleAccess(validateStoredRolePolicy(JSON.parse(settings.roleAccessJson)));
+  // Persisted shop policies are small control-plane documents, not a place
+  // for unbounded JSON parsing on every authenticated merchant request.
+  const raw=settings.roleAccessJson;
+  if(typeof raw!=="string" || new TextEncoder().encode(raw).byteLength>65536)
+    throw new TypeError("Invalid persisted Builder role policy");
+  return normalizeBuilderRoleAccess(validateStoredRolePolicy(JSON.parse(raw)));
 }
 
 export async function canAccessBuilderEditor(db,session){return canAccessBuilderSystem(db,session,"pages");}
