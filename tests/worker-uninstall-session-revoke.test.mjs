@@ -135,6 +135,23 @@ test("fresh attested generation controls CAS even when unsigned header claims ol
  assert(db.installs.get("tenant-one.myshopify.com").uninstalledAt.getTime()>
   new Date("2020-01-01T00:00:00Z").getTime());
 });
+test("independent attestor is never given unsigned webhook timestamp as proof",async()=>{
+ const db=fakeDatabase();
+ let args;
+ const result=await revokeVerifiedWorkerShopifySessions({
+  event:event(),triggeredAt:new Date("2099-01-01T00:00:00Z"),
+  context:{database:db.database,verifyTrustedUninstallGeneration:async input=>{
+   args=input;
+   return {...input,installedAt:new Date("2026-10-13T08:00:00Z")};
+  }},
+ });
+ assert.equal(result.status,204);
+ assert.equal(Object.hasOwn(args,"triggeredAt"),false);
+ assert.equal(Object.hasOwn(args,"installationGeneration"),false);
+ assert.deepEqual(Object.keys(args).sort(),["payload","shop","topic","webhookId"]);
+ assert.equal(db.deletes.length,1);
+});
+
 test("only signed uninstall merchant sessions deleted after atomic installation claim",async()=>{
  const db=fakeDatabase();
  const response=await invoke(db.database);
