@@ -8,9 +8,9 @@ test("cloud baseline verifier refuses missing SQL before generation",()=>{
  assert.match(lock,/provider\s*=\s*"postgresql"/);
  const source=fs.readFileSync("scripts/validate-cloud-baseline.mjs","utf8");
  assert.match(source,/DROP/);
- assert.match(source,/CREATE TABLE/);
- assert.match(source,/baseTables\\.length===51/);
- assert.match(source,/fenceTables\\.length===1/);
+ assert.ok(source.includes("CREATE\\s+TABLE"),"No CREATE TABLE inventory validation");
+ assert.ok(source.includes("baseTables.length===51"));
+ assert.ok(source.includes("fenceTables.length===1"));
  assert.match(source,/requiredFence="BuilderShopInstallation"/);
 });
 test("generated baseline when present must be intact and non-destructive",()=>{
