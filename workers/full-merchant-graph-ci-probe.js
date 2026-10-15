@@ -86,9 +86,15 @@ export default {
           .replace(/\b[0-9a-f]{32,}\b/gi, "[HEX]")
           .replace(/\s+/g, " ").slice(0, 180);
 
+        const ciFrames = String(error?.stack || "").split("\n").slice(1, 5)
+          .map(line => line
+            .replace(/\b(?:https?|postgres(?:ql)?):\/\/[^\s"'<>]+/gi, "[URL]")
+            .replace(/(?:api[-_]?key|secret|token|password)\s*[:=]\s*[^\s,"']+/gi, "[SECRET]")
+            .replace(/\b[0-9a-f]{32,}\b/gi, "[HEX]")
+            .trim().slice(0, 140));
         return new Response(JSON.stringify({
           ciOnly: true, fullMerchantModuleEvaluated: false,
-          blocked: classification, ciCause,
+          blocked: classification, ciCause, ciFrames,
         }), { status: 503, headers: {
           ...DENY, "content-type": "application/json; charset=utf-8",
         } });
