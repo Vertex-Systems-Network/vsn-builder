@@ -1,6 +1,8 @@
 // T020 Cloudflare-native Vite build experiment for the REAL VSN Builder route
 // graph. Never deploy. No Shopify/Neon credentials; all merchant routes 503.
 import { createRequestHandler } from "react-router";
+import { createWorkerShopifySdkContext } from "../app/services/shopify-worker-sdk-context.js";
+import { createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
 const loadServerBuild = () => import("virtual:react-router/server-build");
 const SAFE_HEADERS = Object.freeze({
   "cache-control": "no-store",
@@ -29,7 +31,10 @@ export default {
     try {
       const build = await loadServerBuild();
       const routeCount = Object.keys(build?.routes || {}).length;
-      if (routeCount > 10 && typeof createRequestHandler === "function") {
+      if (routeCount > 10 &&
+          typeof createRequestHandler === "function" &&
+          typeof createWorkerShopifySdkContext === "function" &&
+          typeof createWorkerNeonPrisma === "function") {
         return new Response(JSON.stringify({
           ciOnly: true, actualMerchantGraphLoaded: true,
           routeCountAboveMinimum: true,
