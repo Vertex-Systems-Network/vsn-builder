@@ -44,6 +44,8 @@ const stop=async()=>{
 try{
   let live=false;
   for(let i=0;i<85;i++){
+    if(logs.includes("newest date supported by this server binary"))
+      throw Error("WORKER_RUNTIME_DATE_OUTDATED_FOR_2026_10_13");
     if(command.exitCode!==null)throw Error("Vite Preview exited: "+safe(logs));
     try{
       const response=await request("/app");
