@@ -4,6 +4,10 @@ on:
     paths:
       - "workers/full-merchant-graph-ci-probe.js"
       - "wrangler.full-merchant-graph-ci.jsonc"
+      - "workers/full-merchant-vite-ci.js"
+      - "vite.full-merchant-cloudflare-ci.config.js"
+      - "wrangler.full-merchant-vite-ci.jsonc"
+      - "scripts/t020-cloudflare-native-local-runtime.mjs"
       - "tests/t020-full-merchant-graph.test.mjs"
       - "scripts/t020-full-merchant-workerd-local.mjs"
       - ".github/workflows/t020-full-merchant-worker-compat.yml"
@@ -34,7 +38,7 @@ jobs:
         run: npm audit --include=dev --audit-level=high
   full-merchant-bundle:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       CI: "true"
       NODE_ENV: test
@@ -73,11 +77,39 @@ jobs:
         run: |
           npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.full-merchant-graph-ci.jsonc --dry-run --outdir /tmp/vsn-t020-merchant-graph-compat
           test -n "$(find /tmp/vsn-t020-merchant-graph-compat -type f -name '*.js' -print -quit)"
-      - name: Evaluate ACTUAL merchant ServerBuild inside isolated local Workerd (never deploy)
+      # Node-targeted build/server/index.js contains node:stream and filesystem
+      # bootstrap. It is valid ONLY for Local/Dev, not for Workerd. Never mark
+      # Workerd ready by importing that incompatible Node output.
+      # Preserve the independent Node build/tests and Wrangler SDK/Neon dry-run
+      # above; now require a separate REAL Cloudflare-targeted graph below.
+      - name: Install isolated Cloudflare Vite runtime without lockfile mutation
+        run: |
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.64.0
+          git diff --exit-code -- package.json package-lock.json
+      - name: Assert real Worker app, Shopify SDK and Neon module safety contracts
         env:
+          VSN_CLOUDFLARE_NATIVE_CI: "1"
+        run: node --test tests/t020-cloudflare-native-ssr.test.mjs tests/t020-worker-native-boundaries.test.mjs tests/t020-worker-neon-schema-boundary.test.mjs
+      - name: Build actual Cloudflare-native merchant SSR and refuse Node Prisma imports
+        env:
+          VSN_CLOUDFLARE_NATIVE_CI: "1"
+        run: |
+          ./node_modules/.bin/react-router build --config vite.full-merchant-cloudflare-ci.config.js
+          test -s dist/server/index.js
+          test -s dist/server/wrangler.json
+          test -d dist/client/assets
+          test -d dist/server/assets
+          test -s .wrangler/deploy/config.json
+          if grep -R -F -q --include='*.js' '.prisma/client/default' dist/server; then
+            echo '::error::Cloudflare Worker SSR imports Node Prisma'
+            exit 1
+          fi
+      - name: Evaluate real full merchant ServerBuild plus official Shopify SDK and Neon in LOCAL Workerd
+        env:
+          VSN_CLOUDFLARE_NATIVE_CI: "1"
           DATABASE_URL: ""
           DIRECT_URL: ""
-        run: node scripts/t020-full-merchant-workerd-local.mjs
+        run: node scripts/t020-cloudflare-native-local-runtime.mjs
       - name: Ensure no generated files modified tracked dependency lockfile
         if: always()
         run: git diff --exit-code -- package.json package-lock.json
