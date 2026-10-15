@@ -118,6 +118,39 @@ test("missing or failed role-permission DB contract denies without internal erro
   }
 });
 
+test("corrupt persisted role JSON fails closed instead of restoring privileged defaults",async()=>{
+ const invalid=[
+  "", "{invalid-json", "null", "[]", "true", "42", "\"permissive\"",
+  '{"editor":"false"}',
+  '{"collaborator":null}',
+  '{"systems":[]}',
+  '{"systems":{"editor":[]}}',
+  '{"systems":{"editor":{"pages":"false"}}}',
+  '{"actions":{"editor":{"pages":{"view":"false"}}}}',
+  '{"actions":{"editor":{"pages":[]}}}',
+ ];
+ for(const roleAccessJson of invalid){
+  const f=fixture({roleAccessJson});
+  const response=await throughGate(f);
+  assert.equal(response.status,503,"Must fail closed: "+roleAccessJson);
+  assert.equal(await response.text(),"");
+  assert.equal(f.calls.includes("callback"),false);
+  assert.equal(f.calls.includes("page"),false);
+  assert.equal(f.calls.at(-1),"close");
+ }
+});
+test("missing policy remains default, valid explicit denial remains 403, owner can recover corrupt policy",async()=>{
+ for(const roleAccessJson of [null,"{}",'{"editor":true}'," "]){
+  const f=fixture({roleAccessJson});
+  const response=await throughGate(f);
+  assert.equal(response.status,roleAccessJson===" "?503:200,JSON.stringify(roleAccessJson));
+ }
+ const restricted=fixture({roleAccessJson:'{"editor":false}'});
+ assert.equal((await throughGate(restricted)).status,403);
+ const owner=fixture({roleAccessJson:"{corrupt",accountOwner:true});
+ assert.equal((await throughGate(owner)).status,200);
+ assert.equal(owner.calls.some(x=>x?.type==="permission"),false);
+});
 test("unpaid merchant never reads staff settings or page data",async()=>{
   const f=fixture({paid:false});
   const result=await throughGate(f);
