@@ -11,6 +11,9 @@ const NAME="@graphql-tools/utils";
 const MIN_PATCH="12.0.1";
 export function checkGraphqlToolsLock(pkg,lock) {
  assert(pkg && typeof pkg==="object" && lock && typeof lock==="object");
+ assert(Number.isSafeInteger(lock.lockfileVersion) && lock.lockfileVersion>=2 &&
+   lock.packages && typeof lock.packages==="object" && !Array.isArray(lock.packages),
+   "Missing complete npm lockfile package tree");
  const versions=Object.entries(lock.packages||{})
   .filter(([path])=>path==="node_modules/"+NAME ||
    path.endsWith("/node_modules/"+NAME))
