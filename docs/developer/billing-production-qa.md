@@ -18,6 +18,8 @@ Tests cover first install with no contract, verified Starter, Sliver, Gold, Plat
 
 The app-uninstalled lifecycle deletes VSN-owned merchant data and its local `BuilderSubscription` mirror. On reinstall it must re-query Shopify; a cached row is never commercial authority.
 
+**Reinstall verification:** Treat `BuilderSubscription` as a non-authoritative mirror. After any uninstall and reinstall, authenticate a fresh official Shopify session, query the current `activeSubscription` for the same verified Shopify shop/app identity, and persist new authority only after successful Partner verification. Never revive paid access from the prior deleted mirror or a historical webhook. Test canceled, trialing, mismatched shop/app identity and changed `plan_handle` cases before acceptance.
+
 ```env
 SHOPIFY_PARTNER_API_TIMEOUT_MS=8000
 SHOPIFY_PARTNER_API_RETRY_COUNT=2
