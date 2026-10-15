@@ -5,6 +5,7 @@ on:
       - "workers/full-merchant-graph-ci-probe.js"
       - "wrangler.full-merchant-graph-ci.jsonc"
       - "tests/t020-full-merchant-graph.test.mjs"
+      - "scripts/t020-full-merchant-workerd-local.mjs"
       - ".github/workflows/t020-full-merchant-worker-compat.yml"
       - "app/**"
       - "prisma/cloud/**"
@@ -72,6 +73,11 @@ jobs:
         run: |
           npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.full-merchant-graph-ci.jsonc --dry-run --outdir /tmp/vsn-t020-merchant-graph-compat
           test -n "$(find /tmp/vsn-t020-merchant-graph-compat -type f -name '*.js' -print -quit)"
+      - name: Evaluate ACTUAL merchant ServerBuild inside isolated local Workerd (never deploy)
+        env:
+          DATABASE_URL: ""
+          DIRECT_URL: ""
+        run: node scripts/t020-full-merchant-workerd-local.mjs
       - name: Ensure no generated files modified tracked dependency lockfile
         if: always()
         run: git diff --exit-code -- package.json package-lock.json
