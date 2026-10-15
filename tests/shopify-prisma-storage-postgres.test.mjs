@@ -16,7 +16,7 @@ const env={
  APP_ENV:"staging", VSN_WORKER_NAME:"vsn-builder-staging",
  NEON_PROJECT_ID:"shiny-violet-61219572", SHOPIFY_BILLING_TEST_MODE:"true",
  SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"fake-no-shopify",
- SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
+ SHOPIFY_PRODUCTION_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3",
  SHOPIFY_APP_URL:"https://staging.builder.example.org",SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
  DATABASE_URL:"postgresql://ci-user:not-used@ep-fake.aws.neon.tech/not_used?sslmode=require"
 };
@@ -25,7 +25,7 @@ const mk=()=>createWorkerShopifySessionContext(request,env,{createDatabase:()=>n
 const prefix="builder-ci-prisma-storage-";
 
 test("real Shopify Prisma storage persists, reloads and deletes offline sessions",async()=>{
- const id=prefix+"offline";
+ const id="offline_tenant-one.myshopify.com";
  const first=await mk();
  try {
   const session={id,shop:"tenant-one.myshopify.com",state:"synthetic-oauth-state",isOnline:false,scope:"read_products",accessToken:"synthetic-ci-token",toObject(){return {}}};
@@ -44,7 +44,7 @@ test("real Shopify Prisma storage persists, reloads and deletes offline sessions
 });
 test("real Shopify session lookup only returns sessions for the selected merchant",async()=>{
  const ctx=await mk();
- const ids=[prefix+"shop-one",prefix+"shop-two"];
+ const ids=["offline_merchant-one.myshopify.com","offline_merchant-two.myshopify.com"];
  try{
   const shops=["merchant-one.myshopify.com","merchant-two.myshopify.com"];
   for(let i=0;i<ids.length;i++){
@@ -62,7 +62,14 @@ test("real Shopify session lookup only returns sessions for the selected merchan
 test("real online Shopify session stores staff-member details in Prisma",async()=>{
  const ctx=await mk();
  const id=prefix+"online";
+ const offlineId="offline_staff-tenant.myshopify.com";
  try{
+  // Online user sessions require an active, fenced OFFLINE installation.
+  // Creating a fake online session directly without this install must fail.
+  await ctx.sessionStorage.storeSession({
+   id:offlineId,shop:"staff-tenant.myshopify.com",state:"synthetic",
+   isOnline:false,accessToken:"synthetic-ci-install-token",toObject(){return {}},
+  });
   const session={
    id,shop:"staff-tenant.myshopify.com",state:"synthetic",isOnline:true,accessToken:"synthetic-online-token",
    toObject(){return {onlineAccessInfo:{associated_user:{
@@ -76,5 +83,8 @@ test("real online Shopify session stores staff-member details in Prisma",async()
   assert.equal(String(row?.userId),"12345");
   assert.equal(row?.email,"staff@example.invalid");
   assert.equal(row?.emailVerified,true);
- }finally{await ctx.sessionStorage.deleteSession(id);await ctx.close()}
+ }finally{
+  await ctx.sessionStorage.deleteSessions([id,offlineId]);
+  await ctx.close();
+ }
 });
