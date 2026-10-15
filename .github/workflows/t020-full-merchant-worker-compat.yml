@@ -1,0 +1,77 @@
+name: T020 Full Merchant Graph Workerd Compatibility (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "workers/full-merchant-graph-ci-probe.js"
+      - "wrangler.full-merchant-graph-ci.jsonc"
+      - "tests/t020-full-merchant-graph.test.mjs"
+      - ".github/workflows/t020-full-merchant-worker-compat.yml"
+      - "app/**"
+      - "prisma/cloud/**"
+      - "vite.config.js"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  full-security-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22.18.0'
+          cache: npm
+      - run: npm ci
+      - name: Mandatory production dependencies security audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Mandatory all-dependencies security audit (no waivers)
+        run: npm audit --include=dev --audit-level=high
+  full-merchant-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      SHOPIFY_APP_URL: http://localhost:3000
+      DATABASE_URL: file:./t020-ci.sqlite
+    steps:
+      - name: Checkout immutable source, no write token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22.18.0'
+          cache: npm
+      - name: Require CI has no Cloudflare, Neon or Shopify credentials
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Install immutable dependencies
+        run: npm ci
+      - name: Generate actual Cloudflare/Neon Prisma client without connecting to Neon
+        env:
+          DATABASE_URL: postgresql://nope:unused@localhost:5432/unused
+          DIRECT_URL: postgresql://nope:unused@localhost:5432/unused
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Build actual full merchant React Router route graph
+        run: |
+          npm run build
+          test -s build/server/index.js
+      - name: Verify isolated compatibility Worker never dispatches merchant routes
+        run: node --test tests/t020-full-merchant-graph.test.mjs
+      - name: Compile FULL merchant route graph + official Shopify SDK + PrismaNeon for Workerd
+        run: |
+          npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.full-merchant-graph-ci.jsonc --dry-run --outdir /tmp/vsn-t020-merchant-graph-compat
+          test -n "$(find /tmp/vsn-t020-merchant-graph-compat -type f -name '*.js' -print -quit)"
+      - name: Ensure no generated files modified tracked dependency lockfile
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json
