@@ -4,13 +4,13 @@
 
 ## Working rules
 
-Tasks with no unmet prerequisites are READY and can proceed from any workstream in parallel. Code preparation and research on WAITING tasks can also proceed when safe; real acceptance is gated only by that task's own dependencies. IN REVIEW means proposed code awaiting integration; VERIFIED applies exclusively to the narrowly described acceptance scope, never to the entire product.
+CLOSED tasks are final, audit-only and excluded from active tables. Their direct dependencies count as accepted; their exact scope is recorded in the immutable archive. Tasks with no unmet prerequisites are READY and can proceed from any workstream in parallel. Code preparation and research on WAITING tasks can also proceed when safe; real acceptance is gated only by that task's own dependencies. IN REVIEW means proposed code awaiting integration; VERIFIED applies exclusively to the narrowly described acceptance scope, never to the entire product.
 
 Earlier eight-phase trackers are legacy historical evidence inventories. They do **not** determine the order in which work is scheduled. Keep existing release gates separately fail-closed: real merchant Shopify auth/billing, Neon migrations and recovery, Cloudflare runtime, scoped secrets, audit CI and exact-source approvals.
 
-## Current scope-limited task counts: 41 total
+## ACTIVE task counts (final closures removed)
 
-**9 VERIFIED** narrow tasks · **6 IN REVIEW** · **7 READY** · **19 WAITING**. This does not measure overall product readiness or imply production deployment.
+**31 ACTIVE** · **7 READY** · **5 IN REVIEW** · **19 WAITING**. The 10 permanently CLOSED acceptance scopes are in the [final-closure audit archive](closed-task-archive.md), not in this work list. The 41 original task IDs remain in the canonical manifest for stable dependency references. These counts do not imply hosted Shopify readiness.
 
 One public **VSN | Builder** app; Dev/Staging only internal testing. No Free plan.
 
@@ -56,20 +56,10 @@ flowchart TD
   LIVE --> SUBMIT
 ```
 
-## All 41 atomic tasks
+## All 31 ACTIVE atomic tasks (final CLOSED tasks excluded)
 
 | ID | Workstream | Priority | Task | Depends on | Computed status | Issue |
 | --- | --- | --- | --- | --- | --- | --- |
-| `T001` | Infrastructure | P0 | Environment isolation and fail-closed config templates | None | VERIFIED (scope-limited) | [#94](https://github.com/Vertex-Systems-Network/vsn-builder/issues/94) |
-| `T002` | Local QA | P0 | Local SQLite migration and synthetic desktop/mobile browser acceptance | None | VERIFIED (scope-limited) | [#114](https://github.com/Vertex-Systems-Network/vsn-builder/issues/114) |
-| `T003` | Database | P0 | PostgreSQL schema parity, disposable SQL CRUD/rollback | None | VERIFIED (scope-limited) | [#141](https://github.com/Vertex-Systems-Network/vsn-builder/issues/141) |
-| `T004` | Runtime | P0 | Local Workerd SDK/Prisma SSR and Wrangler dry-run compile | None | VERIFIED (scope-limited) | [#155](https://github.com/Vertex-Systems-Network/vsn-builder/issues/155) |
-| `T005` | Database | P0 | Neon Staging shadow-branch SQL migration/savepoint rollback | None | VERIFIED (scope-limited) | [#160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
-| `T006` | Database | P0 | Staging pre-migration root snapshot and empty-baseline restore | None | VERIFIED (scope-limited) | [#160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
-| `T007` | Shopify Auth | P0 | Shopify official SDK synthetic session and tenant gate | None | VERIFIED (scope-limited) | [#162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
-| `T008` | Security | P0 | Webhook HMAC and transactional mutation synthetic security | None | VERIFIED (scope-limited) | [#163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
-| `T009` | Merchant Features | P1 | Internal editor/components/AI QA scripts | None | VERIFIED (scope-limited) | [#165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
-| `T010` | Engineering Planning | P0 | Adopt dependency-based task board, validator, issue mapping | None | IN REVIEW | [#156](https://github.com/Vertex-Systems-Network/vsn-builder/issues/156) |
 | `T011` | Security | P0 | Resolve mandatory full-dev dependency security audit (braces) | None | READY | [#96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) |
 | `T012` | Integration | P0 | Review/rebase/merge stacked PRs with mandatory exact-SHA CI | None | IN REVIEW | [#157](https://github.com/Vertex-Systems-Network/vsn-builder/issues/157) |
 | `T013` | Infrastructure | P0 | Protect development branch and verify GitHub required reviewers | None | READY | [#158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
@@ -108,7 +98,7 @@ flowchart TD
 
 ## Current external blockers
 
-- Mandatory full dev dependency audit #96 is red for the `braces` advisory. Production-only audit passing is NOT an exception.
+- Mandatory full-development audit is clean on draft PR #190's exact-head audited candidate, but is not integrated into protected `development`; issue #96 remains open as a release-level security gate. No audit exception is permitted.
 - Cloudflare Staging and Production Worker records exist but each has **0 real secret bindings and 0 settings bindings**.
 - Neon Staging QA shadow migration succeeded in isolation, but default Staging and Production have **0 application tables** and real protected Prisma migrations have not run.
 - `development` GitHub branch was last observed unprotected; tier-scoped secrets, reviewers and real identities remain externally unverified.
@@ -116,7 +106,7 @@ flowchart TD
 
 ## Commands / status discipline
 
-Use `node scripts/task-dependency-check.mjs` for READY tasks, `node scripts/task-dependency-check.mjs --format=markdown` for a full table and `node --test tests/task-dependency-check.test.mjs` for graph/policy regression. A release must separately pass security/Shopify/hosted gates. `--require-verified=T041` fails until actual Shopify submission has evidence, not merely a plan.
+Use `node scripts/task-dependency-check.mjs` for READY tasks, `node scripts/task-dependency-check.mjs --format=markdown` for the ACTIVE table only (closed tasks require `--include-closed`) and `node --test tests/task-dependency-check.test.mjs` for graph/policy regression. A release must separately pass security/Shopify/hosted gates. `--require-verified=T041` fails until actual Shopify submission has evidence, not merely a plan.
 
 ## Existing work references
 
