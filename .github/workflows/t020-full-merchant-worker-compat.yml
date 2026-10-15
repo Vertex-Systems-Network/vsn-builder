@@ -14,6 +14,7 @@ on:
       - "app/**"
       - "workers/app.js"
       - "tests/t020-worker-merchant-page-summary.test.mjs"
+      - "tests/t020-worker-merchant-page-metadata.test.mjs"
       - "prisma/cloud/**"
       - "vite.config.js"
       - "package.json"
@@ -79,6 +80,8 @@ jobs:
         run: node --test tests/worker-shopify-admin-gate.test.mjs
       - name: Verify read-only page data stays scoped to persisted merchant session
         run: node --test tests/t020-worker-merchant-page-summary.test.mjs
+      - name: Verify signed per-page read-only metadata isolation, expiry and request teardown
+        run: node --test tests/t020-worker-merchant-page-metadata.test.mjs
       - name: Compile FULL merchant route graph + official Shopify SDK + PrismaNeon for Workerd
         run: |
           npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.full-merchant-graph-ci.jsonc --dry-run --outdir /tmp/vsn-t020-merchant-graph-compat
