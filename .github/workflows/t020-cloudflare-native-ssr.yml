@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - "vite.full-merchant-cloudflare-ci.config.js"
+      - "package.json"
+      - "package-lock.json"
+      - ".graphqlrc.js"
+      - "scripts/t011-graphql-*.mjs"
       - "wrangler.full-merchant-vite-ci.jsonc"
       - "workers/full-merchant-vite-ci.js"
       - "workers/full-merchant-ci-db-boundary.js"
