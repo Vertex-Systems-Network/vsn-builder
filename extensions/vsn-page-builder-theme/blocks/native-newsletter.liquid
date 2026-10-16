@@ -1,4 +1,30 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><form class="vsn-native-form" method="post" action="/contact#contact_form"><input type="hidden" name="form_type" value="customer"><input type="email" name="contact[email]" placeholder="{{ block.settings.placeholder }}" required><button type="submit">{{ block.settings.button }}</button></form></div>
+{% assign vsn_newsletter_form_id = 'vsn-native-newsletter-' | append: block.id %}
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id | escape }}" {{ block.shopify_attributes }} style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px">
+  {% form 'customer', id: vsn_newsletter_form_id, class: 'vsn-native-form' %}
+    <input type="hidden" name="contact[tags]" value="newsletter">
+    {% if form.posted_successfully? %}
+      <p class="vsn-native-form-feedback" role="status">Thank you for subscribing.</p>
+    {% else %}
+      {% if form.errors %}
+        <div id="vsn-native-newsletter-error-{{ block.id | escape }}" class="vsn-native-form-feedback" role="alert">
+          {{ form.errors | default_errors }}
+        </div>
+      {% endif %}
+      <label class="vsn-native-sr-only" for="vsn-native-newsletter-email-{{ block.id | escape }}">Email address</label>
+      <input
+        id="vsn-native-newsletter-email-{{ block.id | escape }}"
+        type="email"
+        name="contact[email]"
+        placeholder="{{ block.settings.placeholder | escape }}"
+        value="{{ form.email | escape }}"
+        autocomplete="email"
+        required
+        {% if form.errors %}aria-invalid="true" aria-describedby="vsn-native-newsletter-error-{{ block.id | escape }}"{% endif %}
+      >
+      <button type="submit">{{ block.settings.button | escape }}</button>
+    {% endif %}
+  {% endform %}
+</div>
 
 {% schema %}
 {
