@@ -34,7 +34,10 @@ export function inspectWorkerNeonEnvironment(env) {
     }
     if(parsed.port && parsed.port!=="5432")issues.push("Neon PostgreSQL port invalid");
     if(!parsed.username||!parsed.password||!parsed.pathname||parsed.pathname==="/")issues.push("Neon database credentials incomplete");
-    if(parsed.searchParams.get("sslmode")!=="require")issues.push("Neon TLS policy missing");
+    if(parsed.searchParams.getAll("sslmode").length!==1 ||
+       parsed.searchParams.get("sslmode")!=="require")
+      issues.push("Neon TLS policy missing or ambiguous");
+    if(parsed.hash)issues.push("Neon URL fragment forbidden");
   }catch{issues.push("Neon URL malformed")}
   // DIRECT_URL normally belongs to the migration runner, not the Worker.
   // If mistakenly bound to a Worker, fail closed rather than silently accept
