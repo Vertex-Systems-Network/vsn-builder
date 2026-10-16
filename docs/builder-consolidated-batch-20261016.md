@@ -15,7 +15,7 @@
 | --- | --- | --- | --- |
 | [#232](https://github.com/Vertex-Systems-Network/vsn-builder/pull/232) | T032 | Countdown ISO parsing/escaping, timer disposal on Shopify section unload, bounded interval lifetime, adversarial fake-clock tests | Squash merged `cead9ddb822c53c0be7f09e19adab9f4f0b8ffe4`; 3/3 source PR workflows green; post-merge 4/4 push workflows green; not hosted theme proof |
 | [#233](https://github.com/Vertex-Systems-Network/vsn-builder/pull/233) | T014 | Reject private/special-use Staging OAuth origins, malformed/duplicate Cloudflare secret metadata | Squash merged `88fe4031df17b58a58537da4923faa98636ff06b`; 3/3 source PR workflows green; staging credentials remain absent |
-| [#234](https://github.com/Vertex-Systems-Network/vsn-builder/pull/234) | T020 | Reject invalid/out-of-range stored Builder draft optimistic-lock version and regression tests | PR source proposed; merge only on exact-head mandatory green CI. No real merchant acceptance |
+| [#234](https://github.com/Vertex-Systems-Network/vsn-builder/pull/234) | T020 | Reject invalid/out-of-range stored Builder draft optimistic-lock version and regression tests | Squash merged `f9e83142f414c50f9f65f9a45188c362bf7d09e2`; 3/3 PR workflows green, including full merchant Workerd compatibility; no real merchant acceptance |
 
 ## Live control-plane audit (metadata only, NO MUTATIONS)
 
