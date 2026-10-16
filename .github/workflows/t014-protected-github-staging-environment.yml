@@ -1,0 +1,93 @@
+name: T014 Protected GitHub Staging Environment Attestation (No Deploy)
+# T014 validates GitHub-scoped configuration only. Cloudflare Worker
+# secret bindings, domain routing and deployment belong to T019/T021.
+on:
+  push:
+    branches: [development]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  staging-github-environment:
+    if: github.ref == 'refs/heads/development' && github.ref_protected == true && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    environment: cloudflare-staging
+    env:
+      SOURCE_REPO: ${{ github.repository }}
+      SOURCE_REF: ${{ github.ref }}
+      SOURCE_PROTECTED: ${{ github.ref_protected }}
+      APP_ENV: ${{ vars.APP_ENV }}
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      SHOPIFY_BILLING_TEST_MODE: ${{ vars.SHOPIFY_BILLING_TEST_MODE }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+      SHOPIFY_API_SECRET: ${{ secrets.SHOPIFY_API_SECRET }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check scoped environment credentials without exposing values or making external requests
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          from urllib.parse import urlsplit, parse_qs
+
+          errors = []
+          def require(key):
+              v = os.environ.get(key, '').strip()
+              if not v:
+                  errors.append('T014_MISSING_' + key)
+              return v
+
+          for key, expected in {
+              'SOURCE_REPO': 'Vertex-Systems-Network/vsn-builder',
+              'SOURCE_REF': 'refs/heads/development',
+              'SOURCE_PROTECTED': 'true',
+              'APP_ENV': 'staging',
+              'NEON_PROJECT_ID': 'shiny-violet-61219572',
+              'CLOUDFLARE_WORKER_NAME': 'vsn-builder-staging',
+              'SHOPIFY_BILLING_TEST_MODE': 'true',
+          }.items():
+              if require(key) != expected:
+                  errors.append('T014_INVALID_' + key)
+
+          cloudflare_id = require('CLOUDFLARE_ACCOUNT_ID')
+          if cloudflare_id.lower() != 'f63cf3af0868a5c8a0b26ebee5dd039f':
+              errors.append('T014_ACCOUNT_TIER_MISMATCH')
+          require('CLOUDFLARE_API_TOKEN')
+          client_id = require('SHOPIFY_API_KEY')
+          if client_id.lower() != '0ecd6b7151485b41ea65924fe827806a':
+              errors.append('T014_SHOPIFY_STAGING_CLIENT_ID_MISMATCH')
+          require('SHOPIFY_API_SECRET')
+
+          primary = 'ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech'
+          pooled = primary.replace('.', '-pooler.', 1)
+          def connection(name, hosts):
+              raw = require(name)
+              try:
+                  p = urlsplit(raw)
+                  valid = p.scheme in ('postgresql', 'postgres') and bool(p.username) and bool(p.password) and bool(p.path) and p.path != '/' and p.port in (None, 5432) and not p.fragment and (p.hostname or '').lower() in hosts and parse_qs(p.query).get('sslmode') == ['require']
+              except ValueError:
+                  valid = False
+                  p = None
+              if not valid:
+                  errors.append('T014_INVALID_' + name + '_CONNECTION')
+              return p if valid else None
+
+          runtime = connection('DATABASE_URL', (primary, pooled))
+          direct = connection('DIRECT_URL', (primary,))
+          if runtime and direct and (runtime.username != direct.username or runtime.path != direct.path or os.environ.get('DATABASE_URL') == os.environ.get('DIRECT_URL')):
+              errors.append('T014_NEON_CONNECTION_PAIR_MISMATCH')
+          for error in sorted(set(errors)):
+              print('::error::' + error)
+          if errors:
+              raise SystemExit(1)
+          print('T014 protected cloudflare-staging GitHub Environment: PASS (6 secret values present and tier-scoped, 4 variables checked).')
+          print('No credential value logged. Cloudflare Worker runtime bindings are T019; no deploy, SQL or Shopify API calls.')
+          PY
