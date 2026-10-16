@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "policy": "dependency_driven_evidence_first_no_phase_gating",
-  "updated_on": "2026-10-16",
+  "updated_on": "2026-10-17",
   "product": "VSN | Builder",
   "public_shopify_apps": 1,
   "commercial_plans": [
@@ -291,13 +291,19 @@
       "title": "Real Neon Staging pooled/direct credentials and connectivity",
       "workstream": "Database",
       "priority": "P0",
-      "status": "todo",
+      "status": "closed",
       "depends_on": [
         "T014"
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
-      "evidence": [],
-      "acceptance": "Staging pinned pooled runtime and direct migration URLs authenticate to same correct DB/role with TLS, no Prod bleed"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/261",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38975207040"
+      ],
+      "acceptance": "Staging pinned pooled runtime and direct migration URLs authenticate to same correct DB/role with TLS, no Prod bleed",
+      "progress_note": "FINAL CLOSED on 2026-10-17 (Asia/Karachi). Source PR #261 passed 4/4 required exact-head CI checks, merged into protected development af5364a3bb4b1d81d6c5e38403274efb965c5b42. Actual scoped cloudflare-staging GitHub Actions native libpq run #38975207040 passed authenticated READ ONLY transactions against exact Neon pooled runtime and direct migration hosts with verify-full TLS, same database and PostgreSQL role/table inventory. No secrets printed, no DDL/migrations/production access. Provider Neon read-only default branch neondb exists and currently has zero app tables. Staging project also contains a preserved Brovexa QA branch with data; it was not modified. T017/T018 remain independent.",
+      "closed_on": "2026-10-17",
+      "closure_note": "T016 narrowly certifies real Staging GitHub-scoped Neon DATABASE_URL pooled host and DIRECT_URL direct host credentials, native PostgreSQL auth/TLS verify-full, read-only transactions, same database and role, without Production bleed. Evidence is protected exact source SHA GitHub Actions run #38975207040 following PR #261 all required checks PASS. T017 backup/single-branch/compute constraints and T018 actual Prisma migrations/restoration are NOT covered; extra unrelated Brovexa data branch remains untouched."
     },
     {
       "id": "T017",
@@ -736,6 +742,7 @@
     "T012",
     "T013",
     "T014",
+    "T016",
     "T026",
     "T027",
     "T032"
