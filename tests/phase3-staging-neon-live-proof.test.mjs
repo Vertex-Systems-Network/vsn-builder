@@ -21,7 +21,10 @@ function credentials(extra={}) {
 function fixtures() {
  return {
   branches:[
-   {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true,primary:true,protected:false},
+   {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true,primary:true,protected:false,
+    restored_from:stage.neon_pre_migration_snapshot_id,
+    restored_as:stage.neon_recovery_source_branch_id,
+    restore_status:"finalized"},
   ],
   snapshots:[{id:stage.neon_pre_migration_snapshot_id,
     source_branch_id:stage.neon_recovery_source_branch_id,created_at:"2026-10-13T21:39:35Z"}],
@@ -79,6 +82,12 @@ test("real API response must certify original backup, restored branch, endpoint 
   a=>{a.branches[0].protected="true"},
   a=>{a.branches[0].protected=null},
   a=>{a.branches[0].default=false},
+  a=>{delete a.branches[0].restored_from},
+  a=>{a.branches[0].restored_from="snap-unrelated-12345678"},
+  a=>{delete a.branches[0].restored_as},
+  a=>{a.branches[0].restored_as=stage.neon_default_branch_id},
+  a=>{a.branches[0].restore_status="in_progress"},
+  a=>{delete a.branches[0].restore_status},
   a=>{a.branches[0].id=stage.neon_recovery_source_branch_id},
   a=>{a.branches.push({id:"br-unwanted-qa-branch",project_id:stage.neon_project_id,default:false,protected:false})},
   a=>{a.endpoints[0].pooler_enabled=false},

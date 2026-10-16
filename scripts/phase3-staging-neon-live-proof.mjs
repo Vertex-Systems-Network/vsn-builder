@@ -74,6 +74,15 @@ export async function verifyStagingNeonControlPlane(env={},{
       Number.isFinite(Date.parse(s.created_at))
     );
     if(!backup)throw blocked("real pinned Staging snapshot was not found");
+    // An eligible historic snapshot must actually be the restoration source
+    // of THIS current default, not merely an unrelated snapshot with a
+    // matching name in the same Neon project. The provider independently
+    // reports all three fields on the default branch metadata.
+    if(current.restored_from!==backup.id ||
+       current.restored_as!==target.neon_recovery_source_branch_id ||
+       current.restore_status!=="finalized")
+      throw blocked("current Staging default branch restore provenance is unverified");
+
     const compute=endpoints.filter(e=>e.id===target.neon_endpoint_id);
     if(compute.length!==1 || compute[0].branch_id!==current.id ||
        compute[0].host!==target.neon_endpoint_host ||
