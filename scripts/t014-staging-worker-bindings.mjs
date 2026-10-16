@@ -24,7 +24,7 @@ function bindingList(value){
 function safeOrigin(value){
  try{
   if(typeof value!=="string" || value.length>2048 ||
-     value!==value.trim() || /[\\x00-\\x20\\x7F]/.test(value))
+     value!==value.trim() || /[\x00-\x20\x7F]/.test(value))
    return false;
   const url=new URL(value);
   const host=url.hostname.toLowerCase();
@@ -32,13 +32,13 @@ function safeOrigin(value){
   // with an alphabetic TLD, never a private IP/loopback literal, IPv6,
   // trailing-dot domain or special-use test host. DNS reachability and
   // ownership are separately checked at deployment, not inferred here.
-  const publicName=/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+  const publicName=/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
   return url.protocol==="https:"&&!url.username&&!url.password&&!url.port&&
     url.pathname==="/"&&!url.search&&!url.hash&&
     publicName.test(host) &&
-    !/(?:^|\\.)(?:localhost|local|internal|test|invalid|example)$/.test(host) &&
-    !/(?:^|\\.)example\\.(?:com|org|net)$/.test(host) &&
-    !/\\.(?:trycloudflare\\.com|ngrok-free\\.app|ngrok\\.io|loca\\.lt)$/.test(host);
+    !/(?:^|\.)(?:localhost|local|internal|test|invalid|example)$/.test(host) &&
+    !/(?:^|\.)example\.(?:com|org|net)$/.test(host) &&
+    !/\.(?:trycloudflare\.com|ngrok-free\.app|ngrok\.io|loca\.lt)$/.test(host);
  }catch{return false;}
 }
 
