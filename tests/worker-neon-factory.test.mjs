@@ -61,6 +61,25 @@ test("Neon hostname lookalikes, unknown endpoints and unexpected ports fail clos
   assert.equal(inspectWorkerNeonEnvironment({...env,DATABASE_URL}).ready,false,DATABASE_URL.split("@")[1]);
  }
 });
+test("Worker denies duplicate SSL modes and URI fragments before Prisma construction",()=>{
+ for(const tier of ["staging","production"]){
+  const cfg=mk(tier);
+  for(const DATABASE_URL of [
+   cfg.DATABASE_URL+"&sslmode=disable",
+   cfg.DATABASE_URL+"&sslmode=require",
+   cfg.DATABASE_URL+"#ignored-fragment",
+  ]){
+   const env={...cfg,DATABASE_URL};
+   const report=inspectWorkerNeonEnvironment(env);
+   assert.equal(report.ready,false,"Unexpected accepted Worker URI");
+   assert.throws(()=>createWorkerNeonPrisma(env),{
+    code:"VSN_WORKER_DATABASE_NOT_READY",
+   });
+   assert(!JSON.stringify(report).includes("fake-ci-password"));
+  }
+ }
+});
+
 test("expected direct and pooled Neon endpoint variants are admitted without opening a connection",()=>{
  for(const tier of ["staging","production"]){
   const env=mk(tier);
