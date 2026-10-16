@@ -279,7 +279,7 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190"
       ],
       "acceptance": "One public VSN | Builder listing; Dev/Staging internal testing safely isolated; actual Partner app identity/ownership verified",
-      "progress_note": "2026-10-16 live Shopify Admin GraphQL read-only for three linked stores: Staging installed embedded PARTNER app VSN | Builder (Staging), apiKey 0ecd6b7151485b41ea65924fe827806a, published=false; Production installed embedded PARTNER app VSN Builder, apiKey 997eae5a9961f21d131e5f31bbbe31d3 exactly matches canonical shopify.app.toml, published=false; both show developerName Vertex Systems Network, but Local/Development test shop has NO Builder installation. App Store listing URL and privacy URL absent in these Admin app objects. This is strong app identity/installation evidence, NOT Shopify Partner organization legal ownership, Developer OAuth acceptance, stable callbacks or public listing. Protected phase1 workflow corrected to recognize both verified canonical app IDs rather than incorrectly rejecting Live public identity. T015 IN_REVIEW."
+      "progress_note": "2026-10-16 existing VSN Builder Development app public Client ID verified from Shopify Admin; local testing uses ONLY that app, separate from Staging/Live. Repaired reusable clean runner localhost smoke on protected development and PR; Node 22.18, isolated ignored .env.local, SQLite local:prepare, build and auth boundary. User's staging/live GitHub configurations untouched. Full assistant container cannot clone because DNS unavailable and local Node 22.16 is unsupported; CI runner is separate. Real Dev Shopify OAuth still pending; IN_REVIEW."
     },
     {
       "id": "T016",
