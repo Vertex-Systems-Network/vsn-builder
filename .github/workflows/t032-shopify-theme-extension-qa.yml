@@ -23,6 +23,8 @@ on:
       - "tests/t032-page-builder-async-editor.test.mjs"
       - "app/routes/builder-proxy.$.jsx"
       - ".github/workflows/t032-shopify-theme-extension-qa.yml"
+  push:
+    branches: [development]
   workflow_dispatch:
 permissions:
   contents: read
