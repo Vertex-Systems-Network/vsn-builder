@@ -14,8 +14,9 @@ test("protected development PUSH/dispatch alone invokes read-only effective rule
  for(const job of ["protected-ref-prerequisite","live-read-only-attestation"]){
   const start=workflow.indexOf("  "+job+":");
   assert(start>=0);
-  const next=workflow.indexOf("\n  ",start+2);
-  const body=workflow.slice(start,next===-1?undefined:next);
+  const rest=workflow.slice(start+2);
+  const next=rest.search(/\n  [a-zA-Z0-9_-]+:/);
+  const body=workflow.slice(start,next===-1?undefined:start+2+next);
   assert.match(body,/if: github\.event_name == 'workflow_dispatch' \|\| github\.event_name == 'push'/);
  }
  for(const guard of [
