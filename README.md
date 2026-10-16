@@ -19,6 +19,8 @@
 
 **Additional merged source batch (16 October):** [#236 T032 Liquid plain-output security](https://github.com/Vertex-Systems-Network/vsn-builder/pull/236), [#237 T024 SDK-authenticated uninstall topic/shop guard](https://github.com/Vertex-Systems-Network/vsn-builder/pull/237), [#238 T032 twenty-block editor metadata contract](https://github.com/Vertex-Systems-Network/vsn-builder/pull/238) — **3/3, 5/5, 3/3 exact-head PR CI green, all squash-merged**. This remains source-only acceptance. Actual Neon Staging protection attempt rejected with HTTP 422, protected-branch quota reached. Full evidence: [one-batch report](docs/builder-consolidated-batch-20261016.md).
 
+**Additional T032/T020 source privacy and reader-integrity work — 16 October 2026:** [#240](https://github.com/Vertex-Systems-Network/vsn-builder/pull/240) prevents customer name/email/ID exposure in storefront app-proxy GET URLs and blocks cross-origin/unrelated paths; [#241](https://github.com/Vertex-Systems-Network/vsn-builder/pull/241) bounds merchant page JSON scalars and rejects corrupt page versions/contradictory summary counts. Both are merged into `development` with **3/3 required exact-head PR workflows PASS each**, including full T020 Workerd compatibility. **T020/T032 remain IN_REVIEW** until hosted Shopify merchant E2E. Neither PR changes Neon/Cloudflare environments or creates Live acceptance. [Full evidence report](docs/builder-consolidated-batch-20261016.md).
+
 **Current review queue (all others WAITING):**
 
 | Task | Next acceptance blocker |

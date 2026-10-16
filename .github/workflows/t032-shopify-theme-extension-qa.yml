@@ -59,7 +59,7 @@ jobs:
         run: node --test tests/t032-native-links.test.mjs
       - name: Test ISO countdown updates and Shopify theme-editor section lifecycle
         run: node --test tests/t032-countdown-lifecycle.test.mjs
-      - name: Inspect 14 native block plain output escaping with richtext preservation
+      - name: Inspect 20 native/theme block plain output escaping with richtext preservation
         run: node scripts/t032-native-plain-output-contract.mjs
       - name: Test source escaping, catalog metadata and editor attributes
         run: node --test tests/t032-native-plain-output-contract.test.mjs

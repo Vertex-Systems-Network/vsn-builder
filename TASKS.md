@@ -12,6 +12,8 @@
 
 **27 ACTIVE remain unchanged: T017, T024 and T032 still IN_REVIEW; real merchant/E2E proof absent.**
 
+**Additional T032/T020 source privacy and reader-integrity work — 16 October 2026:** [#240](https://github.com/Vertex-Systems-Network/vsn-builder/pull/240) prevents customer name/email/ID exposure in storefront app-proxy GET URLs and blocks cross-origin/unrelated paths; [#241](https://github.com/Vertex-Systems-Network/vsn-builder/pull/241) bounds merchant page JSON scalars and rejects corrupt page versions/contradictory summary counts. Both are merged into `development` with **3/3 required exact-head PR workflows PASS each**, including full T020 Workerd compatibility. **T020/T032 remain IN_REVIEW** until hosted Shopify merchant E2E. Neither PR changes Neon/Cloudflare environments or creates Live acceptance. [Full evidence report](docs/builder-consolidated-batch-20261016.md).
+
 **Current integration evidence:** [PR #190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) and post-merge [security PR #207](https://github.com/Vertex-Systems-Network/vsn-builder/pull/207) are **MERGED into `development`**, with exact source PR green CI (15/15 and 5/5 respectively) and corrected dedicated development GraphQL security check [PASS](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38809667953). This is source integration only, **not hosted merchant acceptance**. Worker `/app` and `/auth/*` still return 503, Staging Neon primary has no app tables, and `development` lacks enforced branch protection. Do not ship Live or submit to Shopify.
 
 ## Source integration acceptance (16 October 2026)
