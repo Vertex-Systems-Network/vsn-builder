@@ -103,8 +103,16 @@ jobs:
           api_id = require("SHOPIFY_API_KEY")
           if not re.fullmatch(r"[0-9a-fA-F]{32}", api_id):
               problems.append("Shopify Client ID format invalid")
-          if api_id.lower() == "997eae5a9961f21d131e5f31bbbe31d3":
-              problems.append("Unclassified default Shopify Client ID reused")
+          # Admin GraphQL, 2026-10-16: root Live Builder public-app
+          # client ID is the canonical production identity, NOT an invalid
+          # unclassified default. Separate Staging is an internal Partner app.
+          # These are PUBLIC client identifiers, never API secrets.
+          expected_shopify = {
+              "staging": "0ecd6b7151485b41ea65924fe827806a",
+              "production": "997eae5a9961f21d131e5f31bbbe31d3",
+          }
+          if tier in expected_shopify and api_id.lower() != expected_shopify[tier]:
+              problems.append("Shopify runtime client ID mismatches verified tier app")
           require("SHOPIFY_API_SECRET")
           # Each GitHub Environment must provide the same three public app
           # identifiers as scoped values. Presence is not Partner ownership.
@@ -117,8 +125,12 @@ jobs:
           for name, value in ids.items():
               if not re.fullmatch(r"[0-9a-fA-F]{32}", value):
                   problems.append(name + " Shopify Client ID format invalid")
-              if value.lower() == "997eae5a9961f21d131e5f31bbbe31d3":
-                  problems.append(name + " reuses unclassified default Shopify Client ID")
+              if name == "production" and value.lower() != "997eae5a9961f21d131e5f31bbbe31d3":
+                  problems.append("Production client ID does not match canonical public Builder app")
+              if name == "staging" and value.lower() != "0ecd6b7151485b41ea65924fe827806a":
+                  problems.append("Staging client ID does not match verified internal Builder app")
+              if name == "development" and value.lower() in ("997eae5a9961f21d131e5f31bbbe31d3", "0ecd6b7151485b41ea65924fe827806a"):
+                  problems.append("Development must use an isolated Builder app")
               canonical[name] = value.lower()
           if len(set(canonical.values())) != len(canonical):
               problems.append("Development, Staging and Production Shopify Client IDs must differ")

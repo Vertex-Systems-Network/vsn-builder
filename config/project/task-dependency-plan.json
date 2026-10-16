@@ -264,7 +264,7 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/233"
       ],
       "acceptance": "Live GitHub scoped secret-name, environment branch/deployment-permission and policy metadata verified without exposing values; approval must be automated, not depend on human Environment reviewers.",
-      "progress_note": "Source validator PR #233 merged after 3/3 exact-head PR workflow successes: rejects unsafe Staging OAuth host literals/aliases and malformed/duplicate secret metadata. Live Cloudflare Staging/Production each have 0 secrets and 0 bindings; GitHub protected Environment settings still unavailable. Not FINAL CLOSED. 2026-10-16 user mandates no human approval in any review workflow; Environment deployments must remain CI/AI-gated without human required reviewers, scoped secret inventory and Cloudflare real bindings still unverified."
+      "progress_note": "2026-10-16 T014 protected source workflow now automatically runs its read-only Cloudflare Staging metadata audit on each protected development push after strict repo/ref/protection precondition; PR synthetic-only no token and Production excluded. GitHub Environment named cloudflare-staging is referenced, but GitHub scoped secret-name/policy metadata still cannot be read through connected GitHub API; Staging Worker last verified 0 secrets, 0 bindings. Next real protected Staging run must verify secret/token presence and provider settings before final closing; no credentials are printed."
     },
     {
       "id": "T015",
@@ -279,7 +279,7 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190"
       ],
       "acceptance": "One public VSN | Builder listing; Dev/Staging internal testing safely isolated; actual Partner app identity/ownership verified",
-      "progress_note": "Shopify Admin GraphQL verified one intended canonical public VSN Builder app (existing shopify.app.toml client ID), separate internal Staging and Development apps, and Builder installations on Staging/Production test stores. Fixed stale code that rejected canonical Live ID; protected readiness now maps all tier IDs. Dev app not installed, VSN Partner organization legal ownership unverified, callback hosts are placeholders, and actual Builder OAuth not accepted: final closure BLOCKED."
+      "progress_note": "2026-10-16 live Shopify Admin GraphQL read-only for three linked stores: Staging installed embedded PARTNER app VSN | Builder (Staging), apiKey 0ecd6b7151485b41ea65924fe827806a, published=false; Production installed embedded PARTNER app VSN Builder, apiKey 997eae5a9961f21d131e5f31bbbe31d3 exactly matches canonical shopify.app.toml, published=false; both show developerName Vertex Systems Network, but Local/Development test shop has NO Builder installation. App Store listing URL and privacy URL absent in these Admin app objects. This is strong app identity/installation evidence, NOT Shopify Partner organization legal ownership, Developer OAuth acceptance, stable callbacks or public listing. Protected phase1 workflow corrected to recognize both verified canonical app IDs rather than incorrectly rejecting Live public identity. T015 IN_REVIEW."
     },
     {
       "id": "T016",
