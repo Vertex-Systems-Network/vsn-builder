@@ -5,3 +5,11 @@
 .vsn-native-form .vsn-native-form-feedback{flex:1 0 100%;margin:.25rem 0;line-height:1.5}
 .vsn-native-form .vsn-native-form-feedback[role="alert"]{color:#a51c30}
 .vsn-native-sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+/* Variant picker lives in the app block's own Shopify product form, avoiding
+   coupling to a theme-specific variant-change event or product-form instance. */
+.vsn-native-product-form{display:grid;gap:.6rem;justify-items:start}
+.vsn-native-product-form label{font-size:.875rem;font-weight:600;line-height:1.45}
+.vsn-native-product-form select,.vsn-native-product-form input[name="quantity"]{box-sizing:border-box;width:100%;max-width:25rem;min-height:2.75rem;padding:.55rem .7rem;border:1px solid #969da3;border-radius:8px;font:inherit;color:inherit;background:transparent}
+.vsn-native-product-form input[name="quantity"]{max-width:8rem}
+.vsn-native-product-form [disabled]{cursor:not-allowed;opacity:.6}

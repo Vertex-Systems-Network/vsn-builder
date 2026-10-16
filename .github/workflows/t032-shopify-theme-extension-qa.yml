@@ -11,6 +11,8 @@ on:
       - "tests/t032-pinned-theme-fixtures.test.mjs"
       - "tests/t032-shopify-native-newsletter.test.mjs"
       - "scripts/t032-newsletter-form-contract.mjs"
+      - "scripts/t032-native-product-cart-contract.mjs"
+      - "tests/t032-native-product-cart.test.mjs"
       - ".github/workflows/t032-shopify-theme-extension-qa.yml"
   workflow_dispatch:
 permissions:
@@ -40,3 +42,7 @@ jobs:
         run: node scripts/t032-newsletter-form-contract.mjs
       - name: Adversarial test newsletter consent, escaping and multiple blocks
         run: node --test tests/t032-shopify-native-newsletter.test.mjs
+      - name: Verify Shopify-native add-to-cart variant picker and quantity form contract
+        run: node scripts/t032-native-product-cart-contract.mjs
+      - name: Adversarial test selected variants, sold-out guards and large variant catalogues
+        run: node --test tests/t032-native-product-cart.test.mjs
