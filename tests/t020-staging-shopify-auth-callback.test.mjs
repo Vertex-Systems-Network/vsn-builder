@@ -132,6 +132,28 @@ test("only GET /auth/* SDK callback is admitted; login path remains deliberately
  assert.match(src,/return locked\(\);/);
 });
 
+test("ambiguous signed callback parameters and excessive input deny before Shopify SDK or Neon",async()=>{
+ for(const key of ["host","hmac","timestamp","state","code","id_token","session","embedded"]){
+  const fixture=invoke({},env,req("/auth/callback?shop="+shop+"&"+key+"=one&"+key+"=two"));
+  const res=await fixture.promise;
+  assert.equal(res.status,400,"duplicate "+key);
+  assert.equal(fixture.f.calls.length,0,"SDK/DB must not run for "+key);
+ }
+ for(const path of [
+  "/auth/callback?shop=other.example.com",
+  "/auth/callback?shop="+shop+"&code="+"a".repeat(4097),
+  "/auth/callback?shop="+shop+"&state="+"b".repeat(8193),
+  "/auth/callback?shop="+shop+"&HMAC=test",
+  "/auth/callback?shop="+shop+"&state=a&%73tate=b",
+ ]){
+  const fixture=invoke({},env,req(path));
+  const res=await fixture.promise;
+  assert.equal(res.status,400,"invalid: "+path.slice(0,70));
+  assert.equal(fixture.f.calls.length,0);
+  assert.equal(await res.text(),"");
+ }
+});
+
 test("untrusted shop hint and stale/missing/neon-revoked sessions can never redirect",async()=>{
  for(const options of [
   [{session:{...ses(),shop:"two.myshopify.com"}},req()],
