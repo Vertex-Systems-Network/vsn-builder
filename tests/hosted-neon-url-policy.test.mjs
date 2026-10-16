@@ -50,6 +50,10 @@ for(const tier of ["staging","production"]){
     const valid=env(tier);
     for(const [key,value] of [
       ["DIRECT_URL",valid.DIRECT_URL.replace("sslmode=require","sslmode=disable")],
+      ["DIRECT_URL",valid.DIRECT_URL+"&sslmode=disable"],
+      ["DATABASE_URL",valid.DATABASE_URL+"&sslmode=disable"],
+      ["DIRECT_URL",valid.DIRECT_URL+"&sslmode=require"],
+      ["DATABASE_URL",valid.DATABASE_URL+"#ignored-connection-fragment"],
       ["DIRECT_URL",valid.DIRECT_URL.replace(".neon.tech/",".neon.tech:6432/")],
       ["DIRECT_URL",valid.DIRECT_URL.replace(hosts[tier],pooler(hosts[tier]))],
       ["DATABASE_URL",valid.DATABASE_URL.replace(hosts[tier].slice(0,3),"xx-")],
