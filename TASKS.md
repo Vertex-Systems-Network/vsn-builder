@@ -1,10 +1,12 @@
 # VSN Builder — ACTIVE Development Task Board
 
-**Verified state: 16 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
+**Verified state: 17 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
-**24 ACTIVE** of 41 tracked tasks · **1 READY** · **5 IN_REVIEW** · **18 WAITING** · **0 release-ready**. The 17 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
+**23 ACTIVE** of 41 tracked tasks · **0 READY** · **5 IN_REVIEW** · **18 WAITING** · **0 release-ready**. The 18 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **T014 STAGING FINAL CLOSED — 16 October 2026:** User's GitHub `cloudflare-staging` screenshots verified existing encrypted GitHub Environment secret names, `development`-only deployment branch, no required human reviewers and no wait timer. Metafields-pattern correction [PR #259](https://github.com/Vertex-Systems-Network/vsn-builder/pull/259) was reviewed and squash-merged after four exact-head CI checks PASS. The REAL protected development [GitHub Staging Environment attestation #38948913652](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38948913652) also **PASS**: 6/6 GitHub scoped secrets and 4 repository-pinned non-secret staging identifiers validated without exposing credentials. GitHub Environment metadata itself cannot be read by this connector; policy settings are supported by the user-provided screenshot. T014 is permanently archived and removed from active/in-review/ready/waiting lists. **Cloudflare Worker runtime encrypted bindings are exclusively T019**, migrated Neon is T018, real Shopify OAuth is T023 and Production releases remain gated. This is **not** hosted Staging or Live readiness.
+
+**T016 FINAL CLOSED — 17 October 2026 (Asia/Karachi):** [PR #261](https://github.com/Vertex-Systems-Network/vsn-builder/pull/261) passed **4/4** exact-head PR CI; actual protected [Staging native PostgreSQL run #38975207040](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38975207040) **SUCCESS** using GitHub `cloudflare-staging` secrets. Two authenticated read-only transactions certified pooled runtime and direct Neon TLS `verify-full` with same DB/role/table count; no credential leak, DDL or Production access. T016 is permanently archived and removed from active queue. **T017 remains IN_REVIEW** because separate Brovexa QA data branch exists and verified Builder-default backup/restore is not complete; **T018 WAITING** for safe migration gates. Cloudflare Worker runtime bindings remain T019.
 
 ## Earlier dated checkpoints (historical, not current status)
 
@@ -84,7 +86,6 @@
 | ID | Priority | Task | Status | Unmet dependency | Work package |
 | --- | --- | --- | --- | --- | --- |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | — | [issues/159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
-| T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | READY | T014 satisfied | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T017 | P0 | Live Neon snapshot/default/compute attestation in protected preflight | IN_REVIEW | — | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T018 | P0 | Protected Staging Prisma migrate deploy and data restore drill | WAITING | T011, T012, T013, T014, T016, T017 | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T019 | P0 | Bind and verify real Cloudflare Staging secrets and tier variables | WAITING | T014, T015, T016 | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
