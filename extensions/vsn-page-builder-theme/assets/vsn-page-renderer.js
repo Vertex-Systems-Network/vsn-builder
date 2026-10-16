@@ -236,11 +236,22 @@
 	function withVisitorParams(input) {
 		const context = getContext();
 		const url = new URL(input, window.location.origin);
+		// This helper is exclusively a SAME-ORIGIN Builder app-proxy transport.
+		// Do not turn a relative storefront request into an external or unrelated
+		// URL that carries visitor analytics identifiers.
+		if (url.origin !== window.location.origin ||
+			(url.pathname !== "/apps/vsn-builder" &&
+			 !url.pathname.startsWith("/apps/vsn-builder/"))) {
+			throw new TypeError("Invalid VSN Builder app-proxy URL");
+		}
+		// Never put customer ID/name/email in a GET URL. The Builder proxy
+		// handler does not consume these parameters. URLs may be retained in
+		// access logs, browser/debug traces and support screenshots.
+		// Scrub even caller-supplied stale/forged query copies before fetching.
+		for (const name of ["customerId", "customerName", "customerEmail"])
+			url.searchParams.delete(name);
 		url.searchParams.set("customerLoggedIn", context.customerLoggedIn ? "1" : "0");
 		url.searchParams.set("visitorPath", window.location.pathname || context.path || "/");
-		if (context.customerId) url.searchParams.set("customerId", String(context.customerId));
-		if (context.customerName) url.searchParams.set("customerName", context.customerName);
-		if (context.customerEmail) url.searchParams.set("customerEmail", context.customerEmail);
 		const identity=visitorIdentity(); url.searchParams.set("vsnVisitorId",identity.visitorId); url.searchParams.set("vsnSessionId",identity.sessionId);
 		const pageContext=window.VSN_PAGE_CONTEXT||{}; if(pageContext.language)url.searchParams.set("language",String(pageContext.language)); if(pageContext.country)url.searchParams.set("country",String(pageContext.country)); if(pageContext.market)url.searchParams.set("market",String(pageContext.market)); if(pageContext.cartItemCount!=null)url.searchParams.set("cartItemCount",String(pageContext.cartItemCount));
 		const current=new URL(window.location.href); if(current.searchParams.get("vsn_exp_preview"))url.searchParams.set("vsnExpPreview",current.searchParams.get("vsn_exp_preview")); if(current.searchParams.get("vsn_variant"))url.searchParams.set("vsnVariant",current.searchParams.get("vsn_variant"));
