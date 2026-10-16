@@ -5,6 +5,8 @@ on:
       - "scripts/t014-staging-worker-bindings.mjs"
       - "tests/t014-staging-worker-bindings.test.mjs"
       - "tests/t014-protected-staging-push-gate.test.mjs"
+      - "tests/t014-github-environment-scoped-secrets.test.mjs"
+      - ".github/workflows/t014-protected-github-staging-environment.yml"
       - ".github/workflows/t014-cloudflare-staging-binding-audit.yml"
   push:
     branches: [development]
@@ -26,7 +28,7 @@ jobs:
         with:
           node-version: "22.18.0"
       - name: Prove secrets stay hidden and empty Cloudflare inventory fails closed
-        run: node --test tests/t014-staging-worker-bindings.test.mjs tests/t014-protected-staging-push-gate.test.mjs
+        run: node --test tests/t014-staging-worker-bindings.test.mjs tests/t014-protected-staging-push-gate.test.mjs tests/t014-github-environment-scoped-secrets.test.mjs
   protected-reference:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
