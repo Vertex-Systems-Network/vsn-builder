@@ -31,7 +31,7 @@ export async function verifyStagingNeonControlPlane(env={},{
   fetchImpl=fetch, signal=AbortSignal.timeout(10000),
 }={}) {
   const preflight=inspectStagingMigrationGate(env);
-  if(!preflight.ready)throw blocked("protected branch, tier, SQL URL or snapshot policy failed");
+  if(!preflight.ready)throw blocked("protected GitHub ref, tier, SQL URL or snapshot policy failed");
   const apiKey=String(env.NEON_API_KEY||"");
   if(!apiKey || apiKey.length<12)throw blocked("scoped Neon API token is not configured");
   try {
@@ -45,12 +45,20 @@ export async function verifyStagingNeonControlPlane(env={},{
     if(defaults.length!==1 || current?.id!==target.neon_default_branch_id ||
        current?.project_id!==target.neon_project_id)
       throw blocked("Staging default Neon branch changed since independently reviewed restoration");
-    // GitHub branch rules do not protect the PostgreSQL primary itself.
-    // Neon may reject protected=true on quota-limited plans (confirmed
-    // HTTP 422 for this Staging project). Do not allow its migration merely
-    // because Github or environment approval is later enabled.
-    if(current?.protected!==true)
-      throw blocked("Staging default Neon primary branch is not protected");
+    // Neon Free cannot protect a branch; the provider rejected this project's
+    // protection update HTTP 422. Accept its pinned, unprotected Staging primary
+    // ONLY under the explicit reviewed free-tier policy. This is NOT a
+    // substitute for protected GitHub source, scoped Staging secrets, manual
+    // migration approval, a real restore snapshot and the exact Neon compute.
+    // No production project or branch is ever eligible for this exception.
+    if(typeof current?.protected!=="boolean")
+      throw blocked("Staging primary protected flag is missing or invalid");
+    const freeTierPolicy="free-plan-staging-pinned-snapshot-github-reviewed";
+    if(target.neon_project_id===targets.production.neon_project_id ||
+       target.neon_default_branch_id===targets.production.neon_default_branch_id)
+      throw blocked("Staging and Production Neon identities are not isolated");
+    if(!current.protected && target.neon_primary_policy!==freeTierPolicy)
+      throw blocked("Unprotected Staging primary requires reviewed Free-plan safeguards");
     const original=branches.find(b=>
       b.id===target.neon_recovery_source_branch_id &&
       b.project_id===target.neon_project_id && b.default!==true
@@ -77,7 +85,8 @@ export async function verifyStagingNeonControlPlane(env={},{
     // Success only certifies metadata. Prisma migration and real SQL checks
     // are subsequent protected steps and must not be skipped.
     return {ready:true,projectId:target.neon_project_id,
-      defaultBranchId:current.id,primaryProtected:true,snapshotId:backup.id,
+      defaultBranchId:current.id,primaryProtected:current.protected,
+      freeTierPolicyApplied:!current.protected,snapshotId:backup.id,
       computeId:compute[0].id,poolerEnabled:true,
     };
   }catch(err) {
@@ -88,7 +97,7 @@ export async function verifyStagingNeonControlPlane(env={},{
 if(process.argv[1]?.endsWith("/phase3-staging-neon-live-proof.mjs")) {
   try {
     await verifyStagingNeonControlPlane(process.env);
-    console.log("PASS Staging Neon backup snapshot, restored branch and pooled compute real API identity; no SQL executed");
+    console.log("PASS Staging Neon isolated pinned primary, real backup snapshot, pooled compute and Free-plan policy; no SQL executed");
   }catch(err) {
     // Intentionally never expose API response, auth headers or URL passwords.
     console.error("BLOCKED "+(err?.code==="VSN_STAGING_NEON_CONTROL_PLANE_NOT_VERIFIED"

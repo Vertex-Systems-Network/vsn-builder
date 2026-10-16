@@ -29,7 +29,7 @@
 
 - **GitHub:** `development.protected=false` (last verified 2026-10-16). Existing GitHub connector does not provide admin write access to branch-protection or scoped Environment-secret APIs.
 - **Cloudflare:** API GET 200 for Staging and Production Worker settings/secrets/subdomain. Both `vsn-builder-staging` and `vsn-builder-production` have **0 script secrets, 0 settings bindings**, and **workers.dev subdomain disabled**. Do not deploy OAuth without correct protected bindings.
-- **Neon protection plan gate:** An actual branch-protection mutation on default Staging Neon was rejected 2026-10-16: HTTP 422, maximum protected branches in the current plan. No other branch was unprotected and no schema migration was executed.
+- **Neon Free-tier policy:** Staging project `vsn-builder-staging` uses the Free plan. Its paid protected-branch action was rejected HTTP 422; this is now **not** a mandatory Staging acceptance. The reviewed source policy allows only the exact pinned Staging project/branch (unprotected), real backup snapshot, correctly paired pooled/direct TLS compute and GitHub-protected manually approved environment workflow. Production is a separate Neon project and has no Free-tier release waiver. No SQL was executed.
 - **Neon Staging:** project `shiny-violet-61219572`, default branch `br-square-mountain-b3ij6q2s` is **unprotected**, returned **0 application tables**. Real snapshot `snap-green-bar-b3m1btfb` exists. QA shadow tables are NOT protected/default Prisma migration evidence.
 - **Shopify:** Store connections `Local Server`, `Staging`, `Production` were read and returned live stores. Store connectivity does **not** certify Partner legal ownership, Builder installation/OAuth, paid-plan publication, or actual App Store eligibility.
 - No production release, Worker script mutation, Neon default schema change, Shopify plan charges, or Shopify submission was performed.
@@ -42,8 +42,8 @@
 | T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | IN_REVIEW | GitHub scoped Environment policies not authenticated; both Workers have no bindings |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | Three connected Shopify stores verified; Partner public-app ownership and OAuth missing |
 | T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | WAITING | Requires T014; scoped pooled/direct Neon URL pairing not certified |
-| T017 | P0 | Live Neon snapshot/default/compute attestation in protected preflight | IN_REVIEW | Snapshot/root observed; protected preflight and Neon branch protection missing |
-| T018 | P0 | Protected Staging Prisma migrate deploy and data restore drill | WAITING | Needs protected GitHub/Neon scope, signed migration preflight and rollback |
+| T017 | P0 | Live Neon snapshot/default/compute attestation in protected preflight | IN_REVIEW | Free-plan pinned Staging primary and real snapshot/compute verified; protected GitHub workflow with scoped secrets still pending, Neon branch protection not required |
+| T018 | P0 | GitHub-reviewed Staging Prisma migration and restore drill | WAITING | Needs protected GitHub source/Environment, paired scoped URLs, manual approval, read-only backup preflight and rollback; Neon paid protection not required |
 | T019 | P0 | Bind and verify real Cloudflare Staging secrets and tier variables | WAITING | Requires T014/T015/T016 and actual encrypted Staging secrets |
 | T020 | P0 | Implement functional hosted React Router/Shopify Worker adapter | IN_REVIEW | Worker SDK/router source & local Workerd CI; real hosted OAuth/editor/Neon missing |
 | T021 | P0 | Staging Worker deploy and stable HTTPS callback acceptance | WAITING | Requires protected migrated Staging, bound Worker, real HTTPS callbacks |
@@ -68,6 +68,6 @@
 
 ## Integration decision
 
-Merge isolated code changes only after exact-head mandatory CI, and check development push CI independently. Current top-level release remains **BLOCKED** by missing protected GitHub ref/review rules, actual scoped secrets, protected Neon migration and real Shopify Partner/merchant E2E. Finish all independent source/test work as one batch, but do **not** bypass these gates to claim complete or submit to Shopify.
+Merge isolated code changes only after exact-head mandatory CI, and check development push CI independently. Current top-level release remains **BLOCKED** by missing protected GitHub ref/review rules, actual scoped secrets, GitHub-reviewed Neon Free-plan Staging migration and real Shopify Partner/merchant E2E. Finish all independent source/test work as one batch, but do **not** bypass these gates to claim complete or submit to Shopify.
 
 See [canonical task manifest](../config/project/task-dependency-plan.json) and [active task board](../TASKS.md). This report is evidence, not a new task tracker or a reset of FINAL CLOSED scopes.

@@ -23,6 +23,8 @@
 
 **Shopify theme runtime security and lifecycle continuation (16 October 2026):** [PR #243](https://github.com/Vertex-Systems-Network/vsn-builder/pull/243) blocks malicious wishlist `javascript:`/off-store links and unsafe image schemes at both normalizer and DOM sinks; [PR #244](https://github.com/Vertex-Systems-Network/vsn-builder/pull/244) aborts obsolete app-block GET requests on Shopify editor reselect/unload, refuses stale async preview overwrites, and retries after failures. Each PR was **3/3 exact-head CI-green and squash-merged to `development`**. **T032 remains IN_REVIEW:** hosted merchant supported-theme, forms/widgets and real-store browser E2E not verified; neither PR deploys the app. [27-task evidence matrix](docs/builder-consolidated-batch-20261016.md).
 
+**Neon Free-plan engineering policy (16 October 2026):** The Staging Neon project is separately identified from the Production project and has a real snapshot, pinned primary branch and pooled/direct compute. Paid Neon branch protection is unavailable on this Free subscription and is **not** a prerequisite for Staging. The reviewed [T017 source contract](scripts/phase3-staging-neon-live-proof.mjs) and [preflight](scripts/phase3-staging-migration-preflight.mjs) still require a **GitHub-protected manual development workflow, Staging Environment review/approval, exact TLS connection identities, backup API verification and rollback evidence** before migrations. This does not relax Live release gates, and no migration has yet been run.
+
 **Current review queue (all others WAITING):**
 
 | Task | Next acceptance blocker |

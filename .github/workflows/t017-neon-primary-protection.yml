@@ -1,4 +1,4 @@
-name: T017 Neon Protected Staging Primary Policy (No Deploy)
+name: T017 Neon Free-plan Pinned Staging Identity and Snapshot Policy (No Deploy)
 on:
   pull_request:
     paths:
@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: "22.18.0"
-      - name: Validate protected Github + Neon primary and reviewed backup before DDL
+      - name: Validate protected GitHub, pinned Neon Free Staging primary and reviewed backup before DDL
         run: node --test tests/phase3-staging-neon-live-proof.test.mjs tests/phase3-staging-migration-preflight.test.mjs
       - name: Assert real migration is NEVER dispatched by this workflow
         shell: bash
@@ -33,4 +33,4 @@ jobs:
           test -z "${NEON_API_KEY:-}"
           test -z "${DATABASE_URL:-}"
           test -z "${DIRECT_URL:-}"
-          echo "PASS source-only Neon protected-primary policy (no API calls, secrets, SQL, or deployment)"
+          echo "PASS source-only Neon Free-tier Staging policy (no API calls, secrets, SQL, or deployment)"
