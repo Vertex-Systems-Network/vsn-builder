@@ -1,7 +1,16 @@
 name: VSN Builder Development Localhost Smoke (No Deploy)
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/development-localhost-smoke.yml"
+      - "scripts/local-development.mjs"
+      - "scripts/dev-loopback-smoke.mjs"
+      - "tests/development-localhost-workflow.test.mjs"
+      - ".env.local.example"
+      - "shopify.app.local.template.toml"
+      - "scripts/prepare-database.mjs"
   push:
-    branches: [feat/builder-dev-loopback-smoke-20261013]
+    branches: [development]
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,41 +19,73 @@ concurrency:
   cancel-in-progress: true
 jobs:
   local-development:
+    name: Clean checkout + disposable SQLite + localhost auth boundary
     runs-on: ubuntu-latest
-    timeout-minutes: 27
+    timeout-minutes: 35
     env:
-      CI: 'true'
+      CI: "true"
       NODE_ENV: test
       APP_ENV: development
-      SHOPIFY_BILLING_TEST_MODE: 'true'
-      SHOPIFY_API_KEY: '0123456789abcdef0123456789abcdef'
-      SHOPIFY_API_SECRET: 'synthetic-ci-only-shopify-secret'
+      SHOPIFY_BILLING_TEST_MODE: "true"
+      # Shopify Client ID is public. A synthetic secret is used ONLY for
+      # completely offline CI; no Shopify Admin/Partner/OAuth requests.
+      SHOPIFY_API_KEY: "f6156da0bd799053f2f0bd0f9e10983c"
+      SHOPIFY_API_SECRET: "synthetic-ci-only-shopify-secret"
       SHOPIFY_APP_URL: http://127.0.0.1:3473
       DATABASE_URL: file:./ci.sqlite
     steps:
-      - name: Checkout feature branch without credentials
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout exact commit without persisted GitHub credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Setup reproducible Node runtime
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Setup pinned supported Node 22.18.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: 22.18.0
+          node-version: "22.18.0"
           cache: npm
-      - name: Clean dependency install
+      - name: Assert Local CI never receives hosted deploy credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$APP_ENV" = development
+          test "$SHOPIFY_BILLING_TEST_MODE" = true
+          test "$DATABASE_URL" = file:./ci.sqlite
+          test -z "${NEON_API_KEY:-}"
+          test -z "${NEON_PROJECT_ID:-}"
+          test -z "${DIRECT_URL:-}"
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          node --test tests/development-localhost-workflow.test.mjs
+      - name: Install lockfile-pinned application dependencies
         run: npm ci
-      - name: Enforce safe Local/Dev configuration and prod dependency audit
+      - name: Validate isolated repo/local contracts and dependency security
         run: npm run env:check && npm run env:test && npm audit --omit=dev --audit-level=high
-      - name: Create disposable Local SQLite schema
+      - name: Materialize ignored Local/Dev env and generate real SQLite app configuration
+        shell: bash
         run: |
-          npm run prisma -- generate
-          npm run prisma -- migrate deploy
-      - name: Build the real React Router application
+          set -euo pipefail
+          # GitHub Actions checks out a detached SHA. Create a runner-local
+          # test/* branch pointing at that exact SHA; never push any ref.
+          git switch -c test/ci-disposable-local
+          cp .env.local.example .env.local
+          printf '\nSHOPIFY_API_SECRET=%s\n' "$SHOPIFY_API_SECRET" >> .env.local
+          chmod 600 .env.local
+          npm run local:prepare
+          npm run env:local:check
+          test -f shopify.app.local.toml
+          grep -q 'client_id = "f6156da0bd799053f2f0bd0f9e10983c"' shopify.app.local.toml
+          test ! -e shopify.app.production.toml
+      - name: Build real isolated React Router application
         run: npm run build
-      - name: Boot isolated localhost development app and probe authenticated boundary
+      - name: Launch localhost and check Shopify auth boundary without external requests
         run: node scripts/dev-loopback-smoke.mjs
-      - name: Never generate or publish hosted deployment configuration
+      - name: Assert only disposable ignored local output was generated
+        shell: bash
         run: |
-          test ! -e wrangler.staging.jsonc
-          test ! -e wrangler.production.jsonc
-          test ! -e workers/app.js
+          set -euo pipefail
+          git diff --exit-code -- shopify.app.toml shopify.app.staging.toml \
+            shopify.app.production.template.toml config/deployment/environments.json \
+            workers/app.js wrangler.staging.jsonc wrangler.production.jsonc
+          git check-ignore -q .env.local
+          git check-ignore -q shopify.app.local.toml
+          test -z "$(git status --porcelain --untracked-files=normal | grep -E '^\?\? (.env.local|shopify.app.local.toml)$' || true)"
+          echo 'Local/Dev CI PASS: no Shopify install, no Neon/Cloudflare, no Staging/Production mutation.'
