@@ -2,11 +2,13 @@
 
 **Verified state: 16 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
-**27 ACTIVE** of 41 tracked tasks · **0 READY** · **8 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The 14 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
+**26 ACTIVE** of 41 tracked tasks · **0 READY** · **7 IN_REVIEW** · **19 WAITING** · **0 release-ready**. The 15 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **Verified continuation checkpoint — 16 October 2026:** [#249](https://github.com/Vertex-Systems-Network/vsn-builder/pull/249) made legacy uninstall fail closed without a trusted install-generation proof (7/7 required PR checks); [#250](https://github.com/Vertex-Systems-Network/vsn-builder/pull/250) installed the live, read-only T013 protection probe (5/5 PR checks), whose [actual protected `development` push run](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38909028455) reported **NO_REQUIRED_HUMAN_APPROVAL**; [#251](https://github.com/Vertex-Systems-Network/vsn-builder/pull/251) bounded merchant editor draft versions to PostgreSQL signed Int, with cross-tenant/late-request regression tests (**4/4 exact-head PR CI PASS**). The latest code merge is `15455cdf40941b353a2e7fa30b60eba15e636100`. GitHub `development.protected=true`, but effective human approval is **missing**; Neon Staging/Production each retain **one** branch, and live Worker secrets/bindings and hosted Shopify acceptance remain unverified. **14 FINAL CLOSED, 8 IN_REVIEW, 19 WAITING**; no new closures or production deploy.
 
 **AI-only review policy — 16 October 2026 (user-approved):** All PR design/code/security review is the AI engineering agent's responsibility, backed by mandatory GitHub PR and deterministic security/test CI. **0 human approval required**; protected `development`, `repository-integrity` required status, force-push and deletion restrictions remain mandatory. GitHub effective-rule read-only attestation now rejects human approval prerequisites rather than requiring them. A passing CI check **does not mean** an independent AI model reviewed code; code review must be performed by the agent with recorded PR evidence. Real GitHub Environment secrets and hosted Shopify/Neon validation remain separately blocked. T013 remains IN_REVIEW until a new protected push attestation passes; no Live/Staging deployment authorized.
+
+**T013 FINAL CLOSED — 16 October 2026:** [PR #253](https://github.com/Vertex-Systems-Network/vsn-builder/pull/253) applied user-directed **AI-owned engineering review with ZERO human PR approvals**, preserving exact-head required GitHub PR checks, `repository-integrity`, force-push/deletion prevention and protected `development`. Independently authenticated [GitHub push run #38921068981](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38921068981) is **PASS** on the actual protected branch for this full scope. T013 is permanently archived, removed from ACTIVE tasks and satisfies dependencies. **T014 remains IN_REVIEW** because scoped GitHub Environment secrets/deployment permissions, Worker bindings and real hosted OAuth/migrations are not certified. AI review does not bypass tests or create inaccessible credentials. **15 FINAL CLOSED, 26 ACTIVE = 7 IN_REVIEW + 19 WAITING.**
 
 **Work order:** dependency-first, not phase-first. Mandatory release and Shopify safeguards remain in place. One public VSN | Builder app; Starter $30, Sliver $100, Gold $150, Platinum $350 monthly/$3,000 annually; each 10-day Shopify trial, no Free tier.
 
@@ -53,11 +55,11 @@
 
 **READY now:** none; all independent previously ready identity work is in verification review.
 
-**IN_REVIEW:** `T013`, `T014`, `T015`, `T017`, `T020`, `T024`, `T032`, `T040`.
+**IN_REVIEW:** `T014`, `T015`, `T017`, `T020`, `T024`, `T032`, `T040`.
 
 **T024 in review:** [PR #193](https://github.com/Vertex-Systems-Network/vsn-builder/pull/193) hardens webhook read deadlines; real trusted generation and uninstall E2E still OPEN.
 
-**T013 in review:** [PR #194](https://github.com/Vertex-Systems-Network/vsn-builder/pull/194) tests effective GitHub branch policy; live development protection still missing. No deployment approval.
+**Historical pre-closure T013:** [PR #194](https://github.com/Vertex-Systems-Network/vsn-builder/pull/194) tests effective GitHub branch policy; this was historical, superseded by final verified protected-branch closure #253. No deployment approval.
 
 **T032 IN_REVIEW:** [PR #197](https://github.com/Vertex-Systems-Network/vsn-builder/pull/197) passes 26 Liquid blocks/14 asset static checks. Real Horizon theme exists in Dev and Staging test stores and their main-page section allows @app blocks with a content_for renderer; Builder extension installation and browser/Forms/Widgets acceptance are still pending.
 
@@ -65,7 +67,7 @@
 
 **T026 FINAL CLOSED:** [PR #196](https://github.com/Vertex-Systems-Network/vsn-builder/pull/196) and audited mutation inventory close the server paid-access code scope. Live Shopify subscription/trial E2E is T029 and still pending.
 
-**FINAL CLOSED:** T011 full dependency-security audits, T027 exact four paid plan code contract, and **T012 audited stacked PR source integration**. These appear in [audit archive](docs/closed-task-archive.md). GitHub branch protection T013 and Shopify Partner pricing T028 remain open.
+**FINAL CLOSED:** T011 full dependency-security audits, T027 exact four paid plan code contract, and **T012 audited stacked PR source integration**. These appear in [audit archive](docs/closed-task-archive.md). GitHub branch protection T013 is FINAL CLOSED; Shopify Partner pricing T028 remains open.
 
 **T014 IN_REVIEW:** [PR #205](https://github.com/Vertex-Systems-Network/vsn-builder/pull/205) adds encrypted Cloudflare Worker binding checks. Real Staging audit found 0 Worker secrets and 0 bindings; GitHub Environment reviewers remain unverified. T019/T018 remain WAITING.
 
@@ -73,7 +75,6 @@
 
 | ID | Priority | Task | Status | Unmet dependency | Work package |
 | --- | --- | --- | --- | --- | --- |
-| T013 | P0 | Protect development branch and verify GitHub required reviewers | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | IN_REVIEW | — | [issues/158](https://github.com/Vertex-Systems-Network/vsn-builder/issues/158) |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | — | [issues/159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
 | T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | WAITING | T014 | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
