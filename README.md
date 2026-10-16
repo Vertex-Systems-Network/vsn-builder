@@ -31,6 +31,8 @@
 
 **T024 legacy uninstall generation safety (16 October 2026):** A signed Shopify uninstall event can be delayed beyond reinstall, so HMAC authentication alone cannot authorize broad shop-data/session deletion. The legacy Node uninstall route now returns **503 fail-closed** (retry requested) instead of deleting newly installed merchant data without trusted generation proof; real route VM tests cover delayed/current signed events and invalid topic/shop. This is an intentional incomplete webhook lifecycle until a trusted install-generation attestor and transactional fence are hosted; T024/T025 remain open.
 
+**T013 protection progress (16 October 2026):** GitHub development now reports protected=true, and the repository-integrity status check genuinely blocked a merge until implemented. The T013 GET-only effective rules workflow now also auto-runs on protected development push after an exact branch/repo/protection gate. Untrusted PRs run only synthetic tests without GitHub tokens. Effective human approval, Environment reviewers and bypass policy still await independent verification; T013 stays IN_REVIEW.
+
 **Current review queue (all others WAITING):**
 
 | Task | Next acceptance blocker |

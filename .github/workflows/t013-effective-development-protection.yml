@@ -5,6 +5,9 @@ on:
       - "scripts/t013-effective-development-protection.mjs"
       - "tests/t013-effective-development-protection.test.mjs"
       - ".github/workflows/t013-effective-development-protection.yml"
+      - "tests/t013-protected-workflow-gate.test.mjs"
+  push:
+    branches: [development]
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,9 +28,9 @@ jobs:
       - name: Test read-only control-plane verifier without tokens or deployments
         env:
           GITHUB_TOKEN: ""
-        run: node --test tests/t013-effective-development-protection.test.mjs
+        run: node --test tests/t013-effective-development-protection.test.mjs tests/t013-protected-workflow-gate.test.mjs
   protected-ref-prerequisite:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -41,7 +44,7 @@ jobs:
           test "$SOURCE_REF" = "refs/heads/development"
           test "$SOURCE_PROTECTED" = "true"
   live-read-only-attestation:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     needs: protected-ref-prerequisite
     runs-on: ubuntu-latest
     timeout-minutes: 5
