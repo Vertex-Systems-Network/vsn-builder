@@ -1,6 +1,8 @@
 name: T014 Protected GitHub Staging Environment Attestation (No Deploy)
 # T014 validates GitHub-scoped configuration only. Cloudflare Worker
 # secret bindings, domain routing and deployment belong to T019/T021.
+# Mirror vsn-metafields: scoped secrets from GitHub Environment; public
+# non-secret tier identities are pinned in versioned source, not vars.*.
 on:
   push:
     branches: [development]
@@ -17,10 +19,10 @@ jobs:
       SOURCE_REPO: ${{ github.repository }}
       SOURCE_REF: ${{ github.ref }}
       SOURCE_PROTECTED: ${{ github.ref_protected }}
-      APP_ENV: ${{ vars.APP_ENV }}
-      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
-      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
-      SHOPIFY_BILLING_TEST_MODE: ${{ vars.SHOPIFY_BILLING_TEST_MODE }}
+      APP_ENV: staging
+      NEON_PROJECT_ID: shiny-violet-61219572
+      CLOUDFLARE_WORKER_NAME: vsn-builder-staging
+      SHOPIFY_BILLING_TEST_MODE: "true"
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
       SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
@@ -88,6 +90,6 @@ jobs:
               print('::error::' + error)
           if errors:
               raise SystemExit(1)
-          print('T014 protected cloudflare-staging GitHub Environment: PASS (6 secret values present and tier-scoped, 4 variables checked).')
+          print('T014 protected cloudflare-staging GitHub Environment: PASS (6 Environment secrets validated; 4 repository-pinned staging identifiers verified).')
           print('No credential value logged. Cloudflare Worker runtime bindings are T019; no deploy, SQL or Shopify API calls.')
           PY
