@@ -23,14 +23,22 @@ function bindingList(value){
 }
 function safeOrigin(value){
  try{
-  const raw=String(value||"");
-  const url=new URL(raw);
+  if(typeof value!=="string" || value.length>2048 ||
+     value!==value.trim() || /[\\x00-\\x20\\x7F]/.test(value))
+   return false;
+  const url=new URL(value);
+  const host=url.hostname.toLowerCase();
+  // URL parsing can normalize numeric IP spellings. Require DNS labels
+  // with an alphabetic TLD, never a private IP/loopback literal, IPv6,
+  // trailing-dot domain or special-use test host. DNS reachability and
+  // ownership are separately checked at deployment, not inferred here.
+  const publicName=/^(?=.{4,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
   return url.protocol==="https:"&&!url.username&&!url.password&&!url.port&&
     url.pathname==="/"&&!url.search&&!url.hash&&
-    url.hostname.includes(".") &&
-    !/(?:^|[.])(?:localhost|invalid|test)$/.test(url.hostname) &&
-    !/(?:^|[.])example[.](?:com|org|net)$/.test(url.hostname) &&
-    !/[.](?:trycloudflare[.]com|ngrok-free[.]app|ngrok[.]io|loca[.]lt)$/.test(url.hostname);
+    publicName.test(host) &&
+    !/(?:^|\\.)(?:localhost|local|internal|test|invalid|example)$/.test(host) &&
+    !/(?:^|\\.)example\\.(?:com|org|net)$/.test(host) &&
+    !/\\.(?:trycloudflare\\.com|ngrok-free\\.app|ngrok\\.io|loca\\.lt)$/.test(host);
  }catch{return false;}
 }
 
@@ -49,6 +57,14 @@ export function auditStagingWorkerBindings({settings,secrets,subdomain}={}){
   errors.push(code("DUPLICATE_BINDING_METADATA"));
  const find=(name)=>bindingRows.find(x=>x?.name===name);
  const metadata=new Map(secretRows.map(item=>[item?.name,item?.type]));
+ const secretNames=new Map();
+ for(const item of secretRows){
+  if(typeof item?.name!=="string" || !item.name)
+   errors.push(code("INVALID_SECRET_METADATA"));
+  else secretNames.set(item.name,(secretNames.get(item.name)||0)+1);
+ }
+ for(const count of secretNames.values())if(count>1)
+  errors.push(code("DUPLICATE_SECRET_METADATA"));
  for(const name of SECRET_NAMES){
   const attached=find(name);
   const listed=metadata.get(name);
