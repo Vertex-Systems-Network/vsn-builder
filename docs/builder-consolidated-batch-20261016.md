@@ -4,8 +4,8 @@
 
 ## Exact task accounting — no artificial closures
 
-- **14 FINAL CLOSED** for original narrow acceptance scopes; permanently removed from ACTIVE work.
-- **27 ACTIVE** = **8 IN_REVIEW** + **19 WAITING**; **0 READY**; **0 hosted/live release-ready**.
+- **15 FINAL CLOSED** for original narrow acceptance scopes, including provider-verified AI-only T013 branch protection; permanently removed from ACTIVE work.
+- **26 ACTIVE** = **7 IN_REVIEW** + **19 WAITING**; **0 READY**; **0 hosted/live release-ready**.
 - Opening/merging a source PR or passing synthetic CI **never** changes task acceptance to CLOSED without its real written requirements.
 - Exactly one eventual public Shopify application: **VSN | Builder**. Development/Staging are internal configurations. No Free plan. Starter $30, Sliver $100, Gold $150, Platinum $350 monthly / $3,000 annual, all 10-day trials. Shopify Partner plan publication **not attested**.
 
@@ -40,11 +40,12 @@
 - **Shopify:** Store connections `Local Server`, `Staging`, `Production` were read and returned live stores. Store connectivity does **not** certify Partner legal ownership, Builder installation/OAuth, paid-plan publication, or actual App Store eligibility.
 - No production release, Worker script mutation, Neon default schema change, Shopify plan charges, or Shopify submission was performed.
 
-## Single-batch 27-item blocker matrix
+**T013 FINAL CLOSED — 16 October 2026:** [PR #253](https://github.com/Vertex-Systems-Network/vsn-builder/pull/253) applied user-directed **AI-owned engineering review with ZERO human PR approvals**, preserving exact-head required GitHub PR checks, `repository-integrity`, force-push/deletion prevention and protected `development`. Independently authenticated [GitHub push run #38921068981](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38921068981) is **PASS** on the actual protected branch for this full scope. T013 is permanently archived, removed from ACTIVE tasks and satisfies dependencies. **T014 remains IN_REVIEW** because scoped GitHub Environment secrets/deployment permissions, Worker bindings and real hosted OAuth/migrations are not certified. AI review does not bypass tests or create inaccessible credentials. **15 FINAL CLOSED, 26 ACTIVE = 7 IN_REVIEW + 19 WAITING.**
+
+## Single-batch 26-item blocker matrix
 
 | ID | Priority | Work | Verified status | Missing acceptance / next unblock |
 | --- | --- | --- | --- | --- |
-| T013 | P0 | AI-led automated PR and repository-integrity protected-branch verification | IN_REVIEW | User-approved zero-human-review policy implemented in source; postmerge effective-rules PASS not yet verified |
 | T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | IN_REVIEW | GitHub scoped Environment policies not authenticated; both Workers have no bindings |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | Three connected Shopify stores verified; Partner public-app ownership and OAuth missing |
 | T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | WAITING | Requires T014; scoped pooled/direct Neon URL pairing not certified |
@@ -74,6 +75,6 @@
 
 ## Integration decision
 
-Merge isolated code changes only after exact-head mandatory CI, and check development push CI independently. Current top-level release remains **BLOCKED** by missing protected GitHub ref/review rules, actual scoped secrets, GitHub-reviewed Neon Free-plan Staging migration and real Shopify Partner/merchant E2E. Finish all independent source/test work as one batch, but do **not** bypass these gates to claim complete or submit to Shopify.
+Merge isolated code changes only after exact-head mandatory CI, and check development push CI independently. Current top-level release remains **BLOCKED** by missing actual scoped GitHub Environment secrets/deployment permissions, GitHub-reviewed Neon Free-plan Staging migration and real Shopify Partner/merchant E2E. Finish all independent source/test work as one batch, but do **not** bypass these gates to claim complete or submit to Shopify.
 
 See [canonical task manifest](../config/project/task-dependency-plan.json) and [active task board](../TASKS.md). This report is evidence, not a new task tracker or a reset of FINAL CLOSED scopes.

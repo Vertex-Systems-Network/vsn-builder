@@ -6,14 +6,14 @@
 
 | Task-state metric | Verified count |
 | --- | ---: |
-| FINAL CLOSED (excluded from active queues) | **14 / 41** |
-| ACTIVE | **27 / 41** |
+| FINAL CLOSED (excluded from active queues) | **15 / 41** |
+| ACTIVE | **26 / 41** |
 | READY | **0** |
-| IN_REVIEW | **8** |
+| IN_REVIEW | **7** |
 | WAITING | **19** |
 | Merchant/Production release-ready | **0** |
 
-**Task closure progress:** `███████░░░░░░░░░░░░░` **14/41 · 34.1%** (bar rounded to 20 units). These are accepted **task scopes**, NOT percent of application features or revenue readiness. The historical eight-phase system below is archival only; dependencies, not phase numbers, determine the work order.
+**Task closure progress:** `███████░░░░░░░░░░░░░` **15/41 · 36.6%** (bar rounded to 20 units). These are accepted **task scopes**, NOT percent of application features or revenue readiness. The historical eight-phase system below is archival only; dependencies, not phase numbers, determine the work order.
 
 **Consolidated 27-task development batch — 16 October 2026:** [Evidence and all-task blocker matrix](docs/builder-consolidated-batch-20261016.md). Three isolated source hardening PRs passed **3/3 exact-head workflows each** and were squash merged on `development`: [#232](https://github.com/Vertex-Systems-Network/vsn-builder/pull/232) T032 theme countdown lifecycle, [#233](https://github.com/Vertex-Systems-Network/vsn-builder/pull/233) T014 Cloudflare Staging origin/secret metadata, [#234](https://github.com/Vertex-Systems-Network/vsn-builder/pull/234) T020 merchant draft version integrity. All are **source-level improvements within existing IN_REVIEW tasks**, not new FINAL CLOSED acceptances. **Post-merge push workflows need separate exact-SHA verification.** Cloudflare Staging and Production have zero Worker secrets/bindings and Neon Staging default has zero app tables. GitHub `development` has since become protected, but its live rules still lack required human approval. Do not deploy or submit the Shopify app.
 
@@ -37,11 +37,12 @@
 
 **AI-only review policy — 16 October 2026 (user-approved):** All PR design/code/security review is the AI engineering agent's responsibility, backed by mandatory GitHub PR and deterministic security/test CI. **0 human approval required**; protected `development`, `repository-integrity` required status, force-push and deletion restrictions remain mandatory. GitHub effective-rule read-only attestation now rejects human approval prerequisites rather than requiring them. A passing CI check **does not mean** an independent AI model reviewed code; code review must be performed by the agent with recorded PR evidence. Real GitHub Environment secrets and hosted Shopify/Neon validation remain separately blocked. T013 remains IN_REVIEW until a new protected push attestation passes; no Live/Staging deployment authorized.
 
-**Current review queue (all others WAITING):**
+**T013 FINAL CLOSED — 16 October 2026:** [PR #253](https://github.com/Vertex-Systems-Network/vsn-builder/pull/253) applied user-directed **AI-owned engineering review with ZERO human PR approvals**, preserving exact-head required GitHub PR checks, `repository-integrity`, force-push/deletion prevention and protected `development`. Independently authenticated [GitHub push run #38921068981](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38921068981) is **PASS** on the actual protected branch for this full scope. T013 is permanently archived, removed from ACTIVE tasks and satisfies dependencies. **T014 remains IN_REVIEW** because scoped GitHub Environment secrets/deployment permissions, Worker bindings and real hosted OAuth/migrations are not certified. AI review does not bypass tests or create inaccessible credentials. **15 FINAL CLOSED, 26 ACTIVE = 7 IN_REVIEW + 19 WAITING.**
+
+**Current review queue (T013 final closed; all others WAITING):**
 
 | Task | Next acceptance blocker |
 | --- | --- |
-| T013 | AI-only effective rules check: protected PR + repository-integrity CI required; latest protected-push live attestation pending |
 | T014 | Scoped GitHub Environment secrets and automated deployment policy (no human reviewers), plus real Worker bindings |
 | T015 | Actual Partner ownership, Dev Shopify install and authenticated OAuth callback evidence |
 | T017 | Single pinned Neon Free Staging branch and snapshot listed; scoped reviewed migration preflight and restore proof still pending (paid branch protection not required) |
