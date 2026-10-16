@@ -120,7 +120,7 @@ def query_readonly(connection, *, runner=subprocess.run, psql=None, trust_root=T
     if (
         db != connection["database"] or role != connection["user"]
         or tx_read_only != "on" or in_recovery != "f"
-        or not re.fullmatch(r"\\d+", table_count)
+        or not re.fullmatch(r"\d+", table_count)
     ):
         raise ProbeBlocked("T016_POSTGRES_IDENTITY_OR_READ_ONLY_TX_MISMATCH")
     return (db, role, int(table_count))
