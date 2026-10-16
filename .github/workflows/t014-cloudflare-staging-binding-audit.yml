@@ -4,7 +4,10 @@ on:
     paths:
       - "scripts/t014-staging-worker-bindings.mjs"
       - "tests/t014-staging-worker-bindings.test.mjs"
+      - "tests/t014-protected-staging-push-gate.test.mjs"
       - ".github/workflows/t014-cloudflare-staging-binding-audit.yml"
+  push:
+    branches: [development]
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,9 +26,9 @@ jobs:
         with:
           node-version: "22.18.0"
       - name: Prove secrets stay hidden and empty Cloudflare inventory fails closed
-        run: node --test tests/t014-staging-worker-bindings.test.mjs
+        run: node --test tests/t014-staging-worker-bindings.test.mjs tests/t014-protected-staging-push-gate.test.mjs
   protected-reference:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -39,7 +42,7 @@ jobs:
           test "$SOURCE_REF" = "refs/heads/development"
           test "$SOURCE_PROTECTED" = "true"
   live-metadata-readonly:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     needs: protected-reference
     runs-on: ubuntu-latest
     timeout-minutes: 5

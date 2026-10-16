@@ -18,11 +18,11 @@ function run(tier,overrides={}){
  const keys={
   REQUESTED_TIER:tier,APP_ENV:tier,SOURCE_BRANCH_PROTECTED:"true",
   SHOPIFY_BILLING_TEST_MODE:tier==="staging"?"true":"false",
-  SHOPIFY_API_KEY:tier==="staging"?"b".repeat(32):"c".repeat(32),
+  SHOPIFY_API_KEY:tier==="staging"?"0ecd6b7151485b41ea65924fe827806a":"997eae5a9961f21d131e5f31bbbe31d3",
   SHOPIFY_API_SECRET:"ci-do-not-use-merchant-secret",
   SHOPIFY_DEVELOPMENT_CLIENT_ID:"a".repeat(32),
-  SHOPIFY_STAGING_CLIENT_ID:"b".repeat(32),
-  SHOPIFY_PRODUCTION_CLIENT_ID:"c".repeat(32),
+  SHOPIFY_STAGING_CLIENT_ID:"0ecd6b7151485b41ea65924fe827806a",
+  SHOPIFY_PRODUCTION_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3",
   SHOPIFY_APP_URL:tier==="staging"?"https://builder-staging.synthetic.dev":"https://builder-live.synthetic.dev",
   NEON_PROJECT_ID:tier==="staging"?"shiny-violet-61219572":"nameless-violet-68750490",
   CLOUDFLARE_WORKER_NAME:tier==="staging"?"vsn-builder-staging":"vsn-builder-production",
@@ -107,10 +107,10 @@ test("scoped Staging/Production validator requires three real distinct Shopify C
    {SHOPIFY_DEVELOPMENT_CLIENT_ID:""},
    {SHOPIFY_STAGING_CLIENT_ID:""},
    {SHOPIFY_PRODUCTION_CLIENT_ID:""},
-   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"b".repeat(32)},
-   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"c".repeat(32)},
-   {SHOPIFY_STAGING_CLIENT_ID:"c".repeat(32)},
-   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"B".repeat(32)},
+   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"0ecd6b7151485b41ea65924fe827806a"},
+   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3"},
+   {SHOPIFY_STAGING_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3"},
+   {SHOPIFY_DEVELOPMENT_CLIENT_ID:"0ECD6B7151485B41EA65924FE827806A"},
    {SHOPIFY_STAGING_CLIENT_ID:"z".repeat(32)},
    {SHOPIFY_DEVELOPMENT_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3"},
   ]){
@@ -161,8 +161,8 @@ test("wrong or missing effective GitHub environment vars fail even with valid cr
 });
 test("scoped Client ID and SDK runtime Client ID must match the exact hosted tier",()=>{
  const cases=[
-  ["staging",{SHOPIFY_API_KEY:"c".repeat(32)}],
-  ["production",{SHOPIFY_API_KEY:"b".repeat(32)}],
+  ["staging",{SHOPIFY_API_KEY:"997eae5a9961f21d131e5f31bbbe31d3"}],
+  ["production",{SHOPIFY_API_KEY:"0ecd6b7151485b41ea65924fe827806a"}],
   ["staging",{SHOPIFY_STAGING_CLIENT_ID:"d".repeat(32)}],
   ["production",{SHOPIFY_PRODUCTION_CLIENT_ID:"d".repeat(32)}],
  ];
