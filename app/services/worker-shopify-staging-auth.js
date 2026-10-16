@@ -4,6 +4,7 @@
 import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
+import { hasCanonicalStagingOAuthQuery } from "./worker-shopify-auth-query.js";
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const AUTH_ROUTE=/^\/auth\/(?!login(?:\/|$))[a-z0-9-]{1,64}$/;
@@ -46,12 +47,11 @@ export async function handleVerifiedStagingShopifyAuth(request,env,{
     return denied();
   const url=new URL(request.url);
   if(!AUTH_ROUTE.test(url.pathname))return denied(404);
-  // Do not allow spoofed app targets or duplicate "shop" values to direct an
-  // authenticated session to a tenant other than the official SDK identity.
-  if([...url.searchParams.keys()].some(k=>
-       !["shop","host","hmac","timestamp","state","code","id_token",
-         "session","embedded"].includes(k)) ||
-     url.searchParams.getAll("shop").length>1)return denied(400);
+  // Canonical query shape is checked BEFORE any SDK/Neon I/O; do not
+  // let duplicate signed parameters be interpreted differently by layers.
+  if(!hasCanonicalStagingOAuthQuery(url,"callback"))return denied(400);
+  const hintedShop=url.searchParams.get("shop");
+  if(hintedShop!==null && !SHOP.test(hintedShop))return denied(400);
   if(!inspectWorkerShopifyConfiguration(request,env).ready ||
      !inspectWorkerNeonEnvironment(env).ready)return denied();
   let context;

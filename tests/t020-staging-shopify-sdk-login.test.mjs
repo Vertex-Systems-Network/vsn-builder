@@ -94,6 +94,23 @@ test("invalid input and duplicate OAuth parameters are blocked before Shopify se
  assert.equal(f.calls.length,0);
 });
 
+test("all ambiguous login parameters and oversized OAuth hints are blocked before SDK or Neon",async()=>{
+ const f=fixture();
+ for(const path of [
+  "/auth/login?shop="+shop+"&%73hop=other.myshopify.com",
+  "/auth/login?shop="+shop+"&embedded=1&embedded=0",
+  "/auth/login?shop="+shop+"&host=a&host=b",
+  "/auth/login?shop="+shop+"&host="+"h".repeat(4097),
+  "/auth/login?shop="+shop+"&host="+"h".repeat(8193),
+  "/auth/login?shop="+shop+"&session=inject",
+ ]){
+  const response=await run(f,env,request(path));
+  assert.equal(response.status,400,"invalid: "+path.slice(0,70));
+  assert.equal(await response.text(),"");
+ }
+ assert.equal(f.calls.length,0);
+});
+
 test("production, unconfigured Worker and missing secrets never call SDK login",async()=>{
  const f=fixture();
  for(const config of [

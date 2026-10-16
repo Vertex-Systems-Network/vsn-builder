@@ -4,6 +4,7 @@
 import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
+import { hasCanonicalStagingOAuthQuery } from "./worker-shopify-auth-query.js";
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const blocked=(status=503)=>new Response(null,{status,headers:{
@@ -52,10 +53,7 @@ export async function handleVerifiedStagingShopifyLogin(request,env,{
     env?.VSN_STAGING_OAUTH_ENABLED!=="true")return blocked();
  const url=new URL(request.url);
  if(url.pathname!=="/auth/login")return blocked(404);
- if([...url.searchParams.keys()].some(key=>!["shop","host","embedded"].includes(key))||
-    url.searchParams.getAll("shop").length>1 ||
-    url.searchParams.getAll("host").length>1 ||
-    url.searchParams.getAll("embedded").length>1)return blocked(400);
+ if(!hasCanonicalStagingOAuthQuery(url,"login"))return blocked(400);
  if(!inspectWorkerShopifyConfiguration(request,env).ready||
     !inspectWorkerNeonEnvironment(env).ready)return blocked();
  const hinted=url.searchParams.get("shop");
