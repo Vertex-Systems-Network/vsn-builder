@@ -551,7 +551,7 @@
       "title": "Templates/Widgets/theme app assets implementation and synthetic QA",
       "workstream": "Merchant Features",
       "priority": "P1",
-      "status": "in_review",
+      "status": "closed",
       "depends_on": [
         "T009"
       ],
@@ -564,10 +564,13 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/238",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/240",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/243",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/244"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/244",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/257"
       ],
       "acceptance": "Template/widgets/form and theme app extension code/test verified on supported fixture themes",
-      "progress_note": "2026-10-16 PR #243 (merge aef60d8732d931ceda72d8917f0165d10db121c7) blocks malicious wishlist link and media URL schemes, normalizer/card sink bypass, and preserves legitimate same-origin Shopify product links; 3/3 CI PASS. PR #244 (merge 321d362cebb0dad4792d9ab7e345a15b0dcba9b8) adds AbortController per theme app block and cancels stale Shopify editor selection/unload requests with adversarial VM tests; 3/3 CI PASS. All source-only. Hosted Shopify supported themes, actual merchant forms/widgets and browser E2E remain unverified. T032 IN_REVIEW."
+      "progress_note": "FINAL CLOSED for T032 narrow SOURCE/fixture QA, 2026-10-16: dedicated theme extension CI suite exercises pinned Dawn 16 and Horizon fixture placement, 20+ native Liquid app blocks and asset dependencies, newsletter consent-safe form, variant/quantity cart, link/escaping, app-proxy privacy, wishlist URL safety and async editor cancellation. Protected development postmerge verification through automatic T032 theme QA is separate from PR green. Real Shopify merchant theme/install browser E2E remains T033 WAITING and not implied by closure.",
+      "closed_on": "2026-10-16",
+      "closure_note": "Only T032 standalone synthetic theme-extension asset/widget/template/form QA certified: actual Liquid block schema/files, real pinned upstream open-source Dawn and Horizon fixture section placement, Shopify native newsletter/product cart/buttons, escaping, proxy privacy/async editor tests. NO real merchant installed Shopify theme, premium Prestige/Impulse/Custom fixture, published extension, customer consent or storefront/mobile E2E. Hosted acceptance remains expressly T033, T031/T035. Single Shopify public app remains unsubmitted."
     },
     {
       "id": "T033",
@@ -728,6 +731,7 @@
     "T012",
     "T013",
     "T026",
-    "T027"
+    "T027",
+    "T032"
   ]
 }
