@@ -7,6 +7,7 @@ import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } fro
 import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-draft-save-request.js";
 import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
 import { handleVerifiedStagingShopifyAuth } from "../app/services/worker-shopify-staging-auth.js";
+import { handleVerifiedStagingShopifyLogin } from "../app/services/worker-shopify-staging-login.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
 import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
 
@@ -71,7 +72,11 @@ export default {
     // Stage-only official Shopify SDK OAuth/callback bridge. The SDK verifies
     // signatures/tokens and stores sessions through a generation-fenced Neon
     // adapter. Disabled by default; GET /auth/login remains blocked until a
-    // separate real login form is integrated and tested.
+    // a matching SDK-owned /auth/login request is explicitly authorized.
+    // Official Shopify SDK login owns OAuth state/redirect generation.
+    // GET-only form and callback both require explicit Staging opt-in.
+    if(url.pathname==="/auth/login" && request.method==="GET")
+      return handleVerifiedStagingShopifyLogin(request,env);
     if(/^\/auth\/(?!login(?:\/|$))[a-z0-9-]{1,64}$/.test(url.pathname) &&
        request.method==="GET")
       return handleVerifiedStagingShopifyAuth(request,env);
