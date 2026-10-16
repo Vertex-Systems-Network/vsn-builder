@@ -22,7 +22,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Verify no-prod, TLS, no secret leak and transaction read-only contracts
-        run: python3 -m unittest discover -s tests -p 't016-staging-neon-connectivity.test.py' -v
+        run: python3 tests/t016-staging-neon-connectivity.test.py -v
   protected-reference:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
