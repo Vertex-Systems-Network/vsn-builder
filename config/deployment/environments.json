@@ -36,7 +36,9 @@
     "neon_endpoint_id": "ep-little-dream-b3g6puj2",
     "neon_pooler_enabled": true,
     "neon_primary_policy": "free-plan-staging-pinned-snapshot-github-reviewed",
-    "neon_plan_capability": "unprotected-branch-allowed-in-staging-only"
+    "neon_plan_capability": "unprotected-branch-allowed-in-staging-only",
+    "neon_branch_policy": "exactly-one-active-default",
+    "neon_snapshot_source_is_historical": true
   },
   "production": {
     "source_branch": "main",
@@ -52,6 +54,7 @@
     "cloudflare_worker_state": "created_fail_closed_placeholder_no_public_subdomain_not_deployed",
     "neon_project_id": "nameless-violet-68750490",
     "neon_endpoint_host": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech",
-    "neon_default_branch_id": "br-odd-credit-b3rzlpz9"
+    "neon_default_branch_id": "br-odd-credit-b3rzlpz9",
+    "neon_branch_policy": "exactly-one-active-default"
   }
 }

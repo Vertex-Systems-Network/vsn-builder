@@ -22,7 +22,6 @@ function fixtures() {
  return {
   branches:[
    {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true,primary:true,protected:false},
-   {id:stage.neon_recovery_source_branch_id,project_id:stage.neon_project_id,default:false},
   ],
   snapshots:[{id:stage.neon_pre_migration_snapshot_id,
     source_branch_id:stage.neon_recovery_source_branch_id,created_at:"2026-10-13T21:39:35Z"}],
@@ -54,6 +53,8 @@ test("real API snapshot and restored default compute prove shape without any mut
  assert.equal(result.defaultBranchId,stage.neon_default_branch_id);
  assert.equal(result.primaryProtected,false);
  assert.equal(result.freeTierPolicyApplied,true);
+ assert.equal(result.activeBranchCount,1);
+ assert.equal(result.historicalSnapshotSourceBranchId,stage.neon_recovery_source_branch_id);
  assert.deepEqual(a.called.sort(),["branches","endpoints","snapshots"]);
 });
 test("missing secrets, unprotected branch and invented snapshot block BEFORE API calls",async()=>{
@@ -79,7 +80,7 @@ test("real API response must certify original backup, restored branch, endpoint 
   a=>{a.branches[0].protected=null},
   a=>{a.branches[0].default=false},
   a=>{a.branches[0].id=stage.neon_recovery_source_branch_id},
-  a=>{a.branches[1].id="br-unknown"},
+  a=>{a.branches.push({id:"br-unwanted-qa-branch",project_id:stage.neon_project_id,default:false,protected:false})},
   a=>{a.endpoints[0].pooler_enabled=false},
   a=>{a.endpoints[0].branch_id=stage.neon_recovery_source_branch_id},
   a=>{a.endpoints[0].host=targets.production.neon_endpoint_host},
@@ -92,7 +93,7 @@ test("real API response must certify original backup, restored branch, endpoint 
   }),/Staging Neon control-plane proof blocked/);
  }
 });
-test("Neon Free-plan Staging is valid only with reviewed source, real snapshot and exact isolated compute",async()=>{
+test("Neon Free-plan Staging is valid only with ONE active branch, pinned snapshot and exact isolated compute",async()=>{
  const branch=fixtures();
  assert.equal(branch.branches[0].protected,false);
  const attestation=await verifyStagingNeonControlPlane(credentials(),{
@@ -101,12 +102,14 @@ test("Neon Free-plan Staging is valid only with reviewed source, real snapshot a
  assert.equal(attestation.ready,true);
  assert.equal(attestation.primaryProtected,false);
  assert.equal(attestation.freeTierPolicyApplied,true);
- // Even under the Free-plan exception, any other Neon project endpoint
- // or removed source backup is forbidden; no SQL migration is attempted.
+ // Even under the Free-plan exception, any other Neon project endpoint,
+ // modified historical snapshot source, or extra branch is forbidden.
+ // The retired historical source branch is NOT required to exist.
  for(const mutate of [
   value=>{value.snapshots[0].source_branch_id=stage.neon_default_branch_id},
   value=>{value.endpoints[0].host=targets.production.neon_endpoint_host},
   value=>{value.branches[0].id=targets.production.neon_default_branch_id},
+  value=>{value.branches.push({id:"br-second-qa",project_id:stage.neon_project_id,default:false})},
  ]){
   const data=fixtures();mutate(data);
   await assert.rejects(verifyStagingNeonControlPlane(credentials(),{
