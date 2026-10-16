@@ -239,10 +239,12 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/158",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/194",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38737803817"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38737803817",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/250",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38909028455"
       ],
       "acceptance": "GitHub live metadata shows protected development, required checks and scoped environment reviewer restrictions",
-      "progress_note": "2026-10-16 GitHub development.protected=true provider verified, and repository-integrity required status prevented PR #247 merge until created. Source-only T013 GET-only verifier is additionally wired to exact protected development push, with separate no-token synthetic PR tests. No assumption about human approver, scoped environment reviewer or bypass status; T013 IN_REVIEW pending actual automated real control-plane results."
+      "progress_note": "2026-10-16 GitHub development.protected=true; PR #250 auto-check on protected development push merged after 5/5 green PR CI. Live attestation run #38909028455 explicitly FAILS T013_GITHUB_PROTECTION_NO_REQUIRED_HUMAN_APPROVAL, despite other postmerge push checks green and repository-integrity enforced. Manual GitHub ruleset must require >=1 approving human review to satisfy written acceptance; Environment reviewer/secrets not verified. IN_REVIEW."
     },
     {
       "id": "T014",
@@ -356,10 +358,11 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/175",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/176",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/234",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/241"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/241",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/251"
       ],
       "acceptance": "Full Cloudflare Vite-built VSN Builder merchant route graph; real Shopify OAuth/App Bridge and valid persisted PrismaNeon sessions after Staging migrations; signed webhooks, paid-only mutations, tenant isolation and actual Staging store E2E. PRs #172–#176 prove synthetic CI-only SSR, router, SDK/Neon compilation and an authenticated-gate-to-loader bridge using synthetic sessions; not actual merchant acceptance.",
-      "progress_note": "2026-10-16 source hardening PR #241 merged at 96088aaf535adf5304679a45c5bf596e9003249f after 3/3 exact-head CI PASS incl T020 Full Merchant Workerd Compatibility. Merchant page metadata/summary enforce finite DB version and bounded text/ID/count projections before JSON. Real hosted OAuth, migrated Neon, persisted Shopify sessions and merchant E2E remain unverified; IN_REVIEW."
+      "progress_note": "2026-10-16 T020 PR #251 merged at 15455cdf40941b353a2e7fa30b60eba15e636100 after 4/4 exact-head CI PASS including full merchant Workerd. Merchant editor hydrated stored PostgreSQL Int version now strictly bounded 1..2147483647, consistent with metadata reader; tests reject overflow/forged tenant or page ID and late response after lease revocation. Real hosted Shopify OAuth, Neon-backed session persistence, actual Staging merchant E2E still unverified; IN_REVIEW."
     },
     {
       "id": "T021",
@@ -421,7 +424,8 @@
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/193",
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/237"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/237",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/249"
       ],
       "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
       "progress_note": "2026-10-16 Shopify legacy uninstall Node route now fails closed (503 Retry-After 60) after SDK HMAC/topic/domain validation rather than unconditionally deleting all shop pages and new sessions. A delayed signed old uninstall after reinstall is not trusted installation-generation proof. Actual Node action VM execution tests cover valid old/new and invalid events and assert no DB calls. Source only; future independently attested CAS install lifecycle and hosted real webhook E2E still required. IN_REVIEW."

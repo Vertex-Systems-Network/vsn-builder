@@ -27,6 +27,8 @@
 
 **2026-10-16 T024 source security continuation:** Legacy Shopify uninstall Node handler previously deleted entire shop data/sessions from an HMAC-validated event lacking independently trusted install-generation identity. That is unsafe after reinstall. It now rejects deletion and responds 503 with Retry-After until transactionally attested generation handling is implemented; actual action VM regression tests execute signed/invalid inputs. Real app/uninstalled delivery and GDPR/merchant cleanup acceptance remain pending.
 
+**Newest verified source batch — 16 October 2026:** [PR #249](https://github.com/Vertex-Systems-Network/vsn-builder/pull/249) T024 valid but unproven pre-reinstall uninstall webhooks no longer delete current merchant data; [PR #250](https://github.com/Vertex-Systems-Network/vsn-builder/pull/250) T013 protected-development push attests real GitHub effective rules, **live run #38909028455 fails NO_REQUIRED_HUMAN_APPROVAL** (real admin blocker); [PR #251](https://github.com/Vertex-Systems-Network/vsn-builder/pull/251) T020 editor hydration enforces PostgreSQL 32-bit version with signed boundary, tenant forgery and closed-lease tests (**4/4 PR CI green**, merge `15455cdf40941b353a2e7fa30b60eba15e636100`). No hosted merchant/Live acceptance from these source merges.
+
 ## Live control-plane audit (metadata only, NO MUTATIONS)
 
 - **GitHub:** development.protected=true independently confirmed. The repository-integrity check was enforced by GitHub during PR #247; T013 now runs GET-only effective rules attestation automatically on protected development pushes. Required approval/reviewer/Environment scopes still unverified.
