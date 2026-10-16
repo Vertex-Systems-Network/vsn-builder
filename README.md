@@ -21,6 +21,8 @@
 
 **Additional T032/T020 source privacy and reader-integrity work — 16 October 2026:** [#240](https://github.com/Vertex-Systems-Network/vsn-builder/pull/240) prevents customer name/email/ID exposure in storefront app-proxy GET URLs and blocks cross-origin/unrelated paths; [#241](https://github.com/Vertex-Systems-Network/vsn-builder/pull/241) bounds merchant page JSON scalars and rejects corrupt page versions/contradictory summary counts. Both are merged into `development` with **3/3 required exact-head PR workflows PASS each**, including full T020 Workerd compatibility. **T020/T032 remain IN_REVIEW** until hosted Shopify merchant E2E. Neither PR changes Neon/Cloudflare environments or creates Live acceptance. [Full evidence report](docs/builder-consolidated-batch-20261016.md).
 
+**Shopify theme runtime security and lifecycle continuation (16 October 2026):** [PR #243](https://github.com/Vertex-Systems-Network/vsn-builder/pull/243) blocks malicious wishlist `javascript:`/off-store links and unsafe image schemes at both normalizer and DOM sinks; [PR #244](https://github.com/Vertex-Systems-Network/vsn-builder/pull/244) aborts obsolete app-block GET requests on Shopify editor reselect/unload, refuses stale async preview overwrites, and retries after failures. Each PR was **3/3 exact-head CI-green and squash-merged to `development`**. **T032 remains IN_REVIEW:** hosted merchant supported-theme, forms/widgets and real-store browser E2E not verified; neither PR deploys the app. [27-task evidence matrix](docs/builder-consolidated-batch-20261016.md).
+
 **Current review queue (all others WAITING):**
 
 | Task | Next acceptance blocker |

@@ -22,6 +22,9 @@
 | [#240](https://github.com/Vertex-Systems-Network/vsn-builder/pull/240) | T032 | Strip customer ID/name/email from app-proxy GET query; constrain same-origin Builder paths; adversarial VM tests | Squash merged 812d0c431c5e11272ea3a2d9b67ab8a76dbc1705, 3/3 exact-head PR CI green; no hosted browser QA |
 | [#241](https://github.com/Vertex-Systems-Network/vsn-builder/pull/241) | T020 | Merchant page JSON scalar limits, PostgreSQL Int version bounds, consistent page summary counts and adversarial tests | Squash merged 96088aaf535adf5304679a45c5bf596e9003249f, 3/3 exact-head PR CI green incl full merchant Workerd; no hosted OAuth/E2E |
 
+| [#243](https://github.com/Vertex-Systems-Network/vsn-builder/pull/243) | T032 | Safe same-origin wishlist product links and HTTPS images, no script/data/blob click or image schemes; VM adversarial tests normalize+card sinks | Squash merged aef60d8732d931ceda72d8917f0165d10db121c7; 3/3 exact-head PR CI green; not hosted storefront proof |
+| [#244](https://github.com/Vertex-Systems-Network/vsn-builder/pull/244) | T032 | Cancel stale theme-editor app-block fetch on reselect/unload; ignore detached or out-of-order response; exact proxy URL contract | Squash merged 321d362cebb0dad4792d9ab7e345a15b0dcba9b8; 3/3 exact-head PR CI green; real theme editor merchant QA pending |
+
 ## Live control-plane audit (metadata only, NO MUTATIONS)
 
 - **GitHub:** `development.protected=false` (last verified 2026-10-16). Existing GitHub connector does not provide admin write access to branch-protection or scoped Environment-secret APIs.
