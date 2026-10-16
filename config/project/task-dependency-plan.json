@@ -424,7 +424,7 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/237"
       ],
       "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
-      "progress_note": "PR #237 squash merged at 6a9ca0bc0122ceb7cc163c0a2aa41adc26fdf3a2 with all five exact-head checks green. Legacy uninstall now rejects wrong topic/shop/payload before deletion. Independent trusted installation-generation attestation and actual Shopify E2E still missing; IN_REVIEW."
+      "progress_note": "2026-10-16 Shopify legacy uninstall Node route now fails closed (503 Retry-After 60) after SDK HMAC/topic/domain validation rather than unconditionally deleting all shop pages and new sessions. A delayed signed old uninstall after reinstall is not trusted installation-generation proof. Actual Node action VM execution tests cover valid old/new and invalid events and assert no DB calls. Source only; future independently attested CAS install lifecycle and hosted real webhook E2E still required. IN_REVIEW."
     },
     {
       "id": "T025",

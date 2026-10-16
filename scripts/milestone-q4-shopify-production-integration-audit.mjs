@@ -32,7 +32,21 @@ check("write_app_proxy scope retained",toml.includes("write_app_proxy"));
 for(const topic of ["app/uninstalled","app/scopes_update","orders/paid"]) check(`Required webhook ${topic}`,toml.includes(`"${topic}"`));
 for(const topic of ["customers/data_request","customers/redact","shop/redact"]) check(`Compliance webhook ${topic}`,new RegExp(`compliance_topics\\s*=\\s*\\[[^\\]]*"${topic.replace("/","\\/")}"`).test(toml));
 check("Webhook handlers authenticate with Shopify",["webhooks.app.uninstalled.jsx","webhooks.app.scopes_update.jsx","webhooks.orders.paid.jsx","webhooks.customers.data_request.jsx","webhooks.customers.redact.jsx","webhooks.shop.redact.jsx"].every((file)=>read(`app/routes/${file}`).includes("authenticate.webhook(request)")));
-check("Shared shop data deletion lifecycle",uninstall.includes("deleteVsnShopData")&&redact.includes("deleteVsnShopData")&&lifecycle.includes("builderEmailTemplate.deleteMany")&&lifecycle.includes("builderWishlist.deleteMany")&&lifecycle.includes("builderPage.deleteMany")&&lifecycle.includes("session.deleteMany"));
+// A signed app/uninstalled webhook is not an installation-generation attestor.
+// A delayed pre-reinstall uninstall must NOT delete current merchant data.
+// Shopify shop/redact still invokes the shared privacy deletion lifecycle.
+check("GDPR shop redaction retains deletion while untrusted uninstall fails closed",
+  uninstall.includes("authenticate.webhook(request)") &&
+  uninstall.includes("isValidLegacyUninstallEvent(event)") &&
+  uninstall.includes("status: 503") &&
+  !uninstall.includes("deleteVsnShopData") &&
+  !uninstall.includes("shop-data-lifecycle.server") &&
+  redact.includes("authenticate.webhook(request)") &&
+  redact.includes("deleteVsnShopData") &&
+  lifecycle.includes("builderEmailTemplate.deleteMany") &&
+  lifecycle.includes("builderWishlist.deleteMany") &&
+  lifecycle.includes("builderPage.deleteMany") &&
+  lifecycle.includes("session.deleteMany"));
 check("Theme app extension live verification retained",topnav.includes("window.shopify.app.extensions()")&&topnav.includes("theme_app_extension")&&topnav.includes("Theme Active"));
 check("System Health checks served API version",control.includes("publicApiVersions")&&control.includes("x-shopify-api-version")&&control.includes("apiVersionFallForward"));
 check("System Health checks production URL and scopes",control.includes("productionUrlReady")&&control.includes("productionScopesReady")&&control.includes("SHOPIFY_EXPECTED_SCOPES"));
