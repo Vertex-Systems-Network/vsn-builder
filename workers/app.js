@@ -5,7 +5,7 @@ import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/ser
 import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
 import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } from "../app/services/worker-shopify-admin-gate.js";
 import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-draft-save-request.js";
-import { handleVerifiedStagingMerchantDashboard } from "../app/services/worker-shopify-staging-dashboard.js";
+import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
 import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
 
@@ -108,6 +108,12 @@ export default {
           }),
       });
     }
+    // Staging-only read-only HTML inspection of persisted page metadata
+    // and bounded editor draft. The verified paid/RBAC Shopify SDK guard
+    // re-authenticates every request before either tenant-scoped read.
+    if(/^\/app\/__vsn\/pages\/[a-zA-Z0-9_-]{1,64}\/view$/.test(url.pathname) &&
+       request.method==="GET")
+      return handleVerifiedStagingPageInspection(request,env);
     if(url.pathname.startsWith("/app/__vsn/pages/") && request.method==="GET") {
       // Authenticated, paid, RBAC-protected page metadata or editor hydration.
       // No public draft contents are exposed; POST stays Staging flag-locked.

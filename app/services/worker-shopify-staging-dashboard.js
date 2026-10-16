@@ -45,6 +45,7 @@ const css=[
   "li{display:flex;justify-content:space-between;align-items:center;gap:18px;border-top:1px solid #ededed;padding:14px 0}",
   "li:first-child{border-top:0}",
   ".row-title{font-weight:650;overflow-wrap:anywhere}",
+  "a.row-title{color:#164b84;text-decoration:underline;text-underline-offset:3px}",
   ".row-meta{font-size:13px;color:#61656a;margin-top:4px;overflow-wrap:anywhere}",
   ".status{font-size:12px;background:#e9f5eb;color:#206b36;padding:6px 10px;border-radius:20px;white-space:nowrap}",
   ".notice{font-size:13px;margin-top:18px}",
@@ -59,6 +60,7 @@ export function renderVerifiedStagingMerchantDashboard({shop,apiKey,summary}={})
      summary.draft+summary.published>summary.total||
      !Array.isArray(summary.recent)||summary.recent.length>5)
     throw new TypeError("Invalid verified Shopify merchant dashboard");
+  const shopQuery=encodeURIComponent(shop);
   const rows=summary.recent.map(row=>{
     if(!PAGE.test(String(row?.id||"")) ||
        typeof row?.updatedAt!=="string" ||
@@ -68,8 +70,9 @@ export function renderVerifiedStagingMerchantDashboard({shop,apiKey,summary}={})
     const title=htmlText(row.title,256);
     const template=htmlText(row.template,120);
     const status=htmlText(row.status,40);
-    return '<li><div><div class="row-title">'+title+
-      '</div><div class="row-meta">'+template+' · '+htmlText(row.updatedAt.slice(0,10),10)+
+    return '<li><div><a class="row-title" href="/app/__vsn/pages/'+row.id+
+      '/view?shop='+shopQuery+'">'+title+
+      '</a><div class="row-meta">'+template+' · '+htmlText(row.updatedAt.slice(0,10),10)+
       '</div></div><span class="status">'+status+"</span></li>";
   }).join("");
   const key=htmlText(apiKey,32);
@@ -112,6 +115,8 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
      env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")return restricted();
   const url=new URL(request.url);
   if(url.pathname!=="/app" || request.method!=="GET")return restricted();
+  if([...url.searchParams.keys()].some(key=>key!=="shop") ||
+     url.searchParams.getAll("shop").length>1)return restricted(404);
   return acceptWorkerShopifyAdminRequest(request,env,{
     ...(createSdkContext?{createSdkContext}:{}),
     enablePageSummary:true,
@@ -121,6 +126,103 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
       const summary=await pageSummary();
       return renderVerifiedStagingMerchantDashboard({
         shop,apiKey:env.SHOPIFY_API_KEY,summary,
+      });
+    },
+  });
+}
+
+
+// Read-only per-page inspection: reuses the exact metadata + bounded editor
+// hydration leases. This is NOT a storefront preview or an editing surface.
+export function renderVerifiedStagingPageInspection({
+  shop,apiKey,metadata,content,
+}={}) {
+  if(!SHOP.test(String(shop||"")) || !KEY.test(String(apiKey||"")) ||
+     !metadata || !content || !PAGE.test(String(metadata.id||"")) ||
+     metadata.id!==content.id ||
+     !Number.isSafeInteger(metadata.version) || metadata.version<1 ||
+     metadata.version!==content.version ||
+     !Array.isArray(content.elements) || content.elements.length>5000 ||
+     typeof content.updatedAt!=="string" ||
+     typeof metadata.updatedAt!=="string")
+    throw new TypeError("Invalid verified page inspection records");
+  const safeTime=value=>{
+    if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) ||
+       !Number.isFinite(Date.parse(value)))
+      throw new TypeError("Invalid page inspection date");
+    return htmlText(value.slice(0,10),10);
+  };
+  const modified=safeTime(content.updatedAt);
+  safeTime(metadata.updatedAt);
+  const title=htmlText(metadata.title,256);
+  const handle=htmlText(metadata.handle,256);
+  const template=htmlText(metadata.template,120);
+  const status=htmlText(metadata.status,40);
+  const nodeRows=content.elements.slice(0,30).map((node,index)=>{
+    if(!node || typeof node!=="object" || Array.isArray(node))
+      throw new TypeError("Invalid page inspection node");
+    const type=typeof node.type==="string" && node.type.length<=80?
+      htmlText(node.type,80):"Component";
+    const plain=typeof node.props?.text==="string"?
+      htmlText(node.props.text.slice(0,280),280):"";
+    return '<li><div><div class="row-title">Block '+(index+1)+
+      ': '+type+'</div>'+(plain?'<div class="row-meta">'+plain+'</div>':"")+
+      '</div></li>';
+  }).join("");
+  const blocks=nodeRows||'<li><div class="row-meta">This draft has no saved blocks.</div></li>';
+  const markup='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
+    '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<meta name="shopify-api-key" content="'+htmlText(apiKey,32)+'">'+
+    '<title>Page details · VSN | Builder (Staging)</title>'+
+    '<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>'+
+    '<style>'+css+'</style></head><body><main>'+
+    '<p><a href="/app?shop='+encodeURIComponent(shop)+'">← Back to overview</a></p>'+
+    '<div class="eyebrow">Read-only Staging page inspector</div>'+
+    '<h1>'+title+'</h1><p class="muted">Page handle: '+handle+
+    ' · Template: '+template+' · Status: '+status+'</p>'+
+    '<section class="cards" aria-label="Page information">'+
+    '<div class="card"><div class="label">Saved version</div><div class="count">'+metadata.version+'</div></div>'+
+    '<div class="card"><div class="label">Top-level blocks</div><div class="count">'+content.elements.length+'</div></div>'+
+    '<div class="card"><div class="label">Last updated</div><div class="row-title">'+modified+'</div></div></section>'+
+    '<section class="panel"><h2>Saved draft block outline</h2><ul>'+blocks+
+    '</ul></section><p class="notice">Read-only inspection. This is not a live storefront preview. '+
+    'Editing and publishing remain disabled pending hosted merchant acceptance.</p>'+
+    '</main></body></html>';
+  return new Response(markup,{status:200,headers:{
+    "content-type":"text/html; charset=utf-8",
+    "cache-control":"no-store","x-content-type-options":"nosniff",
+    "referrer-policy":"no-referrer",
+    "content-security-policy":CSP,
+  }});
+}
+
+// Only GET /app/__vsn/pages/:id/view from the verified Stage Worker.
+// Both page capabilities automatically enforce Partner-paid and staff-view
+// authority inside the official Shopify SDK merchant authentication gate.
+export function handleVerifiedStagingPageInspection(request,env,{
+  createSdkContext,
+}={}) {
+  if(!(request instanceof Request) || env?.APP_ENV!=="staging" ||
+     env?.VSN_WORKER_NAME!=="vsn-builder-staging" ||
+     env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")
+    return restricted();
+  const url=new URL(request.url);
+  const path=/^\/app\/__vsn\/pages\/([a-zA-Z0-9_-]{1,64})\/view$/.exec(url.pathname);
+  if(!path || request.method!=="GET")return restricted();
+  if([...url.searchParams.keys()].some(key=>key!=="shop") ||
+     url.searchParams.getAll("shop").length>1)return restricted(404);
+  const pageId=path[1];
+  return acceptWorkerShopifyAdminRequest(request,env,{
+    ...(createSdkContext?{createSdkContext}:{}),
+    enablePageMetadata:true,enablePageContent:true,
+    requireVerifiedPaidRead:true,requirePageViewPermission:true,
+    onAuthenticated:async({shop,pageMetadata,pageContent})=>{
+      const metadata=await pageMetadata(pageId);
+      if(metadata===null)return restricted(404);
+      const content=await pageContent(pageId);
+      if(content===null)return restricted(404);
+      return renderVerifiedStagingPageInspection({
+        shop,apiKey:env.SHOPIFY_API_KEY,metadata,content,
       });
     },
   });
