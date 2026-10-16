@@ -1,7 +1,6 @@
 // Shared, pre-SDK parser policy for Stage-only Shopify OAuth entrypoints.
 // Shopify SDK still owns HMAC, state, cookies, token verification and redirects.
 // Canonicalize only query SHAPE here; no custom authentication is performed.
-const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const LOGIN_KEYS=new Set(["shop","host","embedded"]);
 const CALLBACK_KEYS=new Set([
   "shop","host","hmac","timestamp","state","code","id_token","session","embedded",
@@ -22,6 +21,6 @@ export function hasCanonicalStagingOAuthQuery(url,mode){
     seen.add(key);
   }
   const shop=url.searchParams.get("shop");
-  if(shop!==null && (!SHOP.test(shop)||shop.length>253))return false;
+  if(shop!==null && shop.length>253)return false;
   return true;
 }
