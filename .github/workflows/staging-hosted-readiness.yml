@@ -1,4 +1,7 @@
 name: VSN Builder Staging Hosted Readiness
+# Metafields parity: public Staging origin/Live client ID pinned in reviewed
+# source; real Cloudflare, Neon and Shopify secrets use GitHub Environment.
+# Schema/migration proof and live Worker HTTP checks remain mandatory.
 on:
   pull_request:
     paths:
@@ -53,8 +56,8 @@ jobs:
         env:
           VSN_TARGET_ENV: staging
           SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
-          SHOPIFY_PRODUCTION_CLIENT_ID: ${{ vars.SHOPIFY_PRODUCTION_CLIENT_ID }}
-          SHOPIFY_APP_URL: ${{ vars.SHOPIFY_APP_URL }}
+          SHOPIFY_PRODUCTION_CLIENT_ID: 997eae5a9961f21d131e5f31bbbe31d3
+          SHOPIFY_APP_URL: https://vsn-builder-staging.vertexsystemsnetwork.workers.dev
         run: node scripts/staging-shopify-config.mjs --write
       - name: Check real Staging hosting and protected credentials without deployment
         env:
@@ -64,11 +67,11 @@ jobs:
           NEON_PROJECT_ID: shiny-violet-61219572
           VSN_STAGING_NEON_SCHEMA_VERIFIED: ${{ vars.VSN_STAGING_NEON_SCHEMA_VERIFIED }}
           VSN_STAGING_NEON_MIGRATIONS_VERIFIED: ${{ vars.VSN_STAGING_NEON_MIGRATIONS_VERIFIED }}
-          SHOPIFY_APP_URL: ${{ vars.SHOPIFY_APP_URL }}
+          SHOPIFY_APP_URL: https://vsn-builder-staging.vertexsystemsnetwork.workers.dev
           SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
           SHOPIFY_API_SECRET: ${{ secrets.SHOPIFY_API_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: node scripts/staging-hosted-readiness.mjs --require-ready
       - name: Remove generated Staging Shopify identity before job exit
