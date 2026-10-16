@@ -1,6 +1,54 @@
 # VSN | Builder
 
-## Current active work and irreversible task closure (15 Oct 2026)
+## Verified engineering status — 16 October 2026
+
+**Canonical source of truth:** [ACTIVE TASKS.md](TASKS.md) · [dependency manifest](config/project/task-dependency-plan.json) · [master issue #156](https://github.com/Vertex-Systems-Network/vsn-builder/issues/156). `CLOSED` is permanent only for its recorded acceptance scope; it is excluded from the active queue and retained in [closure audit archive](docs/closed-task-archive.md). **This is NOT a shipped Shopify application.**
+
+| Task-state metric | Verified count |
+| --- | ---: |
+| FINAL CLOSED (excluded from active queues) | **14 / 41** |
+| ACTIVE | **27 / 41** |
+| READY | **0** |
+| IN_REVIEW | **8** |
+| WAITING | **19** |
+| Merchant/Production release-ready | **0** |
+
+**Task closure progress:** `███████░░░░░░░░░░░░░` **14/41 · 34.1%** (bar rounded to 20 units). These are accepted **task scopes**, NOT percent of application features or revenue readiness. The historical eight-phase system below is archival only; dependencies, not phase numbers, determine the work order.
+
+**Current review queue (all others WAITING):**
+
+| Task | Next acceptance blocker |
+| --- | --- |
+| T013 | GitHub `development` branch protection and effective required reviewers/checks |
+| T014 | Protected GitHub Environment secrets/reviewer policy and verified Worker bindings |
+| T015 | Actual Partner ownership, Dev Shopify install and authenticated OAuth callback evidence |
+| T017 | Protected Neon Staging primary; provider plan quota denied previous protection attempt |
+| T020 | Real hosted React Router/Shopify OAuth, Neon-backed editor, merchant E2E |
+| T024 | Independent uninstall installation-generation attestation and signed hosted webhook E2E |
+| T032 | Real Shopify theme/Widgets/Forms browser acceptance |
+| T040 | Real Shopify listing screenshots, published support/privacy, reviewer acceptance |
+
+**Latest merged development source:** [#190](https://github.com/Vertex-Systems-Network/vsn-builder/pull/190) consolidated integration, [#207](https://github.com/Vertex-Systems-Network/vsn-builder/pull/207) GraphQL security repair, [#213](https://github.com/Vertex-Systems-Network/vsn-builder/pull/213) bounded editor JSON, [#214](https://github.com/Vertex-Systems-Network/vsn-builder/pull/214) protected-only external CI, and [#215](https://github.com/Vertex-Systems-Network/vsn-builder/pull/215) hidden serialization-hook hardening. Latest reviewed `development` SHA at this checkpoint: `62a6639728387b6731260ec309c732b6de29b49e`. All seven #215 exact-head PR checks passed; verify [post-merge Development workflow runs](https://github.com/Vertex-Systems-Network/vsn-builder/actions?query=branch%3Adevelopment) separately. **Green source CI never substitutes for hosted acceptance.**
+
+**External environment blockers:** `development.protected=false`; the only observed active GitHub repository ruleset targets `main`, not `development`. Staging Worker `vsn-builder-staging` has zero verified secret bindings/variable bindings and no enabled workers.dev subdomain. The Neon Staging primary `br-square-mountain-b3ij6q2s` is unprotected; protecting it was rejected by provider plan allowance (HTTP 422), and Staging migrations/merchant OAuth are unverified. **Do not run Neon primary migrations, deploy/promote hosted Workers, charge plans or submit to Shopify until protected release prerequisites pass.**
+
+## Environments and commercial contract
+
+| Tier | App title | Database/runtime |
+| --- | --- | --- |
+| Local/Development | VSN \| Builder (Development) | SQLite / isolated local Shopify test environment |
+| Staging | VSN \| Builder (Staging) | Separate Neon PostgreSQL / `vsn-builder-staging` Worker (not certified) |
+| Production/Live | VSN \| Builder | Isolated production Neon / `vsn-builder-production` Worker (not certified) |
+
+**One public Shopify app; four paid plans; no Free plan:** Starter (`starter`, $30/month), Sliver (`sliver`, $100/month), Gold (`gold`, $150/month), Platinum (`platinum`, $350/month or $3,000/year). Each has a **10-day trial**. These values describe audited source configuration, **not verified published Shopify Partner pricing**. Development/Staging badges and requested `v1.0.0` UI label are tracked separately from release readiness.
+
+## Historical engineering checkpoints (superseded by the status above)
+
+The older notes and phase snapshots below are retained as historical evidence. Figures such as **13 CLOSED / 28 ACTIVE**, "PR #190 unmerged", or "dependency audit #96 red" refer to older dates and **must not be used as current release facts**.
+
+---
+
+### Current active work and irreversible task closure (15 Oct 2026)
 
 **T014 IN_REVIEW:** Read-only Cloudflare Staging control-plane audit verified 0 secret bindings and 0 vars. [PR #205](https://github.com/Vertex-Systems-Network/vsn-builder/pull/205) adds fail-closed token-free tests plus a protected-only live checker. No secret values exposed; real GitHub Environment reviewers and bindings are not verified.
 
@@ -14,15 +62,15 @@ VSN Builder is a Shopify page-builder application. This repository is being sepa
 
 > **Deployment warning (13 Oct 2026):** The hosted Worker integration is **not functional or released**. The current engineering work is on **unmerged stacked PRs**, not the default branch. Staging/Live Workers are placeholders. **Do not point merchant traffic at them or submit the Shopify app for review.**
 
-## Owner-approved Shopify pricing contract (2026-10-14)
+### Owner-approved Shopify pricing contract (2026-10-14)
 
 **One public Shopify App: VSN | Builder. Four paid plans and no Free tier:** Starter (`starter`, $30/month), Sliver (`sliver`, $100/month), Gold (`gold`, $150/month), Platinum (`platinum`, $350/month or $3,000/year). **Each includes a 10-day Shopify free trial.** The names and public handles are the exact plan IDs. No active verified Shopify trial/subscription means **zero builder access**. Legacy internal keys are read aliases, not public billing IDs. Shopify Partner Dashboard pricing setup and real merchant verification are pending; this is source-code configuration in an unmerged PR, not published prices. Do not submit for Shopify review before all release gates are proven green.
 
-## Dependency-first integration checkpoint — 2026-10-14
+### Dependency-first integration checkpoint — 2026-10-14
 
 **T012 combined source candidate:** four paid Starter/Sliver/Gold/Platinum plans, trusted merchant-write guards, real Neon shadow migration evidence and gated Staging Cloudflare Worker source are reconciled in one branch. This is **code integration only**: GitHub Developer branch remains unprotected, Staging/Production primary Neon schemas are not migrated, both Worker scripts lack actual secret bindings, and Shopify merchant OAuth/billing E2E are unverified. Mandatory development dependency security issue [#96](https://github.com/Vertex-Systems-Network/vsn-builder/issues/96) remains red. **No deploy, Live promotion, or App Store submission.** See [Staging Neon/Cloudflare acceptance record](docs/phase3-4-hosted-acceptance-20261014.md) and [Task Board #156](https://github.com/Vertex-Systems-Network/vsn-builder/issues/156).
 
-## Environment identity and promotion
+### Environment identity and promotion
 
 | Tier | User-facing name | Code source | Storage | Worker | Verification |
 | --- | --- | --- | --- | --- | --- |
@@ -32,7 +80,7 @@ VSN Builder is a Shopify page-builder application. This repository is being sepa
 
 Development and Staging UI should display **Dev** / **Staging** environment badges; the requested display-version badge is **v1.0.0**. The internal package version is tracked separately.
 
-## Mandatory eight-phase closure sequence (requested order)
+### Mandatory eight-phase closure sequence (requested order)
 
 The tracked execution order below is enforced by `scripts/phase-closure-check.mjs`. **A historical CI pass does not close a phase**; real merchant and hosted evidence is still required. The status list is maintained at [eight-phase closeout plan](docs/eight-phase-closure-plan.md) and `config/project/phase-closure-sequence.json`.
 
@@ -69,7 +117,7 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 **Phase 1 effective GitHub config validation:** The protected, manually dispatched preflight now checks actual effective `vars.APP_ENV` and `vars.SHOPIFY_BILLING_TEST_MODE` against the requested tier, rather than comparing hardcoded expectations with themselves. Missing or wrong vars fail closed. GitHub `vars` may inherit from repository/organization, so the **selected Environment's own variable/secret inventory and branch rules are still unverified**. No real protected run, Phase 1 still **4/7**. See [eight-phase closeout plan](docs/eight-phase-closure-plan.md).
 
-## Evidence-based status dashboard
+### Evidence-based status dashboard
 
 *Progress bars below measure only the **explicit checks named here**, not percentage of app features completed.*
 
@@ -87,17 +135,17 @@ No phase is currently closed. This is an evidence-inventory count, **not a featu
 
 ³ Six per-tier operational gates: exact tier Shopify identity, verified hosted secrets/runtime, real reviewed PostgreSQL migration + restore, functioning Worker request routing, signed merchant session/installation acceptance, and protected billing/release/rollback smoke verification. Production also requires verified Staging promotion. None are certified merely because cloud resources exist.
 
-### CI checkpoints
+#### CI checkpoints
 
 - [PR #127 real local Cloudflare Workerd CI #38387490935](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38387490935): **PASS** before this README-only commit. Signed Shopify uninstall + tenant-only in-memory session cleanup and tamper/replay regression tested. No hosted credentials, migration or Shopify release.
 - [PR #127 Production Confidence #38387490929](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38387490929): required overall job **FAILS at mandatory dependency audit enforcement**; production dependency audit, static security checks, typecheck, application build, internal release QA and performance checks all passed on that previous code head. The post-browser audit is not accepted as passed or bypassed.
 - Upstream `braces <=3.0.3` advisory [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) has no fixed published version as verified on 13 Oct 2026. No audit waiver or severity downgrade is active.
 
-### Connected infrastructure (read-only, 13 Oct 2026)
+#### Connected infrastructure (read-only, 13 Oct 2026)
 
 Separate Neon Staging and Production projects each contain a default `neondb` database with **zero application tables** at inspection time. Two separate Builder Cloudflare Worker names exist as non-operational placeholders without public merchant traffic. Neither hosted database has been migrated by this work.
 
-### Next verified release prerequisites
+#### Next verified release prerequisites
 
 1. Resolve the development dependency security advisory **without bypassing the audit**; keep mandatory release CI red meanwhile.
 2. Implement and review the real hosted React Router Worker entry + service/asset ports, with isolated Staging bindings; never use the CI-only Workerd Worker in hosted production.
