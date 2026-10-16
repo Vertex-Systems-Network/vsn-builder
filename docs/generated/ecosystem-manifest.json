@@ -119,7 +119,7 @@
     "routeModules": 53,
     "userDocs": 25,
     "developerDocs": 38,
-    "engineeringDocs": 16
+    "engineeringDocs": 17
   },
   "migrations": {
     "latest": "20261013_builder_shop_installation_fence",
@@ -241,6 +241,7 @@
       "docs/engineering/module-map.md",
       "docs/engineering/motion-catalog.md",
       "docs/engineering/motion-engine.md",
+      "docs/engineering/neon-single-branch-audit-20261016.md",
       "docs/engineering/performance.md",
       "docs/engineering/permissions.md",
       "docs/engineering/resource-packages.md",
