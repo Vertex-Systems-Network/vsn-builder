@@ -1,4 +1,4 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><nav aria-label="Breadcrumb"><a href="{{ routes.root_url }}">{{ block.settings.home }}</a>{% if product %} / {{ product.title }}{% elsif collection %} / {{ collection.title }}{% elsif page %} / {{ page.title }}{% endif %}</nav></div>
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id | escape }}" {{ block.shopify_attributes }} style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><nav aria-label="Breadcrumb"><a href="{{ routes.root_url | escape }}">{{ block.settings.home | escape }}</a>{% if product %} / {{ product.title | escape }}{% elsif collection %} / {{ collection.title | escape }}{% elsif page %} / {{ page.title | escape }}{% endif %}</nav></div>
 
 {% schema %}
 {
