@@ -242,7 +242,7 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38737803817"
       ],
       "acceptance": "GitHub live metadata shows protected development, required checks and scoped environment reviewer restrictions",
-      "progress_note": "Read-only effective GitHub branch rules verifier and 7/7 adversarial tests passed. Live development is currently unprotected. T013 remains IN_REVIEW until actual protection and environment reviewer evidence are authenticated."
+      "progress_note": "2026-10-16 GitHub development.protected=true provider verified, and repository-integrity required status prevented PR #247 merge until created. Source-only T013 GET-only verifier is additionally wired to exact protected development push, with separate no-token synthetic PR tests. No assumption about human approver, scoped environment reviewer or bypass status; T013 IN_REVIEW pending actual automated real control-plane results."
     },
     {
       "id": "T014",

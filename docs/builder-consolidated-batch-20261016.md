@@ -29,7 +29,7 @@
 
 ## Live control-plane audit (metadata only, NO MUTATIONS)
 
-- **GitHub:** `development.protected=false` (last verified 2026-10-16). Existing GitHub connector does not provide admin write access to branch-protection or scoped Environment-secret APIs.
+- **GitHub:** development.protected=true independently confirmed. The repository-integrity check was enforced by GitHub during PR #247; T013 now runs GET-only effective rules attestation automatically on protected development pushes. Required approval/reviewer/Environment scopes still unverified.
 - **Cloudflare:** API GET 200 for Staging and Production Worker settings/secrets/subdomain. Both `vsn-builder-staging` and `vsn-builder-production` have **0 script secrets, 0 settings bindings**, and **workers.dev subdomain disabled**. Do not deploy OAuth without correct protected bindings.
 - **Neon Free-tier policy:** Staging project `vsn-builder-staging` uses the Free plan. Its paid protected-branch action was rejected HTTP 422; this is now **not** a mandatory Staging acceptance. The reviewed source policy allows only the exact pinned Staging project/branch (unprotected), real backup snapshot, correctly paired pooled/direct TLS compute and GitHub-protected manually approved environment workflow. Production is a separate Neon project and has no Free-tier release waiver. No SQL was executed.
 - **Neon SINGLE-BRANCH CLEANUP VERIFIED:** Staging `shiny-violet-61219572` now has **exactly one live default** `br-square-mountain-b3ij6q2s`; Production `nameless-violet-68750490` has **exactly one default** `br-odd-credit-b3rzlpz9`. User-approved deletion of obsolete Staging QA/recovery branches occurred after all 52 QA tables were counted at **0 rows** and SQL schema/migrations were preserved in repo. Manual snapshot `snap-green-bar-b3m1btfb` remained listed after deleting historical source; recovery restore has NOT been tested. Staging default has **0 app tables**; no migration took place.
@@ -40,7 +40,7 @@
 
 | ID | Priority | Work | Verified status | Missing acceptance / next unblock |
 | --- | --- | --- | --- | --- |
-| T013 | P0 | Protect development branch and verify GitHub required reviewers | IN_REVIEW | GitHub development branch still unprotected; effective reviewer/CI rules missing |
+| T013 | P0 | Protect development branch and verify GitHub required reviewers | IN_REVIEW | protected=true and repository-integrity required; live effective human approval/Environment review not yet certified |
 | T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | IN_REVIEW | GitHub scoped Environment policies not authenticated; both Workers have no bindings |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | Three connected Shopify stores verified; Partner public-app ownership and OAuth missing |
 | T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | WAITING | Requires T014; scoped pooled/direct Neon URL pairing not certified |
