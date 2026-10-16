@@ -17,6 +17,7 @@ on:
       - "tests/t020-worker-staging-dashboard.test.mjs"
       - "tests/t020-worker-staging-page-inspection.test.mjs"
       - "tests/t020-staging-shopify-auth-callback.test.mjs"
+      - "tests/t020-staging-shopify-sdk-login.test.mjs"
       - "tests/t020-worker-merchant-page-metadata.test.mjs"
       - "tests/t020-worker-paid-read-access.test.mjs"
       - "tests/t020-worker-page-rbac.test.mjs"
@@ -98,6 +99,8 @@ jobs:
         run: node --test tests/t020-worker-staging-page-inspection.test.mjs
       - name: Verify official Shopify SDK Staging auth callback and persisted online session proof
         run: node --test tests/t020-staging-shopify-auth-callback.test.mjs
+      - name: Validate Staging-only official Shopify SDK login form, OAuth redirect and cross-tier lock
+        run: node --test tests/t020-staging-shopify-sdk-login.test.mjs
       - name: Verify signed per-page read-only metadata isolation, expiry and request teardown
         run: node --test tests/t020-worker-merchant-page-metadata.test.mjs
       - name: Verify paid-only hosted merchant GET authorizations and expired-plan denial
