@@ -231,7 +231,7 @@
     },
     {
       "id": "T013",
-      "title": "Protect development branch and verify GitHub required reviewers",
+      "title": "Protect development with automated AI-led PR and CI review gates",
       "workstream": "Infrastructure",
       "priority": "P0",
       "status": "in_review",
@@ -243,8 +243,8 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/250",
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38909028455"
       ],
-      "acceptance": "GitHub live metadata shows protected development, required checks and scoped environment reviewer restrictions",
-      "progress_note": "2026-10-16 GitHub development.protected=true; PR #250 auto-check on protected development push merged after 5/5 green PR CI. Live attestation run #38909028455 explicitly FAILS T013_GITHUB_PROTECTION_NO_REQUIRED_HUMAN_APPROVAL, despite other postmerge push checks green and repository-integrity enforced. Manual GitHub ruleset must require >=1 approving human review to satisfy written acceptance; Environment reviewer/secrets not verified. IN_REVIEW."
+      "acceptance": "Live protected development branch has required pull-request rule, enforced repository-integrity status, non-fast-forward/deletion protection and no human/code-owner review prerequisite; GET-only protected push attestation passes. Environment secrets/deployment permissions remain T014.",
+      "progress_note": "2026-10-16 user directive: all source PR review and security responsibility AI-led, ZERO human approval. T013 GET-only effective rules verifier now rejects human/code-owner required reviews, still requires protected development, PR rule, repository-integrity CI and no force-push/deletion. Previous run #38909028455 failed solely for missing human approval under superseded policy; new live protected push attestation needed to certify T013. IN_REVIEW until real PASS."
     },
     {
       "id": "T014",
@@ -259,8 +259,8 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/205",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/233"
       ],
-      "acceptance": "Live GitHub scoped secret-name/reviewer/policy metadata and tier preflight verified without exposing values",
-      "progress_note": "Source validator PR #233 merged after 3/3 exact-head PR workflow successes: rejects unsafe Staging OAuth host literals/aliases and malformed/duplicate secret metadata. Live Cloudflare Staging/Production each have 0 secrets and 0 bindings; GitHub protected Environment settings still unavailable. Not FINAL CLOSED."
+      "acceptance": "Live GitHub scoped secret-name, environment branch/deployment-permission and policy metadata verified without exposing values; approval must be automated, not depend on human Environment reviewers.",
+      "progress_note": "Source validator PR #233 merged after 3/3 exact-head PR workflow successes: rejects unsafe Staging OAuth host literals/aliases and malformed/duplicate secret metadata. Live Cloudflare Staging/Production each have 0 secrets and 0 bindings; GitHub protected Environment settings still unavailable. Not FINAL CLOSED. 2026-10-16 user mandates no human approval in any review workflow; Environment deployments must remain CI/AI-gated without human required reviewers, scoped secret inventory and Cloudflare real bindings still unverified."
     },
     {
       "id": "T015",

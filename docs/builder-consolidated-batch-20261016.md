@@ -29,6 +29,8 @@
 
 **Newest verified source batch — 16 October 2026:** [PR #249](https://github.com/Vertex-Systems-Network/vsn-builder/pull/249) T024 valid but unproven pre-reinstall uninstall webhooks no longer delete current merchant data; [PR #250](https://github.com/Vertex-Systems-Network/vsn-builder/pull/250) T013 protected-development push attests real GitHub effective rules, **live run #38909028455 fails NO_REQUIRED_HUMAN_APPROVAL** (real admin blocker); [PR #251](https://github.com/Vertex-Systems-Network/vsn-builder/pull/251) T020 editor hydration enforces PostgreSQL 32-bit version with signed boundary, tenant forgery and closed-lease tests (**4/4 PR CI green**, merge `15455cdf40941b353a2e7fa30b60eba15e636100`). No hosted merchant/Live acceptance from these source merges.
 
+**AI-only review policy — 16 October 2026 (user-approved):** All PR design/code/security review is the AI engineering agent's responsibility, backed by mandatory GitHub PR and deterministic security/test CI. **0 human approval required**; protected `development`, `repository-integrity` required status, force-push and deletion restrictions remain mandatory. GitHub effective-rule read-only attestation now rejects human approval prerequisites rather than requiring them. A passing CI check **does not mean** an independent AI model reviewed code; code review must be performed by the agent with recorded PR evidence. Real GitHub Environment secrets and hosted Shopify/Neon validation remain separately blocked. T013 remains IN_REVIEW until a new protected push attestation passes; no Live/Staging deployment authorized.
+
 ## Live control-plane audit (metadata only, NO MUTATIONS)
 
 - **GitHub:** development.protected=true independently confirmed. The repository-integrity check was enforced by GitHub during PR #247; T013 now runs GET-only effective rules attestation automatically on protected development pushes. Required approval/reviewer/Environment scopes still unverified.
@@ -42,7 +44,7 @@
 
 | ID | Priority | Work | Verified status | Missing acceptance / next unblock |
 | --- | --- | --- | --- | --- |
-| T013 | P0 | Protect development branch and verify GitHub required reviewers | IN_REVIEW | protected=true and repository-integrity required; live effective human approval/Environment review not yet certified |
+| T013 | P0 | AI-led automated PR and repository-integrity protected-branch verification | IN_REVIEW | User-approved zero-human-review policy implemented in source; postmerge effective-rules PASS not yet verified |
 | T014 | P0 | Configure/verify GitHub Environment secrets and tier variables | IN_REVIEW | GitHub scoped Environment policies not authenticated; both Workers have no bindings |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | Three connected Shopify stores verified; Partner public-app ownership and OAuth missing |
 | T016 | P0 | Real Neon Staging pooled/direct credentials and connectivity | WAITING | Requires T014; scoped pooled/direct Neon URL pairing not certified |

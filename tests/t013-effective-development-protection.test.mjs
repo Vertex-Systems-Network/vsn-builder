@@ -10,23 +10,24 @@ const branch=(protectedBranch=true,name=TARGET_BRANCH)=>({
  name,protected:protectedBranch,protection:{enabled:protectedBranch}
 });
 const rules=()=>[
- {type:"pull_request",parameters:{required_approving_review_count:1}},
+ {type:"pull_request",parameters:{required_approving_review_count:0}},
  {type:"required_status_checks",parameters:{required_status_checks:[
+  {context:"repository-integrity",integration_id:15368},
   {context:"verify",integration_id:15368},
-  {context:"dependency-graph",integration_id:15368},
  ]}},
  {type:"non_fast_forward"},
  {type:"deletion"},
 ];
 const inspect=(b=branch(),r=rules())=>inspectEffectiveDevelopmentProtection(b,r);
 
-test("real effective development rules with reviews and CI are scope-limited PASS",()=>{
+test("protected development with required PR/CI and zero human approvals passes AI-led policy",()=>{
  const proof=inspect();
  assert.equal(proof.ready,true);
  assert.deepEqual(proof.reasons,[]);
  assert.equal(proof.branch,"development");
  assert.equal(proof.statusCheckCount,2);
- assert(proof.explicitlyNotCertified.includes("environment_reviewers"));
+ assert.equal(proof.reviewPolicy,"AI-led source review + enforced PR CI; no human approval");
+ assert(proof.explicitlyNotCertified.includes("independent_ai_bot_review"));
  assert(proof.explicitlyNotCertified.includes("effective_ruleset_bypass"));
 });
 test("a protected main ruleset cannot count as development branch protection",()=>{
@@ -43,17 +44,31 @@ test("no rules, malformed rules or force push permitted NEVER certify protection
   assert.equal(proof.ready,false);
  }
 });
-test("required human PR approval and actual status checks cannot be absent",()=>{
+test("human/code-owner approval is forbidden, missing automation checks also fail closed",()=>{
  const cases=[
-  [{type:"pull_request",parameters:{required_approving_review_count:0}},"NO_REQUIRED_HUMAN_APPROVAL"],
-  [{type:"pull_request",parameters:{}},"NO_REQUIRED_HUMAN_APPROVAL"],
+  [{type:"pull_request",parameters:{required_approving_review_count:1}},"HUMAN_PR_APPROVAL_NOT_ALLOWED"],
+  [{type:"pull_request",parameters:{required_approving_review_count:-1}},"HUMAN_PR_APPROVAL_NOT_ALLOWED"],
+  [{type:"pull_request",parameters:{required_approving_review_count:"0"}},"HUMAN_PR_APPROVAL_NOT_ALLOWED"],
+  [{type:"pull_request",parameters:{require_code_owner_review:true}},"HUMAN_CODE_OWNER_REVIEW_NOT_ALLOWED"],
   [{type:"required_status_checks",parameters:{required_status_checks:[]}},"NO_REQUIRED_CI_CHECKS"],
   [{type:"required_status_checks",parameters:{required_status_checks:[{context:""}]}},"NO_REQUIRED_CI_CHECKS"],
+  [{type:"required_status_checks",parameters:{required_status_checks:[{context:"fake-pass"}]}},"REPOSITORY_INTEGRITY_NOT_REQUIRED"],
  ];
  for(const [bad,reason] of cases){
-  const r=rules().map(item=>item.type===bad.type?bad:item);
-  assert(inspect(branch(),r).reasons.includes(reason));
+  const candidate=rules().map(item=>item.type===bad.type?bad:item);
+  assert(inspect(branch(),candidate).reasons.includes(reason),reason);
  }
+});
+test("zero human approvals are valid even when omitted by GitHub's rules API",()=>{
+ const candidate=rules().map(item=>item.type==="pull_request"
+  ?{type:"pull_request",parameters:{}}:item);
+ assert.equal(inspect(branch(),candidate).ready,true);
+});
+test("real source integrity required status survives additional status checks",()=>{
+ const candidate=rules();
+ candidate[1].parameters.required_status_checks.push({context:"more-automated-security"});
+ assert.equal(inspect(branch(),candidate).ready,true);
+ assert.equal(inspect(branch(),candidate).statusCheckCount,3);
 });
 test("the verifier sends exactly 2 read-only requests and never trusts supplied repo name",async()=>{
  const calls=[];
