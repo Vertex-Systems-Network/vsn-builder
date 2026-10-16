@@ -19,6 +19,7 @@ on:
       - "tests/t020-staging-shopify-auth-callback.test.mjs"
       - "tests/t020-staging-shopify-sdk-login.test.mjs"
       - "tests/t020-worker-merchant-page-metadata.test.mjs"
+      - "tests/t020-worker-merchant-scalar-bounds.test.mjs"
       - "tests/t020-worker-paid-read-access.test.mjs"
       - "tests/t020-worker-page-rbac.test.mjs"
       - "tests/t020-worker-editor-hydration.test.mjs"
@@ -103,6 +104,8 @@ jobs:
         run: node --test tests/t020-staging-shopify-sdk-login.test.mjs
       - name: Verify signed per-page read-only metadata isolation, expiry and request teardown
         run: node --test tests/t020-worker-merchant-page-metadata.test.mjs
+      - name: Validate bounded tenant page JSON projection and inconsistent SQL counts fail closed
+        run: node --test tests/t020-worker-merchant-scalar-bounds.test.mjs
       - name: Verify paid-only hosted merchant GET authorizations and expired-plan denial
         run: node --test tests/t020-worker-paid-read-access.test.mjs
       - name: Verify canonical public Builder Shopify Worker identity and internal Staging isolation
