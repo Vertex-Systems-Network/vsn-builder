@@ -15,9 +15,9 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.equal(result.summary.closed,18);
  assert.equal(result.summary.active,23);
  assert.equal(result.summary.verified,0);
- assert.equal(result.summary.in_review,5);
+ assert.equal(result.summary.in_review,6);
  assert.equal(result.summary.ready,0);
- assert.equal(result.summary.waiting,18);
+ assert.equal(result.summary.waiting,17);
  assert.deepEqual(plan.closed_task_ids,[...Array.from({length:13},(_,i)=>"T"+String(i+1).padStart(3,"0")),"T014","T016","T026","T027","T032"]);
  assert(result.rows.every(t=>t.status!=="closed"),"closed work must never appear in active queue");
  assert.equal(result.closed_tasks.length,0,"closed evidence must not appear in default JSON output");
@@ -38,6 +38,7 @@ test("independent discovered Shopify app task moves to IN_REVIEW without unlocki
   assert.equal(rows.find(r=>r.id===id).execution,"WAITING",id);
  assert.equal(rows.find(r=>r.id==="T017").execution,"IN_REVIEW");
  assert.equal(rows.some(r=>r.id==="T012"),false,"Merged PR integration is FINAL CLOSED");
+ assert.equal(rows.find(r=>r.id==="T019").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T020").execution,"IN_REVIEW");
  assert.equal(rows.some(r=>r.id==="T027"),false,"Source pricing contract is FINAL CLOSED");
  assert.equal(rows.some(r=>r.id==="T011"),false,"Dependency audit is FINAL CLOSED");
@@ -94,7 +95,7 @@ test("T014 and T016 are final closed while T017/T019/T018 remain separately bloc
  assert.equal(proof.rows.some(x=>x.id==="T016"),false);
  assert.equal(proof.rows.find(x=>x.id==="T017").execution,"IN_REVIEW");
  assert.equal(proof.rows.find(x=>x.id==="T018").execution,"WAITING");
- assert.equal(proof.rows.find(x=>x.id==="T019").execution,"WAITING");
+ assert.equal(proof.rows.find(x=>x.id==="T019").execution,"IN_REVIEW");
  assert.equal(proof.rows.some(x=>x.id==="T014"),false);
 });
 test("blocking one task cannot artificially block independent READY tasks",()=>{
