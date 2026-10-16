@@ -5,6 +5,7 @@ import { assertBoundedBuilderDraftDocument } from "./worker-shopify-draft-docume
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const PAGE_ID=/^[a-zA-Z0-9_-]{1,64}$/;
 const MAX_CONTENT_BYTES=1024*1024;
+const MAX_DB_VERSION=2147483647; // Prisma/cloud BuilderPage.version is PostgreSQL signed Int
 const FIELDS=Object.freeze({
   id:true,shop:true,version:true,updatedAt:true,contentJson:true,
 });
@@ -29,6 +30,7 @@ export function createVerifiedMerchantPageContentLease(database,verifiedShop) {
     if(item===null)return null;
     if(!item || item.id!==id || item.shop!==verifiedShop ||
        !Number.isSafeInteger(item.version) || item.version<1 ||
+       item.version>MAX_DB_VERSION ||
        !(item.updatedAt instanceof Date) ||
        !Number.isFinite(item.updatedAt.getTime()))
       throw new TypeError("Invalid verified Builder editor record");

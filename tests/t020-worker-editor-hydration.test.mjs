@@ -46,8 +46,43 @@ test("default draft [] and invalid or oversized drafts fail closed",async()=>{
   await assert.rejects(createVerifiedMerchantPageContentLease(f.db,shop).get(id));
  }
 });
-test("cross-shop rows and invalid versions fail validation",async()=>{
- for(const record of [{shop:"other.myshopify.com"},{version:0},{updatedAt:"bad"}]){
+test("cross-shop rows and invalid PostgreSQL Int versions fail closed",async()=>{
+ for(const record of [
+  {shop:"other.myshopify.com"},{version:0},{version:-1},
+  {version:1.1},{version:"2"},{version:2147483648},
+  {version:Number.MAX_SAFE_INTEGER},{updatedAt:"bad"},
+ ]){
+  const f=fixture(record);
+  await assert.rejects(createVerifiedMerchantPageContentLease(f.db,shop).get(id));
+ }
+});
+test("signed Int upper boundary is accepted by editor hydration",async()=>{
+ const f=fixture({version:2147483647,contentJson:"[]"});
+ const row=await createVerifiedMerchantPageContentLease(f.db,shop).get(id);
+ assert.equal(row.version,2147483647);
+ assert.deepEqual(row.elements,[]);
+});
+test("the request-scoped lease cannot release a late read after revocation",async()=>{
+ let resolve;
+ const request=new Promise(r=>{resolve=r;});
+ const db={builderPage:{findFirst:async query=>{
+  assert.deepEqual(query.where,{id,shop,deletedAt:null});
+  return request;
+ }}};
+ const lease=createVerifiedMerchantPageContentLease(db,shop);
+ const pending=lease.get(id);
+ lease.revoke();
+ resolve({id,shop,version:2,
+  updatedAt:new Date("2026-10-15T12:00:00Z"),contentJson:"[]"});
+ await assert.rejects(pending,/Merchant request context closed/);
+});
+test("database reader cannot release malformed, forged or deleted page records",async()=>{
+ for(const record of [
+  {id:"another-page"},
+  {shop:"another.myshopify.com"},
+  {version:null},{version:Infinity},{version:2147483648},
+  {updatedAt:new Date(NaN)}, {contentJson:[]}, {contentJson:42},
+ ]){
   const f=fixture(record);
   await assert.rejects(createVerifiedMerchantPageContentLease(f.db,shop).get(id));
  }
