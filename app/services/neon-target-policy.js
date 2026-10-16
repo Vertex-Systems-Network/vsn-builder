@@ -23,7 +23,9 @@ function inspect(tier, connectionString, mode) {
   if(url.port && url.port!=="5432")issues.push(mode+" Neon port invalid");
   if(!url.username||!url.password)issues.push(mode+" PostgreSQL credentials incomplete");
   if(!url.pathname || url.pathname==="/")issues.push(mode+" database name missing");
-  if(url.searchParams.get("sslmode")!=="require")issues.push(mode+" Neon TLS must be required");
+  if(url.searchParams.getAll("sslmode").length!==1 ||
+     url.searchParams.get("sslmode")!=="require")
+    issues.push(mode+" Neon TLS must be unambiguous and required");
   if(url.hash)issues.push(mode+" URL fragment forbidden");
   if(issues.length)return {issues,identity:null};
   return {issues:[],identity:{host:url.hostname.toLowerCase(),user:url.username,database:url.pathname}};

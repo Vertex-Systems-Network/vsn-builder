@@ -22,6 +22,8 @@ on:
       - "tests/t020-worker-draft-save-contract.test.mjs"
       - "tests/t020-worker-draft-save-request.test.mjs"
       - "tests/shopify-worker-configuration.test.mjs"
+      - "tests/hosted-neon-url-policy.test.mjs"
+      - "tests/worker-neon-factory.test.mjs"
       - "prisma/cloud/**"
       - "vite.config.js"
       - "package.json"
@@ -93,6 +95,8 @@ jobs:
         run: node --test tests/t020-worker-paid-read-access.test.mjs
       - name: Verify canonical public Builder Shopify Worker identity and internal Staging isolation
         run: node --test tests/shopify-worker-configuration.test.mjs
+      - name: Verify hosted Neon TLS URI ambiguity cannot bypass migration or Worker policy
+        run: node --test tests/hosted-neon-url-policy.test.mjs tests/worker-neon-factory.test.mjs
       - name: Verify Shopify staff roles restrict authenticated Worker page metadata and summaries
         run: node --test tests/t020-worker-page-rbac.test.mjs
       - name: Verify bounded tenant-scoped editor draft hydration and fail-closed page reader
