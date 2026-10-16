@@ -301,7 +301,8 @@
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155"
       ],
-      "acceptance": "Run reviewed GET-only Neon live identity checker; verified snapshot, restored root and pooler; exact permissions"
+      "acceptance": "Run reviewed GET-only Neon live identity checker; verified snapshot, restored root and pooler; exact permissions",
+      "progress_note": "2026-10-16 actual Neon Staging default-branch protection request rejected HTTP 422 due current plan protected-branch quota. Snapshot exists but protected preflight/migration not authenticated; IN_REVIEW."
     },
     {
       "id": "T018",
@@ -416,10 +417,11 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/163",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/193",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/237"
       ],
       "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
-      "progress_note": "Bounded webhook total-read deadline and nonblocking cancel + 4 regression tests PASSED; not accepted as trusted-generation provenance. T024 remains IN_REVIEW/open until attested install generation implementation and real merchant E2E."
+      "progress_note": "PR #237 squash merged at 6a9ca0bc0122ceb7cc163c0a2aa41adc26fdf3a2 with all five exact-head checks green. Legacy uninstall now rejects wrong topic/shop/payload before deletion. Independent trusted installation-generation attestation and actual Shopify E2E still missing; IN_REVIEW."
     },
     {
       "id": "T025",
@@ -546,10 +548,12 @@
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/197",
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38745149442",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/232"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/232",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/236",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/238"
       ],
       "acceptance": "Template/widgets/form and theme app extension code/test verified on supported fixture themes",
-      "progress_note": "Theme countdown lifecycle/escaped Liquid PR #232 merged after 3/3 exact-head PR checks, with 4/4 independently observed development push workflows green. Local timer cleanup/section dynamic reload regression tests pass. Actual Shopify supported-theme storefront and form/widget browser E2E remain OPEN. Not FINAL CLOSED."
+      "progress_note": "PR #236 squash merged at 1e24fa5a6452fba23477953fd42a8ee066c1030b (3/3 checks), #238 at 58dc6a5a8cf59452a26aa4a35f258703adc1c2d0 (3/3 checks). Escaped merchant plain output, preserved richtext, verified editor attrs/IDs across 20 theme blocks in CI. Hosted Dawn/Horizon and real forms/widgets E2E still missing; IN_REVIEW."
     },
     {
       "id": "T033",

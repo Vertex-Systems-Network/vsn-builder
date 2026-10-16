@@ -17,6 +17,8 @@
 
 **Consolidated 27-task development batch — 16 October 2026:** [Evidence and all-task blocker matrix](docs/builder-consolidated-batch-20261016.md). Three isolated source hardening PRs passed **3/3 exact-head workflows each** and were squash merged on `development`: [#232](https://github.com/Vertex-Systems-Network/vsn-builder/pull/232) T032 theme countdown lifecycle, [#233](https://github.com/Vertex-Systems-Network/vsn-builder/pull/233) T014 Cloudflare Staging origin/secret metadata, [#234](https://github.com/Vertex-Systems-Network/vsn-builder/pull/234) T020 merchant draft version integrity. All are **source-level improvements within existing IN_REVIEW tasks**, not new FINAL CLOSED acceptances. **Post-merge push workflows need separate exact-SHA verification.** Cloudflare Staging and Production still have zero Worker secrets and bindings, Neon Staging default has zero app tables, and development protection is false. Do not deploy or submit the Shopify app.
 
+**Additional merged source batch (16 October):** [#236 T032 Liquid plain-output security](https://github.com/Vertex-Systems-Network/vsn-builder/pull/236), [#237 T024 SDK-authenticated uninstall topic/shop guard](https://github.com/Vertex-Systems-Network/vsn-builder/pull/237), [#238 T032 twenty-block editor metadata contract](https://github.com/Vertex-Systems-Network/vsn-builder/pull/238) — **3/3, 5/5, 3/3 exact-head PR CI green, all squash-merged**. This remains source-only acceptance. Actual Neon Staging protection attempt rejected with HTTP 422, protected-branch quota reached. Full evidence: [one-batch report](docs/builder-consolidated-batch-20261016.md).
+
 **Current review queue (all others WAITING):**
 
 | Task | Next acceptance blocker |

@@ -17,10 +17,15 @@
 | [#233](https://github.com/Vertex-Systems-Network/vsn-builder/pull/233) | T014 | Reject private/special-use Staging OAuth origins, malformed/duplicate Cloudflare secret metadata | Squash merged `88fe4031df17b58a58537da4923faa98636ff06b`; 3/3 source PR workflows green; staging credentials remain absent |
 | [#234](https://github.com/Vertex-Systems-Network/vsn-builder/pull/234) | T020 | Reject invalid/out-of-range stored Builder draft optimistic-lock version and regression tests | Squash merged `f9e83142f414c50f9f65f9a45188c362bf7d09e2`; 3/3 PR workflows green, including full merchant Workerd compatibility; no real merchant acceptance |
 
+| [#236](https://github.com/Vertex-Systems-Network/vsn-builder/pull/236) | T032 | Escaped 14 blocks' plain outputs and catalog titles; preserved Shopify richtext | Squash merged at 1e24fa5a6452fba23477953fd42a8ee066c1030b, 3/3 PR CI green; not hosted theme QA |
+| [#237](https://github.com/Vertex-Systems-Network/vsn-builder/pull/237) | T024 | Canonical topic/shop guard on SDK-authenticated legacy uninstall before tenant cleanup | Squash merged at 6a9ca0bc0122ceb7cc163c0a2aa41adc26fdf3a2, 5/5 PR CI green; generation attestation still missing |
+| [#238](https://github.com/Vertex-Systems-Network/vsn-builder/pull/238) | T032 | Main page-builder and 20 native block editor instance/attribute checks | Squash merged at 58dc6a5a8cf59452a26aa4a35f258703adc1c2d0, 3/3 PR CI green; not merchant E2E |
+
 ## Live control-plane audit (metadata only, NO MUTATIONS)
 
 - **GitHub:** `development.protected=false` (last verified 2026-10-16). Existing GitHub connector does not provide admin write access to branch-protection or scoped Environment-secret APIs.
 - **Cloudflare:** API GET 200 for Staging and Production Worker settings/secrets/subdomain. Both `vsn-builder-staging` and `vsn-builder-production` have **0 script secrets, 0 settings bindings**, and **workers.dev subdomain disabled**. Do not deploy OAuth without correct protected bindings.
+- **Neon protection plan gate:** An actual branch-protection mutation on default Staging Neon was rejected 2026-10-16: HTTP 422, maximum protected branches in the current plan. No other branch was unprotected and no schema migration was executed.
 - **Neon Staging:** project `shiny-violet-61219572`, default branch `br-square-mountain-b3ij6q2s` is **unprotected**, returned **0 application tables**. Real snapshot `snap-green-bar-b3m1btfb` exists. QA shadow tables are NOT protected/default Prisma migration evidence.
 - **Shopify:** Store connections `Local Server`, `Staging`, `Production` were read and returned live stores. Store connectivity does **not** certify Partner legal ownership, Builder installation/OAuth, paid-plan publication, or actual App Store eligibility.
 - No production release, Worker script mutation, Neon default schema change, Shopify plan charges, or Shopify submission was performed.
