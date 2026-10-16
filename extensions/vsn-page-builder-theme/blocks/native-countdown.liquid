@@ -1,4 +1,11 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><div class="vsn-native-countdown" data-vsn-countdown="{{ block.settings.end }}"><span><b data-vsn-days>--</b><small> Days</small></span><span><b data-vsn-hours>--</b><small> Hours</small></span><span><b data-vsn-minutes>--</b><small> Min</small></span></div></div>
+{% comment %}T032: escaped per-instance countdown input; timer lifecycle belongs to native-blocks.js.{% endcomment %}
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id | escape }}" {{ block.shopify_attributes }} style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px">
+  <div class="vsn-native-countdown" role="timer" aria-label="Time remaining" aria-live="off" data-vsn-countdown="{{ block.settings.end | escape }}">
+    <span><b data-vsn-days>--</b><small> Days</small></span>
+    <span><b data-vsn-hours>--</b><small> Hours</small></span>
+    <span><b data-vsn-minutes>--</b><small> Min</small></span>
+  </div>
+</div>
 
 {% schema %}
 {

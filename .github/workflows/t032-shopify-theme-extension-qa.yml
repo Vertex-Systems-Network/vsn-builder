@@ -15,6 +15,7 @@ on:
       - "tests/t032-native-product-cart.test.mjs"
       - "scripts/t032-native-links-contract.mjs"
       - "tests/t032-native-links.test.mjs"
+      - "tests/t032-countdown-lifecycle.test.mjs"
       - ".github/workflows/t032-shopify-theme-extension-qa.yml"
   workflow_dispatch:
 permissions:
@@ -52,3 +53,5 @@ jobs:
         run: node scripts/t032-native-links-contract.mjs
       - name: Reject unescaped or unconfigured native links
         run: node --test tests/t032-native-links.test.mjs
+      - name: Test ISO countdown updates and Shopify theme-editor section lifecycle
+        run: node --test tests/t032-countdown-lifecycle.test.mjs
