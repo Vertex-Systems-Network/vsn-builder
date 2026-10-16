@@ -254,10 +254,11 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/158",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38757462226",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/205"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/205",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/233"
       ],
       "acceptance": "Live GitHub scoped secret-name/reviewer/policy metadata and tier preflight verified without exposing values",
-      "progress_note": "Read-only Cloudflare Staging audit verified ZERO secrets/bindings; encrypted Worker binding contract and 8 synthetic adversarial CI tests green. Still requires actual GitHub Environment reviewer/policy/secrets and protected development, so T014 stays IN_REVIEW not CLOSED. T019 remains WAITING."
+      "progress_note": "Source validator PR #233 merged after 3/3 exact-head PR workflow successes: rejects unsafe Staging OAuth host literals/aliases and malformed/duplicate secret metadata. Live Cloudflare Staging/Production each have 0 secrets and 0 bindings; GitHub protected Environment settings still unavailable. Not FINAL CLOSED."
     },
     {
       "id": "T015",
@@ -350,9 +351,11 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/173",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/174",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/175",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/176"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/176",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/234"
       ],
-      "acceptance": "Full Cloudflare Vite-built VSN Builder merchant route graph; real Shopify OAuth/App Bridge and valid persisted PrismaNeon sessions after Staging migrations; signed webhooks, paid-only mutations, tenant isolation and actual Staging store E2E. PRs #172–#176 prove synthetic CI-only SSR, router, SDK/Neon compilation and an authenticated-gate-to-loader bridge using synthetic sessions; not actual merchant acceptance."
+      "acceptance": "Full Cloudflare Vite-built VSN Builder merchant route graph; real Shopify OAuth/App Bridge and valid persisted PrismaNeon sessions after Staging migrations; signed webhooks, paid-only mutations, tenant isolation and actual Staging store E2E. PRs #172–#176 prove synthetic CI-only SSR, router, SDK/Neon compilation and an authenticated-gate-to-loader bridge using synthetic sessions; not actual merchant acceptance.",
+      "progress_note": "Source mutation integrity PR #234 merged after 3/3 exact-head PR workflow successes including T020 full merchant Workerd compatibility. Invalid database optimistic-lock versions now fail closed with regression tests. Hosted Shopify OAuth, migrated Neon and merchant E2E still unverified. Not FINAL CLOSED."
     },
     {
       "id": "T021",
@@ -542,10 +545,11 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/197",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38745149442"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38745149442",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/232"
       ],
       "acceptance": "Template/widgets/form and theme app extension code/test verified on supported fixture themes",
-      "progress_note": "26 Shopify Liquid app blocks/14 assets schema and dependency validation PASSED in PR #197; real supported-theme fixture rendering and templates/forms/widgets functional QA still pending; not final closed."
+      "progress_note": "Theme countdown lifecycle/escaped Liquid PR #232 merged after 3/3 exact-head PR checks, with 4/4 independently observed development push workflows green. Local timer cleanup/section dynamic reload regression tests pass. Actual Shopify supported-theme storefront and form/widget browser E2E remain OPEN. Not FINAL CLOSED."
     },
     {
       "id": "T033",
