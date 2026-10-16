@@ -141,7 +141,7 @@ test("malicious stored page values are HTML-escaped and never executable",async(
   props:{text:'<img src=x onerror="alert(2)">'}}]};
  const html=await renderVerifiedStagingPageInspection({
   shop,apiKey:env.SHOPIFY_API_KEY,metadata:malicious,content:draft,
- }).then(x=>x.text());
+ }).text();
  assert(!html.includes('<script>alert'));
  assert(!html.includes('<iframe src'));
  assert(!html.includes('<img src=x'));
@@ -156,7 +156,7 @@ test("long documents produce at most 30 escaped preview rows and no raw JSON blo
  }))};
  const html=await renderVerifiedStagingPageInspection({
   shop,apiKey:env.SHOPIFY_API_KEY,metadata,content:draft,
- }).then(x=>x.text());
+ }).text();
  assert.equal((html.match(/Block \d+: text/g)||[]).length,30);
  assert(!html.includes("line-159"));
  assert(!html.includes("contentJson"));
