@@ -3,6 +3,8 @@
 // or cross-tenant lookup can escape to the hosted Worker route.
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const PAGE_ID=/^[a-zA-Z0-9_-]{1,64}$/;
+const MAX_DB_VERSION=2147483647; // Prisma/PostgreSQL signed Int
+const MAX_TITLE=256,MAX_HANDLE=256,MAX_TEMPLATE=120,MAX_STATUS=40;
 const FIELDS=Object.freeze({
  id:true,shop:true,title:true,handle:true,template:true,
  status:true,version:true,updatedAt:true,
@@ -31,9 +33,12 @@ export function createVerifiedMerchantPageMetadataLease(database,verifiedShop) {
   if(item===null)return null;
   // Defensive validation before returning the fixed safe scalar projection.
   if(!item || item.id!==id || item.shop!==verifiedShop ||
-     typeof item.title!=="string" || typeof item.handle!=="string" ||
-     typeof item.template!=="string" || typeof item.status!=="string" ||
+     typeof item.title!=="string" || item.title.length>MAX_TITLE ||
+     typeof item.handle!=="string" || item.handle.length>MAX_HANDLE ||
+     typeof item.template!=="string" || item.template.length>MAX_TEMPLATE ||
+     typeof item.status!=="string" || item.status.length>MAX_STATUS ||
      !Number.isSafeInteger(item.version) || item.version<1 ||
+     item.version>MAX_DB_VERSION ||
      !(item.updatedAt instanceof Date) || !Number.isFinite(item.updatedAt.getTime()))
    throw new TypeError("Invalid verified Builder page metadata");
   return {id:item.id,title:item.title,handle:item.handle,

@@ -6,6 +6,10 @@ const PROJECTION=Object.freeze({
   id:true,title:true,template:true,status:true,updatedAt:true,
 });
 const MAX_RECENT=5;
+const PAGE_ID=/^[a-zA-Z0-9_-]{1,64}$/;
+// Match the existing staging dashboard's safe text projection bounds.
+// This lease also feeds a JSON endpoint, so don't defer validation to HTML.
+const MAX_TITLE=256,MAX_TEMPLATE=120,MAX_STATUS=40;
 
 export function createVerifiedMerchantPageSummaryLease(database,shop){
   if(!SHOP.test(String(shop||"")) ||
@@ -30,11 +34,14 @@ export function createVerifiedMerchantPageSummaryLease(database,shop){
     // A Promise may resolve after a caller has already closed the scope.
     allowed();
     if(![total,draft,published].every(x=>Number.isSafeInteger(x)&&x>=0) ||
+       draft>total || published>total || draft+published>total ||
        !Array.isArray(recent)||recent.length>MAX_RECENT)
       throw new TypeError("Invalid merchant page summary");
     const rows=recent.map(row=>{
-      if(typeof row?.id!=="string" || typeof row.title!=="string" ||
-         typeof row.template!=="string" || typeof row.status!=="string" ||
+      if(typeof row?.id!=="string" || !PAGE_ID.test(row.id) ||
+         typeof row.title!=="string" || row.title.length>MAX_TITLE ||
+         typeof row.template!=="string" || row.template.length>MAX_TEMPLATE ||
+         typeof row.status!=="string" || row.status.length>MAX_STATUS ||
          !(row.updatedAt instanceof Date) ||
          !Number.isFinite(row.updatedAt.getTime()))
         throw new TypeError("Invalid merchant page record");
