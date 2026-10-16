@@ -9,6 +9,8 @@ on:
       - "tests/fixtures/theme-compat/**"
       - "scripts/t032-pinned-theme-fixtures.mjs"
       - "tests/t032-pinned-theme-fixtures.test.mjs"
+      - "tests/t032-shopify-native-newsletter.test.mjs"
+      - "scripts/t032-newsletter-form-contract.mjs"
       - ".github/workflows/t032-shopify-theme-extension-qa.yml"
   workflow_dispatch:
 permissions:
@@ -34,3 +36,7 @@ jobs:
         run: node scripts/t032-pinned-theme-fixtures.mjs
       - name: Reject incorrect theme placement and unsupported fixture claims
         run: node --test tests/t032-pinned-theme-fixtures.test.mjs
+      - name: Verify native Shopify customer newsletter markup and feedback
+        run: node scripts/t032-newsletter-form-contract.mjs
+      - name: Adversarial test newsletter consent, escaping and multiple blocks
+        run: node --test tests/t032-shopify-native-newsletter.test.mjs
