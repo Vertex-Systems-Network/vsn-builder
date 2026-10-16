@@ -24,21 +24,33 @@ export function inspectEffectiveDevelopmentProtection(branch,rules){
   const rule=(type)=>effective.filter(item=>item?.type===type);
   for(const type of REQUIRED_RULES)if(rule(type).length===0)
     reasons.push("MISSING_"+type.toUpperCase());
+  // User-mandated AI-led engineering: never require a human to approve a PR.
+  // PR creation, checks, deletion and force-push restrictions remain mandatory.
+  // GitHub defaults omitted required_approving_review_count to zero.
   const pull=rule("pull_request");
-  if(pull.length&&!pull.some(entry=>
-       Number.isInteger(entry.parameters?.required_approving_review_count) &&
-       entry.parameters.required_approving_review_count>=1))
-    reasons.push("NO_REQUIRED_HUMAN_APPROVAL");
+  if(pull.some(entry=>{
+    const n=entry.parameters?.required_approving_review_count;
+    return n!==undefined && (!Number.isInteger(n) || n!==0);
+  }))reasons.push("HUMAN_PR_APPROVAL_NOT_ALLOWED");
+  if(pull.some(entry=>entry.parameters?.require_code_owner_review===true))
+    reasons.push("HUMAN_CODE_OWNER_REVIEW_NOT_ALLOWED");
   const checks=rule("required_status_checks");
-  if(checks.length&&!checks.some(entry=>validatedChecks(entry.parameters).length>0))
+  const allChecks=checks.flatMap(entry=>validatedChecks(entry.parameters));
+  if(checks.length && allChecks.length===0)
     reasons.push("NO_REQUIRED_CI_CHECKS");
+  // The real GitHub ruleset blocked a merge until this exact test existed.
+  // It cannot be replaced by a cosmetic success status or an AI self-approval.
+  if(checks.length && !allChecks.includes("repository-integrity"))
+    reasons.push("REPOSITORY_INTEGRITY_NOT_REQUIRED");
   // We do NOT claim effective reviewer identities, bypass restrictions, or
   // GitHub Environment secrets/reviewer settings from these branch GETs.
   return {ready:reasons.length===0,reasons,
     branch:TARGET_BRANCH,requiredRuleTypes:REQUIRED_RULES.slice(),
-    statusCheckCount:checks.reduce((total,x)=>total+validatedChecks(x.parameters).length,0),
-    explicitlyNotCertified:["environment_reviewers","environment_secrets","reviewer_identity",
-      "effective_ruleset_bypass","shopify_partner_ownership","staging_application"],
+    statusCheckCount:allChecks.length,
+    reviewPolicy:"AI-led source review + enforced PR CI; no human approval",
+    explicitlyNotCertified:["independent_ai_bot_review","environment_secrets",
+      "environment_deployment_permissions","effective_ruleset_bypass",
+      "shopify_partner_ownership","staging_application"],
   };
 }
 
@@ -89,8 +101,9 @@ async function main(){
       process.exitCode=1;
       return;
     }
-    console.log("T013 effective development branch protection, required PR approval, CI and non-force/non-delete rules: PASS.");
-    console.log("NOT CERTIFIED: GitHub Environment reviewers or secrets, bypass actors, Shopify/Neon/Cloudflare runtime.");
+    console.log("T013 protected development PR/required repository-integrity CI and no-human-approval policy: PASS.");
+    console.log("AI review happens in the connected engineering workflow; CI is not proof of a separate AI reviewer bot.");
+    console.log("NOT CERTIFIED: GitHub Environment secrets/deployment policy, bypass actors, Shopify/Neon/Cloudflare runtime.");
   }catch(error){
     console.error("::error::"+(String(error?.message||"").startsWith(ERROR_PREFIX)
       ?error.message:ERROR_PREFIX+"UNKNOWN_FAILURE"));

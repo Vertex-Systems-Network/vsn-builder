@@ -35,12 +35,14 @@
 
 **Verified continuation checkpoint — 16 October 2026:** [#249](https://github.com/Vertex-Systems-Network/vsn-builder/pull/249) made legacy uninstall fail closed without a trusted install-generation proof (7/7 required PR checks); [#250](https://github.com/Vertex-Systems-Network/vsn-builder/pull/250) installed the live, read-only T013 protection probe (5/5 PR checks), whose [actual protected `development` push run](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38909028455) reported **NO_REQUIRED_HUMAN_APPROVAL**; [#251](https://github.com/Vertex-Systems-Network/vsn-builder/pull/251) bounded merchant editor draft versions to PostgreSQL signed Int, with cross-tenant/late-request regression tests (**4/4 exact-head PR CI PASS**). The latest code merge is `15455cdf40941b353a2e7fa30b60eba15e636100`. GitHub `development.protected=true`, but effective human approval is **missing**; Neon Staging/Production each retain **one** branch, and live Worker secrets/bindings and hosted Shopify acceptance remain unverified. **14 FINAL CLOSED, 8 IN_REVIEW, 19 WAITING**; no new closures or production deploy.
 
+**AI-only review policy — 16 October 2026 (user-approved):** All PR design/code/security review is the AI engineering agent's responsibility, backed by mandatory GitHub PR and deterministic security/test CI. **0 human approval required**; protected `development`, `repository-integrity` required status, force-push and deletion restrictions remain mandatory. GitHub effective-rule read-only attestation now rejects human approval prerequisites rather than requiring them. A passing CI check **does not mean** an independent AI model reviewed code; code review must be performed by the agent with recorded PR evidence. Real GitHub Environment secrets and hosted Shopify/Neon validation remain separately blocked. T013 remains IN_REVIEW until a new protected push attestation passes; no Live/Staging deployment authorized.
+
 **Current review queue (all others WAITING):**
 
 | Task | Next acceptance blocker |
 | --- | --- |
-| T013 | Branch protected, but actual effective GitHub rules lack 1 required human PR approval; Environment reviewers also unverified |
-| T014 | Protected GitHub Environment secrets/reviewer policy and verified Worker bindings |
+| T013 | AI-only effective rules check: protected PR + repository-integrity CI required; latest protected-push live attestation pending |
+| T014 | Scoped GitHub Environment secrets and automated deployment policy (no human reviewers), plus real Worker bindings |
 | T015 | Actual Partner ownership, Dev Shopify install and authenticated OAuth callback evidence |
 | T017 | Single pinned Neon Free Staging branch and snapshot listed; scoped reviewed migration preflight and restore proof still pending (paid branch protection not required) |
 | T020 | Real hosted React Router/Shopify OAuth, Neon-backed editor, merchant E2E |
