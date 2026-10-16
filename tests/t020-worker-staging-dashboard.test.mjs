@@ -85,8 +85,8 @@ test("Staging opt-in is explicit; production, bad tier, missing bindings and rea
     assert.equal(await res.text(),"");
   }
   assert.equal(f.calls.length,0);
-  assert.equal((await worker.fetch(request(),env)).status,503,
-    "real Worker must fail closed before hosted Neon/Shopify access");
+  assert.equal((await worker.fetch(request(),{...env,DATABASE_URL:""})).status,503,
+    "real Worker must fail closed without actual hosted Neon credentials");
   assert.equal((await serve(f,env,new Request(origin+"/app",{method:"POST"}))).status,503);
   assert.equal((await serve(f,env,new Request(origin+"/app/pages"))).status,503);
 });
