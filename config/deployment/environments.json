@@ -34,7 +34,9 @@
     "neon_recovery_source_branch_id": "br-wandering-queen-b3mmztjy",
     "neon_pre_migration_snapshot_id": "snap-green-bar-b3m1btfb",
     "neon_endpoint_id": "ep-little-dream-b3g6puj2",
-    "neon_pooler_enabled": true
+    "neon_pooler_enabled": true,
+    "neon_primary_policy": "free-plan-staging-pinned-snapshot-github-reviewed",
+    "neon_plan_capability": "unprotected-branch-allowed-in-staging-only"
   },
   "production": {
     "source_branch": "main",

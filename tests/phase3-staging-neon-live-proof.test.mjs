@@ -21,7 +21,7 @@ function credentials(extra={}) {
 function fixtures() {
  return {
   branches:[
-   {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true,primary:true,protected:true},
+   {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true,primary:true,protected:false},
    {id:stage.neon_recovery_source_branch_id,project_id:stage.neon_project_id,default:false},
   ],
   snapshots:[{id:stage.neon_pre_migration_snapshot_id,
@@ -52,7 +52,8 @@ test("real API snapshot and restored default compute prove shape without any mut
  assert.equal(result.ready,true);
  assert.equal(result.snapshotId,stage.neon_pre_migration_snapshot_id);
  assert.equal(result.defaultBranchId,stage.neon_default_branch_id);
- assert.equal(result.primaryProtected,true);
+ assert.equal(result.primaryProtected,false);
+ assert.equal(result.freeTierPolicyApplied,true);
  assert.deepEqual(a.called.sort(),["branches","endpoints","snapshots"]);
 });
 test("missing secrets, unprotected branch and invented snapshot block BEFORE API calls",async()=>{
@@ -73,7 +74,6 @@ test("real API response must certify original backup, restored branch, endpoint 
   a=>{a.snapshots=[]},
   a=>{a.snapshots[0].source_branch_id=stage.neon_default_branch_id},
   a=>{a.snapshots[0].created_at="bad-date"},
-  a=>{a.branches[0].protected=false},
   a=>{delete a.branches[0].protected},
   a=>{a.branches[0].protected="true"},
   a=>{a.branches[0].protected=null},
@@ -92,16 +92,38 @@ test("real API response must certify original backup, restored branch, endpoint 
   }),/Staging Neon control-plane proof blocked/);
  }
 });
-test("GitHub protected workflow alone NEVER authorizes an unprotected Neon Staging primary",async()=>{
+test("Neon Free-plan Staging is valid only with reviewed source, real snapshot and exact isolated compute",async()=>{
  const branch=fixtures();
- branch.branches[0].protected=false;
- const observed=fakeApi(branch);
- await assert.rejects(
-  verifyStagingNeonControlPlane(credentials(),{fetchImpl:observed.fn}),
-  error=>error?.code==="VSN_STAGING_NEON_CONTROL_PLANE_NOT_VERIFIED" &&
-   /primary branch is not protected/.test(error.message),
- );
- assert.deepEqual(observed.called.sort(),["branches","endpoints","snapshots"]);
+ assert.equal(branch.branches[0].protected,false);
+ const attestation=await verifyStagingNeonControlPlane(credentials(),{
+  fetchImpl:fakeApi(branch).fn,
+ });
+ assert.equal(attestation.ready,true);
+ assert.equal(attestation.primaryProtected,false);
+ assert.equal(attestation.freeTierPolicyApplied,true);
+ // Even under the Free-plan exception, any other Neon project endpoint
+ // or removed source backup is forbidden; no SQL migration is attempted.
+ for(const mutate of [
+  value=>{value.snapshots[0].source_branch_id=stage.neon_default_branch_id},
+  value=>{value.endpoints[0].host=targets.production.neon_endpoint_host},
+  value=>{value.branches[0].id=targets.production.neon_default_branch_id},
+ ]){
+  const data=fixtures();mutate(data);
+  await assert.rejects(verifyStagingNeonControlPlane(credentials(),{
+   fetchImpl:fakeApi(data).fn,
+  }),/Staging Neon control-plane proof blocked/);
+ }
+ const production=credentials({APP_ENV:"production"});
+ const untouched=fakeApi();
+ await assert.rejects(verifyStagingNeonControlPlane(production,{fetchImpl:untouched.fn}),/blocked/);
+ assert.equal(untouched.called.length,0);
+});
+test("a protected Neon Staging primary is also valid, but not mandatory on Free",async()=>{
+ const branch=fixtures();
+ branch.branches[0].protected=true;
+ const result=await verifyStagingNeonControlPlane(credentials(),{fetchImpl:fakeApi(branch).fn});
+ assert.equal(result.primaryProtected,true);
+ assert.equal(result.freeTierPolicyApplied,false);
 });
 
 test("Neon API errors, truncated metadata or missing collection fail closed",async()=>{
