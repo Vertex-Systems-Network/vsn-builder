@@ -14,6 +14,7 @@ on:
       - "app/**"
       - "workers/app.js"
       - "tests/t020-worker-merchant-page-summary.test.mjs"
+      - "tests/t020-worker-staging-dashboard.test.mjs"
       - "tests/t020-worker-merchant-page-metadata.test.mjs"
       - "tests/t020-worker-paid-read-access.test.mjs"
       - "tests/t020-worker-page-rbac.test.mjs"
@@ -89,6 +90,8 @@ jobs:
         run: node --test tests/worker-shopify-admin-gate.test.mjs
       - name: Verify read-only page data stays scoped to persisted merchant session
         run: node --test tests/t020-worker-merchant-page-summary.test.mjs
+      - name: Exercise Staging-only Shopify App Bridge dashboard with verified paid staff auth
+        run: node --test tests/t020-worker-staging-dashboard.test.mjs
       - name: Verify signed per-page read-only metadata isolation, expiry and request teardown
         run: node --test tests/t020-worker-merchant-page-metadata.test.mjs
       - name: Verify paid-only hosted merchant GET authorizations and expired-plan denial
