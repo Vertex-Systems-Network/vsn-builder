@@ -27,6 +27,8 @@
 
 **One branch per Neon project (2026-10-16):** Staging and Production have separate Neon projects, each with exactly one required active default branch. Source-only T017 policy now rejects extra QA/recovery branches while continuing to accept a pinned, independently listed historical manual snapshot after its source branch is retired. QA branch's 52 public tables contained 0 rows each on live SQL audit; schema/migrations remain versioned. [Read-only audit](docs/engineering/neon-single-branch-audit-20261016.md). Never create new QA/restore/preview branches as an application development workflow without separate explicit authorization; prefer local disposable Postgres and source-only CI.
 
+**Verified provider cleanup — 16 October 2026:** Read-only audit confirmed Staging project's extra QA branch `br-blue-flower-b3kiqk5n` had 52 tables with **zero rows in every table**. With user authorization, deleted that nondefault QA branch and then old recovery branch `br-wandering-queen-b3mmztjy`; verified Neon **Staging exactly 1 default branch** `br-square-mountain-b3ij6q2s`, **Production exactly 1 default branch** `br-odd-credit-b3rzlpz9`. Historical manual snapshot `snap-green-bar-b3m1btfb` remains available by API after deletion, but has not been restore-tested. Default Staging remains 0 application tables; real protected migration still WAITING on scoped credentials and GitHub-reviewed manual flow. Evidence: [single-branch Neon audit](docs/engineering/neon-single-branch-audit-20261016.md) and [#247](https://github.com/Vertex-Systems-Network/vsn-builder/pull/247).
+
 **Current review queue (all others WAITING):**
 
 | Task | Next acceptance blocker |
