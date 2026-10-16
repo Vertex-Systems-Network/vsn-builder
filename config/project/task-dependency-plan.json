@@ -281,10 +281,13 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/159",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/issues/159",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/264",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/265",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38981453811"
       ],
       "acceptance": "One public VSN | Builder listing; Dev/Staging internal testing safely isolated; actual Partner app identity/ownership verified",
-      "progress_note": "2026-10-16 existing VSN Builder Development app public Client ID verified from Shopify Admin; local testing uses ONLY that app, separate from Staging/Live. Repaired reusable clean runner localhost smoke on protected development and PR; Node 22.18, isolated ignored .env.local, SQLite local:prepare, build and auth boundary. User's staging/live GitHub configurations untouched. Full assistant container cannot clone because DNS unavailable and local Node 22.16 is unsupported; CI runner is separate. Real Dev Shopify OAuth still pending; IN_REVIEW."
+      "progress_note": "2026-10-17 STAGING identity progress, NOT FINAL: PR #264 (4/4 exact-head CI) and PR #265 (5/5 exact-head CI) merged; live protected development Staging run #38981453811 SUCCESS verifies scoped Shopify API key matches actual internal Staging Builder app and Shopify API secret present, with existing distinct registered Dev/Staging/ONE-public-Live app client identities. Metafields-pattern public IDs/HTTPS origin pinned in reviewed source; real credentials remain GitHub cloudflare-staging secrets; redundant vars removed. DEV Builder Partner app exists but is NOT INSTALLED on Shopify Dev store, merchant OAuth, legal Partner ownership, stable public Staging Worker runtime and persisted sessions unverified. T015 remains IN_REVIEW; no Shopify App Store publication or Production mutation."
     },
     {
       "id": "T016",
@@ -317,10 +320,12 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/247"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/247",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/263",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160"
       ],
       "acceptance": "Run reviewed GET-only Neon live identity checker; verified snapshot, restored root and pooler; exact permissions",
-      "progress_note": "2026-10-16 exact Neon provider cleanup VERIFIED: QA branch br-blue-flower-b3kiqk5n (52 public tables, each exactly 0 rows) and recovery branch br-wandering-queen-b3mmztjy deleted with user authorization. Staging has exactly one default br-square-mountain-b3ij6q2s, Production exactly one default br-odd-credit-b3rzlpz9; pre-existing manual snapshot snap-green-bar-b3m1btfb retained after deletion. PR #247 one-active-branch policy/repo integrity merged with 7/7 CI green. Scoped manual GitHub staging preflight/real migration not run; IN_REVIEW."
+      "progress_note": "2026-10-17 live Neon provider RE-AUDIT: default Staging branch br-square-mountain-b3ij6q2s restored_from snapshot snap-green-bar-b3m1btfb, restored_as br-wandering-queen-b3mmztjy, restore_status=finalized; compute ep-little-dream-b3g6puj2 pooled, Staging default neondb has 0 application tables. Protected snapshot-provenance fail-closed checker PR #263 4/4 CI green and merged. T017 remains IN_REVIEW because foreign Brovexa QA branch br-royal-morning-b3dhfrre is a second ACTIVE Neon Staging-project branch and has separate brovexa_m04_fullqa database with 50 application tables; deletion prohibited due data loss. One old manual historical-source snapshot only; current-default new snapshot rejected Neon HTTP 422 snapshots limit exceeded; automatic snapshot schedule empty. No Neon migration or new branch, no snapshot deletion, no Production mutation. Safe cross-project data extraction/backup and recovery strategy required; T018 WAITING."
     },
     {
       "id": "T018",
