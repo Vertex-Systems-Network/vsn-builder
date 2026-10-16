@@ -20,6 +20,13 @@ export const RULES=Object.freeze({
  "native-text.liquid":{plain:[],rich:["text"]},
  "native-vsn-section.liquid":{plain:[]},
  "native-collection-image.liquid":{plain:[]},
+ "native-divider.liquid":{plain:[]},
+ "native-spacer.liquid":{plain:[]},
+ "native-image.liquid":{plain:[]},
+ "native-product-image.liquid":{plain:[]},
+ "native-video.liquid":{plain:[]},
+ "page-builder.liquid":{plain:["page_handle"]},
+
 });
 const PLAIN_TYPES=new Set(["text","textarea","url"]);
 const RICH_TYPES=new Set(["richtext","inline_richtext"]);

@@ -1,4 +1,4 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><div class="vsn-native-media" style="--vsn-native-fit:{{ block.settings.fit }}">{% if block.settings.image != blank %}{{ block.settings.image | image_url: width: 2400 | image_tag: loading: block.settings.loading, widths: '320,480,640,800,1024,1280,1600,2048' }}{% endif %}</div></div>
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id | escape }}" {{ block.shopify_attributes }} style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><div class="vsn-native-media" style="--vsn-native-fit:{{ block.settings.fit }}">{% if block.settings.image != blank %}{{ block.settings.image | image_url: width: 2400 | image_tag: loading: block.settings.loading, widths: '320,480,640,800,1024,1280,1600,2048' }}{% endif %}</div></div>
 
 {% schema %}
 {

@@ -6,7 +6,7 @@ import {RULES,inspectNativePlainOutputs,inspectPackagedNativePlainOutputs}
 const base="extensions/vsn-page-builder-theme/blocks/";
 const sources=()=>Object.fromEntries(Object.keys(RULES)
  .map(name=>[name,readFileSync(base+name,"utf8")]));
-test("14 native block sources escape plain text, catalog titles, links and instance IDs",()=>{
+test("20 native and main-page builder block sources escape plain text, catalog titles, links and instance IDs",()=>{
  const result=inspectPackagedNativePlainOutputs();
  assert.deepEqual(result.errors,[]);
  assert.equal(result.merchantThemeVerified,false);
@@ -63,4 +63,17 @@ test("editor attrs, block IDs and schema type drift are fail-closed",()=>{
  const changed=source.replace('"type": "textarea"','"type": "richtext"');
  assert.notEqual(changed,source);
  assert(inspectNativePlainOutputs({...original,["native-icon-box.liquid"]:changed}).length>0);
+});
+
+test("main page-builder app block safely renders page handle and editor metadata",()=>{
+ const source=readFileSync(base+"page-builder.liquid","utf8");
+ assert.match(source,/id="vsn-builder-{{ block\.id \| escape }}"/);
+ assert.match(source,/data-page-handle="{{ block\.settings\.page_handle \| escape }}"/);
+ assert.match(source,/{{ block\.shopify_attributes }}/);
+ const original=sources();
+ assert(inspectNativePlainOutputs({...original,
+  ["page-builder.liquid"]:source.replace(
+   'data-page-handle="{{ block.settings.page_handle | escape }}"',
+   'data-page-handle="{{ block.settings.page_handle }}"',
+  )}).length>0);
 });
