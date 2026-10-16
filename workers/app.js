@@ -6,6 +6,7 @@ import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worke
 import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } from "../app/services/worker-shopify-admin-gate.js";
 import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-draft-save-request.js";
 import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
+import { handleVerifiedStagingShopifyAuth } from "../app/services/worker-shopify-staging-auth.js";
 import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
 import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
 
@@ -67,6 +68,13 @@ export default {
     // Stage-only real Shopify App Bridge overview. Every request reuses the
     // official SDK + verified session + Partner-paid + pages/view gates.
     // Production and unconfigured Staging always return 503.
+    // Stage-only official Shopify SDK OAuth/callback bridge. The SDK verifies
+    // signatures/tokens and stores sessions through a generation-fenced Neon
+    // adapter. Disabled by default; GET /auth/login remains blocked until a
+    // separate real login form is integrated and tested.
+    if(/^\/auth\/(?!login(?:\/|$))[a-z0-9-]{1,64}$/.test(url.pathname) &&
+       request.method==="GET")
+      return handleVerifiedStagingShopifyAuth(request,env);
     if(url.pathname==="/app" && request.method==="GET")
       return handleVerifiedStagingMerchantDashboard(request,env);
     if(url.pathname==="/app/__vsn/verified-session" && request.method==="GET") {
