@@ -552,10 +552,12 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/232",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/236",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/238",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/240"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/240",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/243",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/244"
       ],
       "acceptance": "Template/widgets/form and theme app extension code/test verified on supported fixture themes",
-      "progress_note": "2026-10-16 source privacy PR #240 merged at 812d0c431c5e11272ea3a2d9b67ab8a76dbc1705 after 3/3 exact-head CI PASS. Actual storefront renderer strips customer ID/name/email from Shopify Builder GET URLs (server unused), constrains same-origin app-proxy paths; VM adversarial tests pass. Prior native theme and storefront blocks code/CI passed. Real supported-theme merchant browser/widgets/forms QA still missing; IN_REVIEW."
+      "progress_note": "2026-10-16 PR #243 (merge aef60d8732d931ceda72d8917f0165d10db121c7) blocks malicious wishlist link and media URL schemes, normalizer/card sink bypass, and preserves legitimate same-origin Shopify product links; 3/3 CI PASS. PR #244 (merge 321d362cebb0dad4792d9ab7e345a15b0dcba9b8) adds AbortController per theme app block and cancels stale Shopify editor selection/unload requests with adversarial VM tests; 3/3 CI PASS. All source-only. Hosted Shopify supported themes, actual merchant forms/widgets and browser E2E remain unverified. T032 IN_REVIEW."
     },
     {
       "id": "T033",
