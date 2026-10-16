@@ -18,6 +18,8 @@ on:
       - "tests/t032-countdown-lifecycle.test.mjs"
       - "scripts/t032-native-plain-output-contract.mjs"
       - "tests/t032-native-plain-output-contract.test.mjs"
+      - "tests/t032-app-proxy-private-query.test.mjs"
+      - "app/routes/builder-proxy.$.jsx"
       - ".github/workflows/t032-shopify-theme-extension-qa.yml"
   workflow_dispatch:
 permissions:
@@ -61,3 +63,5 @@ jobs:
         run: node scripts/t032-native-plain-output-contract.mjs
       - name: Test source escaping, catalog metadata and editor attributes
         run: node --test tests/t032-native-plain-output-contract.test.mjs
+      - name: Test no customer PII leaks into Shopify Builder app-proxy GET URLs
+        run: node --test tests/t032-app-proxy-private-query.test.mjs
