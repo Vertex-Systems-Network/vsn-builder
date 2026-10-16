@@ -13,6 +13,8 @@ on:
       - "scripts/t032-newsletter-form-contract.mjs"
       - "scripts/t032-native-product-cart-contract.mjs"
       - "tests/t032-native-product-cart.test.mjs"
+      - "scripts/t032-native-links-contract.mjs"
+      - "tests/t032-native-links.test.mjs"
       - ".github/workflows/t032-shopify-theme-extension-qa.yml"
   workflow_dispatch:
 permissions:
@@ -46,3 +48,7 @@ jobs:
         run: node scripts/t032-native-product-cart-contract.mjs
       - name: Adversarial test selected variants, sold-out guards and large variant catalogues
         run: node --test tests/t032-native-product-cart.test.mjs
+      - name: Validate storefront-safe native button and social links
+        run: node scripts/t032-native-links-contract.mjs
+      - name: Reject unescaped or unconfigured native links
+        run: node --test tests/t032-native-links.test.mjs

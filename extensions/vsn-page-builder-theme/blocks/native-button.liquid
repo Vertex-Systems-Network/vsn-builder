@@ -1,4 +1,11 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><a class="vsn-native-button" href="{{ block.settings.url }}"{% if block.settings.new_tab %} target="_blank" rel="noopener"{% endif %} style="--vsn-native-accent:{{ block.settings.background_button }}">{{ block.settings.text }}</a></div>
+{% comment %}T032: escape merchant-controlled links and labels; do not render blank storefront CTAs.{% endcomment %}
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id | escape }}" {{ block.shopify_attributes }} style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px">
+  {% if block.settings.url != blank %}
+    <a class="vsn-native-button" href="{{ block.settings.url | escape }}" {% if block.settings.new_tab %}target="_blank" rel="noopener noreferrer"{% endif %} style="--vsn-native-accent:{{ block.settings.background_button }}">{{ block.settings.text | escape }}</a>
+  {% elsif request.design_mode %}
+    <span class="vsn-native-muted" role="status">Choose a button link in the theme editor.</span>
+  {% endif %}
+</div>
 
 {% schema %}
 {
