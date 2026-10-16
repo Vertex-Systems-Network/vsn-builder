@@ -1,4 +1,65 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><form method="post" action="{{ routes.cart_add_url }}"><input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}"><button class="vsn-native-button" type="submit"{% unless product.selected_or_first_available_variant.available %} disabled{% endunless %}>{{ block.settings.label }}</button></form></div>
+{% assign vsn_cart_form_id = 'vsn-native-cart-' | append: block.id %}
+<div
+  class="vsn-native-block"
+  data-vsn-native-instance="{{ block.id | escape }}"
+  {{ block.shopify_attributes }}
+  style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"
+>
+  {% if product == blank %}
+    <p class="vsn-native-muted" role="status">Add to cart is available on product pages.</p>
+  {% elsif product.variants.size >= 250 and product.has_only_default_variant == false %}
+    {%- comment -%}
+      Shopify Liquid caps product.variants at 250. Never offer a truncated
+      list that can silently add a different size or colour from the shopper's
+      intended option. For large catalogs, use the theme's native picker.
+    {%- endcomment -%}
+    <p class="vsn-native-muted" role="status">
+      Select your options using the store's product form to add this item.
+    </p>
+  {% else %}
+    {% assign vsn_selected_variant = product.selected_or_first_available_variant %}
+    {% form 'product', product, id: vsn_cart_form_id, class: 'vsn-native-product-form' %}
+      {% if product.has_only_default_variant %}
+        <input type="hidden" name="id" value="{{ vsn_selected_variant.id }}">
+      {% else %}
+        <label for="vsn-native-variant-{{ block.id | escape }}">Choose a variant</label>
+        <select
+          id="vsn-native-variant-{{ block.id | escape }}"
+          name="id"
+          required
+          {% unless product.available %}disabled{% endunless %}
+        >
+          {% for variant in product.variants %}
+            <option
+              value="{{ variant.id }}"
+              {% if variant.id == vsn_selected_variant.id %}selected{% endif %}
+              {% unless variant.available %}disabled{% endunless %}
+            >{{ variant.title | escape }}{% unless variant.available %} — Sold out{% endunless %}</option>
+          {% endfor %}
+        </select>
+      {% endif %}
+      <label for="vsn-native-quantity-{{ block.id | escape }}">Quantity</label>
+      <input
+        id="vsn-native-quantity-{{ block.id | escape }}"
+        type="number"
+        name="quantity"
+        min="1"
+        step="1"
+        value="1"
+        inputmode="numeric"
+        required
+        {% unless product.available %}disabled{% endunless %}
+      >
+      <button class="vsn-native-button" type="submit" {% unless product.available %}disabled{% endunless %}>
+        {% if product.available %}
+          {{ block.settings.label | escape }}
+        {% else %}
+          Sold out
+        {% endif %}
+      </button>
+    {% endform %}
+  {% endif %}
+</div>
 
 {% schema %}
 {
