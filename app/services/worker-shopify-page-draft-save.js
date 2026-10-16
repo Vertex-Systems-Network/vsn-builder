@@ -64,7 +64,11 @@ export async function saveVerifiedBuilderPageDraft({
     select:{id:true,version:true},
   });
   if(!existing)return {ok:false,status:404,code:"PAGE_NOT_FOUND"};
-  if(existing.id!==pageId || !Number.isSafeInteger(existing.version))
+  // PostgreSQL's page version is an incrementing signed 32-bit counter.
+  // A corrupt or out-of-range row is NOT a valid optimistic-lock conflict;
+  // never expose it as a merchant-visible version or encourage a retry.
+  if(existing.id!==pageId || !Number.isSafeInteger(existing.version) ||
+     existing.version<1 || existing.version>MAX_VERSION+1)
     throw new BuilderDraftSaveError(503,"INVALID_DRAFT_STORAGE_ROW");
   return {ok:false,status:409,code:"DRAFT_VERSION_CONFLICT",
     currentVersion:existing.version};
