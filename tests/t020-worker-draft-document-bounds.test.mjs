@@ -73,3 +73,38 @@ test("non-JSON values and executing getters are rejected before serialization",(
   deniesSave([accessorArray]);
   assert.equal(invoked,false);
 });
+
+test("non-enumerable toJSON hooks cannot execute while saving editor drafts",()=>{
+ let invoked=0;
+ const node={id:"safe",type:"text"};
+ Object.defineProperty(node,"toJSON",{
+  enumerable:false,value(){invoked++;return {id:"rewritten"};},
+ });
+ assert.deepEqual(Object.keys(node),["id","type"]);
+ deniesSave([node]);
+ assert.equal(invoked,0,"serializer hook must never run");
+
+ const props={text:"Untouched"};
+ Object.defineProperty(props,"toJSON",{
+  enumerable:false,get(){invoked++;throw Error("getter executed");},
+ });
+ deniesSave([{id:"hero",props}]);
+ assert.equal(invoked,0,"non-enumerable getter must never run");
+
+ const nested=[{id:"item"}];
+ Object.defineProperty(nested,"toJSON",{
+  enumerable:false,value(){invoked++;return [];},
+ });
+ deniesSave([{children:nested}]);
+ assert.equal(invoked,0,"array toJSON hook must never run");
+});
+
+test("stored editor JSON with toJSON property is rejected before hydration",async()=>{
+ for(const raw of [
+  '[{"id":"hero","props":{"toJSON":"unsafe"}}]',
+  '[{"toJSON":false}]',
+  '[{"children":[{"toJSON":null}]}]',
+ ]){
+  await assert.rejects(reader(raw),/Unsafe Builder editor serialization hook/);
+ }
+});

@@ -29,6 +29,12 @@ export function assertBoundedBuilderDraftDocument(elements) {
     }
     if (typeof value !== "object")
       throw new TypeError("Unsupported Builder editor value");
+    // JSON.stringify calls toJSON even when it is non-enumerable or
+    // inherited. Object.keys() alone cannot detect that executable hook.
+    // This applies to arrays too and must run before any serialization.
+    // "in" checks for the property without evaluating an accessor.
+    if ("toJSON" in value)
+      throw new TypeError("Unsafe Builder editor serialization hook");
     if (seen.has(value)) continue;
     seen.add(value);
     if (Array.isArray(value)) {
