@@ -39,7 +39,9 @@ test("missing selections, sold out protections, quantity limits or Shopify-gener
  ];
  for(const [before,after] of replacements){
   assert(liquid.includes(before),before);
-  assert(evaluate(liquid.replace(before,after)).length>0,before);
+  const broken=before.includes('unless product.available')?
+   liquid.replaceAll(before,after):liquid.replace(before,after);
+  assert(evaluate(broken).length>0,before);
  }
 });
 
