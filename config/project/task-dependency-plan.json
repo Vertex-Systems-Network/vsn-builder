@@ -302,7 +302,7 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155"
       ],
       "acceptance": "Run reviewed GET-only Neon live identity checker; verified snapshot, restored root and pooler; exact permissions",
-      "progress_note": "2026-10-16 verified real Neon Staging project vsn-builder-staging on Free subscription, default branch br-square-mountain-b3ij6q2s (unprotected), snapshot snap-green-bar-b3m1btfb and pinned pooled endpoint ep-little-dream-b3g6puj2. Paid protected-branch feature is NOT required for Staging; an explicit Free-plan policy permits only pinned Staging branch after protected GitHub manual approval, actual scoped PostgreSQL URL pairing, verified snapshot/compute and post-migrate checks. Real credentials and manual protected workflow acceptance still pending; IN_REVIEW."
+      "progress_note": "2026-10-16 Staging/Production Neon one-branch policy. QA schema read-only evidence: 52 tables, exact 0 rows each; pre-existing pinned snapshot historical source may be retired but snapshot remains independently verified. Source gate requires exactly ONE active Staging default branch, snapshot ID/source, pooler, isolated project. Protected GitHub environment and credentials still missing; IN_REVIEW."
     },
     {
       "id": "T018",
@@ -321,7 +321,7 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
       "evidence": [],
       "acceptance": "GitHub-protected reviewed manual Staging migration with pinned isolated Neon Free branch, snapshot/restore evidence, 2+ successful Prisma migrations, real pooled queries and 53+ app tables. Production remains untouched.",
-      "progress_note": "Free-plan staging migration remains WAITING on GitHub development ruleset, environment scoped secrets, manual STAGING_MIGRATION_APPROVED, paired pooled/direct TLS URLs, provider GET-only backup/compute proof and after-migration verification. Paid Neon protected branch NOT required. No DDL executed."
+      "progress_note": "GitHub-reviewed one-primary Neon Free Staging migration stays WAITING: protected GitHub development rules, scoped credentials, actual pinned snapshot recovery plan, manual approval, paired TLS DB URLs and post-migrate validation. Do not create additional Neon test branches and do not claim schema applied to default."
     },
     {
       "id": "T019",

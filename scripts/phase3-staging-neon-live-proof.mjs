@@ -45,6 +45,11 @@ export async function verifyStagingNeonControlPlane(env={},{
     if(defaults.length!==1 || current?.id!==target.neon_default_branch_id ||
        current?.project_id!==target.neon_project_id)
       throw blocked("Staging default Neon branch changed since independently reviewed restoration");
+    // User policy: ONE active database branch per Neon project. Snapshots are
+    // separate read-only backups, not active branches. Reject QA/recovery/PR
+    // branches even when their default remains unchanged.
+    if(branches.length!==1)
+      throw blocked("Staging Neon must have exactly one active default branch");
     // Neon Free cannot protect a branch; the provider rejected this project's
     // protection update HTTP 422. Accept its pinned, unprotected Staging primary
     // ONLY under the explicit reviewed free-tier policy. This is NOT a
@@ -59,18 +64,16 @@ export async function verifyStagingNeonControlPlane(env={},{
       throw blocked("Staging and Production Neon identities are not isolated");
     if(!current.protected && target.neon_primary_policy!==freeTierPolicy)
       throw blocked("Unprotected Staging primary requires reviewed Free-plan safeguards");
-    const original=branches.find(b=>
-      b.id===target.neon_recovery_source_branch_id &&
-      b.project_id===target.neon_project_id && b.default!==true
-    );
-    if(!original)throw blocked("original recoverable Staging branch is missing");
+    // An existing independently stored legacy snapshot may reference its
+    // already-retired source branch. Never require keeping that live branch
+    // merely to attest the pinned snapshot ID and historical source identity.
     const backup=snapshots.find(s=>
       s.id===target.neon_pre_migration_snapshot_id &&
       s.id===env.VSN_STAGING_BACKUP_EVIDENCE &&
       s.source_branch_id===target.neon_recovery_source_branch_id &&
       Number.isFinite(Date.parse(s.created_at))
     );
-    if(!backup)throw blocked("real original-root Staging backup snapshot was not found");
+    if(!backup)throw blocked("real pinned Staging snapshot was not found");
     const compute=endpoints.filter(e=>e.id===target.neon_endpoint_id);
     if(compute.length!==1 || compute[0].branch_id!==current.id ||
        compute[0].host!==target.neon_endpoint_host ||
@@ -86,7 +89,9 @@ export async function verifyStagingNeonControlPlane(env={},{
     // are subsequent protected steps and must not be skipped.
     return {ready:true,projectId:target.neon_project_id,
       defaultBranchId:current.id,primaryProtected:current.protected,
-      freeTierPolicyApplied:!current.protected,snapshotId:backup.id,
+      freeTierPolicyApplied:!current.protected,
+      activeBranchCount:branches.length,snapshotId:backup.id,
+      historicalSnapshotSourceBranchId:backup.source_branch_id,
       computeId:compute[0].id,poolerEnabled:true,
     };
   }catch(err) {
@@ -97,7 +102,7 @@ export async function verifyStagingNeonControlPlane(env={},{
 if(process.argv[1]?.endsWith("/phase3-staging-neon-live-proof.mjs")) {
   try {
     await verifyStagingNeonControlPlane(process.env);
-    console.log("PASS Staging Neon isolated pinned primary, real backup snapshot, pooled compute and Free-plan policy; no SQL executed");
+    console.log("PASS Staging Neon one active branch, pinned backup snapshot, pooled compute and Free-plan policy; no SQL executed");
   }catch(err) {
     // Intentionally never expose API response, auth headers or URL passwords.
     console.error("BLOCKED "+(err?.code==="VSN_STAGING_NEON_CONTROL_PLANE_NOT_VERIFIED"

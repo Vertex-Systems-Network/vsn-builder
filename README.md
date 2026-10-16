@@ -25,6 +25,8 @@
 
 **Neon Free-plan engineering policy (16 October 2026):** The Staging Neon project is separately identified from the Production project and has a real snapshot, pinned primary branch and pooled/direct compute. Paid Neon branch protection is unavailable on this Free subscription and is **not** a prerequisite for Staging. The reviewed [T017 source contract](scripts/phase3-staging-neon-live-proof.mjs) and [preflight](scripts/phase3-staging-migration-preflight.mjs) still require a **GitHub-protected manual development workflow, Staging Environment review/approval, exact TLS connection identities, backup API verification and rollback evidence** before migrations. This does not relax Live release gates, and no migration has yet been run.
 
+**One branch per Neon project (2026-10-16):** Staging and Production have separate Neon projects, each with exactly one required active default branch. Source-only T017 policy now rejects extra QA/recovery branches while continuing to accept a pinned, independently listed historical manual snapshot after its source branch is retired. QA branch's 52 public tables contained 0 rows each on live SQL audit; schema/migrations remain versioned. [Read-only audit](docs/engineering/neon-single-branch-audit-20261016.md). Never create new QA/restore/preview branches as an application development workflow without separate explicit authorization; prefer local disposable Postgres and source-only CI.
+
 **Current review queue (all others WAITING):**
 
 | Task | Next acceptance blocker |
