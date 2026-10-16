@@ -4,6 +4,8 @@ on:
     branches: [development]
     paths:
       - ".github/workflows/phase1-protected-identity-preflight.yml"
+      - ".github/workflows/staging-hosted-readiness.yml"
+      - ".github/workflows/t015-protected-staging-shopify-identity.yml"
       - ".github/workflows/t015-staging-identity-source-qa.yml"
       - "tests/t015-staging-metafields-identity.test.mjs"
 permissions:
