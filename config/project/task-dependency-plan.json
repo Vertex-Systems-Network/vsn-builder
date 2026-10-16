@@ -252,19 +252,24 @@
     },
     {
       "id": "T014",
-      "title": "Configure/verify GitHub Environment secrets and tier variables",
+      "title": "Verify protected GitHub cloudflare-staging Environment secrets and tier identity",
       "workstream": "Infrastructure",
       "priority": "P0",
-      "status": "in_review",
+      "status": "closed",
       "depends_on": [],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/158",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38757462226",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/205",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/233"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/233",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/258",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/259",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38948913652"
       ],
-      "acceptance": "Live GitHub scoped secret-name, environment branch/deployment-permission and policy metadata verified without exposing values; approval must be automated, not depend on human Environment reviewers.",
-      "progress_note": "2026-10-16 T014 protected source workflow now automatically runs its read-only Cloudflare Staging metadata audit on each protected development push after strict repo/ref/protection precondition; PR synthetic-only no token and Production excluded. GitHub Environment named cloudflare-staging is referenced, but GitHub scoped secret-name/policy metadata still cannot be read through connected GitHub API; Staging Worker last verified 0 secrets, 0 bindings. Next real protected Staging run must verify secret/token presence and provider settings before final closing; no credentials are printed."
+      "acceptance": "Staging-only T014: live protected development GitHub Actions Environment cloudflare-staging has correct named scope secrets and public tier-identity constants; supported owner-provided Environment settings show deployment branch restricted to development, no required human reviewers or wait timer. Actual protected push identity attestation validates scoped secret presence and cross-tier Shopify/Neon/Cloudflare identities, without logging values or deploying. Worker runtime bindings and real Staging OAuth/Neon migrations belong to T019/T021/T023/T018; Production readiness belongs to later release tasks.",
+      "progress_note": "FINAL CLOSED for protected GitHub STAGING Environment only (2026-10-16). User screenshot shows cloudflare-staging secret names, deployment branch development, no required reviewers/wait timer. Verified real protected development workflow run #38948913652 PASS: six scoped secrets present + validated (Neon pooled/direct host pair, Shopify staging ID, Cloudflare account), four repository-pinned public staging config identifiers PASS; Metafields-style secret-only GitHub Environment implementation PR #259 merged after 4/4 PR CI green, synthetic isolated regression. No new vars required; no values disclosed. Runtime Worker secrets remain T019, hosted migration T018, OAuth T023; Production not certified. Permanently remove T014 from active list.",
+      "closed_on": "2026-10-16",
+      "closure_note": "User-provided screenshots of staging GitHub Environment policies and secret-name inventory, plus actual protected development Staging GitHub Environment attestation #38948913652 SUCCESS after security-reviewed PR #259. Exactly six secret values validated by workflow without logging, four nonsecret stage constants pinned in source, protected branch gating and staging environment isolation. GitHub API does not independently expose Environment admin settings; this proof relies on owner screenshot for branch filter and human approval settings. Cloudflare staging Worker secrets, URL/public route, Shopify OAuth, Neon migration, and all Production readiness explicitly excluded and remain separately gated."
     },
     {
       "id": "T015",
@@ -730,6 +735,7 @@
     "T011",
     "T012",
     "T013",
+    "T014",
     "T026",
     "T027",
     "T032"
