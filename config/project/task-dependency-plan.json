@@ -299,10 +299,11 @@
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
       "evidence": [
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/247"
       ],
       "acceptance": "Run reviewed GET-only Neon live identity checker; verified snapshot, restored root and pooler; exact permissions",
-      "progress_note": "2026-10-16 Staging/Production Neon one-branch policy. QA schema read-only evidence: 52 tables, exact 0 rows each; pre-existing pinned snapshot historical source may be retired but snapshot remains independently verified. Source gate requires exactly ONE active Staging default branch, snapshot ID/source, pooler, isolated project. Protected GitHub environment and credentials still missing; IN_REVIEW."
+      "progress_note": "2026-10-16 exact Neon provider cleanup VERIFIED: QA branch br-blue-flower-b3kiqk5n (52 public tables, each exactly 0 rows) and recovery branch br-wandering-queen-b3mmztjy deleted with user authorization. Staging has exactly one default br-square-mountain-b3ij6q2s, Production exactly one default br-odd-credit-b3rzlpz9; pre-existing manual snapshot snap-green-bar-b3m1btfb retained after deletion. PR #247 one-active-branch policy/repo integrity merged with 7/7 CI green. Scoped manual GitHub staging preflight/real migration not run; IN_REVIEW."
     },
     {
       "id": "T018",
@@ -321,7 +322,7 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
       "evidence": [],
       "acceptance": "GitHub-protected reviewed manual Staging migration with pinned isolated Neon Free branch, snapshot/restore evidence, 2+ successful Prisma migrations, real pooled queries and 53+ app tables. Production remains untouched.",
-      "progress_note": "GitHub-reviewed one-primary Neon Free Staging migration stays WAITING: protected GitHub development rules, scoped credentials, actual pinned snapshot recovery plan, manual approval, paired TLS DB URLs and post-migrate validation. Do not create additional Neon test branches and do not claim schema applied to default."
+      "progress_note": "Single Staging Neon default primary retained with 0 application tables. User-approved obsolete QA branches deleted after verifying all 52 QA tables had 0 rows and preserving repo Prisma migrations. Protected manual GitHub workflow, scoped Neon credentials, current-primary backup/restore acceptance and actual schema migration remain WAITING; no SQL DDL executed on default."
     },
     {
       "id": "T019",

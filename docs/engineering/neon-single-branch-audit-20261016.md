@@ -69,3 +69,12 @@ Date: 2026-10-16, project `vsn-builder-staging` (`shiny-violet-61219572`).
 - `Session`: 0 rows
 
 **Evidence boundary:** counts and table identities were read directly from the Neon connector; this is not a full downloadable SQL dump. The pre-existing snapshot originates from the historical recovery root and is **not** a post-migration default-primary backup. Before any default-primary migration, verify the actual restore plan and a fresh primary backup under the Neon Free one-manual-snapshot limit. GitHub `development` branch protection and isolated scoped Staging secrets remain separate blockers.
+
+## Post-cleanup provider verification — 2026-10-16
+
+- Explicit user authorization: exactly **one branch each** for Staging and Production; continue development.
+- Deleted QA `br-blue-flower-b3kiqk5n` (52 app tables, **0 rows** across all tables) before deleting its parent/root recovery branch `br-wandering-queen-b3mmztjy`.
+- Re-read Neon project inventories after each step: **Staging one** active default `br-square-mountain-b3ij6q2s`; **Production one** active default `br-odd-credit-b3rzlpz9`.
+- Snapshot `snap-green-bar-b3m1btfb` remained listed by Neon after deletion even though its historical source branch ID was retired. **Snapshot restore is not certified by listing metadata.**
+- No production mutation, no DDL or schema migration, no new Neon branch and no hosted Shopify deployment.
+- GitHub PR #247 merge `08911ba95a0522652f192b465a41c27516781b84` after **7/7 exact-head CI PASS**, including newly implemented `repository-integrity` check required by the real GitHub ruleset. `development.protected=true` verified while the new required check was being reconciled; effective reviewer policy remains separately unverified.
