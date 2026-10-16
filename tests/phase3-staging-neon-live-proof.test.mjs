@@ -21,7 +21,10 @@ function credentials(extra={}) {
 function fixtures() {
  return {
   branches:[
-   {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true,primary:true,protected:false,\n    restored_from:stage.neon_pre_migration_snapshot_id,\n    restored_as:stage.neon_recovery_source_branch_id,\n    restore_status:"finalized"},
+   {id:stage.neon_default_branch_id,project_id:stage.neon_project_id,default:true,primary:true,protected:false,
+    restored_from:stage.neon_pre_migration_snapshot_id,
+    restored_as:stage.neon_recovery_source_branch_id,
+    restore_status:"finalized"},
   ],
   snapshots:[{id:stage.neon_pre_migration_snapshot_id,
     source_branch_id:stage.neon_recovery_source_branch_id,created_at:"2026-10-13T21:39:35Z"}],
