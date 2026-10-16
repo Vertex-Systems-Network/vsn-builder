@@ -122,6 +122,39 @@ test("API errors, missing token or malformed account always fail closed without 
   e=>e.message==="T014_CLOUDFLARE_READ_UNAVAILABLE"&&!e.message.includes("private"));
 });
 
+test("Staging OAuth origin cannot be an IP, special-use host or disguised local endpoint",()=>{
+ for(const url of [
+  "https://127.0.0.1","https://192.168.1.4",
+  "https://10.2.3.4","https://169.254.169.254",
+  "https://[::1]","https://app.local","https://app.internal",
+  "https://app.example","https://builder.example.net",
+  "https://staging.vertexsystemsnetwork.com.",
+  "https://staging.vertexsystemsnetwork.com/path",
+  "https://staging.vertexsystemsnetwork.com?shop=other",
+  "https://staging.vertexsystemsnetwork.com\n",
+  " https://staging.vertexsystemsnetwork.com",
+ ]){
+  const x=valid();
+  x.settings.bindings.find(z=>z.name==="SHOPIFY_APP_URL").text=url;
+  const proof=check(x);
+  assert(proof.errors.includes("T014_NO_STABLE_STAGING_HTTPS_ORIGIN"),url);
+  assert.doesNotMatch(JSON.stringify(proof),/169\.254|192\.168|127\.0\.0/);
+ }
+ const good=valid();
+ good.settings.bindings.find(z=>z.name==="SHOPIFY_APP_URL").text="https://staging.vertexsystemsnetwork.com";
+ assert.equal(check(good).bindingReady,true);
+});
+
+test("duplicate or malformed Cloudflare secret metadata cannot impersonate encrypted bindings",()=>{
+ const duplicate=valid();
+ duplicate.secrets.push({name:"DATABASE_URL",type:"plain_text"});
+ assert(check(duplicate).errors.includes("T014_DUPLICATE_SECRET_METADATA"));
+ const malformed=valid();
+ malformed.secrets.push({name:"",type:"secret_text"});
+ assert(check(malformed).errors.includes("T014_INVALID_SECRET_METADATA"));
+ assert.equal(check(duplicate).bindingReady,false);
+});
+
 test("unprotected or cross-repository manual CI never reads a Cloudflare API token",()=>{
  for(const env of [
   {GITHUB_REPOSITORY:"Vertex-Systems-Network/vsn-builder",GITHUB_REF:"refs/heads/development",GITHUB_REF_PROTECTED:"false"},
