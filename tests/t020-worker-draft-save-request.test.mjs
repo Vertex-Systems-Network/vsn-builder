@@ -136,6 +136,19 @@ function rawBadJson(){
  return new Request(endpoint,{method:"POST",headers:{"content-type":"application/json"},body:"not-json"});
 }
 
+test("invalid database version records fail closed instead of returning a misleading 409",async()=>{
+ for(const version of [-1,0,1.5,null,"2",2147483648,Number.MAX_SAFE_INTEGER]){
+  const f=fixture();
+  f.state.version=version;
+  await assert.rejects(serve(f),error=>
+   error instanceof BuilderDraftSaveError &&
+   error.status===503 && error.code==="INVALID_DRAFT_STORAGE_ROW");
+  assert.equal(f.state.contentJson,"[]");
+  assert.equal(f.calls.includes("page:update"),true);
+  assert.equal(f.calls.includes("page:find"),true);
+ }
+});
+
 test("cross-tenant and deleted pages are uniformly concealed without draft update",async()=>{
  for(const setup of [{owner:"foreign.myshopify.com"},{deletedAt:new Date()}]){
   const f=fixture(setup);
