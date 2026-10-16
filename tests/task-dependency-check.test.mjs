@@ -12,18 +12,18 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.deepEqual(result.errors,[]);
  assert.equal(plan.policy,"dependency_driven_evidence_first_no_phase_gating");
  assert.equal(plan.tasks.length,41);
- assert.equal(result.summary.closed,17);
- assert.equal(result.summary.active,24);
+ assert.equal(result.summary.closed,18);
+ assert.equal(result.summary.active,23);
  assert.equal(result.summary.verified,0);
  assert.equal(result.summary.in_review,5);
- assert.equal(result.summary.ready,1);
+ assert.equal(result.summary.ready,0);
  assert.equal(result.summary.waiting,18);
- assert.deepEqual(plan.closed_task_ids,[...Array.from({length:13},(_,i)=>"T"+String(i+1).padStart(3,"0")),"T014","T026","T027","T032"]);
+ assert.deepEqual(plan.closed_task_ids,[...Array.from({length:13},(_,i)=>"T"+String(i+1).padStart(3,"0")),"T014","T016","T026","T027","T032"]);
  assert(result.rows.every(t=>t.status!=="closed"),"closed work must never appear in active queue");
  assert.equal(result.closed_tasks.length,0,"closed evidence must not appear in default JSON output");
  const withArchive=inspectTaskPlan(plan,{includeClosed:true});
- assert.equal(withArchive.closed_tasks.length,17);
- assert(withArchive.closed_tasks.every(t=>["2026-10-15","2026-10-16"].includes(t.closed_on)&&t.evidence.length>0));
+ assert.equal(withArchive.closed_tasks.length,18);
+ assert(withArchive.closed_tasks.every(t=>["2026-10-15","2026-10-16","2026-10-17"].includes(t.closed_on)&&t.evidence.length>0));
  assert.equal(plan.public_shopify_apps,1);
  assert.deepEqual(plan.commercial_plans.map(p=>p.id),["starter","sliver","gold","platinum"]);
  assert(plan.commercial_plans.every(p=>p.trial_days===10));
@@ -32,7 +32,7 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
 test("independent discovered Shopify app task moves to IN_REVIEW without unlocking release dependents",()=>{
  const {rows}=inspectTaskPlan(fresh());
  const ready=new Set(rows.filter(r=>r.execution==="READY").map(r=>r.id));
- assert.deepEqual([...ready],["T016"],"Closing Staging GitHub Environment T014 makes only Neon credential test T016 independently READY");
+ assert.deepEqual([...ready],[],"T016 Neon pooled/direct real Staging connections are final closed; remaining dependencies stay gated");
  assert.equal(rows.find(r=>r.id==="T015").execution,"IN_REVIEW");
  for(const id of ["T018","T021","T023","T025","T029","T031","T037","T038","T041"])
   assert.equal(rows.find(r=>r.id===id).execution,"WAITING",id);
@@ -45,6 +45,7 @@ test("independent discovered Shopify app task moves to IN_REVIEW without unlocki
  assert.equal(rows.find(r=>r.id==="T024").execution,"IN_REVIEW");
  assert.equal(rows.some(r=>r.id==="T013"),false,"Accepted AI-led protection no longer appears active");
  assert.equal(rows.some(r=>r.id==="T014"),false,"Verified T014 GitHub staging scope is FINAL CLOSED");
+ assert.equal(rows.some(r=>r.id==="T016"),false,"T016 protected Neon Staging connectivity is FINAL CLOSED");
 });
 test("T026 stays permanently closed yet T029 cannot run without Shopify billing E2E",()=>{
  const plan=fresh();
@@ -83,19 +84,22 @@ test("T013 AI-led protection and T014 GitHub Staging Environment are permanently
  const reopening=fresh();find(reopening,"T013").status="in_review";
  assert(inspectTaskPlan(reopening).errors.some(x=>x.includes("Immutable closed task")));
 });
-test("T014 GitHub Environment closed; T016 becomes READY while T019 remains WAITING for runtime dependencies",()=>{
+test("T014 and T016 are final closed while T017/T019/T018 remain separately blocked",()=>{
  const plan=fresh();
  assert.equal(find(plan,"T014").status,"closed");
- assert.equal(plan.closed_task_ids.length,17);
+ assert.equal(plan.closed_task_ids.length,18);
  const proof=inspectTaskPlan(plan);
  assert.deepEqual(proof.errors,[]);
- assert.equal(proof.rows.find(x=>x.id==="T016").execution,"READY");
+ assert.equal(find(plan,"T016").status,"closed");
+ assert.equal(proof.rows.some(x=>x.id==="T016"),false);
+ assert.equal(proof.rows.find(x=>x.id==="T017").execution,"IN_REVIEW");
+ assert.equal(proof.rows.find(x=>x.id==="T018").execution,"WAITING");
  assert.equal(proof.rows.find(x=>x.id==="T019").execution,"WAITING");
  assert.equal(proof.rows.some(x=>x.id==="T014"),false);
 });
 test("blocking one task cannot artificially block independent READY tasks",()=>{
  const plan=fresh();
- find(plan,"T016").depends_on.push("T011");
+ find(plan,"T019").depends_on.push("T011");
  const {errors,rows}=inspectTaskPlan(plan);
  assert.deepEqual(errors,[]);
  assert.equal(rows.find(r=>r.id==="T024").execution,"IN_REVIEW");
@@ -154,8 +158,8 @@ test("CLI prints actionable tasks and blocks unverified terminal acceptance",()=
  const ok=spawnSync(process.execPath,["scripts/task-dependency-check.mjs"],{encoding:"utf8"});
  assert.equal(ok.status,0,ok.stderr);
  assert.match(ok.stdout,/dependency graph VALID/i);
- assert.match(ok.stdout,/17 FINAL CLOSED/);
- assert.match(ok.stdout,/24 ACTIVE/);
+ assert.match(ok.stdout,/18 FINAL CLOSED/);
+ assert.match(ok.stdout,/23 ACTIVE/);
  assert.doesNotMatch(ok.stdout,/T001 P0/);
  assert.doesNotMatch(ok.stdout,/T011 P0 READY/);
  const md=spawnSync(process.execPath,["scripts/task-dependency-check.mjs","--format=markdown"],{encoding:"utf8"});
@@ -183,7 +187,7 @@ test("final CLOSED is terminal, removed from active view, but satisfies downstre
  assert.equal(result.rows.find(x=>x.id==="T024").execution,"IN_REVIEW");
  assert.equal(result.rows.find(x=>x.id==="T022").waiting_on.includes("T002"),false);
  const withHistory=inspectTaskPlan(plan,{includeClosed:true});
- assert.equal(withHistory.rows.filter(t=>t.execution==="CLOSED").length,17);
+ assert.equal(withHistory.rows.filter(t=>t.execution==="CLOSED").length,18);
  assert.equal(withHistory.ready.length,result.ready.length);
 });
 test("CLOSED cannot silently reopen, disappear, lose closure proof or bypass dependency safety",()=>{
