@@ -11,12 +11,12 @@ const WORKER="vsn-builder-staging";
 const NEON="shiny-violet-61219572";
 const ID="0ecd6b7151485b41ea65924fe827806a";
 const HOST="ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech";
-const URL="https://vsn-builder-staging.vertexsystemsnetwork.workers.dev";
+const STAGING_ORIGIN="https://vsn-builder-staging.vertexsystemsnetwork.workers.dev";
 const PREFIX=`https://api.cloudflare.com/client/v4/accounts/${ACCOUNT}/workers/scripts/${WORKER}`;
 const SECRET_NAMES=Object.freeze(["DATABASE_URL","SHOPIFY_API_KEY","SHOPIFY_API_SECRET"]);
 const EXPECTED=Object.freeze({
  APP_ENV:"staging",VSN_WORKER_NAME:WORKER,NEON_PROJECT_ID:NEON,
- SHOPIFY_BILLING_TEST_MODE:"true",SHOPIFY_APP_URL:URL,
+ SHOPIFY_BILLING_TEST_MODE:"true",SHOPIFY_APP_URL:STAGING_ORIGIN,
 });
 const CODE="T019_STAGING_PRIVATE_SECRET_SYNC_BLOCKED";
 const fail=()=>{const error=new Error(CODE);error.code=CODE;return error};
