@@ -1,19 +1,45 @@
 name: VSN Phase 4 Cloudflare Staging Bindings — Read-Only Protected Audit
+# T019 runtime metadata observation: public tier identities pinned in source;
+# Cloudflare API credentials come ONLY from cloudflare-staging secrets.
+# No Worker secret writes, deploy, Neon mutations or Production actions.
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [development]
+    paths:
+      - ".github/workflows/phase4-staging-cloudflare-observation.yml"
+      - "tests/t019-staging-observation-policy.test.mjs"
+      - "tests/phase4-staging-cloudflare-readiness.test.mjs"
+      - "scripts/phase4-staging-cloudflare-readiness.mjs"
+      - "scripts/t014-staging-worker-bindings.mjs"
 permissions:
   contents: read
 jobs:
+  source-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Checkout no-credentials PR snapshot
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pin Node 22 for tested JSON modules
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Execute source-only Staging Cloudflare scope regressions
+        run: node --test tests/t019-staging-observation-policy.test.mjs tests/phase4-staging-cloudflare-readiness.test.mjs
   inspect-staging-worker:
     # Runs only from protected development, never PR branches or Live.
-    if: github.ref == 'refs/heads/development' && github.ref_protected == true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development' && github.ref_protected == true
     runs-on: ubuntu-latest
     environment: cloudflare-staging
     timeout-minutes: 8
     env:
       APP_ENV: staging
-      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
-      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      NEON_PROJECT_ID: shiny-violet-61219572
+      CLOUDFLARE_WORKER_NAME: vsn-builder-staging
       GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
