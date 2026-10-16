@@ -1,10 +1,8 @@
 import { authenticate } from "../shopify.server";
-import db from "../db.server.js";
-import { deleteVsnShopData } from "../services/shop-data-lifecycle.server.js";
 import { isValidLegacyUninstallEvent } from "../services/legacy-shopify-uninstall-guard.js";
 
 export const action = async ({ request }) => {
-  // SDK must verify signature BEFORE cleanup of the exact topic and shop.
+  // The Shopify SDK verifies the HMAC before validating exact topic/shop.
   const event = await authenticate.webhook(request);
   if (!isValidLegacyUninstallEvent(event)) {
     return new Response(null, {
@@ -12,8 +10,20 @@ export const action = async ({ request }) => {
       headers: { "cache-control": "no-store" },
     });
   }
-  // T024 remains open: a valid delayed pre-reinstall webhook can still
-  // delete current data without independent install-generation provenance.
-  await deleteVsnShopData(db, event.shop, { includeSessions: true });
-  return new Response(null, { status: 200 });
+  // Shopify webhook HMAC proves a sender and signed BODY, not which install
+  // generation the event belongs to. A delayed, valid OLD uninstall webhook
+  // can arrive after merchant reinstall. Without an independently attested
+  // generation and an atomic installation fence, deleting sessions/pages is
+  // unsafe. This legacy Node route has no such trusted issuer or CAS.
+  //
+  // Fail closed and explicitly request retry. A future generation-aware
+  // transactional handler may replace this route after real OAuth/E2E proof.
+  // GDPR redaction handlers are separate and must keep their own obligations.
+  return new Response(null, {
+    status: 503,
+    headers: {
+      "cache-control": "no-store",
+      "retry-after": "60",
+    },
+  });
 };
