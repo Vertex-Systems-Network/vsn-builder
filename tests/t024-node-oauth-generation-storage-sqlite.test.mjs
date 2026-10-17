@@ -21,7 +21,8 @@ const first="ci-t024-node-first.myshopify.com";
 const orphan="ci-t024-node-orphan.myshopify.com";
 const active="ci-t024-node-online.myshopify.com";
 const concurrent="ci-t024-node-read-race.myshopify.com";
-const names=[first,orphan,active,concurrent];
+const loadRace="ci-t024-node-load-generation-race.myshopify.com";
+const names=[first,orphan,active,concurrent,loadRace];
 const initial=new Date("2026-10-17T04:00:00Z");
 const updated=new Date("2026-10-17T06:00:00Z");
 const offline=(shop,token="ci-token")=>({
@@ -146,4 +147,80 @@ test("official SDK deletion methods remain delegated, without forging a new gene
  assert.equal((await db.builderShopInstallation.findUnique({
    where:{shop:active},
  })).uninstalledAt,null);
+});
+
+test("Node loadSession denies an older offline token if generation changes during SDK await",async()=>{
+ const old=offline(loadRace,"read-before-install-race");
+ assert.equal(await storage(initial).storeSession(old),true);
+ class ReinstallDuringLoadStorage {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(id){
+     assert.equal(id,old.id);
+     // Simulate official SDK loading a token while an independent install
+     // transaction advances the generation. Do not forge an installation.
+     await db.builderShopInstallation.update({
+       where:{shop:loadRace},data:{installedAt:updated},
+     });
+     return old;
+   }
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(){return []}
+ }
+ const guarded=createNodeShopifyGenerationSessionStorage(db,{
+   SessionStorage:ReinstallDuringLoadStorage,
+ });
+ assert.equal(await guarded.loadSession(old.id),undefined);
+ assert.equal((await db.session.findUnique({where:{id:old.id}})).accessToken,
+   "read-before-install-race","An unsafe read must never mutate a session");
+});
+test("Node loadSession denies stale credentials if persisted token rotates mid-read",async()=>{
+ const current=offline(loadRace,"token-before-rotation");
+ await db.builderShopInstallation.update({
+   where:{shop:loadRace},data:{installedAt:initial},
+ });
+ assert.equal(await storage(initial).storeSession(current),true);
+ class RotateWhileLoadStorage {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(id){
+     assert.equal(id,current.id);
+     await db.session.update({
+       where:{id},data:{accessToken:"token-after-rotation"},
+     });
+     return current;
+   }
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(){return []}
+ }
+ const guarded=createNodeShopifyGenerationSessionStorage(db,{
+   SessionStorage:RotateWhileLoadStorage,
+ });
+ assert.equal(await guarded.loadSession(current.id),undefined);
+ assert.equal((await db.session.findUnique({where:{id:current.id}})).accessToken,
+   "token-after-rotation");
+});
+test("Node findSessionsByShop refuses stale results after install-generation changes",async()=>{
+ await db.builderShopInstallation.update({
+   where:{shop:loadRace},data:{installedAt:initial},
+ });
+ class ReinstallDuringEnumerationStorage {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(){return undefined}
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(shop){
+     await db.builderShopInstallation.update({
+       where:{shop},data:{installedAt:updated},
+     });
+     return [offline(shop,"outdated-enumeration-token")];
+   }
+ }
+ const guarded=createNodeShopifyGenerationSessionStorage(db,{
+   SessionStorage:ReinstallDuringEnumerationStorage,
+ });
+ assert.deepEqual(await guarded.findSessionsByShop(loadRace),[]);
 });
