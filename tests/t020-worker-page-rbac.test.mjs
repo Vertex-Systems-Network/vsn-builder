@@ -12,7 +12,7 @@ const env={
   SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"synthetic-only",
   SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
   SHOPIFY_APP_URL:origin,SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
-  DATABASE_URL:"postgresql://ci:unused@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/ci?sslmode=require",
+  DATABASE_URL:"postgresql://ci:unused@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
 };
 const request=()=>new Request(origin+"/app/__vsn/pages/validPage123?shop="+shop);
 function fixture({roleAccessJson=null,accountOwner=false,collaborator=false,
