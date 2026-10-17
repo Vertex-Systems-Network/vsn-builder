@@ -93,6 +93,11 @@ def docker_command(argv, connection, local=False, mount=None):
     cmd=["docker","run","--rm","--network","host",
          "--cap-drop","ALL","--security-opt","no-new-privileges",
          "--read-only","--tmpfs","/tmp:rw,nosuid,noexec,size=64m"]
+    if not local:
+        # Mount GitHub runner trusted CA bundle. Docker postgres:18 image may
+        # ship a different CA path; never silently relax verify-full TLS.
+        cmd+=["--mount",("type=bind,src=/etc/ssl/certs/ca-certificates.crt,"
+                         "dst=/etc/ssl/certs/ca-certificates.crt,readonly")]
     if mount:
         mode="" if argv[0]=="pg_dump" else ",readonly"
         cmd+=["--mount",f"type=bind,src={mount},dst=/t017{mode}"]

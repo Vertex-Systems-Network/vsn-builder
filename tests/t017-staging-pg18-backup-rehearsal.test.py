@@ -64,8 +64,13 @@ class Contract(unittest.TestCase):
         self.assertEqual(env2["PGSSLMODE"],"disable")
         self.assertIn("postgres:18",remote)
         self.assertIn("postgres:18",local)
-        self.assertIn(",readonly",next(x for x in local if x.startswith("type=bind")))
-        self.assertNotIn(",readonly",next(x for x in remote if x.startswith("type=bind")))
+        ca="type=bind,src=/etc/ssl/certs/ca-certificates.crt,dst=/etc/ssl/certs/ca-certificates.crt,readonly"
+        self.assertIn(ca,remote)
+        self.assertNotIn(ca,local)
+        self.assertEqual(env1["PGSSLROOTCERT"],"/etc/ssl/certs/ca-certificates.crt")
+
+        self.assertIn(",readonly",next(x for x in local if x.startswith("type=bind") and "dst=/t017" in x))
+        self.assertNotIn(",readonly",next(x for x in remote if x.startswith("type=bind") and "dst=/t017" in x))
         for args in [remote,local]:
             self.assertNotIn("synthetic-not-real"," ".join(args))
             self.assertNotIn("postgresql://"," ".join(args))
@@ -77,7 +82,7 @@ class Contract(unittest.TestCase):
         def fake(argv,**kwargs):
             calls.append((argv,kwargs))
             if "pg_dump" in argv:
-                mount=next(x for x in argv if x.startswith("type=bind"))
+                mount=next(x for x in argv if x.startswith("type=bind") and "dst=/t017" in x)
                 folder=mount.split("src=",1)[1].split(",dst=",1)[0]
                 (Path(folder)/"staging.dump").write_bytes(b"synthetic-only"*25)
             if "psql" in argv:
