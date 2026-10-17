@@ -377,7 +377,7 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487380"
       ],
       "acceptance": "Actual Worker secret names, OAuth config and Staging identity/HTTPS bindings exist; no secret value disclosure",
-      "progress_note": "2026-10-17 PARTIAL ACCEPTANCE: Staging secret binding configured for existing isolated `vsn-builder-staging` Worker using existing GitHub `cloudflare-staging` secrets; source PR #268 4/4 exact-head CI green, merged. Independent live protected metadata audit #38983487397 SUCCESS confirms all 3 required Worker secret_text runtime bindings (DATABASE_URL, SHOPIFY_API_KEY, SHOPIFY_API_SECRET), six reviewed Staging nonsecret identifiers/scopes and public Worker subdomain disabled. Initial protected secret-sync execution fail-closed after atomic bulk update; repeat read-only idempotent job #117249856864 SUCCESS confirms 3/3 and no active deployment change, no extra update. No secret values logged. Upstream T015 Dev Shopify OAuth/legal ownership remains IN_REVIEW; hosted Staging callback/merchant sessions and T018 DB migrations unverified; T019 stays IN_REVIEW, NOT FINAL CLOSED, T021 remains WAITING. No Neon or Production changes."
+      "progress_note": "2026-10-18: Independently inspected real Cloudflare Worker API settings and secret-name metadata (GET only): vsn-builder-staging exists, binding types include secret_text DATABASE_URL, SHOPIFY_API_KEY, SHOPIFY_API_SECRET; reviewed APP_ENV, VSN_WORKER_NAME, NEON_PROJECT_ID, SHOPIFY_BILLING_TEST_MODE, HTTPS SHOPIFY_APP_URL and SCOPES. No credentials printed, no changes. OAuth enable flag is not true and remains fail-closed while T018 Neon migration unexecuted. vsn-builder-production also exists but 0 runtime bindings; Live untouched. Earlier protected GitHub secret-name sync #268 remains verified. T019 IN_REVIEW until real hosted acceptance."
     },
     {
       "id": "T020",
@@ -400,10 +400,12 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/251",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/281",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/301",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/302"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/302",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/311",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/313"
       ],
       "acceptance": "Full Cloudflare Vite-built VSN Builder merchant route graph; real Shopify OAuth/App Bridge and valid persisted PrismaNeon sessions after Staging migrations; signed webhooks, paid-only mutations, tenant isolation and actual Staging store E2E. PRs #172–#176 prove synthetic CI-only SSR, router, SDK/Neon compilation and an authenticated-gate-to-loader bridge using synthetic sessions; not actual merchant acceptance.",
-      "progress_note": "2026-10-17: T020 PR #301 (7/7 exact-head CI) merged at 33aaaeb1109f2f72022c5e1bf0046855fb927993, post-buffer Shopify merchant GET installation-generation/session revalidation (uninstall/reinstall/rotation race). PR #302 (7/7 exact-head CI) merged at b0cb877fcd629b1b7bd78ebb7ba590d1a2722d07, refuse route-produced redirects/cookies and strip callback error diagnostic bodies; preserve SDK-thrown reauth Response. AI reviews recorded. Read-only Neon Staging still 0 app tables with original retained snapshot; encrypted Worker bindings are metadata only. Source-only hardening, NOT full hosted React Router Shopify app, migrated Neon, Shopify OAuth/E2E, Staging deployment, or release; T020 IN_REVIEW."
+      "progress_note": "2026-10-18: T020 PR #311 exactly 7/7 required PR CI PASS with AI review, squash merged protected development be12d64168db9fc44c58f5057d9abbc08fa2d8da. Merchant POST callback 4xx rolls back and redacts response body/headers; unsafe returned redirect/cookies blocked; only exact official Shopify authenticate.admin-thrown Response passes through. PR #313 exactly 7/7 required PR CI PASS with AI review, squash merged protected development 6a9e29c49060f2c958dbd806d4fd841dd25113be. All merchant GET routes now buffer then revalidate exact installation generation and persisted session/token/expiry; six async race regressions, paid-plan mock stable persisted generation. Old conflicted #312 closed unmerged/superseded by #313. Source-level local CI, NOT real hosted merchant E2E or Shopify verified OAuth. Staging Worker metadata correct but OAuth disabled; Neon Staging 0 app tables, T018 protected migration unexecuted; T019/T020 IN_REVIEW, T021/T023 WAITING, Live untouched."
     },
     {
       "id": "T021",
