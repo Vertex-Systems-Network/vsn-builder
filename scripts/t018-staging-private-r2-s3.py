@@ -49,11 +49,16 @@ def checked_credentials(env):
     # Validate the repo/tier/Neon host+DB, protected ref, exact run ID,
     # and privileged metadata-audit secret BEFORE making any network call.
     try:
-        direct,key=base.validate(env,token_name="CLOUDFLARE_R2_CONTROL_PLANE_TOKEN")
+        pg.check_context(env)
     except Exception:
-        # The shared T017 context gate uses its own Blocked exception type.
-        # Sanitize failure to the uniform T018 code without leaking inputs.
-        raise base.fail("PROTECTED_STAGE_IDENTITY") from None
+        raise base.fail("PROTECTED_REF_OR_TIER") from None
+    if env.get("CLOUDFLARE_ACCOUNT_ID","").lower()!=base.ACCOUNT:
+        raise base.fail("CLOUDFLARE_ACCOUNT")
+    # Safe categorical diagnostics: distinguish absent Environment secrets
+    # from wrong Neon identity without printing values, lengths or URLs.
+    control=env.get("CLOUDFLARE_R2_CONTROL_PLANE_TOKEN")
+    if not isinstance(control,str) or len(control)<12:
+        raise base.fail("R2_CONTROL_PLANE_CREDENTIAL")
     access=env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")
     secret=env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")
     if not all(isinstance(v,str) and
@@ -61,6 +66,10 @@ def checked_credentials(env):
                re.fullmatch(r"[A-Za-z0-9+/=_-]+",v)
                for v in (access,secret)):
         raise base.fail("S3_BUCKET_SCOPED_CREDENTIALS")
+    try:
+        direct,key=base.validate(env,token_name="CLOUDFLARE_R2_CONTROL_PLANE_TOKEN")
+    except Exception:
+        raise base.fail("NEON_OR_PROTECTED_RUN_IDENTITY") from None
     if not OBJECT_KEY.fullmatch(key):
         raise base.fail("S3_OBJECT_KEY")
     return direct,key,access,secret
