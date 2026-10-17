@@ -14,8 +14,44 @@ export function createNodeShopifyGenerationSessionStorage(database,{
     error.code="VSN_NODE_SHOPIFY_SESSION_STORAGE_BLOCKED";
     throw error;
   }
+  if(typeof database?.builderShopInstallation?.findUnique!=="function"){
+    const error=new Error("VSN_NODE_SHOPIFY_SESSION_STORAGE_BLOCKED");
+    error.code="VSN_NODE_SHOPIFY_SESSION_STORAGE_BLOCKED";
+    throw error;
+  }
   const base=new SessionStorage(database);
-  return createWorkerGenerationSessionStorage(database,base,{
+  const writer=createWorkerGenerationSessionStorage(database,base,{
     SessionStorage,clock,
   });
+  const allowed=async shop=>{
+    if(typeof shop!=="string" ||
+       !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.myshopify\\.com$/.test(shop))
+      return false;
+    const row=await database.builderShopInstallation.findUnique({where:{shop}});
+    return row?.shop===shop && row?.installedAt instanceof Date &&
+      Number.isFinite(row.installedAt.getTime()) && row.uninstalledAt===null;
+  };
+  const safeReadError=()=>{
+    const error=new Error("VSN_NODE_SHOPIFY_SESSION_READ_BLOCKED");
+    error.code="VSN_NODE_SHOPIFY_SESSION_READ_BLOCKED";
+    return error;
+  };
+  return {
+    ...writer,
+    async loadSession(id){
+      try{
+        const session=await base.loadSession(id);
+        if(!session)return undefined;
+        return await allowed(session.shop)?session:undefined;
+      }catch{throw safeReadError()}
+    },
+    async findSessionsByShop(shop){
+      try{
+        if(!await allowed(shop))return [];
+        const sessions=await base.findSessionsByShop(shop);
+        if(!Array.isArray(sessions))throw safeReadError();
+        return sessions.filter(session=>session?.shop===shop);
+      }catch{throw safeReadError()}
+    },
+  };
 }
