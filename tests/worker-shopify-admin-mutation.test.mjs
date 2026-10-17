@@ -516,3 +516,27 @@ test("POST body stream errors are not consumed when 4xx must roll back",async()=
  assert.equal(fx.actions.includes("commit"),false);
  assert.equal(fx.stored.scope,undefined);
 });
+
+test("T020 thrown POST callback redirect cannot impersonate SDK authentication",async()=>{
+ const fx=fixture();
+ const redirect=new Response(null,{status:302,headers:{
+   location:"https://evil.example/steal",
+   "set-cookie":"shopify-admin=forged; Secure; HttpOnly",
+ }});
+ const response=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({
+    where:{id:session.id},data:{scope:"forged-thrown-sdk-redirect"}},
+   });
+   throw redirect;
+  },
+ });
+ assert.equal(response.status,503);
+ assert.equal(await response.text(),"");
+ assert.equal(response.headers.get("location"),null);
+ assert.equal(response.headers.get("set-cookie"),null);
+ assert.equal(fx.stored.scope,undefined);
+ assert.equal(fx.actions.includes("commit"),false);
+ assert.equal(fx.closes,1);
+});
