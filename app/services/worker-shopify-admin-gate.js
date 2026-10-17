@@ -27,7 +27,8 @@ const validExpiry=(value,now)=>{
     value.getTime()>now;
 };
 const matches=(stored,session,shop)=>{
-  if(!stored || stored.shop!==shop || stored.isOnline!==session.isOnline ||
+  if(!stored || stored.shop!==shop || stored.id!==session.id ||
+     stored.isOnline!==session.isOnline ||
      stored.accessToken!==session.accessToken)return false;
   const now=Date.now();
   if(!validExpiry(stored.expires,now) ||
@@ -307,7 +308,25 @@ async function guardedAdminRequest(request,env,{
     if(!(response instanceof Response))return denied(503);
     // POST responses were already secured inside the still-open transaction.
     // Do not perform any throwable processing after PostgreSQL COMMIT.
-    return mutation?response:await securedReadResponse(response);
+    if(mutation)return response;
+    const buffered=await securedReadResponse(response);
+    // A GET may finish its initial SDK/session checks, then wait on page
+    // reads or a streamed HTML/JSON body while uninstall, reinstall or token
+    // rotation commits. Never return those buffered private page bytes on
+    // an installation generation that changed during the await. This is
+    // a final read fence, NOT a serialized snapshot or hosted E2E proof.
+    if(enablePageSummary || enablePageMetadata || enablePageContent){
+      const [latestInstall,latestSession]=await Promise.all([
+        context.database.builderShopInstallation.findUnique({where:{shop}}),
+        context.database.session.findUnique({where:{id:session.id}}),
+      ]);
+      if(!latestInstall || latestInstall.shop!==shop ||
+         !isDate(latestInstall.installedAt) ||
+         latestInstall.installedAt.getTime()!==lifecycle.installedAt.getTime() ||
+         latestInstall.uninstalledAt!==null ||
+         !matches(latestSession,session,shop))return denied(403);
+    }
+    return buffered;
   } catch(error) {
     if(error instanceof RollbackResponse){
       // The database transaction has already been rolled back. Preserve
