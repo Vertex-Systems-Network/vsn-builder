@@ -1,0 +1,93 @@
+name: T018 Private Staging R2 Durable Backup and Restore (No Remote DDL)
+# Stores bounded pre-migration custom pg_dump in PRIVATE Builder-only Cloudflare R2.
+# Download/checksum and pg_restore are run in a disposable PostgreSQL 18 runner.
+# NEVER attempts prisma migrate, Neon branch writes, Shopify or Production.
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "scripts/t018-staging-private-r2-backup.py"
+      - "tests/t018-staging-private-r2-backup.test.py"
+      - ".github/workflows/t018-staging-private-r2-backup.yml"
+  push:
+    branches: [development]
+    paths:
+      - "scripts/t018-staging-private-r2-backup.py"
+      - "tests/t018-staging-private-r2-backup.test.py"
+      - ".github/workflows/t018-staging-private-r2-backup.yml"
+permissions:
+  contents: read
+concurrency:
+  group: vsn-builder-durable-staging-neon-backup
+  cancel-in-progress: false
+jobs:
+  source-only:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Checkout PR with no token persistence
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify backup crypto/TLS routing, private R2 and isolated restore using synthetic credentials
+        run: python3 tests/t018-staging-private-r2-backup.test.py -v
+  protected-ref:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Require exact reviewed and protected VSN Builder development ref
+        shell: bash
+        env:
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REPO" = "Vertex-Systems-Network/vsn-builder"
+          test "$SOURCE_REF" = "refs/heads/development"
+          test "$SOURCE_PROTECTED" = "true"
+  private-persistent-r2-backup:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    needs: protected-ref
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    environment: cloudflare-staging
+    services:
+      disposable-pg18:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: synthetic-ci-postgres-rehearsal-only
+          POSTGRES_USER: postgres
+          POSTGRES_DB: vsn_builder_t017_rehearsal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vsn_builder_t017_rehearsal"
+          --health-interval 5s
+          --health-timeout 4s
+          --health-retries 12
+    env:
+      APP_ENV: staging
+      NEON_PROJECT_ID: shiny-violet-61219572
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Checkout protected exact commit, no retained credential
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify private Cloudflare R2 bucket and persist/re-download isolated Staging backup
+        shell: bash
+        run: |
+          set +x
+          python3 scripts/t018-staging-private-r2-backup.py
+      - name: Keep migration and Production disabled
+        run: |
+          echo "This run only certifies private persistent pre-migration R2 backup/readback plus disposable restore"
+          echo "Prisma staging migration and hosted OAuth are separate controlled tasks"
