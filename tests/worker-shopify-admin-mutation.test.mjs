@@ -174,8 +174,8 @@ test("POST 422/409/500 callbacks roll back all staged writes instead of committi
   assert.equal(fx.stored.scope,undefined,"HTTP error must roll back staged writes");
   assert(!fx.actions.includes("commit"),"error response must never commit");
   assert.equal(fx.closes,1);
-  if(status===500)assert.equal(await response.text(),"");
-  else assert.equal(await response.text(),"Invalid edit");
+  assert.equal(await response.text(),"",
+   "No callback error body or DB diagnostics may escape from a rolled-back POST");
  }
 });
 test("returned HTTP 303 redirect after a write rolls back instead of committing",async()=>{
@@ -440,4 +440,79 @@ test("other tenant hint cannot start database transaction",async()=>{
  assert.equal(response.status,401);
  assert(!fx.actions.includes("begin"));
  assert.equal(fx.closes,1);
+});
+
+test("POST client errors retain safe status but strip callback diagnostic bodies and headers",async()=>{
+ for(const status of [400,401,403,404,409,422,429]){
+  const fx=fixture();
+  const response=await acceptWorkerShopifyAdminMutation(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated({transaction}){
+    await transaction.session.update({
+     where:{id:session.id},data:{scope:"rollback-private-"+status},
+    });
+    return new Response("postgresql://private:driver-secret@host or SHOPIFY_TOKEN",{
+     status,headers:{
+      "content-type":"text/plain","x-internal-debug":"db-password",
+      "access-control-allow-origin":"*",
+     },
+    });
+   },
+  });
+  assert.equal(response.status,status);
+  assert.equal(await response.text(),"");
+  assert.equal(response.headers.get("content-type"),null);
+  assert.equal(response.headers.get("x-internal-debug"),null);
+  assert.equal(response.headers.get("access-control-allow-origin"),null);
+  assert.equal(response.headers.get("cache-control"),"no-store");
+  assert.equal(fx.stored.scope,undefined,"4xx callback must roll back all writes");
+  assert.equal(fx.actions.includes("commit"),false);
+  assert.equal(fx.closes,1);
+ }
+});
+test("POST callback cannot forge Shopify cookie or navigation headers even on 2xx",async()=>{
+ const responses=[
+  ()=>new Response("committed?",{status:200,headers:{"set-cookie":"shopify-admin=forged; Secure"}}),
+  ()=>new Response("committed?",{status:200,headers:{"location":"https://evil.example/steal"}}),
+  ()=>new Response("error",{status:409,headers:{"set-cookie":"shopify-admin=forged"}}),
+  ()=>new Response("error",{status:422,headers:{"location":"https://evil.example/steal"}}),
+ ];
+ for(const produce of responses){
+  const fx=fixture();
+  const response=await acceptWorkerShopifyAdminMutation(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated({transaction}){
+    await transaction.session.update({
+     where:{id:session.id},data:{scope:"forged-header"}},
+    });
+    return produce();
+   },
+  });
+  assert.equal(response.status,503);
+  assert.equal(await response.text(),"");
+  assert.equal(response.headers.get("set-cookie"),null);
+  assert.equal(response.headers.get("location"),null);
+  assert.equal(fx.stored.scope,undefined);
+  assert.equal(fx.actions.includes("commit"),false);
+  assert.equal(fx.closes,1);
+ }
+});
+test("POST body stream errors are not consumed when 4xx must roll back",async()=>{
+ const fx=fixture();
+ let read=false;
+ const stream=new ReadableStream({
+  pull(){read=true;throw new Error("sensitive-token-in-error-stream")},
+ });
+ const response=await acceptWorkerShopifyAdminMutation(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated({transaction}){
+   await transaction.session.update({where:{id:session.id},data:{scope:"must-rollback"}});
+   return new Response(stream,{status:409});
+  },
+ });
+ assert.equal(response.status,409);
+ assert.equal(await response.text(),"");
+ assert.equal(read,false,"Unsafe merchant error streams must not be consumed");
+ assert.equal(fx.actions.includes("commit"),false);
+ assert.equal(fx.stored.scope,undefined);
 });
