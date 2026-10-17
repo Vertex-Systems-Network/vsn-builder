@@ -27,6 +27,16 @@ export function inspectStagingMigrationGate(env={}) {
     DATABASE_URL:env.DATABASE_URL,DIRECT_URL:env.DIRECT_URL,
   });
   issues.push(...pair.issues);
+  // A correct Neon endpoint can contain multiple databases: the migration is
+  // authorized solely for the empty Builder Staging 'neondb' database. Never
+  // accept two matching URLs that both point to an unrelated database.
+  try {
+    if(new URL(env.DATABASE_URL).pathname!=="/neondb" ||
+       new URL(env.DIRECT_URL).pathname!=="/neondb")
+      issues.push("Staging Prisma migrations require exactly neondb");
+  }catch {
+    issues.push("Staging Prisma database identity could not be verified");
+  }
   return {ready:issues.length===0,issues};
 }
 if(process.argv[1]?.endsWith("/phase3-staging-migration-preflight.mjs")){
