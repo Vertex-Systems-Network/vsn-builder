@@ -77,7 +77,7 @@ test("redaction cleanup locks inactive generation and deletes only same shop in 
  assert(!state.events.some(x=>x.type==="delete"&&x.table==="builderShopInstallation"));
 });
 test("live reinstall or absent generation atomically denies every data delete",async()=>{
- for(const claimed of [0,2,undefined]){
+ for(const claimed of [0,2,null]){
   const {db,state}=fakeDb({claimed});
   await assert.rejects(deleteVsnShopDataAfterVerifiedRedaction(db,shop),{
     code:"T024_SHOP_REDACT_GENERATION_NOT_VERIFIED",
