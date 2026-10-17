@@ -100,6 +100,21 @@ test("Shopify merchant from SDK is authoritative; URL tenant conflict is denied"
  assert.equal(invalid.response.status,400);
  assert.deepEqual(invalid.calls,[]);
 });
+test("duplicate or percent-aliased Shopify shop query denied before SDK/Neon",async()=>{
+ for(const uri of [
+  "/app?shop="+shop+"&shop=foreign.myshopify.com",
+  "/app?shop="+shop+"&%73hop="+shop,
+  "/app/__vsn/page-summary?shop="+shop+"&shop="+shop,
+ ]){
+  const {response,calls}=await run({},request(uri));
+  assert.equal(response.status,400,uri);
+  assert.equal(await response.text(),"");
+  assert.deepEqual(calls,[],"no request-scoped SDK context should open");
+ }
+ const {response}=await run({},request("/app?shop="+shop));
+ assert.equal(response.status,200,"canonical Shopify hint unaffected");
+});
+
 test("uninstalled shop, missing generation and stale token are refused",async()=>{
  for(const options of [
   {lifecycle:null},
