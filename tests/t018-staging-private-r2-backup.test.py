@@ -124,6 +124,31 @@ class R2Backup(unittest.TestCase):
             m.backup(env(),runner=sim.docker,transport=sim.fetch)
         self.assertEqual(sum(x[0]=="PUT" for x in sim.calls),1)
 
+    def test_http_denial_names_only_resource_and_status_never_token(self):
+        for resource,status in [
+            ("",403),("/domains/managed",404),("/domains/custom",401),
+        ]:
+            sim=Sim()
+            original=sim.fetch
+            def denied(req):
+                path=req.full_url[len(m.API):]
+                if path==resource:
+                    sim.calls.append((req.get_method(),req.full_url,req))
+                    return status,b"UNTRUSTED PROVIDER BODY SECRET"
+                return original(req)
+            with self.subTest(resource=resource,status=status):
+                with self.assertRaises(m.Blocked) as captured:
+                    m.backup(env(),runner=sim.docker,transport=denied)
+                expected=(
+                    "BUCKET" if resource=="" else
+                    "MANAGED_DOMAIN" if resource=="/domains/managed" else
+                    "CUSTOM_DOMAINS"
+                )
+                self.assertIn(f"R2_{expected}_GET_HTTP_{status}",str(captured.exception))
+                self.assertNotIn("SECRET",str(captured.exception))
+                self.assertNotIn("synthetic-token",str(captured.exception))
+                self.assertEqual(len(sim.saved),0)
+
     def test_unexpected_user_tables_blocks_new_backup(self):
         sim=Sim()
         def changed(args,**kwargs):
