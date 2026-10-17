@@ -116,6 +116,27 @@ class S3Backup(unittest.TestCase):
                 self.assertEqual(sim.control.calls,[])
                 self.assertEqual(sim.calls,[])
 
+    def test_safe_categorical_secret_preflight_never_exposes_values(self):
+        for override,code in [
+          ({"CLOUDFLARE_R2_CONTROL_PLANE_TOKEN":""},
+           "T018_R2_CONTROL_PLANE_CREDENTIAL_BLOCKED"),
+          ({"CLOUDFLARE_R2_ACCESS_KEY_ID":""},
+           "T018_S3_BUCKET_SCOPED_CREDENTIALS_BLOCKED"),
+          ({"GITHUB_REF_PROTECTED":"false"},
+           "T018_PROTECTED_REF_OR_TIER_BLOCKED"),
+          ({"DIRECT_URL":legacy.conn("invalid.neon.example.com")},
+           "T018_NEON_OR_PROTECTED_RUN_IDENTITY_BLOCKED"),
+        ]:
+            sim=S3Sim()
+            with self.subTest(error=code),self.assertRaises(m.base.Blocked) as caught:
+                m.backup(env(**override),runner=sim.control.docker,
+                         control=sim.control_fetch,s3=sim.s3_fetch)
+            message=str(caught.exception)
+            self.assertEqual(message,code)
+            self.assertNotIn("synthetic-secret",message)
+            self.assertEqual(sim.control.calls,[])
+            self.assertEqual(sim.calls,[])
+
     def test_public_domain_denied_before_neon_and_s3(self):
         for case in ({"domain_public":True},
                      {"custom_domains":[{"domain":"public.example.com"}]}):
