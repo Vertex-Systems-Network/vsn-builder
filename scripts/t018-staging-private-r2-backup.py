@@ -68,7 +68,7 @@ def default_transport(request):
         raise fail("PROVIDER_REQUEST") from None
 
 def request(transport,token,suffix,method="GET",body=None,expect_binary=False):
-    if not suffix.startswith("/") or "://" in suffix or ".." in suffix:
+    if (suffix and not suffix.startswith("/")) or "://" in suffix or ".." in suffix:
         raise fail("R2_PATH")
     headers={"Authorization":"Bearer "+token,"Accept":"application/json"}
     if body is not None:headers["Content-Type"]="application/octet-stream"
@@ -84,7 +84,7 @@ def request(transport,token,suffix,method="GET",body=None,expect_binary=False):
         raise fail("R2_"+method+"_BODY") from None
 
 def assert_private_bucket(transport,token):
-    info=request(transport,token,"/")
+    info=request(transport,token,"")
     public=request(transport,token,"/domains/managed")
     domains=request(transport,token,"/domains/custom")
     items=domains.get("domains") if isinstance(domains,dict) else domains
