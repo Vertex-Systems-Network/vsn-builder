@@ -82,7 +82,8 @@ test("transactionally rolled-back or incomplete real Prisma record cannot certif
       EXPECTED_STAGING_MIGRATIONS[1]
     );
     assert.equal(affected,1);
-    assert.throws(()=>attestStagingMigrationLedger(await metadata(tx)),
+    const incomplete=await metadata(tx);
+    assert.throws(()=>attestStagingMigrationLedger(incomplete),
       /T018_STAGING_MIGRATION_LEDGER_UNVERIFIED/);
     throw marker;
   }),err=>err===marker);
