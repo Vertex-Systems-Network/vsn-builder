@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-# Local/Development only. A new dedicated Dev app ID is required; do not reuse the existing unclassified default app ID.
+# Local/Development ONLY. Reuse the ALREADY registered VSN Builder (Development) Shopify app (public Client ID f6156da0bd799053f2f0bd0f9e10983c) on the EXISTING local-testing-iashboek.myshopify.com store. Do NOT create a new Dev store or register a duplicate Dev app. Render the existing app's ID into this template; never commit local OAuth credentials.
 client_id = "__SHOPIFY_LOCAL_CLIENT_ID__"
 name = "VSN | Builder (Development)"
 application_url = "https://shopify.dev/apps/default-app-home"
