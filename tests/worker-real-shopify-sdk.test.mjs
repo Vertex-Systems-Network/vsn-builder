@@ -17,7 +17,7 @@ const tierEnv = (tier="staging") => ({
  SHOPIFY_PRODUCTION_CLIENT_ID:canonicalLiveClientId,
  SHOPIFY_APP_URL:tier==="staging"?"https://staging.builder.example.org":"https://builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
- DATABASE_URL:"postgresql://test-user:fake-ci-password@"+(tier==="staging"?"ep-little-dream-b3g6puj2":"ep-jolly-truth-b3xbibzp")+".c-4.ap-southeast-1.aws.neon.tech/no_real_db?sslmode=require",
+ DATABASE_URL:"postgresql://test-user:fake-ci-password@"+(tier==="staging"?"ep-little-dream-b3g6puj2":"ep-jolly-truth-b3xbibzp")+".c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
 });
 const request=(env,shop)=>new Request(env.SHOPIFY_APP_URL+"/app"+(shop?"?shop="+encodeURIComponent(shop):""));
 const mockContext=()=>{
