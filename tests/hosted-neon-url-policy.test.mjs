@@ -41,7 +41,7 @@ for(const tier of ["staging","production"]){
   test(tier+" refuses different DB names and role names",()=>{
     assert(inspectHostedNeonUrlPair(tier,{
       ...env(tier),DIRECT_URL:url(hosts[tier],"different_database"),
-    }).issues.includes("Runtime and migration database names differ"));
+    }).issues.some(x=>x.includes("canonical Builder database identity")));
     assert(inspectHostedNeonUrlPair(tier,{
       ...env(tier),DIRECT_URL:url(hosts[tier],"neondb","other_db_user"),
     }).issues.includes("Runtime and migration database roles differ"));
