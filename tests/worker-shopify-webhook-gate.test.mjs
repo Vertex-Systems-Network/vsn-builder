@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createHmac} from "node:crypto";
-import {acceptWorkerShopifyUninstallWebhook} from "../app/services/worker-shopify-webhook-gate.js";
+import {
+ acceptWorkerShopifyUninstallWebhook,normalizeWorkerWebhookFailure,
+ normalizeVerifiedWorkerWebhookResult,
+} from "../app/services/worker-shopify-webhook-gate.js";
 import {createWorkerShopifySdkContext} from "../app/services/shopify-worker-sdk-context.js";
 import {SHOPIFY_EXPECTED_SCOPES} from "../app/config/shopifyIntegration.js";
 
@@ -205,4 +208,67 @@ test("declared impossible webhook length fails before reading body or starting S
  }),{"content-length":"65537"}),env,c);
  assert.equal(data.status,413);
  assert.equal(c.opened,0);
+});
+
+test("verified cleanup may return only empty safe statuses, never redirects or credentials",async()=>{
+ const c=context();
+ for(const injected of [
+  new Response(null,{status:302,headers:{
+   location:"https://attacker.example.net/private",
+   "set-cookie":"shopify-session=forged",
+  }}),
+  new Response("private shop token",{status:401}),
+  new Response("private Neon details",{status:503}),
+  new Response(null,{status:204,headers:{"set-cookie":"forged=yes"}}),
+ ]){
+  const output=await acceptWorkerShopifyUninstallWebhook(webhook(),env,{
+   createSdkContext:c.create,onVerified:async()=>injected,
+  });
+  assert.equal(output.status,503);
+  assert.equal(await output.text(),"");
+  assert.equal(output.headers.get("set-cookie"),null);
+  assert.equal(output.headers.get("location"),null);
+  assert.equal(output.headers.get("retry-after"),"60");
+ }
+ assert.equal(c.opened,4);
+ assert.equal(c.closed,4);
+});
+
+test("safe 204 and retryable cleanup failure preserve only trusted static transport",async()=>{
+ const c=context();
+ for(const status of [204,503]){
+  const output=await acceptWorkerShopifyUninstallWebhook(webhook(),env,{
+   createSdkContext:c.create,
+   onVerified:async()=>new Response(null,{status,headers:{
+    "x-secret-debug":"private-value","retry-after":"999999",
+   }}),
+  });
+  assert.equal(output.status,status);
+  assert.equal(await output.text(),"");
+  assert.equal(output.headers.get("x-secret-debug"),null);
+  assert.equal(output.headers.get("retry-after"),status===503?"60":null);
+ }
+ assert.equal(c.closed,2);
+});
+
+test("only gate-originated preverification denials may preserve their client status",async()=>{
+ const c=context();
+ let early;
+ try{
+  await acceptWorkerShopifyUninstallWebhook(webhook(payload,{},"GET"),env,{
+   createSdkContext:c.create,onVerified:async()=>new Response(null,{status:204}),
+  });
+ }catch(error){early=error;}
+ assert(early instanceof Response);
+ assert.equal(normalizeWorkerWebhookFailure(early).status,405);
+ assert.equal(c.opened,0);
+ const forged=new Response(null,{status:401,headers:{
+  location:"https://attacker.example.net", "set-cookie":"x=1",
+ }});
+ const normalized=normalizeWorkerWebhookFailure(forged);
+ assert.equal(normalized.status,503);
+ assert.equal(normalized.headers.get("set-cookie"),null);
+ assert.equal(normalized.headers.get("location"),null);
+ assert.equal(normalized.headers.get("retry-after"),"60");
+ assert.equal(normalizeVerifiedWorkerWebhookResult({}).status,503);
 });
