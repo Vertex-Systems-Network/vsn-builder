@@ -3,6 +3,7 @@
 // Staging draft-save is gated OFF; no billing, public editor or Shopify review.
 import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
 import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
+import { isVerifiedWorkerSchemaMetadata } from "../app/services/worker-schema-metadata-health.js";
 import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } from "../app/services/worker-shopify-admin-gate.js";
 import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-draft-save-request.js";
 import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
@@ -39,13 +40,22 @@ async function databaseHealth(request,env) {
   let prisma;
   try {
     prisma=createWorkerNeonPrisma(env);
-    const rows=await prisma.$queryRawUnsafe(
-      "SELECT (SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE') AS tables, (SELECT COUNT(*)::int FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL) AS migrations"
-    );
-    const tableCount=Number(rows?.[0]?.tables||0);
-    const migrationCount=Number(rows?.[0]?.migrations||0);
-    if(tableCount<52 || migrationCount<2)return locked();
-    return safeJson({database:"healthy",tier:env.APP_ENV,schemaVerified:true});
+    // A canonical database with 52+ arbitrary tables and two unrelated
+    // finished migrations is NOT the reviewed Builder cloud schema.
+    // Inspect fixed PostgreSQL/Prisma metadata only; never query merchant rows.
+    const [metrics,records]=await Promise.all([
+      prisma.$queryRawUnsafe(
+        "SELECT current_database() AS database, "+
+        "(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') AS tables, "+
+        "(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('Session','BuilderPage','BuilderSubscription','BuilderShopInstallation')) AS essential_tables"
+      ),
+      prisma.$queryRawUnsafe(
+        'SELECT migration_name, checksum, started_at, finished_at, rolled_back_at FROM public."_prisma_migrations" ORDER BY migration_name'
+      ),
+    ]);
+    if(!isVerifiedWorkerSchemaMetadata({summary:metrics?.[0],records}))
+      return locked();
+    return safeJson({database:"healthy",tier:env.APP_ENV,schemaVerified:true,sourceChecksumAttested:false,merchantAppReady:false});
   }catch{
     return locked();
   }finally{

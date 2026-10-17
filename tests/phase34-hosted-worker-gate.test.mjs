@@ -53,7 +53,9 @@ test("unsigned uninstall requests cannot cause merchant deletion",async()=>{
 test("database readiness requires real Prisma migration history and never reports app readiness",()=>{
   const src=fs.readFileSync("workers/app.js","utf8");
   assert.match(src,/_prisma_migrations/);
-  assert.match(src,/tableCount<52 \|\| migrationCount<2/);
+  assert.match(src,/isVerifiedWorkerSchemaMetadata/);
+  assert.match(src,/SELECT migration_name, checksum, started_at, finished_at, rolled_back_at/);
+  assert.match(src,/sourceChecksumAttested:false/);
   assert.match(src,/merchantAppReady:false/);
   assert.match(src,/if\(url.pathname==="\/readyz"/);
   assert.doesNotMatch(src,/return safeJson\(\{ready:true\}/);
