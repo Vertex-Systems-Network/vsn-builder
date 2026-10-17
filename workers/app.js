@@ -7,6 +7,7 @@ import { isVerifiedWorkerSchemaMetadata } from "../app/services/worker-schema-me
 import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } from "../app/services/worker-shopify-admin-gate.js";
 import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-draft-save-request.js";
 import { handleVerifiedWorkerPageCreate } from "../app/services/worker-shopify-page-create.js";
+import { STAGING_EDITOR_UI_SCRIPT } from "./staging-editor-ui.js";
 import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
 import { handleVerifiedStagingShopifyAuth } from "../app/services/worker-shopify-staging-auth.js";
 import { handleVerifiedStagingShopifyLogin } from "../app/services/worker-shopify-staging-login.js";
@@ -69,6 +70,19 @@ export default {
     if(!(request instanceof Request) || !tierIdentity(env))return locked();
     const url=new URL(request.url);
     if(url.search && ["/healthz","/readyz","/__vsn/database-health"].includes(url.pathname))return locked(404);
+    // Static first-party client logic contains NO merchant/session secrets.
+    // It is exposed only in opted-in Staging, never as a Production route.
+    if(url.pathname==="/__vsn/staging-editor-ui.js") {
+      if(env.APP_ENV!=="staging" ||
+         env.VSN_STAGING_DASHBOARD_ENABLED!=="true" ||
+         env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
+      if(request.method!=="GET")return locked(405);
+      if(url.search || url.hash)return locked(404);
+      return new Response(STAGING_EDITOR_UI_SCRIPT,{status:200,headers:{
+        ...LOCKED,"content-type":"text/javascript; charset=utf-8",
+        "content-security-policy":"default-src 'none'; frame-ancestors 'none'",
+      }});
+    }
     if(url.pathname==="/healthz" && request.method==="GET")
       return safeJson({service:"VSN Builder",tier:env.APP_ENV,liveness:true,merchantAppReady:false});
     if(url.pathname==="/readyz" && request.method==="GET")
