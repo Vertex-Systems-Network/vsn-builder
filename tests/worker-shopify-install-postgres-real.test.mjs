@@ -105,7 +105,7 @@ test("real PostgreSQL installation/session rows gate Shopify SDK authenticated a
   SHOPIFY_PRODUCTION_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3",
   SHOPIFY_APP_URL:"https://staging.builder.example.org",
   SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
-  DATABASE_URL:"postgresql://fake:test@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/fake?sslmode=require",
+  DATABASE_URL:"postgresql://fake:test@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
  };
  // Official SDK authenticate.admin is the only real authority. This mocked
  // authentication return intentionally tests solely DB lifecycle validation.
@@ -160,7 +160,7 @@ test("real PostgreSQL admin POST holds row lock and commits only authenticated m
   SHOPIFY_PRODUCTION_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3",
   SHOPIFY_APP_URL:"https://staging.builder.example.org",
   SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
-  DATABASE_URL:"postgresql://fake:test@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/fake?sslmode=require",
+  DATABASE_URL:"postgresql://fake:test@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
  };
  const req=new Request(e.SHOPIFY_APP_URL+"/app/pages?shop="+adminShop,{method:"POST"});
  const auth={
