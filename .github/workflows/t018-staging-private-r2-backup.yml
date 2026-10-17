@@ -1,6 +1,7 @@
 name: T018 Private Staging R2 Durable Backup and Restore (No Remote DDL)
 # Stores bounded pre-migration custom pg_dump in PRIVATE Builder-only Cloudflare R2.
 # Download/checksum and pg_restore are run in a disposable PostgreSQL 18 runner.
+# R2 permissions use a DEDICATED secret, never the Cloudflare Worker deploy token.
 # NEVER attempts prisma migrate, Neon branch writes, Shopify or Production.
 on:
   pull_request:
@@ -75,7 +76,7 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_R2_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN }}
     steps:
       - name: Checkout protected exact commit, no retained credential
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

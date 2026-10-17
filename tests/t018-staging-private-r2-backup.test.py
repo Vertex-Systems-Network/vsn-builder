@@ -19,7 +19,7 @@ def env(**kw):
     "DATABASE_URL":conn(m.pg.EXPECTED_POOL),
     "DIRECT_URL":conn(m.pg.EXPECTED_DIRECT),
     "CLOUDFLARE_ACCOUNT_ID":m.ACCOUNT,
-    "CLOUDFLARE_API_TOKEN":"synthetic-token-for-private-r2-tests-only",
+    "CLOUDFLARE_R2_API_TOKEN":"synthetic-token-for-private-r2-tests-only",
     "GITHUB_SHA":"a"*40,"GITHUB_RUN_ID":"38988888777",
     "GITHUB_RUN_ATTEMPT":"1"}
     return {**o,**kw}
@@ -93,7 +93,8 @@ class R2Backup(unittest.TestCase):
          {"DIRECT_URL":conn("ep-fake.c-4.ap-southeast-1.aws.neon.tech")},
          {"DATABASE_URL":conn(m.pg.EXPECTED_DIRECT)},
          {"CLOUDFLARE_ACCOUNT_ID":"a"*32},
-         {"CLOUDFLARE_API_TOKEN":""},
+         {"CLOUDFLARE_R2_API_TOKEN":""},
+         {"CLOUDFLARE_R2_API_TOKEN":None},
          {"GITHUB_SHA":"unsigned"},
          {"GITHUB_RUN_ID":"0"},
         ]:
@@ -101,6 +102,14 @@ class R2Backup(unittest.TestCase):
             with self.subTest(key=tuple(values)),self.assertRaises(Exception):
                 m.backup(env(**values),runner=sim.docker,transport=sim.fetch)
             self.assertFalse(sim.calls)
+
+    def test_worker_cloudflare_token_cannot_replace_dedicated_R2_token(self):
+        sim=Sim()
+        state=env(CLOUDFLARE_R2_API_TOKEN="")
+        state["CLOUDFLARE_API_TOKEN"]="synthetic-worker-token-irrelevant"
+        with self.assertRaises(m.Blocked):
+            m.backup(state,runner=sim.docker,transport=sim.fetch)
+        self.assertFalse(sim.calls)
 
     def test_public_bucket_and_shared_bucket_domains_block_BEFORE_dump_or_upload(self):
         for setting in [{"domain_public":True},{"custom_domains":[{"domain":"open.example.org"}]}]:

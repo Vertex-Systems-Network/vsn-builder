@@ -2,7 +2,7 @@
 
 **Verified state: 17 October 2026.** A task marked **CLOSED means final complete** for its written acceptance scope and is **excluded from every active/READY/WAITING list**. Closed work is never reopened; new or larger work requires a separate task ID. The immutable [closure audit archive](docs/closed-task-archive.md) retains evidence without keeping completed work in the queue.
 
-**22 ACTIVE** of 41 tracked tasks · **1 READY** · **5 IN_REVIEW** · **16 WAITING** · **0 release-ready**. The 19 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
+**22 ACTIVE** of 41 tracked tasks · **0 READY** · **6 IN_REVIEW** · **16 WAITING** · **0 release-ready**. The 19 final closures are audit entries, **not active development**. Counts are task-state, not product completion percentages.
 
 **T014 STAGING FINAL CLOSED — 16 October 2026:** User's GitHub `cloudflare-staging` screenshots verified existing encrypted GitHub Environment secret names, `development`-only deployment branch, no required human reviewers and no wait timer. Metafields-pattern correction [PR #259](https://github.com/Vertex-Systems-Network/vsn-builder/pull/259) was reviewed and squash-merged after four exact-head CI checks PASS. The REAL protected development [GitHub Staging Environment attestation #38948913652](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38948913652) also **PASS**: 6/6 GitHub scoped secrets and 4 repository-pinned non-secret staging identifiers validated without exposing credentials. GitHub Environment metadata itself cannot be read by this connector; policy settings are supported by the user-provided screenshot. T014 is permanently archived and removed from active/in-review/ready/waiting lists. **Cloudflare Worker runtime encrypted bindings are exclusively T019**, migrated Neon is T018, real Shopify OAuth is T023 and Production releases remain gated. This is **not** hosted Staging or Live readiness.
 
@@ -15,6 +15,8 @@
 **Provider-verified Shopify/Neon checkpoint — 17 October 2026:** Reuse ONLY the THREE already-connected stores (no new Dev store): Local `local-testing-iashboek.myshopify.com`, Staging `staging-oath3rth.myshopify.com`, Live `vertex-systems-network.myshopify.com`. Shopify Admin `appByKey` proved registered distinct Dev app on Local (**not installed**, `installation=null`), Staging app **installed**, public Live app **installed**. No new installation action taken. On the owner's explicit instruction, **deleted ONLY** Brovexa QA branch `br-royal-morning-b3dhfrre` from the Builder Staging Neon project. Provider verified exactly ONE remaining original Builder default branch `br-square-mountain-b3ij6q2s` with `neondb`; Brovexa 50-table QA database is no longer on any active Builder Staging branch. Original Builder snapshot retained; fresh current-default snapshot still BLOCKED by Neon HTTP 422 snapshot quota. **T017 remains IN_REVIEW, T018 WAITING; T015 remains IN_REVIEW**, no Production mutation. [T015 source record](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) · [T017 provider record](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160).
 
 **T017 PRE-MIGRATION NEON ACCEPTANCE FINAL CLOSED — 17 October 2026:** Exact user-directed cleanup left **one** Builder default Staging Neon branch, which provider confirms was fully restored from the existing historical snapshot `snap-green-bar-b3m1btfb` with **zero written bytes since restore**. Existing snapshot remains retained; direct endpoint and transaction pooler verified. Reviewed [PRs #271–#274](https://github.com/Vertex-Systems-Network/vsn-builder/pull/274) each passed **4/4 PR CI**. Real protected [PostgreSQL 18 Staging backup/ephemeral restore run #38986914868](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38986914868) **PASS**, matching source and disposable-local schema/table counts without touching Neon data. T017 removed from active table and archived **strictly for the pre-migration identity/restore acceptance**, NOT a new snapshot. Neon fresh-snapshot quota 422 still persists, and the successful dump was temporary; **T018 is now READY but must independently secure durable migration recovery and prove real migrations and restore**. T036 remains separate post-migration rollback obligation; no staged DDL/deployment or Production modification yet.
+
+**T018 R2 BACKUP PERMISSION BLOCKED (17 October 2026):** [PR #277](https://github.com/Vertex-Systems-Network/vsn-builder/pull/277) 4/4 CI PASS added private Staging PostgreSQL 18 backup to dedicated Cloudflare R2, readback SHA256 and disposable restore. [PR #278](https://github.com/Vertex-Systems-Network/vsn-builder/pull/278) 4/4 CI PASS added safe HTTP-stage errors. Actual protected [R2 run #38988697490](https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38988697490) FAIL CLOSED `T018_R2_BUCKET_GET_HTTP_403_BLOCKED`: GitHub Worker API token lacks R2 bucket read access. Independently verified private `vsn-builder-staging-backups` exists, public domains disabled, zero backup objects. Required: separate least-privilege Staging GitHub Environment secret `CLOUDFLARE_R2_API_TOKEN` with private R2 read/write. T018 IN_REVIEW, no migration, no durable backup or Production mutation.
 
 ## Earlier dated checkpoints (historical, not current status)
 
@@ -73,7 +75,7 @@
 
 **READY now:** none; all independent previously ready identity work is in verification review.
 
-**IN_REVIEW:** `T015`, `T019`, `T020`, `T024`, `T040`.
+**IN_REVIEW:** `T015`, `T018`, `T019`, `T020`, `T024`, `T040`.
 
 **T024 in review:** [PR #193](https://github.com/Vertex-Systems-Network/vsn-builder/pull/193) hardens webhook read deadlines; real trusted generation and uninstall E2E still OPEN.
 
@@ -94,7 +96,7 @@
 | ID | Priority | Task | Status | Unmet dependency | Work package |
 | --- | --- | --- | --- | --- | --- |
 | T015 | P0 | Verify single public Shopify Builder app and internal Dev/Staging identities | IN_REVIEW | — | [issues/159](https://github.com/Vertex-Systems-Network/vsn-builder/issues/159) |
-| T018 | P0 | Protected Staging Prisma migrate deploy and data restore drill | READY | T017 satisfied; durable migration backup/restore remains mandatory | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
+| T018 | P0 | Protected Staging Prisma migrate deploy and data restore drill | IN_REVIEW | Private R2 token permission missing; no migration | [issues/160](https://github.com/Vertex-Systems-Network/vsn-builder/issues/160) |
 | T019 | P0 | Bind and verify real Cloudflare Staging secrets and tier variables | IN_REVIEW | T015 acceptance pending | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
 | T020 | P0 | Implement functional hosted React Router/Shopify Worker adapter | IN_REVIEW | — | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |
 | T021 | P0 | Staging Worker deploy and stable HTTPS callback acceptance | WAITING | T011, T012, T013, T018, T019, T020 | [issues/161](https://github.com/Vertex-Systems-Network/vsn-builder/issues/161) |

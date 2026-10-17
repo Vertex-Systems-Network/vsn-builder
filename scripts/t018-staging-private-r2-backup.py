@@ -40,7 +40,7 @@ def validate(env):
     pg.check_context(env)
     if env.get("CLOUDFLARE_ACCOUNT_ID","").lower()!=ACCOUNT:
         raise fail("CLOUDFLARE_ACCOUNT")
-    if not isinstance(env.get("CLOUDFLARE_API_TOKEN"),str) or len(env["CLOUDFLARE_API_TOKEN"])<12:
+    if not isinstance(env.get("CLOUDFLARE_R2_API_TOKEN"),str) or len(env["CLOUDFLARE_R2_API_TOKEN"])<12:
         raise fail("CLOUDFLARE_SCOPED_TOKEN")
     sha=env.get("GITHUB_SHA","")
     run_id=env.get("GITHUB_RUN_ID","")
@@ -106,7 +106,7 @@ def assert_private_bucket(transport,token):
 
 def backup(env,runner=subprocess.run,transport=default_transport):
     direct,key=validate(env)
-    token=env["CLOUDFLARE_API_TOKEN"]
+    token=env["CLOUDFLARE_R2_API_TOKEN"]
     assert_private_bucket(transport,token)
     # Fail closed if original Builder default unexpectedly contains merchant data.
     # Real Staging default currently has 0 user tables and is pre-migration ONLY.
