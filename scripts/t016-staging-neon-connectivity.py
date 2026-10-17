@@ -43,9 +43,42 @@ def inspect_urls(pooled_url, direct_url):
             u = urlsplit(raw)
             host = (u.hostname or "").lower()
             port = u.port
-            query = parse_qs(u.query, strict_parsing=True)
+            query = parse_qs(u.query, strict_parsing=True, keep_blank_values=True)
         except (ValueError, TypeError):
             raise ProbeBlocked("T016_INVALID_" + label) from None
+        # Prisma consumes DSN options in the migration step even though this
+        # read-only psql probe passes only safe, explicit PG* environment vars.
+        # Reject schema/search_path/host/service overrides, unknown settings,
+        # ambiguous duplicates and malformed values before any SQL connection.
+        safe_keys = {
+            "sslmode", "channel_binding", "application_name",
+            "connect_timeout", "pgbouncer", "connection_limit", "pool_timeout",
+        }
+        safe_query = set(query).issubset(safe_keys) and all(
+            len(values) == 1 for values in query.values()
+        )
+        if safe_query:
+            for key, values in query.items():
+                value = values[0]
+                if key == "sslmode" and value != "require":
+                    safe_query = False
+                elif key == "channel_binding" and value != "require":
+                    safe_query = False
+                elif key == "application_name" and not re.fullmatch(
+                        r"[a-zA-Z0-9_-]{1,64}", value):
+                    safe_query = False
+                elif key == "connect_timeout" and not (
+                        re.fullmatch(r"[1-9][0-9]?", value) and int(value) <= 30):
+                    safe_query = False
+                elif key == "pgbouncer" and (label == "DIRECT_URL" or value != "true"):
+                    safe_query = False
+                elif key in ("connection_limit", "pool_timeout") and not (
+                        label == "DATABASE_URL" and
+                        re.fullmatch(r"[1-9][0-9]?", value) and
+                        int(value) <= (20 if key == "connection_limit" else 60)):
+                    safe_query = False
+        if not safe_query:
+            raise ProbeBlocked("T016_UNREVIEWED_" + label + "_OPTIONS")
         if (
             u.scheme not in ("postgresql", "postgres")
             or host != exact_host

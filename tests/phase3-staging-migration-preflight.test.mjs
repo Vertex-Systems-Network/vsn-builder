@@ -69,3 +69,50 @@ test("real Staging migration is manual-only; R2 is optional and cannot gate empt
   assert.doesNotMatch(optionalR2,/^  push:/m);
   assert.match(optionalR2,/github\.event_name == 'workflow_dispatch'/);
 });
+
+test("T018 rejects Prisma DSN schema/host/options overrides before protected migration",()=>{
+  const base=fake();
+  const malicious=[
+    "&schema=attacker",
+    "&options=-c%20search_path%3Dattacker",
+    "&host=untrusted.example",
+    "&hostaddr=127.0.0.1",
+    "&service=override",
+    "&sslrootcert=%2Ftmp%2Ffake",
+    "&sslmode=require",
+    "&channel_binding=disable",
+    "&application_name=bad%0Aname",
+    "&application_name=",
+    "&connect_timeout=0",
+    "&connect_timeout=9999",
+    "&pgbouncer=false",
+    "&connection_limit=999",
+    "&pool_timeout=0",
+    "&SSLMode=require",
+    "&unknown_parameter=1",
+  ];
+  for(const suffix of malicious){
+    for(const key of ["DATABASE_URL","DIRECT_URL"]){
+      const env=fake({[key]:base[key]+suffix});
+      const result=inspectStagingMigrationGate(env);
+      assert.equal(result.ready,false,key+suffix);
+      assert(result.issues.some(x=>x.includes("query parameters")),key+suffix);
+      // Must not report any password or URI in error diagnostics.
+      assert(!JSON.stringify(result).includes("ci-only"));
+    }
+  }
+});
+test("T018 preserves bounded Neon channel binding and harmless pool settings",()=>{
+  const base=fake();
+  for(const key of ["DATABASE_URL","DIRECT_URL"]){
+    const env=fake({[key]:base[key]+"&channel_binding=require&application_name=vsn_t018&connect_timeout=12"});
+    assert.equal(inspectStagingMigrationGate(env).ready,true,key);
+  }
+  const pooled=fake({
+    DATABASE_URL:base.DATABASE_URL+"&pgbouncer=true&connection_limit=5&pool_timeout=10",
+  });
+  assert.equal(inspectStagingMigrationGate(pooled).ready,true);
+  assert.equal(inspectStagingMigrationGate(fake({
+    DIRECT_URL:base.DIRECT_URL+"&pgbouncer=true",
+  })).ready,false,"Direct Prisma migration URL must not have pooled-only flags");
+});

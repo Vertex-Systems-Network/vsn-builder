@@ -93,5 +93,33 @@ class T016Test(unittest.TestCase):
                 mod.main(self.env, runner=lambda *a, **kw: FakeResult(output),
                          psql="/usr/bin/psql")
 
+
+    def test_prisma_migration_query_override_is_rejected_by_readonly_precheck(self):
+        base = self.pooled
+        malformed = [
+            "&schema=untrusted", "&options=-c%20search_path%3Duntrusted",
+            "&host=untrusted.example", "&hostaddr=127.0.0.1",
+            "&service=alternate", "&sslrootcert=%2Ftmp%2Ffake",
+            "&sslmode=require", "&channel_binding=disable",
+            "&application_name=bad%0Avalue", "&application_name=",
+            "&connect_timeout=0", "&connect_timeout=100",
+            "&pgbouncer=false", "&connection_limit=999",
+            "&pool_timeout=999", "&unknown=1",
+        ]
+        for suffix in malformed:
+            with self.subTest(suffix=suffix):
+                with self.assertRaises(mod.ProbeBlocked):
+                    mod.inspect_urls(base + suffix, self.direct)
+                with self.assertRaises(mod.ProbeBlocked):
+                    mod.inspect_urls(self.pooled, self.direct + suffix)
+        p, d = mod.inspect_urls(
+            self.pooled + "&channel_binding=require&application_name=vsn_t018&pgbouncer=true&connection_limit=4",
+            self.direct + "&channel_binding=require&connect_timeout=12",
+        )
+        self.assertEqual(p["database"], "neondb")
+        self.assertEqual(d["database"], "neondb")
+        with self.assertRaises(mod.ProbeBlocked):
+            mod.inspect_urls(self.pooled, self.direct + "&pgbouncer=true")
+
 if __name__ == "__main__":
     unittest.main()
