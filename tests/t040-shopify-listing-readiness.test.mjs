@@ -1,10 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {createHash} from "node:crypto";
+import {canonicalListingImagePath,inspectRealListingPng} from "../scripts/t040-shopify-screenshot-evidence.mjs";
 import {spawnSync} from "node:child_process";
 import {inspectListingReadiness} from "../scripts/t040-shopify-listing-readiness.mjs";
 const original=JSON.parse(readFileSync("config/shopify-listing-readiness.json","utf8"));
 const fresh=()=>structuredClone(original);
+const syntheticImageInfo=path=>({
+ format:"png",width:1600,height:900,
+ sha256:createHash("sha256").update(path).digest("hex"),
+});
+
 
 test("draft describes ONE public VSN Builder app, exactly four paid plans and trial",()=>{
  const result=inspectListingReadiness(fresh());
@@ -46,13 +53,13 @@ test("duplicate, fake or missing screenshot paths cannot certify listing",()=>{
   plan.verified[key]=true;
  // Syntactically eligible URL only: this fixture deliberately does NOT certify the page exists.
  plan.verified.privacy_policy_url="https://vertexsystemsnetwork.com/privacy-policy";
- plan.verified.support_email="shopify-support@vsn-test.example";
+ plan.verified.support_email="shopify-support@vertexsystemsnetwork.com";
  plan.verified.screenshots=["docs/launch/evidence/one.png","docs/launch/evidence/one.png"];
- const result=inspectListingReadiness(plan,{screenshotExists:()=>true});
+ const result=inspectListingReadiness(plan,{screenshotProbe:syntheticImageInfo});
  assert(result.missing.includes("five_real_distinct_capture_files"));
  plan.verified.screenshots=["docs/launch/evidence/a.png","docs/launch/evidence/b.png",
   "docs/launch/evidence/c.png","docs/launch/evidence/d.png","docs/launch/evidence/e.png"];
- const metadata=inspectListingReadiness(plan,{screenshotExists:()=>true});
+ const metadata=inspectListingReadiness(plan,{screenshotProbe:syntheticImageInfo});
  assert.equal(metadata.metadataComplete,true);
  assert.equal(metadata.externallyVerified,false,"Static metadata is never genuine Partner proof");
 });
@@ -89,10 +96,61 @@ test("a forged all-true Partner/listing config and mocked capture files still la
  plan.verified.support_email="verified-on-live-server@vertexsystemsnetwork.com";
  plan.verified.screenshots=["a","b","c","d","e"].map(n=>"docs/launch/evidence/"+n+".png");
  plan.release.submission_allowed=true;
- const report=inspectListingReadiness(plan,{screenshotExists:()=>true});
+ const report=inspectListingReadiness(plan,{screenshotProbe:syntheticImageInfo});
  assert.equal(report.metadataComplete,true);
  assert.equal(report.externallyVerified,false,
   "Self-asserted flags and mocked image existence can never certify submission");
+});
+
+test("non-PNG, traversal, alias, near-path and duplicate bytes cannot claim real five screenshots",()=>{
+ const plan=fresh();
+ plan.verified.screenshots=["1","2","3","4","5"].map(x=>
+  "docs/launch/evidence/capture-"+x+".png");
+ plan.verified.privacy_policy_url="https://vertexsystemsnetwork.com/privacy-policy";
+ plan.verified.support_email="shopify-support@vertexsystemsnetwork.com";
+ const completeFields=["shopify_partner_ownership","public_app_identity","plan_publication",
+   "stable_live_https","reviewer_access","real_shopify_oauth_e2e",
+   "real_shopify_billing_e2e","real_theme_browser_e2e","production_release_accepted"];
+ for(const key of completeFields)plan.verified[key]=true;
+ assert.equal(inspectListingReadiness(plan,{screenshotProbe:syntheticImageInfo}).metadataComplete,true);
+ // Existence alone, with real original folder empty, can NEVER certify assets.
+ assert.equal(inspectListingReadiness(plan).metadataComplete,false);
+ for(const invalid of [
+  "docs/launch/evidence/../fake.png",
+  "docs/launch/evidence//double.png",
+  "docs/launch/evidence/one.webp",
+  "docs/launch/evidence/nested/file.png",
+  "docs/launch/evidence/.hidden.png",
+  "docs/launch/evidence/one.png?copy=1",
+ ]){
+  assert.equal(canonicalListingImagePath(invalid),false,invalid);
+  assert.equal(inspectRealListingPng(invalid),null,invalid);
+  const copy=structuredClone(plan);copy.verified.screenshots[0]=invalid;
+  assert(inspectListingReadiness(copy,{screenshotProbe:syntheticImageInfo}).missing.includes(
+   "five_real_distinct_capture_files"),invalid);
+ }
+ for(const probe of [
+  ()=>null,
+  ()=>({format:"jpg",width:1600,height:900,sha256:"a".repeat(64)}),
+  ()=>({format:"png",width:1920,height:1080,sha256:"a".repeat(64)}),
+  ()=>({format:"png",width:1600,height:900,sha256:"a".repeat(64)}),
+ ]){
+  assert(inspectListingReadiness(plan,{screenshotProbe:probe}).missing.includes(
+   "five_real_distinct_capture_files"));
+ }
+ // A syntactically realistic contact email is not independently verified.
+ assert.equal(inspectListingReadiness(plan,{screenshotProbe:syntheticImageInfo}).externallyVerified,false);
+});
+
+test("reserved fake customer-support domains cannot count as merchant support",()=>{
+ const plan=fresh();
+ for(const email of [
+  "shopify@something.test","support@something.example",
+  "contact@localhost","support@company.internal","test@domain.invalid",
+ ]){
+  plan.verified.support_email=email;
+  assert(inspectListingReadiness(plan).missing.includes("support_email"),email);
+ }
 });
 
 test("strict CLI refuses to release on current unverified listing; draft validation succeeds",()=>{
