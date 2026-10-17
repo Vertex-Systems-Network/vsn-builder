@@ -52,8 +52,10 @@ export async function createWorkerShopifySessionContext(request, env, {
         await storage.isReady() !== true) {
       throw new Error("Shopify persistent session storage is not ready");
     }
-    // Guard ALL Shopify SDK session writes with an installation-generation
-    // transaction, while reads and deletes still use the official adapter.
+    // Installation-generation transactions guard official SDK writes.
+    // Worker reads also fence the official SDK's asynchronous loaders with
+    // before/after persisted token and active generation checks. Deletes
+    // remain delegated; independent signed-uninstall attestation is separate.
     const fenced = createWorkerGenerationSessionStorage(db,storage,{
       SessionStorage,
     });

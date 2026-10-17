@@ -25,6 +25,24 @@ function database(){
   const calls=[];
   let locked=Promise.resolve();
   const client={
+    // The transaction below is a separate snapshot; these public readers
+    // model the actual Prisma delegates consumed by Shopify's SDK wrapper.
+    builderShopInstallation:{
+      async findUnique({where}){
+        const row=lifecycle.get(where.shop);
+        return row?{...row}:null;
+      },
+    },
+    session:{
+      async findUnique({where}){
+        const row=sessions.get(where.id);
+        return row?{...row}:null;
+      },
+      async findMany({where}){
+        return [...sessions.values()].filter(row=>row.shop===where.shop)
+          .map(row=>({...row}));
+      },
+    },
     async $transaction(fn){
       let release;
       const previous=locked;
@@ -191,4 +209,115 @@ test("SDK storage wrapper intercepts writes and delegates reads/deletes to offic
  assert.deepEqual(await safe.findSessionsByShop(shop),[]);
  assert.equal(await safe.isReady(),true);
  assert.equal(hit.length,5);
+});
+
+test("Worker SDK loadSession checks persisted credentials and active generation before returning",async()=>{
+ const fx=database();
+ await persist(offline(),fx);
+ const calls=[];
+ const base={
+  async loadSession(id){calls.push(id);return offline()},
+  async findSessionsByShop(){return [offline()]},
+  async deleteSession(){return true},
+  async deleteSessions(){return true},
+  async isReady(){return true},
+ };
+ const safe=createWorkerGenerationSessionStorage(fx.client,base,{
+  SessionStorage:PrismaSessionStorage,
+ });
+ assert.equal((await safe.loadSession("offline_"+shop)).accessToken,"synthetic-token-1");
+ assert.equal((await safe.findSessionsByShop(shop)).length,1);
+ fx.lifecycle.get(shop).uninstalledAt=date("2026-10-13T11:00:00.000Z");
+ assert.equal(await safe.loadSession("offline_"+shop),undefined);
+ assert.deepEqual(await safe.findSessionsByShop(shop),[]);
+ assert.equal(calls.length,1,"uninstalled shop must not invoke Shopify's SDK loader");
+ assert.equal(fx.sessions.size,1,"read-only rejection must never delete sessions");
+});
+
+test("Worker SDK loadSession denies token rotation and reinstall while official SDK awaits",async()=>{
+ for(const change of ["rotated-token","new-generation","removed-session"]){
+  const fx=database();
+  await persist(offline(),fx);
+  const base={
+   async loadSession(){
+    if(change==="rotated-token")fx.sessions.get("offline_"+shop).accessToken="new-token";
+    if(change==="new-generation")
+      fx.lifecycle.get(shop).installedAt=date("2026-10-13T11:00:00.000Z");
+    if(change==="removed-session")fx.sessions.delete("offline_"+shop);
+    return offline();
+   },
+   async findSessionsByShop(){return []},
+   async deleteSession(){return true},async deleteSessions(){return true},
+   async isReady(){return true},
+  };
+  const safe=createWorkerGenerationSessionStorage(fx.client,base,{
+   SessionStorage:PrismaSessionStorage,
+  });
+  assert.equal(await safe.loadSession("offline_"+shop),undefined,change);
+ }
+});
+
+test("Worker SDK enumeration denies deleted/rotated/forged and duplicated tokens",async()=>{
+ for(const change of ["rotation","deleted","reinstalled","forged","duplicate"]){
+  const fx=database();await persist(offline(),fx);
+  const session=offline();
+  const base={
+   async loadSession(){return session},
+   async findSessionsByShop(){
+    if(change==="rotation")fx.sessions.get(session.id).accessToken="other-token";
+    if(change==="deleted")fx.sessions.delete(session.id);
+    if(change==="reinstalled")
+      fx.lifecycle.get(shop).installedAt=date("2026-10-13T11:00:00.000Z");
+    if(change==="forged")return [session,{...session,id:"fake-session-id"}];
+    if(change==="duplicate")return [session,session];
+    return [session];
+   },
+   async deleteSession(){return true},async deleteSessions(){return true},
+   async isReady(){return true},
+  };
+  const safe=createWorkerGenerationSessionStorage(fx.client,base,{
+   SessionStorage:PrismaSessionStorage,
+  });
+  assert.deepEqual(await safe.findSessionsByShop(shop),[],change);
+ }
+});
+
+test("Worker SDK read fence rejects orphan, expired, invalid-domain and stale credentials",async()=>{
+ const fx=database();await persist(offline(),fx);
+ const base={
+  async loadSession(){return offline()},
+  async findSessionsByShop(){return [offline()]},
+  async deleteSession(){return true},async deleteSessions(){return true},
+  async isReady(){return true},
+ };
+ const safe=createWorkerGenerationSessionStorage(fx.client,base,{
+  SessionStorage:PrismaSessionStorage,
+ });
+ assert.equal(await safe.loadSession(""),undefined);
+ assert.deepEqual(await safe.findSessionsByShop("shop.example.net"),[]);
+ fx.sessions.get("offline_"+shop).expires=date("2020-01-01T00:00:00.000Z");
+ assert.equal(await safe.loadSession("offline_"+shop),undefined);
+ await assert.rejects(safe.findSessionsByShop(shop),{
+  code:"VSN_WORKER_SESSION_READ_BLOCKED",
+ });
+ fx.sessions.get("offline_"+shop).expires=null;
+ fx.lifecycle.delete(shop);
+ assert.equal(await safe.loadSession("offline_"+shop),undefined);
+ assert.deepEqual(await safe.findSessionsByShop(shop),[]);
+});
+
+test("Worker SDK read query errors are sanitized and never expose Neon or tokens",async()=>{
+ const fx=database();await persist(offline(),fx);
+ fx.client.session.findUnique=async()=>{throw Error("postgresql://private-password@secret-host")};
+ const safe=createWorkerGenerationSessionStorage(fx.client,{
+  async loadSession(){throw Error("SDK should not be invoked")},
+  async findSessionsByShop(){return []},
+  async deleteSession(){return true},async deleteSessions(){return true},
+  async isReady(){return true},
+ },{SessionStorage:PrismaSessionStorage});
+ await assert.rejects(safe.loadSession("offline_"+shop),error=>{
+  assert.equal(error.code,"VSN_WORKER_SESSION_READ_BLOCKED");
+  assert(!error.message.includes("private-password"));
+  return true;
+ });
 });

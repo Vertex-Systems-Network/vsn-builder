@@ -4,7 +4,7 @@
 //
 // The SDK must authenticate OAuth before invoking storeSession. This adapter
 // DOES NOT verify OAuth, sign tokens, expose secrets or deploy any Worker.
-const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+const SHOP=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
 const blocked=()=>{
   const error=new Error("Worker Shopify installation/session persistence unavailable");
   error.code="VSN_WORKER_INSTALL_SESSION_BLOCKED";
@@ -87,18 +87,116 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
   }
 }
 
+// The official SDK performs asynchronous PostgreSQL reads. Unlike the
+// transactional storeSession, loading or enumerating a session is NOT an
+// implicit authorization to use credentials after uninstall/reinstall.
+const EXACT_SHOP=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
+const readBlocked=()=>{
+  const error=new Error("VSN_WORKER_SESSION_READ_BLOCKED");
+  error.code="VSN_WORKER_SESSION_READ_BLOCKED";
+  return error;
+};
+const expiresAt=row=>{
+  if(row?.expires==null)return null;
+  return isDate(row.expires)?row.expires.getTime():NaN;
+};
+const validPersisted=(row,id,shop)=>{
+  if(!row || typeof id!=="string" || !id || row.id!==id ||
+     row.shop!==shop || !EXACT_SHOP.test(String(shop||"")) ||
+     typeof row.accessToken!=="string" || !row.accessToken ||
+     typeof row.isOnline!=="boolean")return false;
+  const expiry=expiresAt(row);
+  return expiry===null || (Number.isFinite(expiry)&&expiry>Date.now());
+};
+const samePersisted=(a,b)=>
+  a.id===b.id && a.shop===b.shop && a.accessToken===b.accessToken &&
+  a.isOnline===b.isOnline && expiresAt(a)===expiresAt(b);
+
 export function createWorkerGenerationSessionStorage(database,baseStorage,{
   SessionStorage,clock,
 }={}) {
   const methods=["loadSession","deleteSession","deleteSessions","findSessionsByShop","isReady"];
   if(!baseStorage || methods.some(name=>typeof baseStorage[name]!=="function") ||
      typeof SessionStorage!=="function")throw blocked();
+
+  const activeGeneration=async shop=>{
+    if(typeof shop!=="string" || !EXACT_SHOP.test(shop))return null;
+    if(typeof database?.builderShopInstallation?.findUnique!=="function")
+      throw readBlocked();
+    const row=await database.builderShopInstallation.findUnique({where:{shop}});
+    if(row?.shop!==shop || !isDate(row.installedAt) ||
+       row.uninstalledAt!==null)return null;
+    return row.installedAt.getTime();
+  };
+  const persisted=async id=>{
+    if(typeof database?.session?.findUnique!=="function")
+      throw readBlocked();
+    return database.session.findUnique({where:{id}});
+  };
   return {
     storeSession:session=>persistWorkerShopifySessionWithGeneration(session,database,{
       SessionStorage,clock,
     }),
-    ...Object.fromEntries(methods.map(method=>[
-      method,(...args)=>baseStorage[method](...args),
-    ])),
+    // Keep official Shopify SDK serialization and database deletion, but
+    // never expose credentials without EXACT before/after persistent token
+    // and installation-generation checks around its asynchronous loader.
+    async loadSession(id){
+      try{
+        if(typeof id!=="string" || !id)return undefined;
+        const original=await persisted(id);
+        if(!original || !validPersisted(original,id,original.shop))return undefined;
+        const generation=await activeGeneration(original.shop);
+        if(generation===null)return undefined;
+        const session=await baseStorage.loadSession(id);
+        if(!session || !samePersisted(session,original))return undefined;
+        const [latest,after]=await Promise.all([
+          persisted(id),activeGeneration(original.shop),
+        ]);
+        if(!validPersisted(latest,id,original.shop) ||
+           !samePersisted(latest,original) || after!==generation)return undefined;
+        return session;
+      }catch{throw readBlocked()}
+    },
+    async findSessionsByShop(shop){
+      try{
+        const before=await activeGeneration(shop);
+        if(before===null)return [];
+        if(typeof database?.session?.findMany!=="function")
+          throw readBlocked();
+        const originals=await database.session.findMany({where:{shop}});
+        if(!Array.isArray(originals))throw readBlocked();
+        const originalById=new Map();
+        for(const row of originals){
+          if(!validPersisted(row,row?.id,shop) || originalById.has(row.id))
+            throw readBlocked();
+          originalById.set(row.id,row);
+        }
+        const sessions=await baseStorage.findSessionsByShop(shop);
+        if(!Array.isArray(sessions))throw readBlocked();
+        const [after,latest]=await Promise.all([
+          activeGeneration(shop),database.session.findMany({where:{shop}}),
+        ]);
+        if(after!==before || !Array.isArray(latest))return [];
+        const latestById=new Map();
+        for(const row of latest){
+          if(!validPersisted(row,row?.id,shop) || latestById.has(row.id))
+            throw readBlocked();
+          latestById.set(row.id,row);
+        }
+        const seen=new Set();
+        for(const session of sessions){
+          if(typeof session?.id!=="string" || seen.has(session.id) ||
+             !originalById.has(session.id) || !latestById.has(session.id) ||
+             !samePersisted(session,originalById.get(session.id)) ||
+             !samePersisted(session,latestById.get(session.id)))
+            return [];
+          seen.add(session.id);
+        }
+        return sessions;
+      }catch{throw readBlocked()}
+    },
+    deleteSession:(...args)=>baseStorage.deleteSession(...args),
+    deleteSessions:(...args)=>baseStorage.deleteSessions(...args),
+    isReady:(...args)=>baseStorage.isReady(...args),
   };
 }
