@@ -90,7 +90,10 @@ def docker_pg_env(connection,local=False):
 def docker_command(argv, connection, local=False, mount=None):
     # Fixed Postgres 18 image matches the provider's live 18.x major version.
     env=docker_pg_env(connection,local)
+    # Temp dump directory is mode 0700: run container as its OWNER,
+    # never weaken archive permissions or restore privileged DAC overrides.
     cmd=["docker","run","--rm","--network","host",
+         "--user",f"{os.getuid()}:{os.getgid()}",
          "--cap-drop","ALL","--security-opt","no-new-privileges",
          "--read-only","--tmpfs","/tmp:rw,nosuid,noexec,size=64m"]
     if not local:
