@@ -269,17 +269,23 @@ async function guardedAdminRequest(request,env,{
           request,shop,session,admin:authenticated.admin,transaction
         });
         if(!(result instanceof Response))throw new TypeError("Mutation callback did not return Response");
-        // A returned redirect is not the same as a Shopify SDK-THROWN
-        // reauth redirect. Refuse to commit writes on unreviewed 3xx or
-        // status-0 results; keep Shopify-thrown redirects untouched.
-        if(result.status<200 || result.status>=300 && result.status<400)
+        // Only actual Shopify SDK-THROWN Responses may carry reauth
+        // redirects/cookies. A mutation callback that RETURNS navigation or
+        // cookie headers is untrusted and must NEVER commit merchant writes.
+        if(result.status<200 ||
+           (result.status>=300 && result.status<400) ||
+           result.headers.has("set-cookie") || result.headers.has("location"))
           rollback(503);
-        // The response must be fully constructible and secured WHILE Prisma
-        // can still roll back. Invalid/immutable source headers, a locked
-        // stream or unsupported status cannot turn a committed write into 503.
-        const finalized=await securedMutationResponse(result);
-        if(result.status>=400)throw new RollbackResponse(finalized);
-        return finalized;
+        // 4xx merchant edit failures may be intentional, but the callback
+        // could have serialized Prisma errors, Shopify tokens or SDK headers.
+        // Roll back BEFORE consuming that body and expose only its status.
+        // Do not return raw 5xx diagnostics, regardless of content type.
+        if(result.status>=500)rollback(503);
+        if(result.status>=400)rollback(result.status);
+        // Only a successful, non-redirecting, cookie-free response may be
+        // fully buffered while Prisma can still rollback. A broken stream
+        // or immutable headers cannot turn a committed write into a 503.
+        return await securedMutationResponse(result);
       },{maxWait:5000,timeout:12000});
     }else{
       // A page-data capability is privileged by definition. Never rely on
