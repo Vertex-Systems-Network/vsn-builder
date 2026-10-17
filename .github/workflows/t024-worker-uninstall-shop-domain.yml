@@ -1,0 +1,43 @@
+name: T024 Canonical Shopify Uninstall Security (No Deploy)
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "app/services/worker-shopify-uninstall-session-revoke.js"
+      - "app/services/worker-shopify-webhook-gate.js"
+      - "tests/worker-uninstall-session-revoke.test.mjs"
+      - "tests/worker-shopify-webhook-gate.test.mjs"
+      - ".github/workflows/t024-worker-uninstall-shop-domain.yml"
+permissions:
+  contents: read
+jobs:
+  t024-canonical-uninstall:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout PR without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pin Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Install lockfile-pinned SDK dependencies
+        run: npm ci
+      - name: Generate SDK-compatible Neon Prisma client offline
+        env:
+          DATABASE_URL: postgresql://ci:unused@localhost:5432/ci?sslmode=require
+          DIRECT_URL: postgresql://ci:unused@localhost:5432/ci?sslmode=require
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Prove canonical Shop domain and fail-closed uninstall generation/retry
+        run: node --test tests/worker-uninstall-session-revoke.test.mjs tests/worker-shopify-webhook-gate.test.mjs
+      - name: No access to staging credentials or deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${DIRECT_URL:-}"
+          test -z "${CLOUDFLARE_R2_API_TOKEN:-}"

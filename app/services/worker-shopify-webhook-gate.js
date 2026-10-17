@@ -10,7 +10,7 @@ const MAX_WEBHOOK_BYTES = 65536;
 // Keep a single wall-clock deadline for the entire raw HMAC body, not a
 // per-chunk timeout that a slow trickle can extend indefinitely.
 const MAX_WEBHOOK_READ_MS = 3000;
-const SHOP_PATTERN = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+const SHOP_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
 const SIGNATURE_PATTERN = /^[A-Za-z0-9+/]{43}=$/;
 const denied = (status) => new Response(null, { status });
 

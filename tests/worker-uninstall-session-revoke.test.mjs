@@ -66,6 +66,46 @@ function fakeDatabase(){
  };
  return {database,installs,sessions,claims,deletes};
 }
+test("non-canonical Shopify hostnames are rejected BEFORE generation verifier or DB",async()=>{
+ const f=fakeDatabase();
+ let attestations=0;
+ const invalid=[
+  "-prefix.myshopify.com","trailing-.myshopify.com",
+  "x".repeat(64)+".myshopify.com",
+  "x".repeat(253)+".myshopify.com",
+  "Capital.myshopify.com","a.myshopify.com.evil.invalid",
+ ];
+ for(const shop of invalid){
+  const response=await revokeVerifiedWorkerShopifySessions({
+   event:event(shop),triggeredAt,
+   context:{database:f.database,verifyTrustedUninstallGeneration:async()=>{
+    attestations++;
+    return null;
+   }},
+  });
+  assert.equal(response.status,401);
+  assert.equal(response.headers.get("retry-after"),null);
+ }
+ assert.equal(attestations,0);
+ assert.equal(f.claims.length,0);
+ assert.equal(f.deletes.length,0);
+ assert.equal(f.sessions.length,3);
+});
+test("temporary missing-generation 503 includes retry-after while safe 204 never does",async()=>{
+ const f=fakeDatabase();
+ const absent=await revokeVerifiedWorkerShopifySessions({
+  event:event(),triggeredAt,context:{database:f.database}
+ });
+ assert.equal(absent.status,503);
+ assert.equal(absent.headers.get("retry-after"),"60");
+ assert.equal(absent.headers.get("cache-control"),"no-store");
+ assert.equal(await absent.text(),"");
+ const duplicateSafe=await invoke(f.database);
+ assert.equal(duplicateSafe.status,204);
+ assert.equal(duplicateSafe.headers.get("retry-after"),null);
+ assert.equal(f.deletes.length,1);
+});
+
 test("signed body without exact independent generation proof NEVER starts a destructive transaction",async()=>{
  const db=fakeDatabase();
  const forged=new Date("2030-01-01T00:00:00Z");
