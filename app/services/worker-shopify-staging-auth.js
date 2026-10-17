@@ -64,7 +64,16 @@ export async function handleVerifiedStagingShopifyAuth(request,env,{
     // The official package performs the entire Shopify session-token/OAuth
     // handshake and persists the resulting session through our fenced
     // PrismaSessionStorage. Never decode or trust the callback query ourselves.
-    const auth=await context.shopify.authenticate.admin(request);
+    // Only a Response THROWN by the official Shopify authentication call
+    // can carry Shopify's signed OAuth redirect/cookies. A Response thrown
+    // later by DB, redirect rendering or another dependency is untrusted.
+    let auth;
+    try {
+      auth=await context.shopify.authenticate.admin(request);
+    }catch(error){
+      if(error instanceof Response)return error;
+      throw error;
+    }
     const session=auth?.session;
     if(!SHOP.test(String(session?.shop||"")) ||
        typeof session?.id!=="string" || !session.id ||
@@ -95,12 +104,8 @@ export async function handleVerifiedStagingShopifyAuth(request,env,{
     return new Response(response.body,{
       status:response.status,statusText:response.statusText,headers,
     });
-  }catch(error){
-    if(error instanceof Response){
-      // The SDK may deliberately throw a Response to complete token exchange,
-      // trigger reauthorization or set a signed cookie. Never reconstruct it.
-      return error;
-    }
+  }catch{
+    // Fail closed on Response-shaped errors from non-SDK dependencies.
     return denied();
   }finally{
     try{await context?.close?.()}catch{/* never leak session or driver data */}
