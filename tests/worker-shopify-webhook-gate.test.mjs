@@ -96,6 +96,23 @@ test("unsigned or malformed webhook rejects with no database connection",async()
  ])assert.equal((await result(webhook(payload,patch),env,c)).status,400);
  assert.equal(c.opened,0);
 });
+test("non-canonical Shopify domains reject valid signed body BEFORE SDK/DB",async()=>{
+ const c=context();
+ for(const shop of [
+  "-starting.myshopify.com",
+  "ending-.myshopify.com",
+  "a".repeat(64)+".myshopify.com",
+  "A.myshopify.com",
+  "a.myshopify.com.evil.invalid",
+ ]){
+  const request=webhook(payload,{"X-Shopify-Shop-Domain":shop});
+  const resultData=await result(request,env,c);
+  assert.equal(resultData.status,400,shop);
+ }
+ assert.equal(c.opened,0);
+ assert.equal(c.closed,0);
+});
+
 test("oversized signed payload is refused before SDK initialization",async()=>{
  const c=context();
  const big=JSON.stringify({data:"x".repeat(70000)});
