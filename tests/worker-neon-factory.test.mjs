@@ -55,7 +55,7 @@ test("Neon hostname lookalikes, unknown endpoints and unexpected ports fail clos
   env.DATABASE_URL.replace(".c-4.",".attacker.c-4."),
   env.DATABASE_URL.replace("ep-little-dream-b3g6puj2","ep-unknown-project"),
   env.DATABASE_URL.replace(".neon.tech",".neon.tech.attacker.test"),
-  env.DATABASE_URL.replace("/builder_ci",":6543/builder_ci"),
+  env.DATABASE_URL.replace("/neondb",":6543/neondb"),
  ];
  for(const DATABASE_URL of tests){
   assert.equal(inspectWorkerNeonEnvironment({...env,DATABASE_URL}).ready,false,DATABASE_URL.split("@")[1]);
