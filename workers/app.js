@@ -6,6 +6,7 @@ import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worke
 import { isVerifiedWorkerSchemaMetadata } from "../app/services/worker-schema-metadata-health.js";
 import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } from "../app/services/worker-shopify-admin-gate.js";
 import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-draft-save-request.js";
+import { handleVerifiedWorkerPageCreate } from "../app/services/worker-shopify-page-create.js";
 import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
 import { handleVerifiedStagingShopifyAuth } from "../app/services/worker-shopify-staging-auth.js";
 import { handleVerifiedStagingShopifyLogin } from "../app/services/worker-shopify-staging-login.js";
@@ -113,6 +114,21 @@ export default {
           const pages=await pageSummary();
           return safeJson({shop,tier:env.APP_ENV,pages});
         },
+      });
+    }
+    if(url.pathname==="/app/__vsn/pages/create" && request.method==="POST") {
+      // MVP blank-draft create is exposed ONLY after an explicit Staging
+      // enablement; paid-page quotas and pages.create RBAC execute in the
+      // same uninstall-serialized Shopify SDK mutation transaction.
+      if(env.APP_ENV!=="staging" ||
+         env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
+      if([...url.searchParams.keys()].some(key=>key!=="shop") ||
+         url.searchParams.getAll("shop").length>1)return locked(404);
+      return acceptWorkerShopifyAdminMutation(request,env,{
+        onAuthenticated:({request:authorizedRequest,session,shop,transaction})=>
+          handleVerifiedWorkerPageCreate({
+            request:authorizedRequest,session,shop,transaction,
+          }),
       });
     }
     if(url.pathname.startsWith("/app/__vsn/pages/") && request.method==="POST") {
