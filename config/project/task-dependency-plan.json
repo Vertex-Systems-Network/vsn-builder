@@ -339,7 +339,7 @@
       "title": "Protected Staging Prisma migrate deploy and data restore drill",
       "workstream": "Database",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [
         "T011",
         "T012",
@@ -349,9 +349,13 @@
         "T017"
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
-      "evidence": [],
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/277",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/278",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38988697490"
+      ],
       "acceptance": "GitHub-protected reviewed manual Staging migration with pinned isolated Neon Free branch, snapshot/restore evidence, 2+ successful Prisma migrations, real pooled queries and 53+ app tables. Production remains untouched.",
-      "progress_note": "Single Staging Neon default primary retained with 0 application tables. User-approved obsolete QA branches deleted after verifying all 52 QA tables had 0 rows and preserving repo Prisma migrations. Protected manual GitHub workflow, scoped Neon credentials, current-primary backup/restore acceptance and actual schema migration remain WAITING; no SQL DDL executed on default."
+      "progress_note": "2026-10-17 T018 active engineering IN_REVIEW; NOT migrated or accepted. Source PR #277 exact-head 4/4 CI green and merged: protected read-only Staging PG18 pg_dump to private dedicated Cloudflare R2 bucket vsn-builder-staging-backups (APAC), GET SHA256 verified and disposable PG18 restoration; PR #278 exact-head 4/4 CI green and merged safe HTTP diagnostics. Cloudflare provider independently verified bucket exists with r2.dev public access DISABLED, zero custom domains, and NO objects. Protected real backup run #38988697490 FAIL-CLOSED `T018_R2_BUCKET_GET_HTTP_403_BLOCKED` because existing GitHub cloudflare-staging Worker API token lacks R2 bucket READ permission. Next fix uses DISTINCT least-privilege cloudflare-staging GitHub Environment secret CLOUDFLARE_R2_API_TOKEN (must be configured before real run; never substitute Worker token). Neon primary default remains single branch and empty, old snapshot retained, 422 snapshot quota persists. No durable R2 backup exists; no Prisma DDL or production mutation, and the original manual migration workflow is intentionally NOT triggered. Pending: authenticated private R2 object upload+GET digest + restore run, then reviewed Prisma migrations/53+ tables and post-migration recovery."
     },
     {
       "id": "T019",
