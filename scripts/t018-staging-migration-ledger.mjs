@@ -27,12 +27,46 @@ export function expectedStagingMigrationChecksums(readFile=(name)=>
   return hashes;
 }
 
-export function attestStagingMigrationLedger({summary,records,hashes}={}){
+// Prisma migration SQL defines the 52 expected Builder application models.
+// A count-only schema check can accept 51 models and one unrelated table.
+export function expectedStagingMigrationTables(readFile=(name)=>
+  readFileSync(new URL("../prisma/cloud/migrations/"+name+"/migration.sql",import.meta.url))
+) {
+  const tables=new Set();
+  for(const migration of EXPECTED_STAGING_MIGRATIONS){
+    const bytes=readFile(migration);
+    if(!Buffer.isBuffer(bytes)||bytes.length<50)blocked();
+    const matches=[...bytes.toString("utf8").matchAll(/^CREATE TABLE "([A-Za-z_][A-Za-z0-9_]*)"\s*\(/gm)];
+    if(matches.length===0)blocked();
+    for(const match of matches){
+      const name=match[1];
+      if(tables.has(name) || name==="_prisma_migrations")blocked();
+      tables.add(name);
+    }
+  }
+  if(tables.size!==52 || !["Session","BuilderPage","BuilderSubscription","BuilderShopInstallation"]
+    .every(name=>tables.has(name)))blocked();
+  return tables;
+}
+
+export function attestStagingMigrationLedger({summary,records,hashes,tables,expectedTables}={}){
   if(!summary||!Array.isArray(records)||records.length!==EXPECTED_STAGING_MIGRATIONS.length ||
      !(hashes instanceof Map)||hashes.size!==EXPECTED_STAGING_MIGRATIONS.length ||
-     !integer(summary.tables)||summary.tables<53 ||
+     !(expectedTables instanceof Set)||expectedTables.size!==52 ||
+     !Array.isArray(tables)||tables.length!==53 ||
+     !integer(summary.tables)||summary.tables!==53 ||
      !integer(summary.essential_tables)||summary.essential_tables!==4 ||
      summary.database!=="neondb")
+    blocked();
+  const present=new Set();
+  for(const row of tables){
+    if(typeof row?.table_name!=="string" || present.has(row.table_name))
+      blocked();
+    present.add(row.table_name);
+  }
+  if(!present.has("_prisma_migrations") ||
+     [...expectedTables].some(name=>!present.has(name)) ||
+     [...present].some(name=>name!=="_prisma_migrations" && !expectedTables.has(name)))
     blocked();
   const seen=new Set();
   for(const row of records){

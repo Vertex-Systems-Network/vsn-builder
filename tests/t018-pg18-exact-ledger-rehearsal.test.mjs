@@ -9,6 +9,7 @@ import prismaCloud from "../generated/prisma-cloud/index.js";
 import {
   attestStagingMigrationLedger,
   expectedStagingMigrationChecksums,
+  expectedStagingMigrationTables,
   EXPECTED_STAGING_MIGRATIONS,
 } from "../scripts/t018-staging-migration-ledger.mjs";
 
@@ -24,8 +25,9 @@ for(const name of ["SHOPIFY_API_SECRET","CLOUDFLARE_API_TOKEN","NEON_API_KEY"]){
 
 const db=new prismaCloud.PrismaClient();
 const hashes=expectedStagingMigrationChecksums();
+const expectedTables=expectedStagingMigrationTables();
 const metadata=async client=>{
-  const [rows,records]=await Promise.all([
+  const [rows,records,tables]=await Promise.all([
     client.$queryRawUnsafe(
       "SELECT current_database() AS database, "+
       "(SELECT COUNT(*)::int FROM information_schema.tables "+
@@ -39,8 +41,11 @@ const metadata=async client=>{
       'SELECT migration_name, checksum, started_at, finished_at, rolled_back_at '+
       'FROM public."_prisma_migrations" ORDER BY migration_name'
     ),
+    client.$queryRawUnsafe(
+      "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name"
+    ),
   ]);
-  return {summary:rows?.[0],records,hashes};
+  return {summary:rows?.[0],records,hashes,tables,expectedTables};
 };
 test.before(async()=>db.$connect());
 test.after(async()=>{await db.$disconnect()});
@@ -88,4 +93,23 @@ test("transactionally rolled-back or incomplete real Prisma record cannot certif
     throw marker;
   }),err=>err===marker);
   assert.equal(attestStagingMigrationLedger(await metadata(db)).ready,true);
+});
+
+test("real PG18 canonical model substitution fails despite the exact total table count",async()=>{
+ const marker=new Error("EXPECTED_DISPOSABLE_ROLLBACK");
+ await assert.rejects(db.$transaction(async tx=>{
+  // Rename a NON-essential table. A count-only test plus four essential
+  // names would previously have allowed this corrupted Staging schema.
+  await tx.$executeRawUnsafe(
+   'ALTER TABLE public."BuilderMotionPreset" RENAME TO "InjectedReplacement"'
+  );
+  const replaced=await metadata(tx);
+  assert.equal(replaced.summary.tables,53);
+  assert.equal(replaced.summary.essential_tables,4);
+  assert.throws(()=>attestStagingMigrationLedger(replaced),
+    /T018_STAGING_MIGRATION_LEDGER_UNVERIFIED/);
+  throw marker;
+ }),err=>err===marker);
+ assert.equal(attestStagingMigrationLedger(await metadata(db)).ready,true,
+   "Disposable rollback must restore all canonical model names");
 });
