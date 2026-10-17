@@ -3,6 +3,32 @@
 import { inspectHostedNeonUrlPair } from "../app/services/neon-target-policy.js";
 import targets from "../config/deployment/environments.json" with { type: "json" };
 
+// Prisma consumes DSN query parameters, unlike the separately constructed
+// read-only libpq probe. Never let an otherwise correctly pinned Neon URL
+// silently redirect migration DDL through schema/options/host overrides.
+const SAFE_QUERY_KEYS=new Set([
+  "sslmode","channel_binding","application_name","connect_timeout",
+  "pgbouncer","connection_limit","pool_timeout",
+]);
+function safeMigrationDsnQuery(raw,direct=false) {
+  try {
+    const url=new URL(raw);
+    const entries=[...url.searchParams.entries()];
+    if(new Set(entries.map(([key])=>key)).size!==entries.length)return false;
+    for(const [key,value] of entries) {
+      if(!SAFE_QUERY_KEYS.has(key))return false;
+      if(key==="sslmode" && value!=="require")return false;
+      if(key==="channel_binding" && value!=="require")return false;
+      if(key==="application_name" && !/^[a-zA-Z0-9_-]{1,64}$/.test(value))return false;
+      if(key==="connect_timeout" && (!/^[1-9][0-9]?$/.test(value) || Number(value)>30))return false;
+      if(key==="pgbouncer" && (direct || value!=="true"))return false;
+      if(key==="connection_limit" && (direct || !/^[1-9][0-9]?$/.test(value) || Number(value)>20))return false;
+      if(key==="pool_timeout" && (direct || !/^[1-9][0-9]?$/.test(value) || Number(value)>60))return false;
+    }
+    return true;
+  }catch{return false;}
+}
+
 export function inspectStagingMigrationGate(env={}) {
   const issues=[];
   if(env.GITHUB_REF!=="refs/heads/development" || env.GITHUB_REF_PROTECTED!=="true")
@@ -27,6 +53,9 @@ export function inspectStagingMigrationGate(env={}) {
     DATABASE_URL:env.DATABASE_URL,DIRECT_URL:env.DIRECT_URL,
   });
   issues.push(...pair.issues);
+  if(!safeMigrationDsnQuery(env.DATABASE_URL) ||
+     !safeMigrationDsnQuery(env.DIRECT_URL,true))
+    issues.push("Unreviewed or ambiguous Prisma connection query parameters");
   // A correct Neon endpoint can contain multiple databases: the migration is
   // authorized solely for the empty Builder Staging 'neondb' database. Never
   // accept two matching URLs that both point to an unrelated database.
