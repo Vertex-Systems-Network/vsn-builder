@@ -4,7 +4,7 @@ import {
   AppDistribution,
   shopifyApp,
 } from "@shopify/shopify-app-react-router/server";
-import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
+import { createNodeShopifyGenerationSessionStorage } from "./services/shopify-node-generation-session-storage.server.js";
 import prisma from "./db.server.js";
 import { SHOPIFY_API_VERSION_HANDLE } from "./config/shopifyIntegration.js";
 
@@ -15,7 +15,7 @@ const shopify = shopifyApp({
   scopes: process.env.SCOPES?.split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
-  sessionStorage: new PrismaSessionStorage(prisma),
+  sessionStorage: createNodeShopifyGenerationSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
   // Online sessions include associated_user/account_owner so builder permissions
   // are evaluated for the actual Shopify staff member using the embedded app.
