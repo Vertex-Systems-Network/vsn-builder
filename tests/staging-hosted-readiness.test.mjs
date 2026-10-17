@@ -7,7 +7,7 @@ const base = {
     SHOPIFY_APP_URL: "https://builder-stage.example.org",
     VSN_STAGING_DATABASE_PROVIDER:"neon-postgresql", NEON_PROJECT_ID:"shiny-violet-61219572",
     VSN_STAGING_NEON_SCHEMA_VERIFIED:"1", VSN_STAGING_NEON_MIGRATIONS_VERIFIED:"1",
-    DATABASE_URL:"postgresql://test_user:fake-ci@ep-little-dream-b3g6puj2-pooler.c-4.ap-southeast-1.aws.neon.tech/builder?sslmode=require" },
+    DATABASE_URL:"postgresql://test_user:fake-ci@ep-little-dream-b3g6puj2-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require" },
   appConfig: 'name = "VSN | Builder (Staging)"\napplication_url = "https://builder-stage.example.org"\nredirect_urls = ["https://builder-stage.example.org/auth/callback"]',
   worker: { exists: true, deployments: 1, secretNames: ["SHOPIFY_API_KEY","SHOPIFY_API_SECRET","DATABASE_URL"],
     bindings: [], publicUrlVerified: true },
@@ -51,6 +51,16 @@ test("Neon default branch without migration proof blocks Shopify staging", () =>
   assert.ok(report.checks.some(x=>x.name==="Neon default branch schema attested"&&!x.ok));
   assert.ok(report.checks.some(x=>x.name==="Neon migration ledger attested"&&!x.ok));
 });
+test("same-host alternate Neon database cannot falsely certify Staging readiness",()=>{
+ for(const name of ["brovexa","another_db","%6eeondb"]){
+  const cfg={...base.vars,
+   DATABASE_URL:base.vars.DATABASE_URL.replace("/neondb?","/"+name+"?"),
+  };
+  const result=assessStaging({...base,vars:cfg});
+  assert.equal(result.ready,false);
+  assert(result.checks.some(x=>x.name==="Staging database URL matches isolated Neon host"&&!x.ok));
+ }
+});
 test("Neon staging is isolated from Production and D1 is optional", () => {
   const v={...base.vars,NEON_PROJECT_ID:"nameless-violet-68750490"};
   const report=assessStaging({...base,vars:v});
@@ -67,7 +77,7 @@ test("D1 alternative requires actual D1 and compatible Prisma and app runtime",(
 
 test("Production Neon connection URL is rejected by Staging even with matching project identifier",()=>{
   const wrong={...base.vars,
-    DATABASE_URL:"postgresql://u:pass-do-not-echo@ep-jolly-truth-b3xbibzp-pooler.c-4.ap-southeast-1.aws.neon.tech/builder?sslmode=require"};
+    DATABASE_URL:"postgresql://u:pass-do-not-echo@ep-jolly-truth-b3xbibzp-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"};
   const report=assessStaging({...base,vars:wrong});
   assert.equal(report.ready,false);
   assert.ok(report.checks.some(x=>x.name==="Staging database URL matches isolated Neon host"&&!x.ok));

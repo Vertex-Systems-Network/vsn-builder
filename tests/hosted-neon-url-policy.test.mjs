@@ -6,7 +6,7 @@ const hosts={
   staging:"ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech",
   production:"ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech",
 };
-const url=(host,db="builder",user="builder_user",extra="")=>
+const url=(host,db="neondb",user="builder_user",extra="")=>
   "postgresql://"+encodeURIComponent(user)+":fake-ci-pass@"+host+"/"+db+"?sslmode=require"+extra;
 const pooler=host=>host.replace(".c-4.","-pooler.c-4.");
 const env=tier=>({
@@ -18,7 +18,7 @@ for(const tier of ["staging","production"]){
   test(tier+" accepts only matching pooled runtime and direct migration target",()=>{
     assert.equal(inspectHostedNeonUrlPair(tier,env(tier)).ready,true);
     assert.equal(inspectHostedNeonRuntimeUrl(tier,env(tier).DATABASE_URL).ready,true);
-    const directRuntime={DATABASE_URL:url(hosts[tier], "builder","builder_user","&application_name=local-ci"),
+    const directRuntime={DATABASE_URL:url(hosts[tier], "neondb","builder_user","&application_name=local-ci"),
       DIRECT_URL:url(hosts[tier])};
     assert.equal(inspectHostedNeonUrlPair(tier,directRuntime).ready,true);
   });
@@ -41,10 +41,22 @@ for(const tier of ["staging","production"]){
   test(tier+" refuses different DB names and role names",()=>{
     assert(inspectHostedNeonUrlPair(tier,{
       ...env(tier),DIRECT_URL:url(hosts[tier],"different_database"),
-    }).issues.includes("Runtime and migration database names differ"));
+    }).issues.some(x=>x.includes("canonical Builder database identity")));
     assert(inspectHostedNeonUrlPair(tier,{
-      ...env(tier),DIRECT_URL:url(hosts[tier],"builder","other_db_user"),
+      ...env(tier),DIRECT_URL:url(hosts[tier],"neondb","other_db_user"),
     }).issues.includes("Runtime and migration database roles differ"));
+  });
+  test(tier+" rejects a same-compute alternate DB for both runtime and migration",()=>{
+    for(const pathname of ["brovexa","other_tenant","%6eeondb","neondb%00",""]){
+      const bad=url(pooler(hosts[tier]),pathname);
+      assert.equal(inspectHostedNeonRuntimeUrl(tier,bad).ready,false);
+      const pair=inspectHostedNeonUrlPair(tier,{
+        DATABASE_URL:bad,
+        DIRECT_URL:url(hosts[tier],pathname),
+      });
+      assert.equal(pair.ready,false);
+      assert(pair.issues.some(x=>x.includes("canonical Builder database identity")));
+    }
   });
   test(tier+" rejects TLS downgrade, wrong port, fake host and pooled migration",()=>{
     const valid=env(tier);
