@@ -23,6 +23,12 @@ function inspect(tier, connectionString, mode) {
   if(url.port && url.port!=="5432")issues.push(mode+" Neon port invalid");
   if(!url.username||!url.password)issues.push(mode+" PostgreSQL credentials incomplete");
   if(!url.pathname || url.pathname==="/")issues.push(mode+" database name missing");
+  // A tier/compute match is insufficient: a same-host Brovexa (or other)
+  // database would pass origin validation. Source-reviewed manifest identity
+  // must match provider-confirmed neondb for BOTH hosted tiers.
+  if(target.neon_database_name!=="neondb" ||
+     url.pathname!=="/"+target.neon_database_name)
+    issues.push(mode+" canonical Builder database identity mismatch");
   if(url.searchParams.getAll("sslmode").length!==1 ||
      url.searchParams.get("sslmode")!=="require")
     issues.push(mode+" Neon TLS must be unambiguous and required");
