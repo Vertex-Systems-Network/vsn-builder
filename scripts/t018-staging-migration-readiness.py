@@ -24,9 +24,11 @@ def inspect(env,query=None,root=ROOT):
     try:
         # No connection/credential processing until exact protected Builder ref.
         t016.inspect_protected_env(env)
-        if env.get("GITHUB_EVENT_NAME")!="push":
+        if env.get("GITHUB_EVENT_NAME") not in ("push","workflow_dispatch"):
             raise Blocked(ERROR)
         pair=t016.inspect_urls(env.get("DATABASE_URL"),env.get("DIRECT_URL"))
+        if pair[0]["database"]!="neondb" or pair[1]["database"]!="neondb":
+            raise Blocked(ERROR)
         migration_root=Path(root)/"prisma/cloud/migrations"
         names=tuple(sorted(p.name for p in migration_root.iterdir()
                            if p.is_dir() and (p/"migration.sql").is_file()))

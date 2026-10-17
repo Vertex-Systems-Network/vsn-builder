@@ -4,6 +4,7 @@ name: T018 Private Staging R2 Durable Backup and Restore (No Remote DDL)
 # Object IO uses bucket-scoped R2 S3 SigV4, never the Worker deployment token.
 # A separate Cloudflare control-plane credential checks bucket privacy first.
 # NEVER attempts prisma migrate, Neon branch writes, Shopify or Production.
+# No push event: missing optional R2 credentials must not block source development.
 on:
   pull_request:
     branches: [development]
@@ -13,14 +14,9 @@ on:
       - "tests/t018-staging-private-r2-backup.test.py"
       - "tests/t018-staging-r2-s3.test.py"
       - ".github/workflows/t018-staging-private-r2-backup.yml"
-  push:
-    branches: [development]
-    paths:
-      - "scripts/t018-staging-private-r2-backup.py"
-      - "scripts/t018-staging-private-r2-s3.py"
-      - "tests/t018-staging-private-r2-backup.test.py"
-      - "tests/t018-staging-r2-s3.test.py"
-      - ".github/workflows/t018-staging-private-r2-backup.yml"
+  # Optional future off-platform backup, NEVER an automatic prerequisite for
+  # the currently empty Staging Neon database's first reviewed migration.
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
@@ -41,7 +37,7 @@ jobs:
       - name: Verify S3 SigV4, atomic no-overwrite and private R2 source gates
         run: python3 tests/t018-staging-r2-s3.test.py -v
   protected-ref:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development' && github.ref_protected == true
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
@@ -57,7 +53,7 @@ jobs:
           test "$SOURCE_REF" = "refs/heads/development"
           test "$SOURCE_PROTECTED" = "true"
   private-persistent-r2-backup:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development' && github.ref_protected == true
     needs: protected-ref
     runs-on: ubuntu-24.04
     timeout-minutes: 12

@@ -43,6 +43,17 @@ class T018(unittest.TestCase):
         self.assertFalse(p["durableRestoreEvidence"])
         self.assertEqual(calls,[m.t016.STAGING_POOLER,m.t016.STAGING_HOST])
 
+    def test_manual_protected_dispatch_keeps_live_zero_table_preflight(self):
+        with files() as t:
+            calls=[]
+            def query(conn):
+                calls.append(conn["database"])
+                return ("neondb","neondb_owner",0)
+            report=m.inspect(stage(GITHUB_EVENT_NAME="workflow_dispatch"),
+                             query=query,root=Path(t))
+            self.assertTrue(report["ready"])
+            self.assertEqual(calls,["neondb","neondb"])
+
     def test_wrong_branch_project_hostname_or_production_stops_before_db_access(self):
         with files() as t:
             for update in [
@@ -55,6 +66,8 @@ class T018(unittest.TestCase):
               {"DATABASE_URL":url(m.t016.STAGING_HOST)},
               {"DIRECT_URL":url(m.t016.STAGING_POOLER)},
               {"DIRECT_URL":"postgresql://neondb_owner:pwd@localhost/neondb?sslmode=require"},
+              {"DATABASE_URL":url(m.t016.STAGING_POOLER).replace("/neondb?","/brovexa?"),
+               "DIRECT_URL":url(m.t016.STAGING_HOST).replace("/neondb?","/brovexa?")},
             ]:
                 with self.subTest(update=tuple(update)):
                     with self.assertRaisesRegex(m.Blocked,"T018_STAGING_READ_ONLY_BASELINE_UNVERIFIED"):
