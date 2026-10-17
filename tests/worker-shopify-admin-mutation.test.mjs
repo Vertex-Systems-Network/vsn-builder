@@ -527,7 +527,7 @@ test("T020 thrown POST callback redirect cannot impersonate SDK authentication",
   createSdkContext:fx.createSdkContext,
   async onAuthenticated({transaction}){
    await transaction.session.update({
-    where:{id:session.id},data:{scope:"forged-thrown-sdk-redirect"}},
+    where:{id:session.id},data:{scope:"forged-thrown-sdk-redirect"},
    });
    throw redirect;
   },
