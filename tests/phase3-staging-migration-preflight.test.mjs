@@ -11,8 +11,8 @@ function fake(overrides={}) {
     NEON_PROJECT_ID:"shiny-violet-61219572",
     SHOPIFY_BILLING_TEST_MODE:"true",STAGING_MIGRATION_APPROVED:"true",
     VSN_STAGING_BACKUP_EVIDENCE:"snap-green-bar-b3m1btfb",
-    DATABASE_URL:`postgresql://synthetic:ci-only@${pooled}/disposable?sslmode=require`,
-    DIRECT_URL:`postgresql://synthetic:ci-only@${hosted}/disposable?sslmode=require`,
+    DATABASE_URL:`postgresql://synthetic:ci-only@${pooled}/neondb?sslmode=require`,
+    DIRECT_URL:`postgresql://synthetic:ci-only@${hosted}/neondb?sslmode=require`,
     ...overrides,
   };
 }
@@ -33,11 +33,21 @@ test("Migration cannot run from unprotected development or production branches",
     {VSN_STAGING_BACKUP_EVIDENCE:"snap-synthetic-reviewed-backup"},
   ])assert.equal(inspectStagingMigrationGate(fake(overrides)).ready,false,JSON.stringify(overrides));
 });
+test("Migration fails closed if both credentials target a different same-project database",()=>{
+  const changed=fake({
+    DATABASE_URL:fake().DATABASE_URL.replace("/neondb?","/brovexa?"),
+    DIRECT_URL:fake().DIRECT_URL.replace("/neondb?","/brovexa?"),
+  });
+  assert.equal(inspectStagingMigrationGate(changed).ready,false);
+  assert.equal(inspectStagingMigrationGate(fake({
+    DIRECT_URL:fake().DIRECT_URL.replace("/neondb?","/otherdb?"),
+  })).ready,false);
+});
 test("Migration cannot target production compute, weak TLS or pooled direct URL",()=>{
   const prod="ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech";
   for(const overrides of [
-    {DIRECT_URL:`postgresql://synthetic:ci-only@${prod}/disposable?sslmode=require`},
-    {DIRECT_URL:`postgresql://synthetic:ci-only@${pooled}/disposable?sslmode=require`},
+    {DIRECT_URL:`postgresql://synthetic:ci-only@${prod}/neondb?sslmode=require`},
+    {DIRECT_URL:`postgresql://synthetic:ci-only@${pooled}/neondb?sslmode=require`},
     {DATABASE_URL:`postgresql://synthetic:ci-only@${pooled}/disposable?sslmode=disable`},
     {DATABASE_URL:fake().DIRECT_URL},
   ])assert.equal(inspectStagingMigrationGate(fake(overrides)).ready,false);
