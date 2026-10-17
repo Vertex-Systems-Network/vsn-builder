@@ -5,10 +5,12 @@ import {createHash} from "node:crypto";
 import {
   EXPECTED_STAGING_MIGRATIONS,
   expectedStagingMigrationChecksums,
+  expectedStagingMigrationTables,
   attestStagingMigrationLedger,
 } from "../scripts/t018-staging-migration-ledger.mjs";
 
 const hashes=expectedStagingMigrationChecksums();
+const expectedTables=expectedStagingMigrationTables();
 const start=new Date("2026-10-17T10:00:00.000Z");
 const end=new Date("2026-10-17T10:00:03.000Z");
 function state(){
@@ -19,6 +21,8 @@ function state(){
     started_at:start,finished_at:end,rolled_back_at:null,
   })),
   hashes:new Map(hashes),
+  expectedTables:new Set(expectedTables),
+  tables:[...expectedTables,"_prisma_migrations"].map(table_name=>({table_name})),
  };
 }
 const blocked=/T018_STAGING_MIGRATION_LEDGER_UNVERIFIED/;
@@ -85,4 +89,33 @@ test("source contains only fixed read-only queries and guarded staging manual po
  assert.match(source,/expectedStagingMigrationChecksums/);
  assert.match(source,/SELECT migration_name, checksum, started_at, finished_at, rolled_back_at/);
  assert.doesNotMatch(source,/\b(?:INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE)\b/i);
+});
+
+
+test("T018 source-derived exact public table inventory is 52 reviewed Builder models",()=>{
+ assert.equal(expectedTables.size,52);
+ for(const name of ["Session","BuilderPage","BuilderSubscription","BuilderShopInstallation"])
+   assert.equal(expectedTables.has(name),true);
+ assert.equal(attestStagingMigrationLedger(state()).ready,true);
+ assert.throws(()=>expectedStagingMigrationTables(()=>
+   Buffer.from('CREATE TABLE "Arbitrary" (id text);'.repeat(5))),blocked);
+});
+
+test("T018 exact names reject wrong/duplicate tables even when counts look valid",()=>{
+ const mutants=[
+  s=>{s.tables[0]={table_name:"ManualReplacement"};},
+  s=>{s.tables[0]={table_name:"BuilderPage"};},
+  s=>{s.tables[0]={table_name:""};},
+  s=>{s.tables[0]={table_name:null};},
+  s=>{s.tables[0]={table_name:"_prisma_migrations"};},
+  s=>{s.tables.push({table_name:"UnauthorizedExtra"});s.summary.tables=54;},
+  s=>{s.tables.pop();},
+  s=>{s.expectedTables.delete("BuilderPage");s.expectedTables.add("UnauthorizedExtra");},
+  s=>{s.expectedTables=null;},
+  s=>{s.tables=null;},
+ ];
+ for(const mutate of mutants){
+  const s=state();mutate(s);
+  assert.throws(()=>attestStagingMigrationLedger(s),blocked);
+ }
 });
