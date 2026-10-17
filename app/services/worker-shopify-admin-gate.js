@@ -66,8 +66,19 @@ const MAX_READ_RESPONSE_BYTES=8*1024*1024;
 const MAX_READ_RESPONSE_MS=7000;
 async function securedReadResponse(result) {
   if(!(result instanceof Response))throw new TypeError("Missing HTTP Response");
-  // Never expose a callback's internal 5xx body (possibly driver diagnostics).
-  if(result.status>=500 || result.status<200)throw new TypeError("Unsafe GET response");
+  // The Shopify SDK may THROW a deliberate reauth Response in the outer
+  // guard. But an ordinary route callback returning 3xx, Set-Cookie or
+  // Location is NOT the SDK reauth transport and must never initiate
+  // navigation or set session cookies after merchant page authorization.
+  if(result.status<200 || result.status>=500 ||
+     (result.status>=300 && result.status<400) ||
+     result.headers.has("set-cookie") || result.headers.has("location"))
+    throw new TypeError("Unsafe GET response");
+  // Client errors are still allowed as statuses (e.g. 404 page absent),
+  // but discard their bodies: they may contain unsanitized SDK/DB diagnostics.
+  if(result.status>=400)return new Response(null,{status:result.status,
+    headers:{"cache-control":"no-store","x-content-type-options":"nosniff"},
+  });
   const headers=new Headers(result.headers);
   headers.set("cache-control","no-store");
   headers.set("x-content-type-options","nosniff");
