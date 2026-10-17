@@ -20,7 +20,8 @@ const db=new PrismaClient();
 const first="ci-t024-node-first.myshopify.com";
 const orphan="ci-t024-node-orphan.myshopify.com";
 const active="ci-t024-node-online.myshopify.com";
-const names=[first,orphan,active];
+const concurrent="ci-t024-node-read-race.myshopify.com";
+const names=[first,orphan,active,concurrent];
 const initial=new Date("2026-10-17T04:00:00Z");
 const updated=new Date("2026-10-17T06:00:00Z");
 const offline=(shop,token="ci-token")=>({
@@ -109,6 +110,34 @@ test("an orphan old token never creates a fabricated install generation",async()
  assert.equal(await storage(initial).loadSession("offline_"+orphan),undefined,
    "Orphaned token cannot authenticate a shop without provenance");
  assert.deepEqual(await storage(initial).findSessionsByShop(orphan),[]);
+});
+test("uninstall during SDK session enumeration never returns a stale token",async()=>{
+ const session=offline(concurrent,"race-ci-token");
+ assert.equal(await storage(initial).storeSession(session),true);
+ class RevokeDuringReadStorage {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(){return undefined}
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(shop){
+     // Simulate the uninstall committing after the initial active check,
+     // while Shopify's official SDK session query is still pending.
+     await db.builderShopInstallation.update({
+       where:{shop},data:{uninstalledAt:updated},
+     });
+     return [session];
+   }
+ }
+ const guarded=createNodeShopifyGenerationSessionStorage(db,{
+   SessionStorage:RevokeDuringReadStorage,
+ });
+ assert.deepEqual(await guarded.findSessionsByShop(concurrent),[]);
+ assert.equal((await db.session.findUnique({where:{id:session.id}})).accessToken,
+   "race-ci-token","The read fence must not delete or mutate sessions");
+ assert.equal((await db.builderShopInstallation.findUnique({
+   where:{shop:concurrent},
+ })).uninstalledAt.toISOString(),updated.toISOString());
 });
 test("official SDK deletion methods remain delegated, without forging a new generation",async()=>{
  const adapter=storage(updated);

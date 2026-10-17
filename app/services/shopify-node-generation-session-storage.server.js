@@ -50,6 +50,10 @@ export function createNodeShopifyGenerationSessionStorage(database,{
         if(!await allowed(shop))return [];
         const sessions=await base.findSessionsByShop(shop);
         if(!Array.isArray(sessions))throw safeReadError();
+        // The installation can be uninstalled while the SDK enumerates
+        // sessions. Revalidate AFTER that await, before returning any token.
+        // This is a narrow read race guard, not trusted reinstall provenance.
+        if(!await allowed(shop))return [];
         return sessions.filter(session=>session?.shop===shop);
       }catch{throw safeReadError()}
     },
