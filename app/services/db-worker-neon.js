@@ -32,6 +32,13 @@ export function inspectWorkerNeonEnvironment(env) {
       ![directHost,pooledHost].includes(parsed.hostname.toLowerCase())) {
       issues.push("Neon endpoint identity mismatch");
     }
+    // Both real Neon projects have exactly one database: "neondb".
+    // Endpoint/project metadata does not pin the PostgreSQL database name:
+    // another database on the SAME trusted compute could otherwise be used.
+    // Never let a Worker read/write an unrelated database (e.g. Brovexa).
+    // Check the literal pathname so percent-encoded aliases fail closed too.
+    if(parsed.pathname!=="/neondb")
+      issues.push("Builder Worker must use the canonical neondb database");
     if(parsed.port && parsed.port!=="5432")issues.push("Neon PostgreSQL port invalid");
     if(!parsed.username||!parsed.password||!parsed.pathname||parsed.pathname==="/")issues.push("Neon database credentials incomplete");
     if(parsed.searchParams.getAll("sslmode").length!==1 ||
