@@ -57,7 +57,7 @@ export async function deleteVsnShopData(db, shop, { includeSessions = true } = {
   return { deleted: true };
 }
 
-const canonicalShop=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.myshopify\\.com$/;
+const canonicalShop=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
 const blocked=()=>{
   const error=new Error("T024_SHOP_REDACT_GENERATION_NOT_VERIFIED");
   error.code="T024_SHOP_REDACT_GENERATION_NOT_VERIFIED";
