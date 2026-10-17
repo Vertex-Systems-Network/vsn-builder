@@ -35,12 +35,12 @@ class Blocked(Exception):
 def fail(stage):
     return Blocked("T018_"+stage+"_BLOCKED")
 
-def validate(env):
+def validate(env, token_name="CLOUDFLARE_R2_API_TOKEN"):
     # Ref/context checks precede parsing secrets and ALL network requests.
     pg.check_context(env)
     if env.get("CLOUDFLARE_ACCOUNT_ID","").lower()!=ACCOUNT:
         raise fail("CLOUDFLARE_ACCOUNT")
-    if not isinstance(env.get("CLOUDFLARE_R2_API_TOKEN"),str) or len(env["CLOUDFLARE_R2_API_TOKEN"])<12:
+    if not isinstance(env.get(token_name),str) or len(env[token_name])<12:
         raise fail("CLOUDFLARE_SCOPED_TOKEN")
     sha=env.get("GITHUB_SHA","")
     run_id=env.get("GITHUB_RUN_ID","")
