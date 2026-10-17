@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "policy": "dependency_driven_evidence_first_no_phase_gating",
-  "updated_on": "2026-10-17",
+  "updated_on": "2026-10-18",
   "product": "VSN | Builder",
   "public_shopify_apps": 1,
   "commercial_plans": [
@@ -471,10 +471,11 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/249",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/280",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/307",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/309"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/309",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/315"
       ],
       "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
-      "progress_note": "2026-10-17: T024 Node/Local security PR #307 (7/7 exact-head CI) merged bbb1496370f693292bf8d568639933609d2694ba; Node SDK loadSession pins persisted shop/session/token/install generation across awaited SDK read, with three real SQLite regression cases. PR #309 (7/7 exact-head CI with real disposable SQLite, full merchant Workerd, security audit and Production Confidence) merged 00b01d0171e0c8e4e1a2cd64fc237b85aaf7e6ef: Node findSessionsByShop now matches persisted session IDs/tokens before and after official SDK enumeration, rejecting rotation, deletion, duplicate or forged result without changing install generation. No independent trusted uninstall-generation proof or real signed Shopify webhook retry/reinstall acceptance, so T024 IN_REVIEW / T025 WAITING. Existing Staging Neon 0 app tables; no protected migration, Staging/Live deploy, or Shopify store change."
+      "progress_note": "2026-10-18: T024 Worker SDK source PR #315 AI-reviewed, 8/8 exact-head CI PASS (real PG18, disposable SQLite Node OAuth+Worker generation tests, Cloudflare Workerd merchant bundle, security, integrity, environment, Production Confidence), merged protected development 3faaa4813ab8cf862d816fde28323c4c4b325ea5. Unlike previous Worker adapter read passthrough, Worker loadSession/findSessionsByShop now deny stale/offline/orphan/malformed or expired sessions by before/after exact persisted Shopify session/token/isOnline/expiry and installedAt/uninstall checks across asynchronous official SDK reads. No independent authenticated Shopify uninstall-generation issuer, no signed webhook retry/reinstall provider E2E; T024 IN_REVIEW and T025 WAITING. Staging Neon has 0 app tables, protected T018 manual migration not executed, Staging OAuth OFF and Live untouched."
     },
     {
       "id": "T025",
