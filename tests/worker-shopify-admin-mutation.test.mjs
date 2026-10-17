@@ -109,6 +109,25 @@ test("normal GET helper cannot be used for POST mutations, and POST helper rejec
  assert.deepEqual(fx.actions,[]);
  assert.equal(fx.authCalls,0);
 });
+test("ambiguous POST merchant query never authenticates SDK or starts transaction",async()=>{
+ for(const suffix of [
+  "?shop="+shop+"&shop=other.myshopify.com",
+  "?shop="+shop+"&%73hop="+shop,
+ ]){
+  const fx=fixture();
+  const req=new Request(env.SHOPIFY_APP_URL+"/app/settings"+suffix,{method:"POST"});
+  const response=await acceptWorkerShopifyAdminMutation(req,env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated(){throw Error("callback must not be reached")},
+  });
+  assert.equal(response.status,400);
+  assert.equal(await response.text(),"");
+  assert.equal(fx.authCalls,0);
+  assert.equal(fx.closes,0);
+  assert.deepEqual(fx.actions,[]);
+ }
+});
+
 test("uninstall committed between snapshot and lock blocks callback and no writes",async()=>{
  let invoked=false;
  const fx=fixture({beforeTransaction:({row})=>{
