@@ -337,22 +337,21 @@ async function guardedAdminRequest(request,env,{
     // Do not perform any throwable processing after PostgreSQL COMMIT.
     if(mutation)return response;
     const buffered=await securedReadResponse(response);
-    // A GET may finish its initial SDK/session checks, then wait on page
-    // reads or a streamed HTML/JSON body while uninstall, reinstall or token
-    // rotation commits. Never return those buffered private page bytes on
-    // an installation generation that changed during the await. This is
-    // a final read fence, NOT a serialized snapshot or hosted E2E proof.
-    if(enablePageSummary || enablePageMetadata || enablePageContent){
-      const [latestInstall,latestSession]=await Promise.all([
-        context.database.builderShopInstallation.findUnique({where:{shop}}),
-        context.database.session.findUnique({where:{id:session.id}}),
-      ]);
-      if(!latestInstall || latestInstall.shop!==shop ||
-         !isDate(latestInstall.installedAt) ||
-         latestInstall.installedAt.getTime()!==lifecycle.installedAt.getTime() ||
-         latestInstall.uninstalledAt!==null ||
-         !matches(latestSession,session,shop))return denied(403);
-    }
+    // ALL authenticated merchant GETs can contain sensitive merchant bytes,
+    // including settings/dashboard routes without optional page-data leases.
+    // After fully buffering the authorized Response, pin exact install
+    // generation and persisted session/token/expiry again BEFORE releasing
+    // any response bytes or closing the request-scoped SDK/Neon context.
+    // This narrow post-read fence is not a serializable database snapshot.
+    const [latestInstall,latestSession]=await Promise.all([
+      context.database.builderShopInstallation.findUnique({where:{shop}}),
+      context.database.session.findUnique({where:{id:session.id}}),
+    ]);
+    if(!latestInstall || latestInstall.shop!==shop ||
+       !isDate(latestInstall.installedAt) ||
+       latestInstall.installedAt.getTime()!==lifecycle.installedAt.getTime() ||
+       latestInstall.uninstalledAt!==null ||
+       !matches(latestSession,session,shop))return denied(403);
     return buffered;
   } catch(error) {
     if(error instanceof RollbackResponse){
