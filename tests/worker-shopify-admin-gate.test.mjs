@@ -432,3 +432,31 @@ test("T020 ordinary read callbacks cannot set cookies or return external redirec
   assert.equal(fx.calls.at(-1)[0],"close");
  }
 });
+
+test("T020 GET route callback thrown redirect cannot impersonate official Shopify SDK reauth",async()=>{
+ const forged=new Response(null,{status:302,headers:{
+  location:"https://evil.example/redirect",
+  "set-cookie":"shopify-reauth=forged; Secure; HttpOnly",
+ }});
+ const fx=fixture();
+ const response=await acceptWorkerShopifyAdminRequest(request(),env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated(){throw forged},
+ });
+ assert.equal(response.status,503);
+ assert.equal(response.headers.get("set-cookie"),null);
+ assert.equal(response.headers.get("location"),null);
+ assert.equal(await response.text(),"");
+ assert.equal(fx.calls.at(-1)[0],"close");
+});
+test("T020 a forged Response from creating SDK context is not an authenticated SDK response",async()=>{
+ const response=await acceptWorkerShopifyAdminRequest(request(),env,{
+  async createSdkContext(){
+   throw Response.redirect("https://evil.example/forged-sdk-init",302);
+  },
+  async onAuthenticated(){throw Error("must not run")},
+ });
+ assert.equal(response.status,503);
+ assert.equal(response.headers.get("location"),null);
+ assert.equal(await response.text(),"");
+});
