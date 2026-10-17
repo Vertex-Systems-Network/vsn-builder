@@ -67,7 +67,7 @@ test("opted-in draft inspection has text editor and no private JSON in HTML",asy
 
 test("spoofed tenant/page or insecure source HTML cannot enable edit surface",async()=>{
   for(const value of [
-    {shop:"other.example.com"}, {shop,id:"../../../"},
+    {shop:"other.example.com"}, {shop,pageId:"../../../"},
     {shop:"x\" onclick=\"y"},
   ]){
     await assert.rejects(
