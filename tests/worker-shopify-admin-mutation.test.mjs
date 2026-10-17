@@ -502,7 +502,7 @@ test("POST body stream errors are not consumed when 4xx must roll back",async()=
  let read=false;
  const stream=new ReadableStream({
   pull(){read=true;throw new Error("sensitive-token-in-error-stream")},
- });
+ },{highWaterMark:0});
  const response=await acceptWorkerShopifyAdminMutation(request(),env,{
   createSdkContext:fx.createSdkContext,
   async onAuthenticated({transaction}){
