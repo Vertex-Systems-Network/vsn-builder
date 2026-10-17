@@ -468,10 +468,11 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/237",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/249",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/280",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/307"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/307",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/309"
       ],
       "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
-      "progress_note": "2026-10-17: T024 PR #307 (7/7 exact-head CI PASS; AI review; real isolated SQLite OAuth installation generation/read-race tests and full Shopify/Workerd integration) merged protected development bbb1496370f693292bf8d568639933609d2694ba. Node SDK loadSession pins persisted token, exact shop and installation installedAt across await; findSessionsByShop compares exact generation across SDK enumeration; denies uninstall/reinstall generation race and rotated tokens. Does not provide independent trusted APP_UNINSTALLED event-generation attestation; real Shopify uninstall/reinstall, signed webhook retries and hosted Staging E2E not accepted. T024 IN_REVIEW, T025 WAITING, T018 Staging schema still unmigrated; Live untouched."
+      "progress_note": "2026-10-17: T024 Node/Local security PR #307 (7/7 exact-head CI) merged bbb1496370f693292bf8d568639933609d2694ba; Node SDK loadSession pins persisted shop/session/token/install generation across awaited SDK read, with three real SQLite regression cases. PR #309 (7/7 exact-head CI with real disposable SQLite, full merchant Workerd, security audit and Production Confidence) merged 00b01d0171e0c8e4e1a2cd64fc237b85aaf7e6ef: Node findSessionsByShop now matches persisted session IDs/tokens before and after official SDK enumeration, rejecting rotation, deletion, duplicate or forged result without changing install generation. No independent trusted uninstall-generation proof or real signed Shopify webhook retry/reinstall acceptance, so T024 IN_REVIEW / T025 WAITING. Existing Staging Neon 0 app tables; no protected migration, Staging/Live deploy, or Shopify store change."
     },
     {
       "id": "T025",
