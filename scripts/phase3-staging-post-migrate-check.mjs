@@ -6,6 +6,7 @@ import { PrismaClient } from "../generated/prisma-cloud/index.js";
 import {inspectStagingMigrationGate} from "./phase3-staging-migration-preflight.mjs";
 import {
   attestStagingMigrationLedger,expectedStagingMigrationChecksums,
+  expectedStagingMigrationTables,
 } from "./t018-staging-migration-ledger.mjs";
 
 const ERROR="T018_STAGING_POST_MIGRATE_LEDGER_BLOCKED";
@@ -16,11 +17,12 @@ async function main(env=process.env) {
      !inspectStagingMigrationGate(env).ready)
     throw new Error(ERROR);
   const hashes=expectedStagingMigrationChecksums();
+  const expectedTables=expectedStagingMigrationTables();
   const db=new PrismaClient();
   try {
     // Both selects read database/catalog metadata only. Never fetch session
     // tokens, merchant documents, Shopify billing values or user records.
-    const [metrics,records]=await Promise.all([
+    const [metrics,records,tables]=await Promise.all([
       db.$queryRawUnsafe(
         "SELECT current_database() AS database, "+
         "(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') AS tables, "+
@@ -29,12 +31,15 @@ async function main(env=process.env) {
       db.$queryRawUnsafe(
         'SELECT migration_name, checksum, started_at, finished_at, rolled_back_at FROM public."_prisma_migrations" ORDER BY migration_name'
       ),
+      db.$queryRawUnsafe(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name"
+      ),
     ]);
     const proof=attestStagingMigrationLedger({
-      summary:metrics?.[0],records,hashes,
+      summary:metrics?.[0],records,hashes,tables,expectedTables,
     });
     if(proof.ready!==true)throw new Error(ERROR);
-    console.log("T018 Staging migration PASS: two exact reviewed SQL checksums, unrolled Prisma ledger and required schema verified; read-only metadata only.");
+    console.log("T018 Staging migration PASS: two exact reviewed SQL checksums, full 52-model table-name inventory and unrolled Prisma ledger verified; read-only metadata only.");
   }finally{
     await db.$disconnect().catch(()=>{});
   }
