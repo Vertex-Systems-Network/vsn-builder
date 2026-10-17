@@ -1,19 +1,21 @@
 # VSN | Builder
 
-## Verified engineering status — 16 October 2026
+## Verified engineering status — 17 October 2026
 
 **Canonical source of truth:** [ACTIVE TASKS.md](TASKS.md) · [dependency manifest](config/project/task-dependency-plan.json) · [master issue #156](https://github.com/Vertex-Systems-Network/vsn-builder/issues/156). `CLOSED` is permanent only for its recorded acceptance scope; it is excluded from the active queue and retained in [closure audit archive](docs/closed-task-archive.md). **This is NOT a shipped Shopify application.**
 
 | Task-state metric | Verified count |
 | --- | ---: |
-| FINAL CLOSED (excluded from active queues) | **16 / 41** |
-| ACTIVE | **25 / 41** |
+| FINAL CLOSED (excluded from active queues) | **19 / 41** |
+| ACTIVE | **22 / 41** |
 | READY | **0** |
 | IN_REVIEW | **6** |
-| WAITING | **19** |
+| WAITING | **16** |
 | Merchant/Production release-ready | **0** |
 
-**Task closure progress:** `███████░░░░░░░░░░░░░` **16/41 · 39.0%** (bar rounded to 20 units). These are accepted **task scopes**, NOT percent of application features or revenue readiness. The historical eight-phase system below is archival only; dependencies, not phase numbers, determine the work order.
+**Task closure progress:** `█████████░░░░░░░░░░░` **19/41 · 46.3%** (bar rounded to 20 units). These are accepted **task scopes**, NOT percent of application features or revenue readiness. The historical eight-phase system below is archival only; dependencies, not phase numbers, determine the work order.
+
+**T018 canonical Staging database safety — 17 October 2026:** [PR #285](https://github.com/Vertex-Systems-Network/vsn-builder/pull/285) passed all exact-head required PR workflows and was AI-reviewed/squash-merged into protected `development` at `1f737f9398c4ac00c3a48c64605a1189a5bc8f30`. A Staging R2 recovery proof now **rejects alternate database names** even when both credentials point to the expected Neon endpoint and role; the adversarial Brovexa-named same-project test confirms no R2 provider request before rejection. This is source security only. Read-only Cloudflare provider inspection still shows private `vsn-builder-staging-backups` with **zero objects**; previously observed `CLOUDFLARE_R2_API_TOKEN` permission HTTP 403 is not resolved here. **T018 remains IN_REVIEW**, no durable recovery accepted, no Neon DDL, Shopify install, Worker deploy or Live action. Canonical active task count **19 CLOSED / 22 ACTIVE (6 IN_REVIEW, 16 WAITING)**.
 
 **Consolidated 27-task development batch — 16 October 2026:** [Evidence and all-task blocker matrix](docs/builder-consolidated-batch-20261016.md). Three isolated source hardening PRs passed **3/3 exact-head workflows each** and were squash merged on `development`: [#232](https://github.com/Vertex-Systems-Network/vsn-builder/pull/232) T032 theme countdown lifecycle, [#233](https://github.com/Vertex-Systems-Network/vsn-builder/pull/233) T014 Cloudflare Staging origin/secret metadata, [#234](https://github.com/Vertex-Systems-Network/vsn-builder/pull/234) T020 merchant draft version integrity. All are **source-level improvements within existing IN_REVIEW tasks**, not new FINAL CLOSED acceptances. **Post-merge push workflows need separate exact-SHA verification.** Cloudflare Staging and Production have zero Worker secrets/bindings and Neon Staging default has zero app tables. GitHub `development` has since become protected, but its live rules still lack required human approval. Do not deploy or submit the Shopify app.
 
