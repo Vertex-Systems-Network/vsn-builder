@@ -30,7 +30,10 @@ function fixture(row=paid(),{fail=false,missingDelegate=false}={}) {
     accessToken:"secret-stored-token"};
   const database={
     builderShopInstallation:{async findUnique(){
-      calls.push("installation");return {shop,installedAt:new Date(),uninstalledAt:null};
+      // Stable persisted installation identity across two read-only checks.
+      // Constructing a fresh new Date() on each mock query falsely emulates
+      // an uninstall/reinstall that did not occur and must not pass the gate.
+      calls.push("installation");return {shop,installedAt:new Date("2026-10-17T10:00:00.000Z"),uninstalledAt:null};
     }},
     session:{async findUnique(){calls.push("session");return session}},
     builderSubscription:{async findUnique(args){
