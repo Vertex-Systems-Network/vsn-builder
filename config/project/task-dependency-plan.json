@@ -467,10 +467,11 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/237",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/249",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/280"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/280",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/307"
       ],
       "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
-      "progress_note": "2026-10-17 T024 incremental security source review: PR #280 7/7 exact-head CI PASS, merged as 8f951c4e0b854aade9f840d581455154d851c35d. Early signed Worker webhook and generation-aware uninstall revoker strictly validate canonical lowercase 1..63-character Shopify DNS store label (reject leading/trailing hyphen, oversize, malicious suffix) before SDK/DB and destructive claim. Missing independent attestation returns 503 Retry-After 60/no-store; invalid events 401 and idempotent 204 have no retry hint. Real Shopify SDK signed webhook, no-write generation-replay, full Cloudflare Workerd, PG18 runtime and security CI all PASS. Actual trusted Shopify installation generation issuer is absent and hosted uninstall/reinstall E2E remains unverified. IN_REVIEW; no new Shopify store, DB deletion or deployment."
+      "progress_note": "2026-10-17: T024 PR #307 (7/7 exact-head CI PASS; AI review; real isolated SQLite OAuth installation generation/read-race tests and full Shopify/Workerd integration) merged protected development bbb1496370f693292bf8d568639933609d2694ba. Node SDK loadSession pins persisted token, exact shop and installation installedAt across await; findSessionsByShop compares exact generation across SDK enumeration; denies uninstall/reinstall generation race and rotated tokens. Does not provide independent trusted APP_UNINSTALLED event-generation attestation; real Shopify uninstall/reinstall, signed webhook retries and hosted Staging E2E not accepted. T024 IN_REVIEW, T025 WAITING, T018 Staging schema still unmigrated; Live untouched."
     },
     {
       "id": "T025",
