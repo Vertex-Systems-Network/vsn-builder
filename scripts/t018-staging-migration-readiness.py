@@ -27,7 +27,7 @@ def inspect(env,query=None,root=ROOT):
         if env.get("GITHUB_EVENT_NAME") not in ("push","workflow_dispatch"):
             raise Blocked(ERROR)
         pair=t016.inspect_urls(env.get("DATABASE_URL"),env.get("DIRECT_URL"))
-        if pair[0]["db"]!="neondb" or pair[1]["db"]!="neondb":
+        if pair[0]["database"]!="neondb" or pair[1]["database"]!="neondb":
             raise Blocked(ERROR)
         migration_root=Path(root)/"prisma/cloud/migrations"
         names=tuple(sorted(p.name for p in migration_root.iterdir()
