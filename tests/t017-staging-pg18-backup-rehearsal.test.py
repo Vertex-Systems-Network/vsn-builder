@@ -64,6 +64,11 @@ class Contract(unittest.TestCase):
         self.assertEqual(env2["PGSSLMODE"],"disable")
         self.assertIn("postgres:18",remote)
         self.assertIn("postgres:18",local)
+        ca="type=bind,src=/etc/ssl/certs/ca-certificates.crt,dst=/etc/ssl/certs/ca-certificates.crt,readonly"
+        self.assertIn(ca,remote)
+        self.assertNotIn(ca,local)
+        self.assertEqual(env1["PGSSLROOTCERT"],"/etc/ssl/certs/ca-certificates.crt")
+
         self.assertIn(",readonly",next(x for x in local if x.startswith("type=bind")))
         self.assertNotIn(",readonly",next(x for x in remote if x.startswith("type=bind")))
         for args in [remote,local]:
