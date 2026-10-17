@@ -48,7 +48,12 @@ def s3_transport(req):
 def checked_credentials(env):
     # Validate the repo/tier/Neon host+DB, protected ref, exact run ID,
     # and privileged metadata-audit secret BEFORE making any network call.
-    direct,key=base.validate(env,token_name="CLOUDFLARE_R2_CONTROL_PLANE_TOKEN")
+    try:
+        direct,key=base.validate(env,token_name="CLOUDFLARE_R2_CONTROL_PLANE_TOKEN")
+    except Exception:
+        # The shared T017 context gate uses its own Blocked exception type.
+        # Sanitize failure to the uniform T018 code without leaking inputs.
+        raise base.fail("PROTECTED_STAGE_IDENTITY") from None
     access=env.get("CLOUDFLARE_R2_ACCESS_KEY_ID")
     secret=env.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")
     if not all(isinstance(v,str) and
