@@ -74,7 +74,17 @@ def request(transport,token,suffix,method="GET",body=None,expect_binary=False):
     if body is not None:headers["Content-Type"]="application/octet-stream"
     http=urllib.request.Request(API+suffix,data=body,headers=headers,method=method)
     status,payload=transport(http)
-    if not 200<=status<300 or len(payload)>MAX_BYTES:raise fail("R2_"+method+"_STATUS")
+    if not 200<=status<300 or len(payload)>MAX_BYTES:
+        # The resource category and HTTP code are SAFE diagnostics: never
+        # print request URLs, provider body, bearer token or account secrets.
+        stage=(
+            "BUCKET" if suffix=="" else
+            "MANAGED_DOMAIN" if suffix=="/domains/managed" else
+            "CUSTOM_DOMAINS" if suffix=="/domains/custom" else
+            "PRIVATE_OBJECT" if suffix.startswith("/objects/") else "UNKNOWN"
+        )
+        code=str(status) if 400<=status<=599 else "INVALID"
+        raise fail("R2_"+stage+"_"+method+"_HTTP_"+code)
     if expect_binary:return payload
     try:
         doc=json.loads(payload.decode("utf8"))
