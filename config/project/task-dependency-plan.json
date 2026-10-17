@@ -473,10 +473,11 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/280",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/307",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/309",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/315"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/315",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/319"
       ],
       "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
-      "progress_note": "2026-10-18: T024 Worker SDK source PR #315 AI-reviewed, 8/8 exact-head CI PASS (real PG18, disposable SQLite Node OAuth+Worker generation tests, Cloudflare Workerd merchant bundle, security, integrity, environment, Production Confidence), merged protected development 3faaa4813ab8cf862d816fde28323c4c4b325ea5. Unlike previous Worker adapter read passthrough, Worker loadSession/findSessionsByShop now deny stale/offline/orphan/malformed or expired sessions by before/after exact persisted Shopify session/token/isOnline/expiry and installedAt/uninstall checks across asynchronous official SDK reads. No independent authenticated Shopify uninstall-generation issuer, no signed webhook retry/reinstall provider E2E; T024 IN_REVIEW and T025 WAITING. Staging Neon has 0 app tables, protected T018 manual migration not executed, Staging OAuth OFF and Live untouched."
+      "progress_note": "2026-10-18: T024 PR #319 AI reviewed, 7/7 exact-head CI PASS including real disposable SQLite Local OAuth & existing generation regression, full Workerd merchant build, repository integrity, security, environment and both Production Confidence. Squash merged protected development a4f812712e5a4646ae853b540861228ee5336a94. Node/Local SDK loadSession/findSessionsByShop now deny expired persisted credentials and isOnline/expiry-only changes before/after awaited SDK reads, in addition to #307/#309 installedAt/token read fences. Worker SDK equivalent hardened via #315. No independently authenticated uninstall-generation issuer or real Shopify webhook retry/reinstall E2E, so T024 IN_REVIEW, T025 WAITING. Existing sole Neon Staging branch ready but neondb 0 app tables, T018 protected migration not executed, Live untouched."
     },
     {
       "id": "T025",
