@@ -31,7 +31,9 @@ export function inspectWorkerShopifyConfiguration(request, env={}) {
   if(env.VSN_WORKER_NAME!==target.cloudflare_worker)issues.push("Shopify Worker target mismatch");
   if(env.NEON_PROJECT_ID!==target.neon_project_id)issues.push("Shopify Worker Neon project mismatch");
   if(env.SHOPIFY_BILLING_TEST_MODE!==(tier==="staging"?"true":"false"))issues.push("Shopify billing tier mismatch");
-  const key=String(env.SHOPIFY_API_KEY||"").trim();
+  // Do not validate a trimmed client ID and then pass an untrimmed value to
+  // Shopify's official SDK; this must be the literal reviewed 32-hex key.
+  const key=String(env.SHOPIFY_API_KEY||"");
   if(!/^[0-9a-f]{32}$/i.test(key))issues.push("Shopify Client ID invalid");
   if(tier==="production" && key.toLowerCase()!==PUBLIC_BUILDER_CLIENT_ID)
     issues.push("Production must use canonical public Builder app");
@@ -41,8 +43,16 @@ export function inspectWorkerShopifyConfiguration(request, env={}) {
   const publicOrigin=getOrigin(env.SHOPIFY_APP_URL);
   if(!publicOrigin)issues.push("Shopify app URL must be stable HTTPS origin");
   else if(request instanceof Request){
-    try{if(new URL(request.url).origin!==publicOrigin)issues.push("Incoming request origin differs from Shopify app URL")}
-    catch{issues.push("Incoming request URL invalid")}
+    try{
+      const incoming=new URL(request.url);
+      if(incoming.origin!==publicOrigin)
+        issues.push("Incoming request origin differs from Shopify app URL");
+      // An origin match alone ignores URL userinfo and fragments. Neither
+      // is part of a valid Shopify OAuth, signed webhook or app request.
+      // Validate BEFORE SDK and Neon request-scoped sessions are acquired.
+      if(incoming.username || incoming.password || incoming.hash)
+        issues.push("Incoming Shopify request has URL credentials or fragment");
+    }catch{issues.push("Incoming request URL invalid")}
   }
   if(tier==="production"){
     const id=String(env.SHOPIFY_PRODUCTION_CLIENT_ID||"").trim();
