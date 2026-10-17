@@ -7,6 +7,7 @@ on:
       - "app/services/shopify-node-generation-session-storage.server.js"
       - "app/services/worker-shopify-install-session-storage.js"
       - "tests/t024-node-oauth-generation-storage-sqlite.test.mjs"
+      - "tests/worker-shopify-install-session-storage.test.mjs"
       - ".github/workflows/t024-node-oauth-generation-storage.yml"
   push:
     branches: [development]
@@ -15,6 +16,7 @@ on:
       - "app/services/shopify-node-generation-session-storage.server.js"
       - "app/services/worker-shopify-install-session-storage.js"
       - "tests/t024-node-oauth-generation-storage-sqlite.test.mjs"
+      - "tests/worker-shopify-install-session-storage.test.mjs"
       - ".github/workflows/t024-node-oauth-generation-storage.yml"
 permissions:
   contents: read
@@ -49,6 +51,8 @@ jobs:
         run: npx prisma generate --schema prisma/schema.prisma
       - name: Apply reviewed Local SQLite migrations to NEW disposable DB
         run: npx prisma migrate deploy --schema prisma/schema.prisma
+      - name: Verify Worker SDK generation-fenced reads, races and isolation with synthetic Prisma
+        run: node --test tests/worker-shopify-install-session-storage.test.mjs
       - name: Verify actual Shopify SDK Node SessionStorage install, refresh, revoke boundary
         run: node --test tests/t024-node-oauth-generation-storage-sqlite.test.mjs
       - name: Existing independent SQLite transaction regression
