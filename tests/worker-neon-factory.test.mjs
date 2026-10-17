@@ -6,7 +6,7 @@ const mk=(tier)=>({
  NEON_PROJECT_ID:tier==="staging"?"shiny-violet-61219572":"nameless-violet-68750490",
  VSN_WORKER_NAME:tier==="staging"?"vsn-builder-staging":"vsn-builder-production",
  SHOPIFY_BILLING_TEST_MODE:tier==="staging"?"true":"false",
- DATABASE_URL:"postgresql://ci-user:fake-ci-password@"+(tier==="staging"?"ep-little-dream-b3g6puj2":"ep-jolly-truth-b3xbibzp")+".c-4.ap-southeast-1.aws.neon.tech/builder_ci?sslmode=require",
+ DATABASE_URL:"postgresql://ci-user:fake-ci-password@"+(tier==="staging"?"ep-little-dream-b3g6puj2":"ep-jolly-truth-b3xbibzp")+".c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
 });
 test("missing Worker secrets cannot initialize a Prisma Client",()=>{
  assert.equal(inspectWorkerNeonEnvironment({}).ready,false);
