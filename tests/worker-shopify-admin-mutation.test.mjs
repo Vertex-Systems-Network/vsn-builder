@@ -483,7 +483,7 @@ test("POST callback cannot forge Shopify cookie or navigation headers even on 2x
    createSdkContext:fx.createSdkContext,
    async onAuthenticated({transaction}){
     await transaction.session.update({
-     where:{id:session.id},data:{scope:"forged-header"}},
+     where:{id:session.id},data:{scope:"forged-header"},
     });
     return produce();
    },
