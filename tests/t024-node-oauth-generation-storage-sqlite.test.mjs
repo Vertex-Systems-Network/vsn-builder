@@ -384,6 +384,12 @@ test("Node enumerate rejects changed expiry or online identity without token rot
   const guarded=createNodeShopifyGenerationSessionStorage(db,{
    SessionStorage:ChangeDuringEnumerationStorage,
   });
-  assert.deepEqual(await guarded.findSessionsByShop(expiryRace),[],scenario);
+  if(scenario==="expired-during-enumeration"){
+   // An invalid persisted row is a sanitized read-integrity failure, not
+   // a legitimate empty enumeration. Never downgrade the SDK safety gate.
+   await assert.rejects(guarded.findSessionsByShop(expiryRace),{
+    code:"VSN_NODE_SHOPIFY_SESSION_READ_BLOCKED",
+   });
+  }else assert.deepEqual(await guarded.findSessionsByShop(expiryRace),[],scenario);
  }
 });
