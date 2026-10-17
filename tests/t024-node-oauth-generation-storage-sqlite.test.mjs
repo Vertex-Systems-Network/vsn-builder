@@ -23,7 +23,8 @@ const active="ci-t024-node-online.myshopify.com";
 const concurrent="ci-t024-node-read-race.myshopify.com";
 const loadRace="ci-t024-node-load-generation-race.myshopify.com";
 const enumerateRace="ci-t024-node-enumeration-token-race.myshopify.com";
-const names=[first,orphan,active,concurrent,loadRace,enumerateRace];
+const expiryRace="ci-t024-node-expiry-identity-race.myshopify.com";
+const names=[first,orphan,active,concurrent,loadRace,enumerateRace,expiryRace];
 const initial=new Date("2026-10-17T04:00:00Z");
 const updated=new Date("2026-10-17T06:00:00Z");
 const offline=(shop,token="ci-token")=>({
@@ -297,4 +298,92 @@ test("Node enumeration rejects SDK-injected or duplicate credentials not persist
  }
  assert.equal((await db.session.findUnique({where:{id:stored.id}})).accessToken,
    "real-token");
+});
+
+test("Node official SDK refuses expired and still-persisted offline credentials",async()=>{
+ const id="offline_"+expiryRace;
+ const now=new Date(Date.now());
+ const expired=new Date(now.getTime()-60_000);
+ const future=new Date(now.getTime()+60*60*1000);
+ assert.equal(await storage(initial).storeSession(offline(expiryRace,"expiry-original")),true);
+ const node=storage(updated);
+ await db.session.update({where:{id},data:{expires:expired}});
+ assert.equal(await node.loadSession(id),undefined);
+ await assert.rejects(node.findSessionsByShop(expiryRace),{
+  code:"VSN_NODE_SHOPIFY_SESSION_READ_BLOCKED",
+ });
+ assert.equal((await db.session.findUnique({where:{id}})).accessToken,
+  "expiry-original","read refusal cannot modify persisted credentials");
+ await db.session.update({where:{id},data:{expires:future}});
+ const loaded=await node.loadSession(id);
+ assert.equal(loaded?.accessToken,"expiry-original");
+ assert.equal((await node.findSessionsByShop(expiryRace)).length,1);
+});
+
+test("Node loadSession rejects expiry or online/offline identity changed while SDK awaits",async()=>{
+ const id="offline_"+expiryRace;
+ const initialExpiry=new Date(Date.now()+60*60*1000);
+ for(const scenario of ["expired-during-load","changed-expiry","flipped-online"]){
+  await db.session.update({where:{id},data:{
+   expires:initialExpiry,isOnline:false,accessToken:"expiry-original",
+  }});
+  const before=await db.session.findUnique({where:{id}});
+  class ChangeDuringLoadStorage {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(){
+    if(scenario==="expired-during-load")
+      await db.session.update({where:{id},data:{expires:new Date(0)}});
+    if(scenario==="changed-expiry")
+      await db.session.update({where:{id},data:{
+       expires:new Date(initialExpiry.getTime()+60_000),
+      }});
+    if(scenario==="flipped-online")
+      await db.session.update({where:{id},data:{isOnline:true}});
+    return {id,shop:expiryRace,accessToken:before.accessToken,
+     isOnline:before.isOnline,expires:before.expires};
+   }
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(){return []}
+  }
+  const guarded=createNodeShopifyGenerationSessionStorage(db,{
+   SessionStorage:ChangeDuringLoadStorage,
+  });
+  assert.equal(await guarded.loadSession(id),undefined,scenario);
+ }
+});
+
+test("Node enumerate rejects changed expiry or online identity without token rotation",async()=>{
+ const id="offline_"+expiryRace;
+ const initialExpiry=new Date(Date.now()+60*60*1000);
+ for(const scenario of ["expired-during-enumeration","changed-expiry","flipped-online"]){
+  await db.session.update({where:{id},data:{
+   expires:initialExpiry,isOnline:false,accessToken:"expiry-original",
+  }});
+  const before=await db.session.findUnique({where:{id}});
+  class ChangeDuringEnumerationStorage {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(){return undefined}
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(){
+    if(scenario==="expired-during-enumeration")
+      await db.session.update({where:{id},data:{expires:new Date(0)}});
+    if(scenario==="changed-expiry")
+      await db.session.update({where:{id},data:{
+       expires:new Date(initialExpiry.getTime()+60_000),
+      }});
+    if(scenario==="flipped-online")
+      await db.session.update({where:{id},data:{isOnline:true}});
+    return [{id,shop:expiryRace,accessToken:before.accessToken,
+     isOnline:before.isOnline,expires:before.expires}];
+   }
+  }
+  const guarded=createNodeShopifyGenerationSessionStorage(db,{
+   SessionStorage:ChangeDuringEnumerationStorage,
+  });
+  assert.deepEqual(await guarded.findSessionsByShop(expiryRace),[],scenario);
+ }
 });
