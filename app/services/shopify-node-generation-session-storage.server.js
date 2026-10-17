@@ -38,6 +38,22 @@ export function createNodeShopifyGenerationSessionStorage(database,{
     error.code="VSN_NODE_SHOPIFY_SESSION_READ_BLOCKED";
     return error;
   };
+  const expiry=row=>{
+    if(row?.expires===null || row?.expires===undefined)return null;
+    return row.expires instanceof Date && Number.isFinite(row.expires.getTime())
+      ? row.expires.getTime() : NaN;
+  };
+  const validPersisted=(row,id,shop)=>{
+    if(!row || typeof id!=="string" || !id || row.id!==id ||
+       row.shop!==shop || typeof row.accessToken!=="string" ||
+       !row.accessToken || typeof row.isOnline!=="boolean")return false;
+    const until=expiry(row);
+    return until===null || (Number.isFinite(until)&&until>Date.now());
+  };
+  const samePersisted=(a,b)=>
+    a?.id===b.id && a?.shop===b.shop &&
+    a?.accessToken===b.accessToken && a?.isOnline===b.isOnline &&
+    expiry(a)===expiry(b);
   return {
     ...writer,
     async loadSession(id){
@@ -50,24 +66,20 @@ export function createNodeShopifyGenerationSessionStorage(database,{
         // older read-only guard checked only after that await; uninstall
         // followed by reinstall could reactivate a stale already-read token.
         const original=await database.session.findUnique({where:{id}});
-        if(!original || original.id!==id || typeof original.accessToken!=="string")
-          return undefined;
+        if(!validPersisted(original,id,original?.shop))return undefined;
         const generation=await activeGeneration(original.shop);
         if(generation===null)return undefined;
         const session=await base.loadSession(id);
-        if(!session || session.id!==id ||
-           session.shop!==original.shop ||
-           session.accessToken!==original.accessToken)
-          return undefined;
+        if(!validPersisted(session,id,original.shop) ||
+           !samePersisted(session,original))return undefined;
         const [latest,afterGeneration]=await Promise.all([
           database.session.findUnique({where:{id}}),
           activeGeneration(original.shop),
         ]);
         // A token rotation, deletion or changed install generation during
         // the asynchronous SDK read must never disclose the stale session.
-        if(!latest || latest.id!==id ||
-           latest.shop!==original.shop ||
-           latest.accessToken!==original.accessToken ||
+        if(!validPersisted(latest,id,original.shop) ||
+           !samePersisted(latest,original) ||
            afterGeneration!==generation)
           return undefined;
         return session;
@@ -86,10 +98,9 @@ export function createNodeShopifyGenerationSessionStorage(database,{
         if(!Array.isArray(originals))throw safeReadError();
         const previouslyPersisted=new Map();
         for(const row of originals){
-          if(row?.shop!==shop || typeof row.id!=="string" ||
-             !row.id || typeof row.accessToken!=="string" ||
+          if(!validPersisted(row,row?.id,shop) ||
              previouslyPersisted.has(row.id))throw safeReadError();
-          previouslyPersisted.set(row.id,row.accessToken);
+          previouslyPersisted.set(row.id,row);
         }
         const sessions=await base.findSessionsByShop(shop);
         if(!Array.isArray(sessions))throw safeReadError();
@@ -104,19 +115,17 @@ export function createNodeShopifyGenerationSessionStorage(database,{
         if(after!==before || !Array.isArray(nowPersisted))return [];
         const latest=new Map();
         for(const row of nowPersisted){
-          if(row?.shop!==shop || typeof row.id!=="string" ||
-             !row.id || typeof row.accessToken!=="string" ||
+          if(!validPersisted(row,row?.id,shop) ||
              latest.has(row.id))throw safeReadError();
-          latest.set(row.id,row.accessToken);
+          latest.set(row.id,row);
         }
         const seen=new Set();
         for(const session of sessions){
-          if(session?.shop!==shop || typeof session?.id!=="string" ||
-             typeof session?.accessToken!=="string" ||
+          if(!validPersisted(session,session?.id,shop) ||
              seen.has(session.id) || !previouslyPersisted.has(session.id) ||
              !latest.has(session.id) ||
-             session.accessToken!==previouslyPersisted.get(session.id) ||
-             session.accessToken!==latest.get(session.id))
+             !samePersisted(session,previouslyPersisted.get(session.id)) ||
+             !samePersisted(session,latest.get(session.id)))
             return [];
           seen.add(session.id);
         }
