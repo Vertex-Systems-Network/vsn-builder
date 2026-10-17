@@ -12,7 +12,7 @@ const env={
  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
  SHOPIFY_APP_URL:"https://staging.builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
- DATABASE_URL:"postgresql://ci:synthetic@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/ci?sslmode=require"
+ DATABASE_URL:"postgresql://ci:synthetic@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 };
 const payload=JSON.stringify({id:123,shop_domain:"test-store.myshopify.com"});
 const webhook=(data=payload,overrides={},method="POST")=>{

@@ -20,7 +20,7 @@ const env={
  SHOPIFY_PRODUCTION_CLIENT_ID:"997eae5a9961f21d131e5f31bbbe31d3",
  SHOPIFY_APP_URL:"https://staging.builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
- DATABASE_URL:"postgresql://unused:fake@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/unused?sslmode=require"
+ DATABASE_URL:"postgresql://unused:fake@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
 };
 const req=new Request("https://staging.builder.example.org/app?shop=tenant-ci.myshopify.com");
 const sessionCtx=(request,e)=>createWorkerShopifySessionContext(request,e,{createDatabase:()=>new PrismaClient()});

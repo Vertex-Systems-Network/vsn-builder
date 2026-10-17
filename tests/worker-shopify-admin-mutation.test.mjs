@@ -13,7 +13,7 @@ const env={
  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
  SHOPIFY_APP_URL:"https://staging.builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
- DATABASE_URL:"postgresql://fake:synthetic@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/disposable?sslmode=require",
+ DATABASE_URL:"postgresql://fake:synthetic@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
 };
 const request=(method="POST",merchant=shop)=>new Request(
  env.SHOPIFY_APP_URL+"/app/settings?shop="+merchant,{method}

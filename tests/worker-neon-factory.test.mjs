@@ -6,7 +6,7 @@ const mk=(tier)=>({
  NEON_PROJECT_ID:tier==="staging"?"shiny-violet-61219572":"nameless-violet-68750490",
  VSN_WORKER_NAME:tier==="staging"?"vsn-builder-staging":"vsn-builder-production",
  SHOPIFY_BILLING_TEST_MODE:tier==="staging"?"true":"false",
- DATABASE_URL:"postgresql://ci-user:fake-ci-password@"+(tier==="staging"?"ep-little-dream-b3g6puj2":"ep-jolly-truth-b3xbibzp")+".c-4.ap-southeast-1.aws.neon.tech/builder_ci?sslmode=require",
+ DATABASE_URL:"postgresql://ci-user:fake-ci-password@"+(tier==="staging"?"ep-little-dream-b3g6puj2":"ep-jolly-truth-b3xbibzp")+".c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
 });
 test("missing Worker secrets cannot initialize a Prisma Client",()=>{
  assert.equal(inspectWorkerNeonEnvironment({}).ready,false);
@@ -55,7 +55,7 @@ test("Neon hostname lookalikes, unknown endpoints and unexpected ports fail clos
   env.DATABASE_URL.replace(".c-4.",".attacker.c-4."),
   env.DATABASE_URL.replace("ep-little-dream-b3g6puj2","ep-unknown-project"),
   env.DATABASE_URL.replace(".neon.tech",".neon.tech.attacker.test"),
-  env.DATABASE_URL.replace("/builder_ci",":6543/builder_ci"),
+  env.DATABASE_URL.replace("/neondb",":6543/neondb"),
  ];
  for(const DATABASE_URL of tests){
   assert.equal(inspectWorkerNeonEnvironment({...env,DATABASE_URL}).ready,false,DATABASE_URL.split("@")[1]);
@@ -124,4 +124,40 @@ test("errors never disclose connection strings or password",()=>{
   assert(!String(err.message).includes("ep-ci-writer"));
   return true;
  });
+});
+
+test("same trusted Neon compute NEVER authorizes an alternate Builder database",()=>{
+ for(const tier of ["staging","production"]){
+  const valid=mk(tier);
+  assert.equal(inspectWorkerNeonEnvironment(valid).ready,true);
+  for(const db of ["/brovexa","/other_tenant","/neondb%00","/%6eeondb","/"]){
+   const url=valid.DATABASE_URL.replace("/neondb?",db+"?");
+   const config={...valid,DATABASE_URL:url};
+   const status=inspectWorkerNeonEnvironment(config);
+   assert.equal(status.ready,false,"Wrong database accepted on "+tier+" endpoint");
+   assert(status.issues.includes("Builder Worker must use the canonical neondb database"));
+   let created=false;
+   class Adapter{constructor(){created=true}}
+   class Client{constructor(){created=true}}
+   assert.throws(()=>createWorkerNeonPrisma(config,{Adapter,Client}),{
+     code:"VSN_WORKER_DATABASE_NOT_READY",
+   });
+   assert.equal(created,false,"Unauthorized DB reached adapter factory");
+   assert(!JSON.stringify(status).includes("fake-ci-password"));
+  }
+ }
+});
+test("matching wrong pooled/direct neondb alternatives also fail before Worker construction",()=>{
+ for(const tier of ["staging","production"]){
+  const original=mk(tier);
+  const pooled=original.DATABASE_URL.replace(".c-4.","-pooler.c-4.");
+  const bad={
+   ...original,
+   DATABASE_URL:pooled.replace("/neondb?","/brovexa?"),
+   DIRECT_URL:original.DATABASE_URL.replace("/neondb?","/brovexa?"),
+  };
+  const status=inspectWorkerNeonEnvironment(bad);
+  assert.equal(status.ready,false);
+  assert(status.issues.includes("Builder Worker must use the canonical neondb database"));
+ }
 });

@@ -13,7 +13,7 @@ const env={
   SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"synthetic-not-real",
   SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
   SHOPIFY_APP_URL:host,SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
-  DATABASE_URL:"postgresql://ci:ci@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/ci?sslmode=require",
+  DATABASE_URL:"postgresql://ci:ci@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
 };
 const path="/app/__vsn-auth-smoke";
 const signed={id:"offline_"+shop,shop,state:"",isOnline:false,accessToken:"fake-token-never-export"};
