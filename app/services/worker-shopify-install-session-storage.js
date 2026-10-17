@@ -90,7 +90,7 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
 // The official SDK performs asynchronous PostgreSQL reads. Unlike the
 // transactional storeSession, loading or enumerating a session is NOT an
 // implicit authorization to use credentials after uninstall/reinstall.
-const EXACT_SHOP=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.myshopify\\.com$/;
+const EXACT_SHOP=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
 const readBlocked=()=>{
   const error=new Error("VSN_WORKER_SESSION_READ_BLOCKED");
   error.code="VSN_WORKER_SESSION_READ_BLOCKED";
