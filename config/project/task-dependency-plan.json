@@ -726,10 +726,11 @@
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/168",
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/199",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746201729"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746201729",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/283"
       ],
       "acceptance": "One public Builder listing with compliant privacy/support/screenshots, four-plan details, test instructions",
-      "progress_note": "Compliant one-public-app listing draft, 4 paid tiers, fail-closed privacy/support/screenshots evidence manifest and tests PASSED; real app captures, public verified privacy/support, Partner upload and reviewer proof missing; not final closed."
+      "progress_note": "2026-10-17 T040 screenshot ingestion source-contract hardened in PR #283 (all 4 exact-head CI PASS, merged as 1e555f82412269713bb0a11851d79695ea579144). Exactly five real private 1600×900 PNG source captures now required by the listing metadata validator; rejects absent files, symlinks, unsafe path traversal, invalid IHDR/decompression/CRC, mis-sized images, exact-content duplicate SHA256s, and reserved fake support email hostnames. Synthetic fixture image integrity/tampering/security tests and no-deploy listing gate PASS; temporary CI fixture images deleted and NEVER represented as merchant screenshots. This change does not make UI/screenshots authentic, does not certify external Partner/account/privacy/support or Shopify real E2E, and NEVER allows listing submission. Current manifest has ZERO real screenshots, no verified privacy/support and no external issuer. T040 stays IN_REVIEW. Existing single public app and four paid plan drafts retained; no new Shopify stores/Production changes."
     },
     {
       "id": "T041",
