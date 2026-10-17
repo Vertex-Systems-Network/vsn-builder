@@ -394,3 +394,41 @@ test("T020 persisted Node/Worker Session.id must match authenticated SDK identit
  assert.equal(await res.response.text(),"");
  assert.equal(res.calls.at(-1)[0],"close");
 });
+
+test("T020 callback read errors are status-only and cannot disclose internal diagnostics",async()=>{
+ for(const status of [400,401,403,404,409,422]){
+  const fx=fixture();
+  const r=await acceptWorkerShopifyAdminRequest(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated(){
+    return new Response("postgresql://secret:private@staging / SHOPIFY_API_SECRET",{
+     status,headers:{"x-unsafe-debug":"credential-value"},
+    });
+   },
+  });
+  assert.equal(r.status,status);
+  assert.equal(await r.text(),"");
+  assert.equal(r.headers.get("cache-control"),"no-store");
+  assert.equal(r.headers.get("x-unsafe-debug"),null);
+  assert.equal(fx.calls.at(-1)[0],"close");
+ }
+});
+test("T020 ordinary read callbacks cannot set cookies or return external redirects",async()=>{
+ const responses=[
+  new Response("private body",{status:200,headers:{"set-cookie":"session=forged"}}),
+  new Response("private body",{status:200,headers:{"location":"https://evil.example/steal"}}),
+  Response.redirect("https://evil.example/steal",302),
+ ];
+ for(const result of responses){
+  const fx=fixture();
+  const r=await acceptWorkerShopifyAdminRequest(request(),env,{
+   createSdkContext:fx.createSdkContext,
+   async onAuthenticated(){return result;},
+  });
+  assert.equal(r.status,503);
+  assert.equal(await r.text(),"");
+  assert.equal(r.headers.get("set-cookie"),null);
+  assert.equal(r.headers.get("location"),null);
+  assert.equal(fx.calls.at(-1)[0],"close");
+ }
+});
