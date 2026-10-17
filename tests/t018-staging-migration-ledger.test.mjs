@@ -80,7 +80,7 @@ test("wrong DB, incomplete schema and manipulated count types fail closed",()=>{
 });
 test("source contains only fixed read-only queries and guarded staging manual postcheck",()=>{
  const source=readFileSync(new URL("../scripts/phase3-staging-post-migrate-check.mjs",import.meta.url),"utf8");
- assert.match(source,/inspectStagingMigrationGate\(process\.env\)/);
+ assert.match(source,/inspectStagingMigrationGate\(env\)/);
  assert.match(source,/attestStagingMigrationLedger/);
  assert.match(source,/expectedStagingMigrationChecksums/);
  assert.match(source,/SELECT migration_name, checksum, started_at, finished_at, rolled_back_at/);
