@@ -88,6 +88,13 @@ test("SDK can't resurrect or rotate a token after installation was uninstalled",
  assert.equal(row.uninstalledAt.getTime(),updated.getTime());
  assert.equal((await db.session.findUnique({where:{id:"offline_"+first}})).accessToken,
    "rotated-ci-token");
+ const blocked=storage(updated);
+ assert.equal(await blocked.loadSession("offline_"+first),undefined,
+   "SDK may not reuse a stale session after uninstall");
+ assert.deepEqual(await blocked.findSessionsByShop(first),[],
+   "SDK may not enumerate sessions for an uninstalled shop");
+ assert.equal(await db.session.count({where:{shop:first}}),1,
+   "The deny is a read fence, not unverified destructive deletion");
 });
 test("an orphan old token never creates a fabricated install generation",async()=>{
  await db.session.create({data:{
@@ -99,6 +106,9 @@ test("an orphan old token never creates a fabricated install generation",async()
  assert.equal(await db.builderShopInstallation.findUnique({where:{shop:orphan}}),null);
  assert.equal((await db.session.findUnique({where:{id:"offline_"+orphan}})).accessToken,
    "preexisting-ci");
+ assert.equal(await storage(initial).loadSession("offline_"+orphan),undefined,
+   "Orphaned token cannot authenticate a shop without provenance");
+ assert.deepEqual(await storage(initial).findSessionsByShop(orphan),[]);
 });
 test("official SDK deletion methods remain delegated, without forging a new generation",async()=>{
  const adapter=storage(updated);
