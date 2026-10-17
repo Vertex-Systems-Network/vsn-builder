@@ -5,6 +5,8 @@ on:
       - "docs/launch/shopify-builder-app-store-draft.md"
       - "config/shopify-listing-readiness.json"
       - "scripts/t040-shopify-listing-readiness.mjs"
+      - "scripts/t040-shopify-screenshot-evidence.mjs"
+      - "tests/t040-shopify-screenshot-evidence.test.mjs"
       - "tests/t040-shopify-listing-readiness.test.mjs"
       - "app/config/commercialPlans.js"
       - ".github/workflows/t040-shopify-listing-readiness.yml"
@@ -27,4 +29,4 @@ jobs:
       - name: Validate truthful draft only (never submit)
         run: node scripts/t040-shopify-listing-readiness.mjs
       - name: Assert that real evidence is mandatory before publication
-        run: node --test tests/t040-shopify-listing-readiness.test.mjs
+        run: node --test tests/t040-shopify-listing-readiness.test.mjs tests/t040-shopify-screenshot-evidence.test.mjs
