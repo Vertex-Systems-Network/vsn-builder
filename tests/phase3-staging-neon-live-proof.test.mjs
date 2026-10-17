@@ -13,8 +13,8 @@ function credentials(extra={}) {
   SHOPIFY_BILLING_TEST_MODE:"true",STAGING_MIGRATION_APPROVED:"true",
   VSN_STAGING_BACKUP_EVIDENCE:stage.neon_pre_migration_snapshot_id,
   NEON_API_KEY:"synthetic-not-a-real-api-token",
-  DATABASE_URL:`postgresql://synthetic:private@${host.replace(".","-pooler.")}/staging?sslmode=require`,
-  DIRECT_URL:`postgresql://synthetic:private@${host}/staging?sslmode=require`,
+  DATABASE_URL:`postgresql://synthetic:private@${host.replace(".","-pooler.")}/neondb?sslmode=require`,
+  DIRECT_URL:`postgresql://synthetic:private@${host}/neondb?sslmode=require`,
   ...extra,
  };
 }
