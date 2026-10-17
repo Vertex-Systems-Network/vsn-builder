@@ -68,7 +68,14 @@ export async function handleVerifiedStagingShopifyLogin(request,env,{
      typeof ctx?.close!=="function")return blocked();
   // Shopify's own login(request) owns OAuth initiation. If a shop is
   // present, it THROWS an SDK Response containing the correct redirect.
-  const result=await ctx.shopify.login(request);
+  let result;
+  try{
+   result=await ctx.shopify.login(request);
+  }catch(error){
+   // Only the official Shopify login call owns signed OAuth redirects.
+   if(error instanceof Response)return error;
+   throw error;
+  }
   if(result?.shop==="INVALID_SHOP")
     return loginForm("Shopify did not accept that store domain.",hinted||"");
   if(result?.shop==="MISSING_SHOP" || hinted===null)
@@ -76,8 +83,8 @@ export async function handleVerifiedStagingShopifyLogin(request,env,{
   // Official API returns LoginError | never; an unexpected successful
   // value is NOT proof of authentication and must never become a redirect.
   return blocked();
- }catch(error){
-  if(error instanceof Response)return error;
+ }catch{
+  // Dependency/bootstrap errors are never trusted redirect transports.
   return blocked();
  }finally{
   try{await ctx?.close?.()}catch{/* no SDK / DB details in responses */}

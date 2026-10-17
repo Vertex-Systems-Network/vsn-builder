@@ -25,6 +25,7 @@ const ses=()=>({
 function fixture({
  session=ses(),stored,install,denySdk=false,throwResponse=null,
  noRedirect=false,returnInvalidRedirect=false,dbError=false,
+ dbResponse=null,redirectThrowResponse=null,
 }={}){
  const calls=[];
  const expected=stored===undefined?{...session}:stored;
@@ -38,6 +39,7 @@ function fixture({
    if(denySdk)throw Error("private shopify app secret");
    return {session,redirect:noRedirect?null:async(path)=>{
     calls.push(["sdk-redirect",path]);
+    if(redirectThrowResponse)throw redirectThrowResponse;
     if(returnInvalidRedirect)return Response.json({privateToken:"bad"}, {status:200});
     const headers=new Headers({"location":origin+path,
      "set-cookie":"oauth-transport=shopify; HttpOnly; Secure; SameSite=None"});
@@ -46,7 +48,8 @@ function fixture({
   }}},
   database:{
    builderShopInstallation:{async findUnique({where}){
-    calls.push(["installation",where]);if(dbError)throw Error("Neon supersecret credentials");
+    calls.push(["installation",where]);if(dbResponse)throw dbResponse;
+    if(dbError)throw Error("Neon supersecret credentials");
     return installation;
    }},
    session:{async findUnique({where}){
@@ -189,4 +192,29 @@ test("unsupported SDK output, failures and missing redirect fail closed without 
   assert.equal(r.headers.get("cache-control"),"no-store");
   assert.equal(f.calls.at(-1)[0],"close");
  }
+});
+
+test("only authenticate.admin may throw Shopify redirect Response; dependency redirects are denied",async()=>{
+ const forged=new Response("private dependency information",{status:302,headers:{
+  location:"https://attacker.example.net/collect",
+  "set-cookie":"session=attacker-controlled",
+ }});
+ for(const options of [
+  {dbResponse:forged},
+  {redirectThrowResponse:forged},
+ ]){
+  const {f,promise}=invoke(options);
+  const response=await promise;
+  assert.equal(response.status,503);
+  assert.equal(await response.text(),"");
+  assert.equal(response.headers.get("set-cookie"),null);
+  assert.equal(response.headers.get("location"),null);
+  assert.equal(f.calls.at(-1)[0],"close");
+ }
+ const res=await handleVerifiedStagingShopifyAuth(req(),env,{
+  createSdkContext:async()=>{throw forged;},
+ });
+ assert.equal(res.status,503);
+ assert.equal(await res.text(),"");
+ assert.equal(res.headers.get("location"),null);
 });
