@@ -395,10 +395,11 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/176",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/234",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/241",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/251"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/251",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/281"
       ],
       "acceptance": "Full Cloudflare Vite-built VSN Builder merchant route graph; real Shopify OAuth/App Bridge and valid persisted PrismaNeon sessions after Staging migrations; signed webhooks, paid-only mutations, tenant isolation and actual Staging store E2E. PRs #172–#176 prove synthetic CI-only SSR, router, SDK/Neon compilation and an authenticated-gate-to-loader bridge using synthetic sessions; not actual merchant acceptance.",
-      "progress_note": "2026-10-16 T020 PR #251 merged at 15455cdf40941b353a2e7fa30b60eba15e636100 after 4/4 exact-head CI PASS including full merchant Workerd. Merchant editor hydrated stored PostgreSQL Int version now strictly bounded 1..2147483647, consistent with metadata reader; tests reject overflow/forged tenant or page ID and late response after lease revocation. Real hosted Shopify OAuth, Neon-backed session persistence, actual Staging merchant E2E still unverified; IN_REVIEW."
+      "progress_note": "2026-10-17 T020 incremental security source review: PR #281 5/5 exact-head CI PASS, squash-merged as 656c0592a51d85cef5ffbcaf4a0b1fc46a5c733b. Authenticated Worker GET and transaction-locked POST now both reject duplicated Shopify shop tenant hints (?shop=A&shop=B, percent-encoded duplicates) before Shopify SDK/Neon context is created. Synthetic GET/POST no-auth/no-SQL tests pass; real Cloudflare-native full merchant SSR Workerd, Shopify SDK, Postgres 18 ephemeral runtime, repo/environment and production-confidence CI PASS. Existing source integration remains explicitly Staging guarded: live hosted OAuth, persisted migrated Neon merchant sessions, paid plan and real Staging merchant E2E are NOT verified; IN_REVIEW, no deploy."
     },
     {
       "id": "T021",
@@ -461,10 +462,11 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/193",
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/237",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/249"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/249",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/280"
       ],
       "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
-      "progress_note": "2026-10-16 Shopify legacy uninstall Node route now fails closed (503 Retry-After 60) after SDK HMAC/topic/domain validation rather than unconditionally deleting all shop pages and new sessions. A delayed signed old uninstall after reinstall is not trusted installation-generation proof. Actual Node action VM execution tests cover valid old/new and invalid events and assert no DB calls. Source only; future independently attested CAS install lifecycle and hosted real webhook E2E still required. IN_REVIEW."
+      "progress_note": "2026-10-17 T024 incremental security source review: PR #280 7/7 exact-head CI PASS, merged as 8f951c4e0b854aade9f840d581455154d851c35d. Early signed Worker webhook and generation-aware uninstall revoker strictly validate canonical lowercase 1..63-character Shopify DNS store label (reject leading/trailing hyphen, oversize, malicious suffix) before SDK/DB and destructive claim. Missing independent attestation returns 503 Retry-After 60/no-store; invalid events 401 and idempotent 204 have no retry hint. Real Shopify SDK signed webhook, no-write generation-replay, full Cloudflare Workerd, PG18 runtime and security CI all PASS. Actual trusted Shopify installation generation issuer is absent and hosted uninstall/reinstall E2E remains unverified. IN_REVIEW; no new Shopify store, DB deletion or deployment."
     },
     {
       "id": "T025",
