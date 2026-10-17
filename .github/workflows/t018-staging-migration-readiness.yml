@@ -8,6 +8,9 @@ on:
       - "scripts/t018-staging-migration-readiness.py"
       - "tests/t018-staging-migration-readiness.test.py"
       - "scripts/phase3-staging-migration-preflight.mjs"
+      - "scripts/phase3-staging-post-migrate-check.mjs"
+      - "scripts/t018-staging-migration-ledger.mjs"
+      - "tests/t018-staging-migration-ledger.test.mjs"
       - "tests/phase3-staging-migration-preflight.test.mjs"
       - "tests/phase3-staging-neon-live-proof.test.mjs"
       - ".github/workflows/phase3-staging-neon-migration.yml"
@@ -18,6 +21,9 @@ on:
       - "scripts/t018-staging-migration-readiness.py"
       - "tests/t018-staging-migration-readiness.test.py"
       - "scripts/phase3-staging-migration-preflight.mjs"
+      - "scripts/phase3-staging-post-migrate-check.mjs"
+      - "scripts/t018-staging-migration-ledger.mjs"
+      - "tests/t018-staging-migration-ledger.test.mjs"
       - "tests/phase3-staging-migration-preflight.test.mjs"
       - "tests/phase3-staging-neon-live-proof.test.mjs"
       - ".github/workflows/phase3-staging-neon-migration.yml"
@@ -42,6 +48,8 @@ jobs:
           node-version: 22.18.0
       - name: Verify manual-only snapshot recovery policy and cross-db rejection without secrets
         run: node --test tests/phase3-staging-migration-preflight.test.mjs tests/phase3-staging-neon-live-proof.test.mjs
+      - name: Verify exact reviewed Prisma SQL checksums and deny incomplete, rolled-back or cross-DB ledger
+        run: node --test tests/t018-staging-migration-ledger.test.mjs
   protected-reference:
     if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
     runs-on: ubuntu-24.04
