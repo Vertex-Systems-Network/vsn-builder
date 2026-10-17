@@ -25,7 +25,7 @@ export function createNodeShopifyGenerationSessionStorage(database,{
   });
   const allowed=async shop=>{
     if(typeof shop!=="string" ||
-       !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.myshopify\\.com$/.test(shop))
+       !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/.test(shop))
       return false;
     const row=await database.builderShopInstallation.findUnique({where:{shop}});
     return row?.shop===shop && row?.installedAt instanceof Date &&
