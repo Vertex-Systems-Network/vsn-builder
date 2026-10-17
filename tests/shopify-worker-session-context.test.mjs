@@ -13,7 +13,7 @@ const allowed = (tier = "staging") => ({
  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
  SHOPIFY_APP_URL: tier==="staging"?"https://staging.builder.example.org":"https://builder.example.org",
  SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
- DATABASE_URL:"postgresql://nonreal:mock@ep-fake.ap-southeast-1.aws.neon.tech/vsn_ci?sslmode=require",
+ DATABASE_URL:"postgresql://nonreal:mock@ep-fake.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
 });
 const makeRequest = env => new Request(env.SHOPIFY_APP_URL+"/app");
 function dbStub(){
