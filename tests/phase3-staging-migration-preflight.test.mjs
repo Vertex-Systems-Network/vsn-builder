@@ -1,4 +1,5 @@
 import test from "node:test";
+import {readFileSync} from "node:fs";
 import assert from "node:assert/strict";
 import {inspectStagingMigrationGate} from "../scripts/phase3-staging-migration-preflight.mjs";
 
@@ -51,4 +52,20 @@ test("Migration cannot target production compute, weak TLS or pooled direct URL"
     {DATABASE_URL:`postgresql://synthetic:ci-only@${pooled}/disposable?sslmode=disable`},
     {DATABASE_URL:fake().DIRECT_URL},
   ])assert.equal(inspectStagingMigrationGate(fake(overrides)).ready,false);
+});
+
+test("real Staging migration is manual-only; R2 is optional and cannot gate empty baseline",()=>{
+  const migration=readFileSync(".github/workflows/phase3-staging-neon-migration.yml","utf8");
+  const optionalR2=readFileSync(".github/workflows/t018-staging-private-r2-backup.yml","utf8");
+  assert.match(migration,/workflow_dispatch:/);
+  assert.doesNotMatch(migration,/^  push:/m);
+  assert.match(migration,/APPLY_EMPTY_BUILDER_STAGING_ONLY/);
+  assert.match(migration,/secrets\.DATABASE_URL/);
+  assert.match(migration,/secrets\.DIRECT_URL/);
+  assert.match(migration,/t018-staging-migration-readiness\.py/);
+  assert.match(migration,/phase3-staging-neon-live-proof\.mjs/);
+  assert.doesNotMatch(migration,/CLOUDFLARE_R2_/);
+  assert.match(optionalR2,/workflow_dispatch:/);
+  assert.doesNotMatch(optionalR2,/^  push:/m);
+  assert.match(optionalR2,/github\.event_name == 'workflow_dispatch'/);
 });
