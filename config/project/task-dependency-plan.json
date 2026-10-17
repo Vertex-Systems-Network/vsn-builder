@@ -361,7 +361,7 @@
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/268",
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487397",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487380/job/117249856864"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487380"
       ],
       "acceptance": "Actual Worker secret names, OAuth config and Staging identity/HTTPS bindings exist; no secret value disclosure",
       "progress_note": "2026-10-17 PARTIAL ACCEPTANCE: Staging secret binding configured for existing isolated `vsn-builder-staging` Worker using existing GitHub `cloudflare-staging` secrets; source PR #268 4/4 exact-head CI green, merged. Independent live protected metadata audit #38983487397 SUCCESS confirms all 3 required Worker secret_text runtime bindings (DATABASE_URL, SHOPIFY_API_KEY, SHOPIFY_API_SECRET), six reviewed Staging nonsecret identifiers/scopes and public Worker subdomain disabled. Initial protected secret-sync execution fail-closed after atomic bulk update; repeat read-only idempotent job #117249856864 SUCCESS confirms 3/3 and no active deployment change, no extra update. No secret values logged. Upstream T015 Dev Shopify OAuth/legal ownership remains IN_REVIEW; hosted Staging callback/merchant sessions and T018 DB migrations unverified; T019 stays IN_REVIEW, NOT FINAL CLOSED, T021 remains WAITING. No Neon or Production changes."
