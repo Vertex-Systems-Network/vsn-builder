@@ -101,14 +101,14 @@ def docker_command(argv, connection, local=False, mount=None):
     cmd+=[DOCKER_IMAGE,*argv]
     return cmd,env
 
-def run_safe(runner,cmd,env,timeout=90):
+def run_safe(runner,cmd,env,timeout=90,stage="DOCKER"):
     try:
         proc=runner(cmd,env=env,text=True,capture_output=True,timeout=timeout,
                     check=False)
-        if proc.returncode!=0:raise Blocked(SAFE_CODE)
+        if proc.returncode!=0:raise Blocked("T017_"+stage+"_FAILED")
         return proc.stdout or ""
     except (OSError,subprocess.TimeoutExpired):
-        raise Blocked(SAFE_CODE) from None
+        raise Blocked("T017_"+stage+"_FAILED") from None
 
 def read_fingerprint(runner,connection,local=False):
     cmd,env=docker_command(["psql","--no-psqlrc","-X","--quiet",
@@ -116,14 +116,14 @@ def read_fingerprint(runner,connection,local=False):
                             "--field-separator=|",
                             "--set","ON_ERROR_STOP=1","--command",SQL],
                            connection,local=local)
-    text=run_safe(runner,cmd,env)
+    text=run_safe(runner,cmd,env,stage="LOCAL_RESTORE_QUERY" if local else "SOURCE_QUERY")
     rows=[line.strip().split("|") for line in text.splitlines()
           if "|" in line]
-    if len(rows)!=1 or len(rows[0])!=3:raise Blocked(SAFE_CODE)
+    if len(rows)!=1 or len(rows[0])!=3:raise Blocked("T017_LOCAL_SHAPE_FAILED" if local else "T017_SOURCE_SHAPE_FAILED")
     db,tables,schemas=rows[0]
     wanted=LOCAL_DB if local else connection["db"]
     if db!=wanted or not re.fullmatch(r"\d+",tables) or not re.fullmatch(r"\d+",schemas):
-        raise Blocked(SAFE_CODE)
+        raise Blocked("T017_LOCAL_SHAPE_FAILED" if local else "T017_SOURCE_SHAPE_FAILED")
     return int(tables),int(schemas)
 
 def rehearse(env,runner=subprocess.run):
@@ -136,18 +136,18 @@ def rehearse(env,runner=subprocess.run):
             ["pg_dump","--format=custom","--no-owner","--no-acl",
              "--file=/t017/staging.dump"],
             direct,mount=folder)
-        run_safe(runner,cmd,dumpenv,timeout=180)
+        run_safe(runner,cmd,dumpenv,timeout=180,stage="DUMP")
         archive=Path(folder)/"staging.dump"
         if not archive.is_file() or archive.stat().st_size<256:
-            raise Blocked(SAFE_CODE)
+            raise Blocked("T017_BACKUP_ARCHIVE_MISSING")
         cmd,restoreenv=docker_command(
             ["pg_restore","--exit-on-error","--no-owner","--no-acl",
              "--dbname="+LOCAL_DB,"/t017/staging.dump"],
             direct,local=True,mount=folder)
-        run_safe(runner,cmd,restoreenv,timeout=120)
+        run_safe(runner,cmd,restoreenv,timeout=120,stage="LOCAL_RESTORE")
         target_counts=read_fingerprint(runner,direct,local=True)
     if source_counts!=target_counts:
-        raise Blocked(SAFE_CODE)
+        raise Blocked("T017_SCHEMA_ROUNDTRIP_MISMATCH")
     # Never print credentials, raw database dump, schema names or response bodies.
     return {"ready":True,"toolchain":"postgres:18",
             "source":EXPECTED_PROJECT,"local_restore":"ephemeral-only",
@@ -161,6 +161,9 @@ if __name__=="__main__":
         print("T017 real protected Staging PostgreSQL 18 dump and isolated restore: PASS")
         print("Restored schema/table shape matched. No Neon writes or Production access.")
         print("Ephemeral dump securely discarded; durable backup/snapshot not certified.")
+    except Blocked as exc:
+        print("::error::"+str(exc))
+        raise SystemExit(1) from None
     except Exception:
         print("::error::"+SAFE_CODE)
         raise SystemExit(1) from None

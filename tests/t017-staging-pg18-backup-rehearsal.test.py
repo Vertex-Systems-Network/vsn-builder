@@ -103,7 +103,9 @@ class Contract(unittest.TestCase):
         with self.assertRaises(m.Blocked) as caught:
             m.rehearse(env(),runner=fail)
         self.assertNotIn("SECRET",str(caught.exception))
-        self.assertEqual(str(caught.exception),m.SAFE_CODE)
+        self.assertEqual(str(caught.exception),"T017_SOURCE_QUERY_FAILED")
+        self.assertNotIn("postgresql://",str(caught.exception))
+        self.assertNotIn("synthetic-not-real",str(caught.exception))
 
 if __name__=="__main__":
     unittest.main()
