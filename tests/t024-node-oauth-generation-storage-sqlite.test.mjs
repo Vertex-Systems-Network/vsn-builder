@@ -22,7 +22,8 @@ const orphan="ci-t024-node-orphan.myshopify.com";
 const active="ci-t024-node-online.myshopify.com";
 const concurrent="ci-t024-node-read-race.myshopify.com";
 const loadRace="ci-t024-node-load-generation-race.myshopify.com";
-const names=[first,orphan,active,concurrent,loadRace];
+const enumerateRace="ci-t024-node-enumeration-token-race.myshopify.com";
+const names=[first,orphan,active,concurrent,loadRace,enumerateRace];
 const initial=new Date("2026-10-17T04:00:00Z");
 const updated=new Date("2026-10-17T06:00:00Z");
 const offline=(shop,token="ci-token")=>({
@@ -223,4 +224,77 @@ test("Node findSessionsByShop refuses stale results after install-generation cha
    SessionStorage:ReinstallDuringEnumerationStorage,
  });
  assert.deepEqual(await guarded.findSessionsByShop(loadRace),[]);
+});
+
+test("Node enumeration denies stale sessions after persisted token rotation without a generation change",async()=>{
+ const stale=offline(enumerateRace,"enumeration-stale-token");
+ assert.equal(await storage(initial).storeSession(stale),true);
+ class RotateDuringEnumeration {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(){return undefined}
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(shop){
+     await db.session.update({
+       where:{id:stale.id},data:{accessToken:"enumeration-current-token"},
+     });
+     return [stale];
+   }
+ }
+ const guarded=createNodeShopifyGenerationSessionStorage(db,{
+   SessionStorage:RotateDuringEnumeration,
+ });
+ assert.deepEqual(await guarded.findSessionsByShop(enumerateRace),[]);
+ assert.equal((await db.builderShopInstallation.findUnique({
+   where:{shop:enumerateRace},
+ })).installedAt.toISOString(),initial.toISOString(),
+ "Token rotation did not advance installation generation");
+ assert.equal((await db.session.findUnique({where:{id:stale.id}})).accessToken,
+   "enumeration-current-token");
+ const current=await storage(updated).findSessionsByShop(enumerateRace);
+ assert.equal(current.length,1);
+ assert.equal(current[0].accessToken,"enumeration-current-token");
+});
+test("Node enumeration denies an SDK session deleted during its asynchronous read",async()=>{
+ const original=offline(enumerateRace,"token-for-deleted-session");
+ assert.equal(await storage(updated).storeSession(original),true);
+ class DeleteDuringEnumeration {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(){return undefined}
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(shop){
+     await db.session.delete({where:{id:original.id}});
+     return [original];
+   }
+ }
+ const guarded=createNodeShopifyGenerationSessionStorage(db,{
+   SessionStorage:DeleteDuringEnumeration,
+ });
+ assert.deepEqual(await guarded.findSessionsByShop(enumerateRace),[]);
+ assert.equal(await db.session.findUnique({where:{id:original.id}}),null);
+ assert.deepEqual(await storage(updated).findSessionsByShop(enumerateRace),[]);
+});
+test("Node enumeration rejects SDK-injected or duplicate credentials not persisted for this shop",async()=>{
+ assert.equal(await storage(updated).storeSession(offline(enumerateRace,"real-token")),true);
+ const stored=offline(enumerateRace,"real-token");
+ class ForgedEnumeration {
+   async isReady(){return true}
+   async storeSession(){return true}
+   async loadSession(){return undefined}
+   async deleteSession(){return true}
+   async deleteSessions(){return true}
+   async findSessionsByShop(){return [stored,{...stored,id:"unpersisted-online"}]}
+ }
+ class DuplicateEnumeration extends ForgedEnumeration {
+   async findSessionsByShop(){return [stored,stored]}
+ }
+ for(const SessionStorage of [ForgedEnumeration,DuplicateEnumeration]){
+   const guarded=createNodeShopifyGenerationSessionStorage(db,{SessionStorage});
+   assert.deepEqual(await guarded.findSessionsByShop(enumerateRace),[]);
+ }
+ assert.equal((await db.session.findUnique({where:{id:stored.id}})).accessToken,
+   "real-token");
 });

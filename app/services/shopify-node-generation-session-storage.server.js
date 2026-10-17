@@ -77,12 +77,50 @@ export function createNodeShopifyGenerationSessionStorage(database,{
       try{
         const before=await activeGeneration(shop);
         if(before===null)return [];
+        if(typeof database?.session?.findMany!=="function")
+          throw safeReadError();
+        // Pin persisted credentials before the official SDK's asynchronous
+        // enumeration. installedAt alone cannot catch rotation/deletion in
+        // the SAME installation generation.
+        const originals=await database.session.findMany({where:{shop}});
+        if(!Array.isArray(originals))throw safeReadError();
+        const previouslyPersisted=new Map();
+        for(const row of originals){
+          if(row?.shop!==shop || typeof row.id!=="string" ||
+             !row.id || typeof row.accessToken!=="string" ||
+             previouslyPersisted.has(row.id))throw safeReadError();
+          previouslyPersisted.set(row.id,row.accessToken);
+        }
         const sessions=await base.findSessionsByShop(shop);
         if(!Array.isArray(sessions))throw safeReadError();
-        // A successful uninstall AND reinstall between two boolean active
-        // checks must NOT release credentials from a prior generation.
-        if(await activeGeneration(shop)!==before)return [];
-        return sessions.filter(session=>session?.shop===shop);
+        // Read after SDK enumeration: deny a changed installation, a removed
+        // SDK session, or a token that rotated while the query was pending.
+        // This narrow read fence is not a serializable database snapshot and
+        // does not create trusted webhook install-generation provenance.
+        const [after,nowPersisted]=await Promise.all([
+          activeGeneration(shop),
+          database.session.findMany({where:{shop}}),
+        ]);
+        if(after!==before || !Array.isArray(nowPersisted))return [];
+        const latest=new Map();
+        for(const row of nowPersisted){
+          if(row?.shop!==shop || typeof row.id!=="string" ||
+             !row.id || typeof row.accessToken!=="string" ||
+             latest.has(row.id))throw safeReadError();
+          latest.set(row.id,row.accessToken);
+        }
+        const seen=new Set();
+        for(const session of sessions){
+          if(session?.shop!==shop || typeof session?.id!=="string" ||
+             typeof session?.accessToken!=="string" ||
+             seen.has(session.id) || !previouslyPersisted.has(session.id) ||
+             !latest.has(session.id) ||
+             session.accessToken!==previouslyPersisted.get(session.id) ||
+             session.accessToken!==latest.get(session.id))
+            return [];
+          seen.add(session.id);
+        }
+        return sessions;
       }catch{throw safeReadError()}
     },
   };
