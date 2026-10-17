@@ -37,6 +37,33 @@ test("request spoofing and reverse-proxy origin drift are rejected",()=>{
  assert.equal(result.ready,false);
  assert(result.issues.includes("Incoming request origin differs from Shopify app URL"));
 });
+test("Shopify Worker refuses hash-bearing request URLs before SDK/session bootstrap",()=>{
+ for(const tier of ["staging","production"]){
+  const env=envFor(tier);
+  const url=new Request(env.SHOPIFY_APP_URL+"/app?shop=verified.myshopify.com#forged-oauth");
+  const report=inspectWorkerShopifyConfiguration(url,env);
+  assert.equal(report.ready,false);
+  assert(report.issues.includes("Incoming Shopify request has URL credentials or fragment"));
+  assert.throws(()=>createShopifyWorkerSdk(url,env,{
+   createSdk(){throw new Error("SDK MUST NOT run");},
+   sessionStorage:{storeSession(){},loadSession(){}},
+   distribution:"app_store_test",
+  }),err=>err.code==="VSN_WORKER_SHOPIFY_NOT_READY" &&
+    !err.message.includes(env.SHOPIFY_API_SECRET));
+ }
+});
+test("literal Shopify API key must be exactly 32 hex, not merely trim-valid",()=>{
+ for(const tier of ["staging","production"]){
+  const env=envFor(tier);
+  for(const key of [" "+env.SHOPIFY_API_KEY,env.SHOPIFY_API_KEY+" ","\\t"+env.SHOPIFY_API_KEY]){
+   const status=inspectWorkerShopifyConfiguration(request(env),{
+    ...env,SHOPIFY_API_KEY:key,
+   });
+   assert.equal(status.ready,false);
+   assert(status.issues.includes("Shopify Client ID invalid"));
+  }
+ }
+});
 test("unverified app URLs and dev tunnels cannot be installed",()=>{
  const env=envFor("staging");
  for(const url of ["http://staging.builder.example.org","https://localhost:8787","https://sample.trycloudflare.com",
