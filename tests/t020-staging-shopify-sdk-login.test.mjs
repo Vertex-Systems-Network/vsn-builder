@@ -156,3 +156,19 @@ test("SDK driver errors never disclose credentials or accidentally certify login
   assert.equal(f.calls.at(-1)[0],"close");
  }
 });
+
+test("non-Shopify bootstrap Response may not forge an OAuth redirect",async()=>{
+ const forged=new Response("private bootstrap information",{status:302,headers:{
+  location:"https://attacker.example.net/collect",
+  "set-cookie":"oauth=forged",
+ }});
+ const res=await handleVerifiedStagingShopifyLogin(
+  request("/auth/login?shop="+shop),env,{
+   createSdkContext:async()=>{throw forged;},
+  },
+ );
+ assert.equal(res.status,503);
+ assert.equal(await res.text(),"");
+ assert.equal(res.headers.get("set-cookie"),null);
+ assert.equal(res.headers.get("location"),null);
+});
