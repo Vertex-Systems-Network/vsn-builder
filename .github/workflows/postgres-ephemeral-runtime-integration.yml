@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "tests/worker-shopify-install-postgres-real.test.mjs"
+      - "tests/t024-shop-redact-postgres-real.test.mjs"
       - "tests/postgres-ephemeral-integration.test.mjs"
       - "tests/postgres-ephemeral-restore.test.mjs"
       - "tests/t018-pg18-exact-ledger-rehearsal.test.mjs"
@@ -114,6 +115,10 @@ jobs:
         env:
           APP_ENV: development
         run: node --test tests/worker-shopify-install-postgres-real.test.mjs
+      - name: Prove T024 GDPR redaction refuses active reinstall and atomically purges only inactive generation
+        env:
+          APP_ENV: development
+        run: node --test tests/t024-shop-redact-postgres-real.test.mjs
       - name: Seed a disposable Shopify session before backup
         run: node scripts/seed-postgres-restore-fixture.mjs
       - name: Back up only disposable PostgreSQL database using PostgreSQL 18 pg_dump
