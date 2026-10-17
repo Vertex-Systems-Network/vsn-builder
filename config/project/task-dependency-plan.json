@@ -374,8 +374,7 @@
       "evidence": [
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/268",
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487397",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487380",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/268"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487380"
       ],
       "acceptance": "Actual Worker secret names, OAuth config and Staging identity/HTTPS bindings exist; no secret value disclosure",
       "progress_note": "2026-10-18: Independently inspected real Cloudflare Worker API settings and secret-name metadata (GET only): vsn-builder-staging exists, binding types include secret_text DATABASE_URL, SHOPIFY_API_KEY, SHOPIFY_API_SECRET; reviewed APP_ENV, VSN_WORKER_NAME, NEON_PROJECT_ID, SHOPIFY_BILLING_TEST_MODE, HTTPS SHOPIFY_APP_URL and SCOPES. No credentials printed, no changes. OAuth enable flag is not true and remains fail-closed while T018 Neon migration unexecuted. vsn-builder-production also exists but 0 runtime bindings; Live untouched. Earlier protected GitHub secret-name sync #268 remains verified. T019 IN_REVIEW until real hosted acceptance."
