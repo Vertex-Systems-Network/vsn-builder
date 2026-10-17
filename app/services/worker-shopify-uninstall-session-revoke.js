@@ -5,8 +5,11 @@
 // No destructive query may run without a durable, transactionally claimed
 // installation-generation fence. The cloud schema/migration for that fence
 // is NOT deployed yet; absent model/transaction deliberately returns 503.
-const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
-const reject=status=>new Response(null,{status,headers:{"cache-control":"no-store"}});
+const SHOP=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
+const reject=status=>new Response(null,{status,headers:{
+  "cache-control":"no-store",
+  ...(status===503?{"retry-after":"60"}:{}),
+}});
 const ok=()=>reject(204);
 
 export async function revokeVerifiedWorkerShopifySessions({event,context,triggeredAt}={}) {
