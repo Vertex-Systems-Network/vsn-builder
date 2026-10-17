@@ -64,6 +64,11 @@ class Contract(unittest.TestCase):
         self.assertEqual(env2["PGSSLMODE"],"disable")
         self.assertIn("postgres:18",remote)
         self.assertIn("postgres:18",local)
+        self.assertEqual(remote[remote.index("--user")+1],
+                         f"{__import__('os').getuid()}:{__import__('os').getgid()}")
+        self.assertEqual(local[local.index("--user")+1],
+                         f"{__import__('os').getuid()}:{__import__('os').getgid()}")
+
         ca="type=bind,src=/etc/ssl/certs/ca-certificates.crt,dst=/etc/ssl/certs/ca-certificates.crt,readonly"
         self.assertIn(ca,remote)
         self.assertNotIn(ca,local)
