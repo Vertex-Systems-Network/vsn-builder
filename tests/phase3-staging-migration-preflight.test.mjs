@@ -8,6 +8,9 @@ const pooled=hosted.replace("ep-little-dream-b3g6puj2.","ep-little-dream-b3g6puj
 function fake(overrides={}) {
   return {
     GITHUB_REF:"refs/heads/development",GITHUB_REF_PROTECTED:"true",
+    GITHUB_REPOSITORY:"Vertex-Systems-Network/vsn-builder",
+    GITHUB_WORKFLOW_REF:
+      "Vertex-Systems-Network/vsn-builder/.github/workflows/phase3-staging-neon-migration.yml@refs/heads/development",
     GITHUB_EVENT_NAME:"workflow_dispatch",APP_ENV:"staging",
     NEON_PROJECT_ID:"shiny-violet-61219572",
     SHOPIFY_BILLING_TEST_MODE:"true",STAGING_MIGRATION_APPROVED:"true",
@@ -23,6 +26,11 @@ test("Staging-only direct and pooled migration gate accepts isolated synthetic s
 test("Migration cannot run from unprotected development or production branches",()=>{
   for(const overrides of [
     {GITHUB_REF_PROTECTED:"false"},
+    {GITHUB_REPOSITORY:"Attacker/vsn-builder"},
+    {GITHUB_REPOSITORY:""},
+    {GITHUB_WORKFLOW_REF:"Vertex-Systems-Network/vsn-builder/.github/workflows/other.yml@refs/heads/development"},
+    {GITHUB_WORKFLOW_REF:"Vertex-Systems-Network/vsn-builder/.github/workflows/phase3-staging-neon-migration.yml@refs/heads/main"},
+    {GITHUB_WORKFLOW_REF:""},
     {GITHUB_REF:"refs/heads/main"},
     {GITHUB_EVENT_NAME:"pull_request"},
     {APP_ENV:"production"},
@@ -58,6 +66,13 @@ test("real Staging migration is manual-only; R2 is optional and cannot gate empt
   const migration=readFileSync(".github/workflows/phase3-staging-neon-migration.yml","utf8");
   const optionalR2=readFileSync(".github/workflows/t018-staging-private-r2-backup.yml","utf8");
   assert.match(migration,/workflow_dispatch:/);
+  const preflight=readFileSync("scripts/phase3-staging-migration-preflight.mjs","utf8");
+  assert.match(preflight,/GITHUB_REPOSITORY/);
+  assert.match(preflight,/GITHUB_WORKFLOW_REF/);
+  assert.match(preflight,/expectedStagingMigrationChecksums\(\)/);
+  assert(migration.indexOf("phase3-staging-migration-preflight.mjs")<
+    migration.indexOf("prisma migrate deploy --schema prisma/cloud/schema.prisma"),
+    "reviewed source checksum must be checked before any Staging DDL");
   assert.doesNotMatch(migration,/^  push:/m);
   assert.match(migration,/APPLY_EMPTY_BUILDER_STAGING_ONLY/);
   assert.match(migration,/secrets\.DATABASE_URL/);

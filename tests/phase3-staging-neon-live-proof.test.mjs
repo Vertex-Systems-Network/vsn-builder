@@ -8,6 +8,9 @@ const host=stage.neon_endpoint_host;
 function credentials(extra={}) {
  return {
   GITHUB_REF:"refs/heads/development",GITHUB_REF_PROTECTED:"true",
+  GITHUB_REPOSITORY:"Vertex-Systems-Network/vsn-builder",
+  GITHUB_WORKFLOW_REF:
+    "Vertex-Systems-Network/vsn-builder/.github/workflows/phase3-staging-neon-migration.yml@refs/heads/development",
   GITHUB_EVENT_NAME:"workflow_dispatch",APP_ENV:"staging",
   NEON_PROJECT_ID:stage.neon_project_id,
   SHOPIFY_BILLING_TEST_MODE:"true",STAGING_MIGRATION_APPROVED:"true",

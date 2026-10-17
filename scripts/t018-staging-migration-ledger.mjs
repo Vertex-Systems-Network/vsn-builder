@@ -9,6 +9,16 @@ export const EXPECTED_STAGING_MIGRATIONS=Object.freeze([
   "20261013_builder_cloud_baseline",
   "20261013_builder_shop_installation_fence",
 ]);
+// These hashes were independently reviewed against the immutable 2026-10-13
+// source SQL bytes. A runtime hash of CHANGED SQL is not its own approval.
+// Updating either file requires explicitly reviewing/changing this policy
+// before ANY protected Staging DDL can be dispatched.
+export const REVIEWED_STAGING_SQL_SHA256=Object.freeze({
+  "20261013_builder_cloud_baseline":
+    "44d2eb6478cfe30e98d4d3ad871a74faa896c80f77a0253638dc1825e51b74ff",
+  "20261013_builder_shop_installation_fence":
+    "9ded3864a4e69ef13ac6ce301b8bd9965d3a23178a6e443dcae7741dd57d8149",
+});
 const ERROR="T018_STAGING_MIGRATION_LEDGER_UNVERIFIED";
 const blocked=()=>{throw new Error(ERROR)};
 const safeDate=value=>value instanceof Date&&Number.isFinite(value.getTime());
@@ -22,7 +32,9 @@ export function expectedStagingMigrationChecksums(readFile=(name)=>
   for(const name of EXPECTED_STAGING_MIGRATIONS){
     const bytes=readFile(name);
     if(!Buffer.isBuffer(bytes)||bytes.byteLength<50)blocked();
-    hashes.set(name,createHash("sha256").update(bytes).digest("hex"));
+    const digest=createHash("sha256").update(bytes).digest("hex");
+    if(digest!==REVIEWED_STAGING_SQL_SHA256[name])blocked();
+    hashes.set(name,digest);
   }
   return hashes;
 }

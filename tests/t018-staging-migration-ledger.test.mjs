@@ -4,6 +4,7 @@ import {readFileSync} from "node:fs";
 import {createHash} from "node:crypto";
 import {
   EXPECTED_STAGING_MIGRATIONS,
+  REVIEWED_STAGING_SQL_SHA256,
   expectedStagingMigrationChecksums,
   expectedStagingMigrationTables,
   attestStagingMigrationLedger,
@@ -35,6 +36,22 @@ test("reviewed source files establish distinct nonempty SHA256 migration identit
  }
  assert.throws(()=>expectedStagingMigrationChecksums(()=>Buffer.alloc(2)),blocked);
  assert.throws(()=>expectedStagingMigrationChecksums(()=>"caller controlled string"),blocked);
+});
+test("T018 independently reviewed SQL SHA256 pins reject altered but still valid DDL",()=>{
+ assert.deepEqual(Object.keys(REVIEWED_STAGING_SQL_SHA256).sort(),
+   [...EXPECTED_STAGING_MIGRATIONS].sort());
+ for(const name of EXPECTED_STAGING_MIGRATIONS){
+  assert.equal(hashes.get(name),REVIEWED_STAGING_SQL_SHA256[name]);
+ }
+ // A one-byte SQL change preserves syntax/migration name and often table
+ // count, but must fail the pre-DDL approval before Prisma runs migrate deploy.
+ for(const target of EXPECTED_STAGING_MIGRATIONS){
+  assert.throws(()=>expectedStagingMigrationChecksums(name=>{
+   const bytes=readFileSync(new URL("../prisma/cloud/migrations/"+name+"/migration.sql",import.meta.url));
+   if(name===target){const clone=Buffer.from(bytes);clone[clone.length-1]^=1;return clone}
+   return bytes;
+  }),blocked,target);
+ }
 });
 test("both exactly hashed, nonrolledback migrations and required tables certify Staging ledger",()=>{
  const proof=attestStagingMigrationLedger(state());

@@ -2,6 +2,9 @@
 // Pure policy check; does not connect, migrate, back up, or print secrets.
 import { inspectHostedNeonUrlPair } from "../app/services/neon-target-policy.js";
 import targets from "../config/deployment/environments.json" with { type: "json" };
+import {
+  expectedStagingMigrationChecksums,expectedStagingMigrationTables,
+} from "./t018-staging-migration-ledger.mjs";
 
 // Prisma consumes DSN query parameters, unlike the separately constructed
 // read-only libpq probe. Never let an otherwise correctly pinned Neon URL
@@ -33,6 +36,13 @@ export function inspectStagingMigrationGate(env={}) {
   const issues=[];
   if(env.GITHUB_REF!=="refs/heads/development" || env.GITHUB_REF_PROTECTED!=="true")
     issues.push("Staging migration requires a protected development branch");
+  // This must be the approved source repository AND the protected, manual
+  // migration workflow. Ref-protected + dispatch alone can be recreated in
+  // a fork or in a different workflow carrying staging credentials.
+  if(env.GITHUB_REPOSITORY!=="Vertex-Systems-Network/vsn-builder" ||
+     env.GITHUB_WORKFLOW_REF!==
+       "Vertex-Systems-Network/vsn-builder/.github/workflows/phase3-staging-neon-migration.yml@refs/heads/development")
+    issues.push("Staging migration requires the reviewed protected workflow identity");
   if(env.GITHUB_EVENT_NAME!=="workflow_dispatch")
     issues.push("Staging migration requires deliberate manual dispatch");
   if(env.APP_ENV!=="staging" || env.NEON_PROJECT_ID!=="shiny-violet-61219572")
@@ -48,6 +58,15 @@ export function inspectStagingMigrationGate(env={}) {
   if(!/^snap-[a-z0-9-]{8,90}$/.test(backup) ||
      backup!==targets.staging.neon_pre_migration_snapshot_id)
     issues.push("Verified Staging backup snapshot identifier missing or mismatched");
+  // Fail BEFORE Prisma migrate deploy if any SQL byte differs from the
+  // reviewed/pinned SHA-256 identities, even when filenames and model-table
+  // counts still look correct. A runtime-computed hash is not an approval.
+  try {
+    expectedStagingMigrationChecksums();
+    expectedStagingMigrationTables();
+  }catch {
+    issues.push("Reviewed Staging migration SQL checksum or model inventory mismatch");
+  }
   // Validate secrets by shape and identical DB user/name; do not print them.
   const pair=inspectHostedNeonUrlPair("staging",{
     DATABASE_URL:env.DATABASE_URL,DIRECT_URL:env.DIRECT_URL,
