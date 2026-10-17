@@ -1,6 +1,11 @@
 name: VSN Phase 3 Staging Neon Migration — Protected Manual Only
 on:
   workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type APPLY_EMPTY_BUILDER_STAGING_ONLY for irreversible Staging schema DDL; otherwise dry-run blocks"
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -8,8 +13,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   migrate-staging:
-    # Development is currently NOT protected. Until its ruleset is corrected,
-    # this job deliberately skips rather than treating CI as Neon acceptance.
+    # Source must be genuinely protected; no PR, main, or Live credential access.
+    # This manual migration is distinct from optional R2 off-platform backups.
     if: github.ref == 'refs/heads/development' && github.ref_protected == true
     environment: cloudflare-staging
     runs-on: ubuntu-latest
@@ -19,11 +24,14 @@ jobs:
       NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
       SHOPIFY_BILLING_TEST_MODE: ${{ vars.SHOPIFY_BILLING_TEST_MODE }}
       GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
-      STAGING_MIGRATION_APPROVED: ${{ vars.STAGING_MIGRATION_APPROVED }}
-      VSN_STAGING_BACKUP_EVIDENCE: ${{ vars.VSN_STAGING_BACKUP_EVIDENCE }}
+      STAGING_MIGRATION_APPROVED: ${{ inputs.confirmation == 'APPLY_EMPTY_BUILDER_STAGING_ONLY' && 'true' || 'false' }}
+      # Public snapshot ID is immutable in reviewed source, then revalidated via
+      # authenticated GET for source branch and current-default provenance.
+      VSN_STAGING_BACKUP_EVIDENCE: snap-green-bar-b3m1btfb
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
-      DIRECT_URL: ${{ secrets.NEON_DIRECT_URL }}
+      # Same existing cloudflare-staging names independently tested by T016.
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -36,6 +44,10 @@ jobs:
         run: node scripts/phase3-staging-migration-preflight.mjs
       - name: Independently verify real Staging Neon snapshot, restored default and pooled endpoint (GET only)
         run: node scripts/phase3-staging-neon-live-proof.mjs
+      - name: Query exact pooled and direct neondb under read-only TLS transactions and assert 0 tables
+        run: |
+          set +x
+          python3 scripts/t018-staging-migration-readiness.py
       - name: Install deterministic dependencies
         run: npm ci
       - name: Enforce mandatory development dependency security audit
@@ -47,4 +59,4 @@ jobs:
       - name: Verify Staging migration history and required tables read-only
         run: node scripts/phase3-staging-post-migrate-check.mjs
       - name: Report evidence boundary
-        run: echo "Staging migration verified. Production remains untouched; recovery/rollback needs separate independently observed evidence."
+        run: echo "Empty Staging schema migration verified. Historical Neon snapshot is rollback source; do not enable merchant writes or Live until hosted acceptance and T036 recovery proof."
