@@ -12,7 +12,36 @@ const MAX_WEBHOOK_BYTES = 65536;
 const MAX_WEBHOOK_READ_MS = 3000;
 const SHOP_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
 const SIGNATURE_PATTERN = /^[A-Za-z0-9+/]{43}=$/;
-const denied = (status) => new Response(null, { status });
+// Only locally constructed validation denials carry their intended 4xx
+// status to the hosted Worker. A Shopify SDK/database/callback may ALSO
+// throw Response; those untrusted exceptions must always become 503.
+const EARLY_DENIALS=new WeakSet();
+const denied = status => {
+  const response=new Response(null,{status});
+  EARLY_DENIALS.add(response);
+  return response;
+};
+const SAFE_CALLBACK_STATUSES=new Set([204,400,401,503]);
+const emptyStatus=status=>new Response(null,{status,headers:{
+  "cache-control":"no-store","x-content-type-options":"nosniff",
+  ...(status===503?{"retry-after":"60"}:{}),
+}});
+// The callback has no authority to set browser cookies, redirect, or expose
+// a diagnostic body after webhook verification. Invalid callback output
+// must RETRY rather than implicitly acknowledging deletion.
+export function normalizeVerifiedWorkerWebhookResult(response){
+  if(!(response instanceof Response) ||
+     !SAFE_CALLBACK_STATUSES.has(response.status) ||
+     response.body!==null ||
+     response.headers.has("set-cookie") ||
+     response.headers.has("location"))
+    return emptyStatus(503);
+  return emptyStatus(response.status);
+}
+export function normalizeWorkerWebhookFailure(error){
+  return emptyStatus(error instanceof Response && EARLY_DENIALS.has(error)
+    ? error.status : 503);
+}
 
 async function boundedWebhookBody(request) {
   const claimedLength=request.headers.get("content-length");
@@ -115,8 +144,7 @@ export async function acceptWorkerShopifyUninstallWebhook(request,env,{
     // may a cleanup callback access the SDK request-scoped database. This
     // hook itself never performs a delete, and finally always closes context.
     const response=await onVerified({event,context,triggeredAt});
-    if(!(response instanceof Response))throw new TypeError("Missing webhook response");
-    return response;
+    return normalizeVerifiedWorkerWebhookResult(response);
   }finally {
     if(context)await context.close().catch(()=>{});
   }

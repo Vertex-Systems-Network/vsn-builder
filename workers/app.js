@@ -9,7 +9,7 @@ import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-dr
 import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
 import { handleVerifiedStagingShopifyAuth } from "../app/services/worker-shopify-staging-auth.js";
 import { handleVerifiedStagingShopifyLogin } from "../app/services/worker-shopify-staging-login.js";
-import { acceptWorkerShopifyUninstallWebhook } from "../app/services/worker-shopify-webhook-gate.js";
+import { acceptWorkerShopifyUninstallWebhook, normalizeWorkerWebhookFailure } from "../app/services/worker-shopify-webhook-gate.js";
 import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
 
 const LOCKED = Object.freeze({
@@ -173,7 +173,10 @@ export default {
           onVerified:revokeVerifiedWorkerShopifySessions,
         });
       }catch(error){
-        return error instanceof Response ? error : locked();
+        // Preserve only OUR gate's own typed pre-verification denial.
+        // SDK/DB/cleanup Response exceptions cannot forge cookies, redirects,
+        // response bodies or arbitrary merchant-facing status.
+        return normalizeWorkerWebhookFailure(error);
       }
     }
     // No storefront, OAuth, public merchant editor, or billing routes are
