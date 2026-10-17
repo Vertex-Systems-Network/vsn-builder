@@ -1,0 +1,70 @@
+name: T018 Protected Staging Prisma Migration Readiness (Read Only, No Deploy)
+# Only inspect database identities and migration source. This workflow NEVER
+# executes prisma migrate deploy or creates backups, branches or snapshots.
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "scripts/t018-staging-migration-readiness.py"
+      - "tests/t018-staging-migration-readiness.test.py"
+      - ".github/workflows/t018-staging-migration-readiness.yml"
+  push:
+    branches: [development]
+    paths:
+      - "scripts/t018-staging-migration-readiness.py"
+      - "tests/t018-staging-migration-readiness.test.py"
+      - ".github/workflows/t018-staging-migration-readiness.yml"
+permissions:
+  contents: read
+jobs:
+  synthetic:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Checkout proposed PR source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Run synthetic no-DDL migration readiness and identity tests
+        run: python3 tests/t018-staging-migration-readiness.test.py -v
+  protected-reference:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require protected VSN Builder development identity
+        env:
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REPO" = "Vertex-Systems-Network/vsn-builder"
+          test "$SOURCE_REF" = "refs/heads/development"
+          test "$SOURCE_PROTECTED" = "true"
+  real-staging-readonly-preflight:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    needs: protected-reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: cloudflare-staging
+    env:
+      APP_ENV: staging
+      NEON_PROJECT_ID: shiny-violet-61219572
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+    steps:
+      - name: Checkout exact protected development source without persisted token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Confirm native PostgreSQL read-only client and trust store
+        run: |
+          command -v psql >/dev/null
+          test -r /etc/ssl/certs/ca-certificates.crt
+      - name: Read-only Staging Neon zero-table baseline and two reviewed cloud migrations
+        run: |
+          set +x
+          python3 scripts/t018-staging-migration-readiness.py
