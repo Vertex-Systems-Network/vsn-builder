@@ -91,6 +91,10 @@ class R2Backup(unittest.TestCase):
          {"APP_ENV":"production"},
          {"NEON_PROJECT_ID":"nameless-violet-68750490"},
          {"DIRECT_URL":conn("ep-fake.c-4.ap-southeast-1.aws.neon.tech")},
+         # Both URLs may point to the correct branch and role but to a
+         # different database: this must fail BEFORE the R2 API is called.
+         {"DIRECT_URL":conn(m.pg.EXPECTED_DIRECT).replace("/neondb?","/brovexa?"),
+          "DATABASE_URL":conn(m.pg.EXPECTED_POOL).replace("/neondb?","/brovexa?")},
          {"DATABASE_URL":conn(m.pg.EXPECTED_DIRECT)},
          {"CLOUDFLARE_ACCOUNT_ID":"a"*32},
          {"CLOUDFLARE_R2_API_TOKEN":""},
