@@ -69,7 +69,7 @@ test("official SDK session plus persisted active generation authorizes merchant-
  assert.equal(await response.text(),"Authenticated app data");
  assert.equal(observed.shop,shop);
  assert.equal(observed.session.id,session.id);
- assert.deepEqual(calls.map(row=>row[0]),["official-admin","lifecycle","session","close"]);
+ assert.deepEqual(calls.map(row=>row[0]),["official-admin","lifecycle","session","lifecycle","session","close"]);
 });
 test("unsigned shop query or fabricated authorization header cannot grant access",async()=>{
  let called=false;
@@ -430,5 +430,56 @@ test("T020 ordinary read callbacks cannot set cookies or return external redirec
   assert.equal(r.headers.get("set-cookie"),null);
   assert.equal(r.headers.get("location"),null);
   assert.equal(fx.calls.at(-1)[0],"close");
+ }
+});
+
+
+test("T020 ALL authenticated GETs revalidate installation and token after body, not just page routes",async()=>{
+ const scenarios=[
+  {name:"uninstall",mutate:s=>{s.install.uninstalledAt=new Date("2026-10-17T12:00:00Z")}},
+  {name:"uninstall and reinstall",mutate:s=>{s.install.installedAt=new Date("2026-10-17T12:05:00Z")}},
+  {name:"same generation token rotation",mutate:s=>{s.persisted.accessToken="new-secret"}},
+  {name:"persisted token deleted",mutate:s=>{s.persisted=null}},
+  {name:"persisted token expired",mutate:s=>{s.persisted.expires=new Date("2020-01-01T00:00:00Z")}},
+  {name:"no concurrent change",mutate:()=>{},allow:true},
+ ];
+ for(const scenario of scenarios){
+  const state={install:{...entry},persisted:{...session}};
+  const calls=[];
+  const response=await acceptWorkerShopifyAdminRequest(request("/app/settings?shop="+shop),env,{
+   async createSdkContext(){
+    return {
+     shopify:{authenticate:{async admin(){
+      calls.push("sdk");
+      return {session:{...session},admin:{}};
+     }}},
+     database:{
+      builderShopInstallation:{async findUnique(){
+       calls.push("installation");
+       return state.install?{...state.install}:null;
+      }},
+      session:{async findUnique(){
+       calls.push("token");
+       return state.persisted?{...state.persisted}:null;
+      }},
+     },
+     async close(){calls.push("close")},
+    };
+   },
+   async onAuthenticated(){
+    return new Response(new ReadableStream({
+     pull(controller){
+      scenario.mutate(state);
+      calls.push("body-complete");
+      controller.enqueue(new TextEncoder().encode("PRIVATE_MERCHANT_SETTINGS"));
+      controller.close();
+     },
+    },{highWaterMark:0}),{status:200,headers:{"content-type":"text/plain"}});
+   },
+  });
+  assert.equal(response.status,scenario.allow?200:403,scenario.name);
+  assert.equal(await response.text(),scenario.allow?"PRIVATE_MERCHANT_SETTINGS":"",scenario.name);
+  assert.deepEqual(calls,["sdk","installation","token","body-complete","installation","token","close"],
+   scenario.name+" must fence the response before SDK/Neon cleanup");
  }
 });
