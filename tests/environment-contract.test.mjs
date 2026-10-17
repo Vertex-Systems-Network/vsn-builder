@@ -50,7 +50,7 @@ function hostedFixture(tier, overrides={}) {
    ?"ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech"
    :"ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech";
  const pooled=endpoint.replace(".","-pooler.");
- const databaseName=staging?"vsn_stage_ci":"vsn_prod_ci";
+ const databaseName="neondb"; // canonical identity; credentials remain synthetic
  return {
   APP_ENV:tier,
   SHOPIFY_BILLING_TEST_MODE:staging?"true":"false",
