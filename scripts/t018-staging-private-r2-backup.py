@@ -51,6 +51,11 @@ def validate(env):
         direct=pg.check_neon_urls(env)
     except Exception:
         raise fail("NEON_TARGET")
+    # An endpoint and matching roles are insufficient: other databases can
+    # coexist in the same Neon project. Never certify a Brovexa/other-db dump
+    # as a Builder pre-migration recovery point, even when it has zero tables.
+    if direct["db"]!="neondb":
+        raise fail("NEON_DATABASE_IDENTITY")
     # Immutable per protected run attempt. No shared or Live bucket.
     key=f"t018/pre-migration/{sha}/{run_id}-{attempt}.pgcustom"
     return direct,key
