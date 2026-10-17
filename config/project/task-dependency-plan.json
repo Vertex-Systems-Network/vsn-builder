@@ -310,10 +310,10 @@
     },
     {
       "id": "T017",
-      "title": "Live Neon snapshot/default/compute attestation in protected preflight",
+      "title": "Attest live Staging Neon snapshot/default/compute and pre-migration restore",
       "workstream": "Database",
       "priority": "P0",
-      "status": "in_review",
+      "status": "closed",
       "depends_on": [
         "T006"
       ],
@@ -322,10 +322,17 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/247",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/263",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/271",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/272",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/273",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/274",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38986914868"
       ],
-      "acceptance": "Run reviewed GET-only Neon live identity checker; verified snapshot, restored root and pooler; exact permissions",
-      "progress_note": "2026-10-17 user EXPLICITLY AUTHORIZED removing Brovexa data from VSN Builder Staging Neon project shiny-violet-61219572. Deletion performed precisely on foreign nondefault QA branch br-royal-morning-b3dhfrre ('qa-brovexa-m04-20261016', with separate brovexa_m04_fullqa 50-table database). Neon provider verified ONLY Builder original default branch br-square-mountain-b3ij6q2s remains (default=true); only neondb exists on it; existing historical Builder snapshot snap-green-bar-b3m1btfb preserved. No production change, new branches or migration. AFTER branch removal a NEW snapshot of CURRENT default failed Neon HTTP 422 snapshots limit exceeded. T017 stays IN_REVIEW pending confirmed current-default restore/recovery without deleting its sole historic snapshot; T018 Prisma migration WAITING. Prior PR #263 fail-closed snapshot provenance tests merged."
+      "acceptance": "T017 scoped pre-migration read-only Neon control-plane attestation: exactly one Builder default Staging branch, verified historical snapshot actually restored into this default with zero writes since restore, exact compute/transaction pooler, scoped protected source, and independently successful real PostgreSQL 18 custom dump and ephemeral restore without Neon writes. Fresh provider snapshot quota and actual Staging migration, durable post-migration backup/restore remain T018/T036 obligations, NOT part of this closed identity task.",
+      "progress_note": "FINAL CLOSED within pre-migration identity and observed restore scope only (2026-10-17). Provider independently verified project shiny-violet-61219572 has exactly one active original default br-square-mountain-b3ij6q2s; protected=false under documented reviewed Free-plan policy; restore_status finalized, restored_from retained snapshot snap-green-bar-b3m1btfb, restored_as historic branch br-wandering-queen-b3mmztjy, written_data_bytes=0. Exact endpoint ep-little-dream-b3g6puj2 transaction pooler enabled and separate Production identity. Actual protected `development` GH run #38986914868 SUCCESS: scoped pooled+direct URLs cross-checked; source Neon PG18 read-only query; pg_dump custom archive restored successfully into disposable local Postgres 18; schema/table counts matched; no remote DDL, no credential logging. Brovexa QA 50-table secondary branch was previously user-authorized deleted, and no new branches exist. Provider fresh snapshot quota HTTP 422 persists: do NOT claim a new snapshot. Actual Staging migrations and durable post-migration data restoration stay T018/T036 separate open tasks.",
+      "closed_on": "2026-10-17",
+      "closure_note": "T017 narrowly certifies existing retained pre-migration snapshot authenticity and current-default successful historical restore, one active branch, exact isolated Neon transaction pooler and genuine read-only full pg_dump/ephemeral PostgreSQL 18 roundtrip on GitHub protected Staging. Zero data written since snapshot-restore according to live Neon provider `written_data_bytes=0`; Staging currently has no user table data. Source PRs #271-#274 CI-green and protected read-only run #38986914868 successful. Does NOT certify fresh snapshot creation (Neon quota 422), persistent separate encrypted backup, Prisma migration, post-migration rollback, hosted Shopify OAuth, or Production. These remain separate downstream acceptance including T018 and T036. User authorized deleting only foreign Brovexa QA branch; no other branch, Worker or Production mutation."
     },
     {
       "id": "T018",
@@ -753,6 +760,7 @@
     "T013",
     "T014",
     "T016",
+    "T017",
     "T026",
     "T027",
     "T032"
