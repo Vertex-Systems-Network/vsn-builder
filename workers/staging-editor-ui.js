@@ -1,4 +1,4 @@
-// Small, explicit Staging-only merchant MVP. No secrets, token storage,
+export const STAGING_EDITOR_UI_SCRIPT=String.raw`// Small, explicit Staging-only merchant MVP. No secrets, token storage,
 // storefront publishing, role shortcuts, or third-party network calls.
 // This file is served only from the authenticated app's Staging Worker origin.
 (() => {
@@ -199,3 +199,4 @@
   }
   void hydrate();
 })();
+`;
