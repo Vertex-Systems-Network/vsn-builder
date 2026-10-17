@@ -1,6 +1,7 @@
 // T040: source-only listing readiness. Metadata flags are NOT authenticated
 // Partner Dashboard proof, real screenshots or live Shopify acceptance.
-import {readFileSync,existsSync} from "node:fs";
+import {readFileSync} from "node:fs";
+import {inspectRealListingPng,canonicalListingImagePath} from "./t040-shopify-screenshot-evidence.mjs";
 import {resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import {COMMERCIAL_PLANS,PLAN_ORDER,PAID_TRIAL_DAYS} from "../app/config/commercialPlans.js";
@@ -32,7 +33,7 @@ const https=url=>{
   return true;
  }catch{return false}
 };
-export function inspectListingReadiness(config,{screenshotExists=existsSync}={}){
+export function inspectListingReadiness(config,{screenshotProbe=inspectRealListingPng}={}){
  const errors=[];
  if(config.public_app!=="VSN | Builder"||config.public_app_count!==1)
   errors.push("Must have exactly ONE named public Shopify app");
@@ -50,12 +51,25 @@ export function inspectListingReadiness(config,{screenshotExists=existsSync}={})
  const gates=config.verified||{};
  const missing=needs.filter(k=>gates[k]!==true);
  if(!https(gates.privacy_policy_url))missing.push("privacy_policy_url");
- if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(gates.support_email||"")))
+ if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(gates.support_email||"")) ||
+    /(?:^|\.)(?:example|test|invalid|local|localhost|internal)$/i.test(
+      String(gates.support_email||"").split("@").at(-1)))
   missing.push("support_email");
  const pictures=Array.isArray(gates.screenshots)?gates.screenshots:[];
- if(pictures.length<SCREENS || new Set(pictures).size!==pictures.length ||
-    pictures.some(p=>typeof p!=="string" || !p.startsWith("docs/launch/evidence/") ||
-      !/\.(?:png|jpe?g|webp)$/i.test(p)||!screenshotExists(p)))
+ // Exactly five privately captured PNGs, each 1600x900, with distinct
+ // CONTENT hashes. Image bytes alone NEVER prove real Shopify app UI or
+ // correct merchant feature behavior; external E2E is still mandatory.
+ const namesValid=pictures.length===SCREENS &&
+   new Set(pictures).size===SCREENS &&
+   pictures.every(canonicalListingImagePath);
+ const images=namesValid?pictures.map(p=>{
+   try{return screenshotProbe(p)}catch{return null}
+ }):[];
+ const contentsValid=namesValid && images.every(x=>
+   x && x.format==="png" && x.width===1600 && x.height===900 &&
+   typeof x.sha256==="string" && /^[a-f0-9]{64}$/.test(x.sha256)) &&
+   new Set(images.map(x=>x.sha256)).size===SCREENS;
+ if(!contentsValid)
    missing.push("five_real_distinct_capture_files");
  if(config.release?.submitted===true)errors.push("Draft manifest must not claim a submitted Shopify review");
  if(config.release?.submission_allowed===true && (errors.length||missing.length))
