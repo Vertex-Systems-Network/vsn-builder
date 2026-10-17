@@ -15,7 +15,7 @@ const SELECT=Object.freeze({
 // A URL plan parameter, Shopify ID token, self-reported status, or environment
 // variable must NEVER be accepted as evidence that a paid plan is active.
 // Real Partner pricing/sync and hosted acceptance remain separate tasks.
-export async function hasVerifiedWorkerPaidReadAccess(database,verifiedShop,now=new Date()) {
+export async function getVerifiedWorkerPaidPlan(database,verifiedShop,now=new Date()) {
   if(!SHOP.test(String(verifiedShop||"")) ||
      typeof database?.builderSubscription?.findUnique!=="function" ||
      !(now instanceof Date) || !Number.isFinite(now.getTime()))
@@ -29,16 +29,23 @@ export async function hasVerifiedWorkerPaidReadAccess(database,verifiedShop,now=
      !PLAN_HANDLES.has(row.planKey) ||
      row.planHandle!==row.planKey ||
      !(row.verifiedAt instanceof Date) ||
-     !Number.isFinite(row.verifiedAt.getTime()))return false;
+     !Number.isFinite(row.verifiedAt.getTime()))return null;
   const age=now.getTime()-row.verifiedAt.getTime();
-  if(age < -FUTURE_CLOCK_SKEW_MS || age>MAX_MIRROR_AGE_MS)return false;
+  if(age < -FUTURE_CLOCK_SKEW_MS || age>MAX_MIRROR_AGE_MS)return null;
   if(row.status==="trialing" &&
      (!(row.trialEndsAt instanceof Date) ||
       !Number.isFinite(row.trialEndsAt.getTime()) ||
-      row.trialEndsAt.getTime()<=now.getTime()))return false;
+      row.trialEndsAt.getTime()<=now.getTime()))return null;
   if(row.status==="canceling" && row.cancelEffectiveOn!=null &&
      (!(row.cancelEffectiveOn instanceof Date) ||
       !Number.isFinite(row.cancelEffectiveOn.getTime()) ||
-      row.cancelEffectiveOn.getTime()<=now.getTime()))return false;
-  return true;
+      row.cancelEffectiveOn.getTime()<=now.getTime()))return null;
+  return row.planKey;
+}
+
+// The boolean access guard remains identical for existing authenticated GET
+// routes; the verified canonical handle is also needed for per-plan write
+// quotas inside the serialized merchant transaction.
+export async function hasVerifiedWorkerPaidReadAccess(database,verifiedShop,now=new Date()) {
+  return (await getVerifiedWorkerPaidPlan(database,verifiedShop,now))!==null;
 }
