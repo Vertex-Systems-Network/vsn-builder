@@ -2,6 +2,8 @@
 
 ## Verified engineering status — 17 October 2026
 
+**T020 verified source continuation — 17 October 2026:** AI-reviewed [PR #301](https://github.com/Vertex-Systems-Network/vsn-builder/pull/301) and [PR #302](https://github.com/Vertex-Systems-Network/vsn-builder/pull/302) each passed **7/7 exact-head required PR checks** and were squash-merged to protected `development` at `33aaaeb1109f2f72022c5e1bf0046855fb927993` and `b0cb877fcd629b1b7bd78ebb7ba590d1a2722d07`. #301 rechecks active Shopify installation generation and persisted SDK session **after** buffered private page GET responses; #302 blocks route-generated 3xx redirects, cookies and unsanitized 4xx error bodies while preserving actual Shopify SDK-thrown reauth responses. Independent real Staging Neon read-only inspection shows **0 app tables** on finalized original default branch and retained historical snapshot; no protected Prisma migration was executed. The existing Staging Worker currently reports **3 encrypted secret names and 9 runtime bindings** (configuration evidence only). No hosted OAuth, functional full React Router merchant SSR, billing, recovery, Staging deploy, Production action or Shopify submission occurred. **T020 remains IN_REVIEW**; 19 FINAL CLOSED / 22 ACTIVE (6 IN_REVIEW, 16 WAITING) unchanged.
+
 **Canonical source of truth:** [ACTIVE TASKS.md](TASKS.md) · [dependency manifest](config/project/task-dependency-plan.json) · [master issue #156](https://github.com/Vertex-Systems-Network/vsn-builder/issues/156). `CLOSED` is permanent only for its recorded acceptance scope; it is excluded from the active queue and retained in [closure audit archive](docs/closed-task-archive.md). **This is NOT a shipped Shopify application.**
 
 | Task-state metric | Verified count |
