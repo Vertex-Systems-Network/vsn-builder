@@ -309,3 +309,88 @@ test("GET callback 5xx body never exposes internal Shopify/Neon diagnostics",asy
  assert.equal(await response.text(),"");
  assert.equal(fx.calls.at(-1)[0],"close");
 });
+
+test("T020 privileged page GET rechecks installation generation after body consumption",async()=>{
+ const authorized="ci-authenticated.myshopify.com";
+ const checks=[
+  {
+   reason:"concurrent uninstall",
+   change:s=>{s.install.uninstalledAt=new Date("2026-10-17T09:00:00Z");},
+  },
+  {
+   reason:"concurrent reinstall generation replacement",
+   change:s=>{s.install.installedAt=new Date("2026-10-17T09:00:00Z");},
+  },
+  {
+   reason:"concurrent access token rotation",
+   change:s=>{s.persisted.accessToken="rotated-secret-token";},
+  },
+  {
+   reason:"concurrent session deletion",
+   change:s=>{s.persisted=null;},
+  },
+  {reason:"stable active installation",change:()=>{},allowed:true},
+ ];
+ for(const scenario of checks){
+  const state={
+   install:{shop:authorized,installedAt:new Date("2026-10-13T10:00:00Z"),
+    uninstalledAt:null},
+   persisted:{...session},
+  };
+  const events=[];
+  const db={
+   builderShopInstallation:{async findUnique(){
+    events.push("installation");
+    return state.install?{...state.install}:null;
+   }},
+   session:{async findUnique(){
+    events.push("session");
+    return state.persisted?{...state.persisted}:null;
+   }},
+   builderSubscription:{async findUnique(){
+    return {shop:authorized,provider:"shopify-app-pricing",
+     planKey:"starter",planHandle:"starter",status:"active",
+     verifiedAt:new Date(),trialEndsAt:null,cancelEffectiveOn:null};
+   }},
+   builderShopSetting:{async findUnique(){return {roleAccessJson:null};}},
+   builderPage:{
+    async count(){return 0},
+    async findMany(){return []},
+   },
+  };
+  const response=await acceptWorkerShopifyAdminRequest(request(),env,{
+   async createSdkContext(){
+    return {
+     database:db,
+     shopify:{authenticate:{async admin(){return {
+      session:{...session},admin:{},
+     }}}},
+     async close(){events.push("close")},
+    };
+   },
+   enablePageSummary:true,
+   async onAuthenticated(){
+    return new Response(new ReadableStream({
+     pull(controller){
+      scenario.change(state);
+      events.push("stream-finished");
+      controller.enqueue(new TextEncoder().encode("PRIVATE_PAGE_CONTENT"));
+      controller.close();
+     },
+    }),{status:200,headers:{"content-type":"text/plain"}});
+   },
+  });
+  assert.equal(response.status,scenario.allowed?200:403,scenario.reason);
+  assert.equal(await response.text(),scenario.allowed?"PRIVATE_PAGE_CONTENT":"",scenario.reason);
+  assert.deepEqual(events.slice(-4),[
+   "stream-finished","installation","session","close",
+  ],"Final read fence must execute after body consumption before disconnect");
+ }
+});
+
+test("T020 persisted Node/Worker Session.id must match authenticated SDK identity",async()=>{
+ const res=await run({stored:{...session,id:"offline_other.myshopify.com"}});
+ assert.equal(res.response.status,403);
+ assert.equal(await res.response.text(),"");
+ assert.equal(res.calls.at(-1)[0],"close");
+});

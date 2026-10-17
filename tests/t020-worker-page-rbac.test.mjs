@@ -20,9 +20,13 @@ function fixture({roleAccessJson=null,accountOwner=false,collaborator=false,
   const calls=[];
   const session={id:"offline_"+shop,shop,state:"",isOnline:false,
     accessToken:"private-token",accountOwner,collaborator};
+  // A persisted installation has a stable generation across independent
+  // SQL reads. A new Date() on every fixture lookup falsely simulates a
+  // reinstall and must NOT defeat the actual production read fence.
+  const installedAt=new Date("2026-10-13T10:00:00.000Z");
   const db={
     builderShopInstallation:{async findUnique(){
-      calls.push("installation");return {shop,installedAt:new Date(),uninstalledAt:null};
+      calls.push("installation");return {shop,installedAt,uninstalledAt:null};
     }},
     session:{async findUnique(){calls.push("session");return session}},
     builderSubscription:{async findUnique({where}){
