@@ -7,6 +7,8 @@ on:
       - "tests/worker-shopify-install-postgres-real.test.mjs"
       - "tests/postgres-ephemeral-integration.test.mjs"
       - "tests/postgres-ephemeral-restore.test.mjs"
+      - "tests/t018-pg18-exact-ledger-rehearsal.test.mjs"
+      - "scripts/t018-staging-migration-ledger.mjs"
       - "tests/shopify-prisma-storage-postgres.test.mjs"
       - "tests/worker-real-shopify-sdk-postgres.test.mjs"
       - "tests/worker-shopify-install-session-storage.test.mjs"
@@ -73,6 +75,31 @@ jobs:
         run: node --test tests/postgres-ephemeral-integration.test.mjs
       - name: Verify migration deployment is idempotent
         run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+      # This second local database is called neondb to match the reviewed
+      # T018 post-migration attestation. It is NOT hosted Neon and has no
+      # outside connection or credentials. The existing builder_ci test data
+      # and production systems are not modified.
+      - name: Rehearse protected T018 exact SQL ledger on second disposable PostgreSQL 18 neondb
+        shell: bash
+        env:
+          CI: "true"
+          NODE_ENV: test
+          T018_PG18_REHEARSAL: "1"
+          DATABASE_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/neondb?schema=public
+          DIRECT_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/neondb?schema=public
+        run: |
+          set -euo pipefail
+          test "${CI}" = true
+          test "${T018_PG18_REHEARSAL}" = 1
+          test -z "${NEON_API_KEY:-}"
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          docker run --rm --network host -e PGPASSWORD=local_ephemeral_only \\
+            postgres:18 createdb --host=127.0.0.1 --username=builder_ci neondb
+          npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+          node --test tests/t018-pg18-exact-ledger-rehearsal.test.mjs
+          npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+          node --test tests/t018-pg18-exact-ledger-rehearsal.test.mjs
       - name: Verify Local and Cloud generated clients stay separate
         run: node scripts/verify-prisma-client-isolation.mjs --generated
       - name: Confirm Worker Client generator does not affect Node runtime
