@@ -15,7 +15,10 @@
     "hosting": "local Shopify CLI",
     "status": "configuration_added_identity_requires_verification",
     "generated_configuration": "shopify.app.local.toml",
-    "app_name": "VSN | Builder (Development)"
+    "app_name": "VSN | Builder (Development)",
+    "shop_domain": "local-testing-iashboek.myshopify.com",
+    "shopify_client_id": "f6156da0bd799053f2f0bd0f9e10983c",
+    "shop_policy": "reuse_existing_only"
   },
   "staging": {
     "source_branch": "development",
@@ -38,7 +41,10 @@
     "neon_primary_policy": "free-plan-staging-pinned-snapshot-github-reviewed",
     "neon_plan_capability": "unprotected-branch-allowed-in-staging-only",
     "neon_branch_policy": "exactly-one-active-default",
-    "neon_snapshot_source_is_historical": true
+    "neon_snapshot_source_is_historical": true,
+    "shop_domain": "staging-oath3rth.myshopify.com",
+    "shopify_client_id": "0ecd6b7151485b41ea65924fe827806a",
+    "shop_policy": "reuse_existing_only"
   },
   "production": {
     "source_branch": "main",
@@ -55,6 +61,9 @@
     "neon_project_id": "nameless-violet-68750490",
     "neon_endpoint_host": "ep-jolly-truth-b3xbibzp.c-4.ap-southeast-1.aws.neon.tech",
     "neon_default_branch_id": "br-odd-credit-b3rzlpz9",
-    "neon_branch_policy": "exactly-one-active-default"
+    "neon_branch_policy": "exactly-one-active-default",
+    "shop_domain": "vertex-systems-network.myshopify.com",
+    "shopify_client_id": "997eae5a9961f21d131e5f31bbbe31d3",
+    "shop_policy": "reuse_existing_only"
   }
 }
