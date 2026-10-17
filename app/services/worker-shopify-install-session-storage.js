@@ -4,7 +4,7 @@
 //
 // The SDK must authenticate OAuth before invoking storeSession. This adapter
 // DOES NOT verify OAuth, sign tokens, expose secrets or deploy any Worker.
-const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+const SHOP=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
 const blocked=()=>{
   const error=new Error("Worker Shopify installation/session persistence unavailable");
   error.code="VSN_WORKER_INSTALL_SESSION_BLOCKED";
@@ -101,7 +101,8 @@ const expiresAt=row=>{
   return isDate(row.expires)?row.expires.getTime():NaN;
 };
 const validPersisted=(row,id,shop)=>{
-  if(!row || row.id!==id || row.shop!==shop ||
+  if(!row || typeof id!=="string" || !id || row.id!==id ||
+     row.shop!==shop || !EXACT_SHOP.test(String(shop||"")) ||
      typeof row.accessToken!=="string" || !row.accessToken ||
      typeof row.isOnline!=="boolean")return false;
   const expiry=expiresAt(row);
