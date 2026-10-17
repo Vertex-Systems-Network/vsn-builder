@@ -92,6 +92,8 @@ jobs:
         run: node --test tests/t020-full-merchant-graph.test.mjs
       - name: Assert authenticated GET stream completes before Shopify and Neon teardown
         run: node --test tests/worker-shopify-admin-gate.test.mjs
+      - name: Verify authenticated POST transaction and duplicate-shop query rejection
+        run: node --test tests/worker-shopify-admin-mutation.test.mjs
       - name: Verify read-only page data stays scoped to persisted merchant session
         run: node --test tests/t020-worker-merchant-page-summary.test.mjs
       - name: Exercise Staging-only Shopify App Bridge dashboard with verified paid staff auth

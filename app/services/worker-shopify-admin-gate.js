@@ -187,6 +187,10 @@ async function guardedAdminRequest(request,env,{
   const url=new URL(request.url);
   if(url.pathname!=="/app" && !url.pathname.startsWith("/app/"))
     return denied(404);
+  // Shopify can interpret repeated query keys differently between SDK,
+  // app/router code and request parsing. Reject ambiguous tenant hints
+  // before creating any request-scoped Neon or official SDK context.
+  if(url.searchParams.getAll("shop").length>1)return denied(400);
   if(typeof onAuthenticated!=="function")return denied(503);
   if(!inspectWorkerShopifyConfiguration(request,env).ready ||
      !inspectWorkerNeonEnvironment(env).ready)return denied(503);
