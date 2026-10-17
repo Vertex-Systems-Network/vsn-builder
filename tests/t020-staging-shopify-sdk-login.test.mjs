@@ -14,7 +14,7 @@ const env={
  SHOPIFY_API_KEY:"a".repeat(32),SHOPIFY_API_SECRET:"fake-ci-secret",
  SHOPIFY_PRODUCTION_CLIENT_ID:"b".repeat(32),
  SHOPIFY_APP_URL:origin,SCOPES:SHOPIFY_EXPECTED_SCOPES.join(","),
- DATABASE_URL:"postgresql://ci:fake@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/db?sslmode=require",
+ DATABASE_URL:"postgresql://ci:fake@ep-little-dream-b3g6puj2.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
  VSN_STAGING_OAUTH_ENABLED:"true",
 };
 const request=(suffix="/auth/login")=>new Request(origin+suffix);
