@@ -212,6 +212,10 @@ async function guardedAdminRequest(request,env,{
   let pageReadLease;
   let metadataLease;
   let contentLease;
+  // Only a Response THROWN by the official authenticate.admin invocation
+  // may be forwarded as Shopify reauthorization transport. A route callback
+  // can itself throw Response.redirect()/Set-Cookie; that is never trusted.
+  let sdkThrownResponse;
   try {
     context=await createSdkContext(request,env);
     if(typeof context?.shopify?.authenticate?.admin!=="function" ||
@@ -221,7 +225,13 @@ async function guardedAdminRequest(request,env,{
 
     // This is the only authentication authority. Untrusted ?shop and headers
     // are NEVER merchant credentials; ?shop is only a consistency check.
-    const authenticated=await context.shopify.authenticate.admin(request);
+    let authenticated;
+    try {
+      authenticated=await context.shopify.authenticate.admin(request);
+    }catch(error) {
+      if(error instanceof Response)sdkThrownResponse=error;
+      throw error;
+    }
     const session=authenticated?.session;
     const shop=session?.shop;
     if(!SHOP.test(String(shop||"")) ||
@@ -353,10 +363,11 @@ async function guardedAdminRequest(request,env,{
       // Failures during finalization occurred BEFORE the rollback, not here.
       return error.response;
     }
-    // Shopify SDK can throw a Response to start reauthentication. Forward it
-    // unchanged (including cookie/redirect headers), as the official SDK
-    // requires. Reject other errors without exposing tokens/Neon URLs.
-    if(error instanceof Response)return error;
+    // Only official SDK authenticate.admin-thrown Response is safe to
+    // pass through unchanged. Caller-controlled mutation/GET callbacks and
+    // DB helpers may also THROW Response but must never forge SDK cookies
+    // or navigation, even if their response looks like a real Shopify 302.
+    if(error instanceof Response && error===sdkThrownResponse)return error;
     return denied(503);
   } finally {
     // A leaked callback cannot query after this request's context is closed.
