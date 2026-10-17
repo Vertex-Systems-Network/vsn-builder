@@ -94,7 +94,8 @@ def docker_command(argv, connection, local=False, mount=None):
          "--cap-drop","ALL","--security-opt","no-new-privileges",
          "--read-only","--tmpfs","/tmp:rw,nosuid,noexec,size=64m"]
     if mount:
-        cmd+=["--mount",f"type=bind,src={mount},dst=/t017,readonly={'false' if argv[0]=='pg_dump' else 'true'}"]
+        mode="" if argv[0]=="pg_dump" else ",readonly"
+        cmd+=["--mount",f"type=bind,src={mount},dst=/t017{mode}"]
     for key in env:
         if key.startswith("PG"):cmd+=["--env",key]
     cmd+=[DOCKER_IMAGE,*argv]
