@@ -45,13 +45,19 @@ function fakeDb({claimed=1,failedDelete=null}={}){
  },{
   get(target,key){
    if(key in target)return target[key];
-   return {deleteMany:async query=>{
-    assert.equal(query.where.shop,shop);
-    assert.equal(state.events[0]?.type,"claim","purge before installation lock");
-    state.events.push({type:"delete",table:String(key),query});
-    if(failedDelete===String(key))throw Error("synthetic-postgres://secret");
-    return {count:1};
-   }};
+   // PrismaPromise is lazy: construct the delete then execute on await,
+   // ensuring an intentional failed delete never creates an unhandled promise.
+   return {deleteMany:query=>({
+     then(resolve,reject){
+       try{
+         assert.equal(query.where.shop,shop);
+         assert.equal(state.events[0]?.type,"claim","purge before installation lock");
+         state.events.push({type:"delete",table:String(key),query});
+         if(failedDelete===String(key))throw Error("synthetic-postgres://secret");
+         resolve({count:1});
+       }catch(error){reject(error)}
+     }
+   })};
   },
  });
  const db={
