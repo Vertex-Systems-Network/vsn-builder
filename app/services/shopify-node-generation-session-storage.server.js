@@ -23,13 +23,15 @@ export function createNodeShopifyGenerationSessionStorage(database,{
   const writer=createWorkerGenerationSessionStorage(database,base,{
     SessionStorage,clock,
   });
-  const allowed=async shop=>{
+  const activeGeneration=async shop=>{
     if(typeof shop!=="string" ||
        !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/.test(shop))
-      return false;
+      return null;
     const row=await database.builderShopInstallation.findUnique({where:{shop}});
-    return row?.shop===shop && row?.installedAt instanceof Date &&
-      Number.isFinite(row.installedAt.getTime()) && row.uninstalledAt===null;
+    if(row?.shop!==shop || !(row.installedAt instanceof Date) ||
+       !Number.isFinite(row.installedAt.getTime()) || row.uninstalledAt!==null)
+      return null;
+    return row.installedAt.getTime();
   };
   const safeReadError=()=>{
     const error=new Error("VSN_NODE_SHOPIFY_SESSION_READ_BLOCKED");
@@ -40,20 +42,46 @@ export function createNodeShopifyGenerationSessionStorage(database,{
     ...writer,
     async loadSession(id){
       try{
+        if(typeof id!=="string" || !id ||
+           typeof database?.session?.findUnique!=="function")
+          return undefined;
+        // Pin both the actual persisted SDK session and installation
+        // generation BEFORE calling the official SDK session loader. The
+        // older read-only guard checked only after that await; uninstall
+        // followed by reinstall could reactivate a stale already-read token.
+        const original=await database.session.findUnique({where:{id}});
+        if(!original || original.id!==id || typeof original.accessToken!=="string")
+          return undefined;
+        const generation=await activeGeneration(original.shop);
+        if(generation===null)return undefined;
         const session=await base.loadSession(id);
-        if(!session)return undefined;
-        return await allowed(session.shop)?session:undefined;
+        if(!session || session.id!==id ||
+           session.shop!==original.shop ||
+           session.accessToken!==original.accessToken)
+          return undefined;
+        const [latest,afterGeneration]=await Promise.all([
+          database.session.findUnique({where:{id}}),
+          activeGeneration(original.shop),
+        ]);
+        // A token rotation, deletion or changed install generation during
+        // the asynchronous SDK read must never disclose the stale session.
+        if(!latest || latest.id!==id ||
+           latest.shop!==original.shop ||
+           latest.accessToken!==original.accessToken ||
+           afterGeneration!==generation)
+          return undefined;
+        return session;
       }catch{throw safeReadError()}
     },
     async findSessionsByShop(shop){
       try{
-        if(!await allowed(shop))return [];
+        const before=await activeGeneration(shop);
+        if(before===null)return [];
         const sessions=await base.findSessionsByShop(shop);
         if(!Array.isArray(sessions))throw safeReadError();
-        // The installation can be uninstalled while the SDK enumerates
-        // sessions. Revalidate AFTER that await, before returning any token.
-        // This is a narrow read race guard, not trusted reinstall provenance.
-        if(!await allowed(shop))return [];
+        // A successful uninstall AND reinstall between two boolean active
+        // checks must NOT release credentials from a prior generation.
+        if(await activeGeneration(shop)!==before)return [];
         return sessions.filter(session=>session?.shop===shop);
       }catch{throw safeReadError()}
     },
