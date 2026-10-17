@@ -28,6 +28,16 @@ jobs:
           persist-credentials: false
       - name: Validate isolated Postgres 18 read-only backup and ephemeral restore
         run: python3 tests/t017-staging-pg18-backup-rehearsal.test.py -v
+      - name: Certify identical Postgres 18 Docker sandbox and trusted CA path without secrets
+        run: |
+          set -euo pipefail
+          test -r /etc/ssl/certs/ca-certificates.crt
+          docker run --rm --network host --cap-drop ALL \
+            --security-opt no-new-privileges --read-only \
+            --tmpfs /tmp:rw,nosuid,noexec,size=64m \
+            --mount type=bind,src=/etc/ssl/certs/ca-certificates.crt,dst=/etc/ssl/certs/ca-certificates.crt,readonly \
+            postgres:18 sh -c 'psql --version >/dev/null && test -r /etc/ssl/certs/ca-certificates.crt'
+          echo "T017 CA trust and Postgres 18 read-only container: PASS (zero Staging credentials)"
   protected-reference:
     if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
     runs-on: ubuntu-24.04
