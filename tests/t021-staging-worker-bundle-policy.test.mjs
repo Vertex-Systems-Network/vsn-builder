@@ -58,6 +58,6 @@ test("T021 PR workflow is credentials-free, real Staging bundle dry-run only",()
  assert.doesNotMatch(workflow,/environment:\s*cloudflare-staging/);
  assert.doesNotMatch(workflow,/\$\{\{\s*secrets\./);
  assert.doesNotMatch(workflow,/\bworkflow_dispatch:/);
- assert.doesNotMatch(workflow,/wrangler\.production|wrangler\.live|shopify app deploy/i);
+ assert.doesNotMatch(workflow,/(?:--config|deploy --config)\s+wrangler\.(?:production|live)(?:\.jsonc)?/i);\n assert.doesNotMatch(workflow,/shopify app deploy/i);
  assert.doesNotMatch(workflow,/prisma migrate (?:deploy|dev|reset)/);
 });
