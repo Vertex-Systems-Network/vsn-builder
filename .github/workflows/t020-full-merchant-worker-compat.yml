@@ -13,6 +13,9 @@ on:
       - ".github/workflows/t020-full-merchant-worker-compat.yml"
       - "app/**"
       - "workers/app.js"
+      - "wrangler.staging.jsonc"
+      - "wrangler.production.jsonc"
+      - "tests/t019-staging-https-retention.test.mjs"
       - "tests/t020-worker-neon-schema-ledger-health.test.mjs"
       - "tests/t020-worker-merchant-page-summary.test.mjs"
       - "tests/t020-worker-staging-dashboard.test.mjs"
@@ -91,6 +94,8 @@ jobs:
           DATABASE_URL: postgresql://nope:unused@localhost:5432/unused
           DIRECT_URL: postgresql://nope:unused@localhost:5432/unused
         run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Verify Staging public HTTPS retention, Production isolation and disabled merchant gates
+        run: node --test tests/t019-staging-https-retention.test.mjs
       - name: Build actual full merchant React Router route graph
         run: |
           npm run build
