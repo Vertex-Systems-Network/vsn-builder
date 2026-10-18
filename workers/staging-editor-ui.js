@@ -88,7 +88,7 @@ export const STAGING_EDITOR_UI_SCRIPT=String.raw`// Small, explicit Staging-only
   const save=editor.querySelector("[data-vsn-save]");
   const versionLabel=editor.querySelector("[data-vsn-version]");
   if(!list || !preview || !add || !save || !versionLabel)return;
-  let elements=[],version=0,hydrated=false;
+  let elements=[],version=0,hydrated=false,editRevision=0;
 
   function render(){
     list.replaceChildren();
@@ -110,6 +110,7 @@ export const STAGING_EDITOR_UI_SCRIPT=String.raw`// Small, explicit Staging-only
           // Preserve every other field, custom block and sibling untouched.
           elements[index]={...elements[index],
             props:{...elements[index].props,text:input.value}};
+          editRevision++;
           drawPreview();
         });
         row.append(input);
@@ -137,15 +138,22 @@ export const STAGING_EDITOR_UI_SCRIPT=String.raw`// Small, explicit Staging-only
   add.addEventListener("click",()=>{
     if(!hydrated || elements.length>=5000){notice("Editor is unavailable or full.");return}
     elements.push({id:crypto.randomUUID(),type:"text",props:{text:""}});
+    editRevision++;
     render();
     notice("New text block added. Save the draft to persist it.");
   });
 
   save.addEventListener("click",()=>void busy(save,async()=>{
     if(!hydrated){notice("Load the draft before saving.");return}
+    // Snapshot BEFORE the awaited fresh Shopify idToken and network call.
+    // Text inputs remain interactive while the request is in flight. Without
+    // an immutable copy, later edits could silently change the submitted body,
+    // while the version badge falsely reports those later edits as saved.
+    const submittedRevision=editRevision;
+    const submittedElements=JSON.parse(JSON.stringify(elements));
     notice("Saving version "+version+"...");
     const response=await call(path("/app/__vsn/pages/"+encodeURIComponent(id)+"/content"),{
-      method:"POST",body:{expectedVersion:version,elements},
+      method:"POST",body:{expectedVersion:version,elements:submittedElements},
     });
     if(response.status===409){
       notice("Another edit changed this page. Reload to review before saving again.");
@@ -165,7 +173,9 @@ export const STAGING_EDITOR_UI_SCRIPT=String.raw`// Small, explicit Staging-only
     }
     version=data.version;
     versionLabel.textContent=String(version);
-    notice("Draft saved. Reload this page to verify persistence.");
+    notice(editRevision===submittedRevision?
+      "Draft saved. Reload this page to verify persistence.":
+      "Previous changes saved, but newer edits are UNSAVED. Save again.");
   }));
 
   async function hydrate(){
