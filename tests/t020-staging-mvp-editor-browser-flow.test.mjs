@@ -17,6 +17,7 @@ class Element{
     this.value="";this.disabled=false;this._text="";
   }
   getAttribute(name){return this.attrs[name]??null}
+  setAttribute(name,value){this.attrs[name]=String(value)}
   set textContent(value){this._text=String(value);this.childNodes=[]}
   get textContent(){return this._text}
   replaceChildren(...children){this.childNodes=children}
