@@ -1,0 +1,68 @@
+name: T021 Real Staging Worker Artifact Dry Run (No Deploy)
+# Build EXACT workers/app.js for the REAL Staging name with NO provider
+# credentials, no deployment, no Neon DDL, no OAuth and no merchant writes.
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "wrangler.staging.jsonc"
+      - "wrangler.production.jsonc"
+      - "workers/app.js"
+      - "workers/staging-editor-ui.js"
+      - "app/services/**"
+      - "prisma/cloud/**"
+      - "tests/t021-staging-worker-bundle-policy.test.mjs"
+      - ".github/workflows/t021-staging-worker-bundle-dryrun.yml"
+permissions:
+  contents: read
+jobs:
+  dryrun-real-staging-worker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Checkout exact PR source without GitHub write credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Use pinned Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Prove provider credentials unavailable and refuse real merchant mutation
+        run: |
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${CLOUDFLARE_ACCOUNT_ID:-}"
+          test -z "${SHOPIFY_API_KEY:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${NEON_API_KEY:-}"
+          test -z "${DATABASE_URL:-}"
+          test -z "${DIRECT_URL:-}"
+      - name: Install exact dependency lockfile
+        run: npm ci
+      - name: Install isolated Cloudflare Wrangler via already-certified Vite plugin version
+        run: |
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.64.0
+          test -x ./node_modules/.bin/wrangler
+          git diff --exit-code -- package.json package-lock.json
+      - name: Verify release artifact identity and encryption guard source contract
+        run: node --test tests/t021-staging-worker-bundle-policy.test.mjs
+      - name: Generate compiled hosted Prisma Edge client without network or real DB
+        env:
+          DATABASE_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
+          DIRECT_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Bundle actual reviewed Staging Worker entry using Wrangler, NEVER deploy
+        run: |
+          mkdir -p .t021-staging-dryrun
+          ./node_modules/.bin/wrangler deploy --config wrangler.staging.jsonc --dry-run --outdir .t021-staging-dryrun --keep-vars
+          test -n "$(find .t021-staging-dryrun -maxdepth 2 -type f -name '*.js' -size +500c -print -quit)"
+          echo "PASS: real Staging Worker bundle built in CI without provider credentials or deployment"
+      - name: Confirm no dependency changes or generated Staging secrets in git
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json wrangler.staging.jsonc wrangler.production.jsonc
