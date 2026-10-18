@@ -60,7 +60,8 @@ function ui(mode){
 const flush=async()=>{for(let i=0;i<12;i++)await pause()};
 function backend(){
   const state={page:null,requests:[],tokens:[],navigation:[],
-    authorize:true,networkFailure:false,staleNextSave:false,readonly:false};
+    authorize:true,networkFailure:false,staleNextSave:false,readonly:false,
+    holdNextSave:null};
   const fetch=async(url,options={})=>{
     const method=options.method||"GET";
     state.requests.push({url,method,options});
@@ -91,6 +92,13 @@ function backend(){
       if(state.readonly)return new Response(null,{status:403});
       const request=JSON.parse(options.body);
       assert.deepEqual(Object.keys(request).sort(),["elements","expectedVersion"]);
+      // Pausing AFTER decoding the serialized body models an in-flight POST:
+      // the user may keep typing, but that MUST NOT mutate the sent bytes.
+      if(state.holdNextSave){
+        const pauseUntil=state.holdNextSave;
+        state.holdNextSave=null;
+        await pauseUntil;
+      }
       if(state.staleNextSave||request.expectedVersion!==state.page.version)
         return Response.json({code:"DRAFT_VERSION_CONFLICT"},{status:409});
       state.page.elements=structuredClone(request.elements);
@@ -221,4 +229,40 @@ test("save without persisted paid edit permission leaves existing content intact
   assert.equal(server.state.page.version,1);
   assert.equal(server.state.page.elements.length,1);
   assert.match(editor.status.textContent,/role cannot edit/);
+});
+
+
+test("in-flight edits are not mistaken for persisted save; follow-up save persists latest text",async()=>{
+  const server=backend();
+  server.state.page={...initialPage(),elements:[
+    {id:"text1",type:"text",props:{text:"Before"}},
+  ]};
+  const editor=mount("edit",server);
+  await flush();
+  const input=editor.list.childNodes[0].childNodes[1];
+  input.value="First draft";
+  input.events.input();
+  let release;
+  server.state.holdNextSave=new Promise(resolve=>{release=resolve});
+  editor.save.events.click();
+  await flush();
+  assert.equal(editor.save.disabled,true);
+  input.value="Second draft, typed while first request is in flight";
+  input.events.input();
+  release();
+  await flush();
+
+  assert.equal(server.state.page.version,2);
+  assert.equal(server.state.page.elements[0].props.text,"First draft");
+  assert.equal(editor.versionLabel.textContent,"2");
+  assert.match(editor.status.textContent,/newer edits are UNSAVED/);
+  assert.equal(input.value,"Second draft, typed while first request is in flight");
+  assert.equal(editor.save.disabled,false);
+  editor.save.events.click();
+  await flush();
+  assert.equal(server.state.page.version,3);
+  assert.equal(server.state.page.elements[0].props.text,
+    "Second draft, typed while first request is in flight");
+  assert.match(editor.status.textContent,/Draft saved/);
+  assert.equal(server.state.tokens.length,3);
 });
