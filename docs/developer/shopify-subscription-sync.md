@@ -29,6 +29,8 @@ SHOPIFY_PARTNER_API_RETRY_BASE_MS=250
 VSN_SYNC_SHOPIFY_BILLING_IN_DEVELOPMENT=false
 ```
 
+The sync skip for developer simulation applies **only** when `APP_ENV=local/development` and no Staging/Production/Live Worker/tier marker is present. An unmarked or hosted runtime must never silently use this skip; with no Partner credentials it reports an unconfigured sync and paid entitlements fail closed. `NODE_ENV=test/development` alone is not a merchant billing authority.
+
 The Partner API token must stay server-side. The browser receives only a redacted sync configuration.
 
 ## Entitlement rules
