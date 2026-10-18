@@ -199,10 +199,17 @@ async function guardedAdminRequest(request,env,{
   const url=new URL(request.url);
   if(url.pathname!=="/app" && !url.pathname.startsWith("/app/"))
     return denied(404);
-  // Shopify can interpret repeated query keys differently between SDK,
-  // app/router code and request parsing. Reject ambiguous tenant hints
-  // before creating any request-scoped Neon or official SDK context.
-  if(url.searchParams.getAll("shop").length>1)return denied(400);
+  // Shopify SDK, URLSearchParams and app/router helpers can interpret
+  // duplicate URL keys differently, even if just "host"/"embedded" rather
+  // than "shop". Reject ALL repeated parameter names (including percent-
+  // encoded aliases), before opening Shopify SDK or Neon context.
+  // Do not change permitted canonical OAuth/App Bridge keys or trust URL
+  // contents as credentials. The official SDK still owns authentication.
+  const seenParams=new Set();
+  for(const [key] of url.searchParams) {
+    if(seenParams.has(key))return denied(400);
+    seenParams.add(key);
+  }
   if(typeof onAuthenticated!=="function")return denied(503);
   if(!inspectWorkerShopifyConfiguration(request,env).ready ||
      !inspectWorkerNeonEnvironment(env).ready)return denied(503);
