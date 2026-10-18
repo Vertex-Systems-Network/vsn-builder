@@ -12,6 +12,12 @@
   "workers_dev": true,
   "preview_urls": false,
   "send_metrics": false,
+  // Wrangler 4 validates these existing encrypted binding names before a
+  // Staging deploy. Secret VALUES remain only in cloudflare-staging/Cloudflare.
+  // Never add DIRECT_URL, migrations credentials or any Live secret here.
+  "secrets": {
+    "required": ["DATABASE_URL", "SHOPIFY_API_KEY", "SHOPIFY_API_SECRET"]
+  },
   "vars": {
     "APP_ENV": "staging",
     "VSN_WORKER_NAME": "vsn-builder-staging",
