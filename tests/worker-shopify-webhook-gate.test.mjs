@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {createHmac} from "node:crypto";
 import {
  acceptWorkerShopifyUninstallWebhook,normalizeWorkerWebhookFailure,
- normalizeVerifiedWorkerWebhookResult,
+ normalizeVerifiedWorkerWebhookResult,parseValidShopifyWebhookUTC,
 } from "../app/services/worker-shopify-webhook-gate.js";
 import {createWorkerShopifySdkContext} from "../app/services/shopify-worker-sdk-context.js";
 import {SHOPIFY_EXPECTED_SCOPES} from "../app/config/shopifyIntegration.js";
@@ -271,4 +271,61 @@ test("only gate-originated preverification denials may preserve their client sta
  assert.equal(normalized.headers.get("location"),null);
  assert.equal(normalized.headers.get("retry-after"),"60");
  assert.equal(normalizeVerifiedWorkerWebhookResult({}).status,503);
+});
+
+
+test("UTC Shopify timestamp parser rejects Gregorian-invalid dates without normalization",()=>{
+ const invalid=[
+  "2026-02-30T09:00:00Z",
+  "2026-02-29T09:00:00Z",
+  "2026-04-31T00:00:00Z",
+  "2026-13-01T00:00:00Z",
+  "2026-00-01T00:00:00Z",
+  "2026-10-00T00:00:00Z",
+  "2026-10-13T24:00:00Z",
+  "2026-10-13T01:60:00Z",
+  "2026-10-13T01:00:60Z",
+  "2026-10-13T09:00:00+00:00",
+  "2026-10-13T09:00:00.1234567890Z",
+  "2026-10-13T09:00:00.123456789-00:00",
+  "2026-10-13T09:00:00.123456789Zextra",
+ ];
+ for(const value of invalid)
+   assert.equal(parseValidShopifyWebhookUTC(value),null,value);
+ for(const [value,iso] of [
+  ["2028-02-29T23:59:59Z","2028-02-29T23:59:59.000Z"],
+  ["2026-10-13T09:00:00.123456789Z","2026-10-13T09:00:00.123Z"],
+  ["2026-12-31T23:59:59.999Z","2026-12-31T23:59:59.999Z"],
+ ]){
+   const result=parseValidShopifyWebhookUTC(value);
+   assert(result instanceof Date,value);
+   assert.equal(result.toISOString(),iso,value);
+ }
+});
+test("impossible signed webhook timestamp denies before Shopify SDK/DB, including authentic body",async()=>{
+ const c=context();
+ for(const date of [
+  "2026-02-30T09:00:00Z",
+  "2026-04-31T09:00:00.000Z",
+  "2026-10-13T24:00:00Z",
+  "2026-02-29T09:00:00Z",
+ ]){
+   const response=await result(webhook(payload,{"X-Shopify-Triggered-At":date}),env,c);
+   assert.equal(response.status,400,date);
+ }
+ assert.equal(c.opened,0);
+ assert.equal(c.closed,0);
+});
+test("valid nine-digit fractional timestamp survives two independent webhook signatures",async()=>{
+ const c=context();
+ const data=await result(webhook(payload,{
+  "X-Shopify-Triggered-At":"2028-02-29T23:59:59.987654321Z",
+ }),env,c,async({triggeredAt,event})=>{
+   assert.equal(event.shop,"test-store.myshopify.com");
+   assert.equal(triggeredAt.toISOString(),"2028-02-29T23:59:59.987Z");
+   return new Response(null,{status:204});
+ });
+ assert.equal(data.status,204);
+ assert.equal(c.opened,1);
+ assert.equal(c.closed,1);
 });

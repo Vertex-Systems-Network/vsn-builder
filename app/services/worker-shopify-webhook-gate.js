@@ -12,6 +12,27 @@ const MAX_WEBHOOK_BYTES = 65536;
 const MAX_WEBHOOK_READ_MS = 3000;
 const SHOP_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
 const SIGNATURE_PATTERN = /^[A-Za-z0-9+/]{43}=$/;
+// JavaScript Date.parse may silently normalize impossible calendar days
+// (e.g. February 30). A syntactically valid but impossible Shopify event
+// time must not be recorded as a different calendar date. This timestamp
+// is still UNSIGNED metadata: never use it as installation-generation proof.
+const UTC_EVENT=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,9}))?Z$/;
+export function parseValidShopifyWebhookUTC(value){
+  if(typeof value!=="string")return null;
+  const match=UTC_EVENT.exec(value);
+  if(!match)return null;
+  const parsed=Date.parse(value);
+  if(!Number.isFinite(parsed))return null;
+  const date=new Date(parsed);
+  if(date.getUTCFullYear()!==Number(match[1]) ||
+     date.getUTCMonth()+1!==Number(match[2]) ||
+     date.getUTCDate()!==Number(match[3]) ||
+     date.getUTCHours()!==Number(match[4]) ||
+     date.getUTCMinutes()!==Number(match[5]) ||
+     date.getUTCSeconds()!==Number(match[6]))
+    return null;
+  return date;
+}
 // Only locally constructed validation denials carry their intended 4xx
 // status to the hosted Worker. A Shopify SDK/database/callback may ALSO
 // throw Response; those untrusted exceptions must always become 503.
@@ -120,9 +141,8 @@ export async function acceptWorkerShopifyUninstallWebhook(request,env,{
   const timestamp=request.headers.get("x-shopify-triggered-at")||"";
   // Shopify emits an RFC3339 UTC event timestamp, sometimes with nanoseconds.
   // Do not infer event time from *delivery* time: retries can follow reinstall.
-  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(timestamp) ||
-     !Number.isFinite(Date.parse(timestamp)))throw denied(400);
-  const triggeredAt=new Date(timestamp);
+  const triggeredAt=parseValidShopifyWebhookUTC(timestamp);
+  if(!triggeredAt)throw denied(400);
   if(!SHOP_PATTERN.test(shop) || topic!=="app/uninstalled" ||
      !/^\d{4}-\d{2}$/.test(version) || !/^[a-zA-Z0-9-]{1,128}$/.test(id) || !hmac)
     throw denied(400);
