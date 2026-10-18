@@ -1,3 +1,4 @@
+import { isLocalBillingSimulation } from "../config/local-billing-simulation.js";
 import { getShopifyPlanHandleMap, normalizePricingHandle, normalizeShopDomain, resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
 
 const API_VERSION_RE=/^2026-(07|10)$|^unstable$/;
@@ -127,7 +128,9 @@ export function subscriptionMirrorMatchesCurrentPlanHandles(row){if(!row)return 
 export function subscriptionMirrorIsTrusted(row,now=new Date()){if(!row?.verifiedAt||row?.provider!=="shopify-app-pricing")return false;return now.getTime()-new Date(row.verifiedAt).getTime()<=getShopifySubscriptionSyncConfig().maxStaleSeconds*1000;}
 
 async function syncInner({db,admin,shop,force=false,fetchImpl=fetch,sleepImpl=wait,now=new Date()}){
-  if(process.env.NODE_ENV!=="production"&&!/^(1|true|yes|on)$/i.test(clean(process.env.VSN_SYNC_SHOPIFY_BILLING_IN_DEVELOPMENT)))return {ok:true,skipped:true,reason:"developer-mode"};
+  if(isLocalBillingSimulation() &&
+     !/^(1|true|yes|on)$/i.test(clean(process.env.VSN_SYNC_SHOPIFY_BILLING_IN_DEVELOPMENT)))
+    return {ok:true,skipped:true,reason:"developer-mode"};
   const config=getShopifySubscriptionSyncConfig();if(!config.configured)return {ok:false,skipped:true,reason:"unconfigured",issues:config.issues};
   const existing=await db.builderSubscription.findUnique({where:{shop}}).catch(()=>null);
   if(!force&&subscriptionMirrorIsFresh(existing,now)&&subscriptionMirrorMatchesCurrentPlanHandles(existing))return {ok:true,skipped:true,reason:"fresh-cache",row:existing};

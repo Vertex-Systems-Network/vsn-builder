@@ -23,6 +23,9 @@ There are four merchant-visible IDs: `starter`, `sliver`, `gold`, `platinum`. `S
 ## Production rule
 In production, only the trusted Shopify App Pricing mirror from Q5.2 may grant a paid plan. `VSN_DEFAULT_PLAN` is development-only. If verification is absent or no longer trusted, authority fails closed to the no-access `inactive` sentinel. Starter must never be granted without an active, verified Shopify contract.
 
+## Local billing simulation is explicit
+Only an explicitly marked **Local/Dev** Node runtime (`APP_ENV=development` or `APP_ENV=local`, never `NODE_ENV=production`) may use `VSN_DEFAULT_PLAN` for developer simulation. A Staging/Production/Live `APP_ENV`, Worker name or deployment tier marker always defeats the simulation, even when `NODE_ENV=test/development`; an absent tier is denied rather than silently defaulting to Platinum. Hosted merchants require a verified Shopify App Pricing mirror and the four canonical paid IDs. `APP_ENV=development` is provided in `.env.example` solely for local testing. Never copy it to Staging/Live.
+
 ## Usage counters
 Usage must be stable commercial state, not transient UI/runtime activity. Collaboration seats therefore count the owner plus persisted role assignments, not browser presence rows. Monthly AI usage uses a UTC month boundary.
 
