@@ -17,7 +17,13 @@ test("separate hosted Worker manifests route to one gated source without secrets
     assert.equal(cfg.vars.APP_ENV,tier);
     assert.equal(cfg.vars.VSN_WORKER_NAME,workerName);
     assert.equal(cfg.vars.NEON_PROJECT_ID,project);
-    assert.equal(cfg.workers_dev,false);
+    // Staging's verified workers.dev HTTPS transport is enabled, but
+    // Production must remain non-public. This is transport only, not
+    // approval to bypass the protected migration/OAuth/merchant gates.
+    assert.equal(cfg.workers_dev,tier==="staging");
+    assert.equal(cfg.vars.VSN_STAGING_OAUTH_ENABLED,undefined);
+    assert.equal(cfg.vars.VSN_STAGING_DASHBOARD_ENABLED,undefined);
+    assert.equal(cfg.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined);
     assert.equal(cfg.preview_urls,false);
     assert.equal(cfg.vars.SHOPIFY_BILLING_TEST_MODE,tier==="staging"?"true":"false");
     assert(!JSON.stringify(cfg).match(/DATABASE_URL|DIRECT_URL|SHOPIFY_API_SECRET|SHOPIFY_PARTNER_API_TOKEN/i));
