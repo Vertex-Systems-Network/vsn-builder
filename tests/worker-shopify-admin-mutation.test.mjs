@@ -113,6 +113,11 @@ test("ambiguous POST merchant query never authenticates SDK or starts transactio
  for(const suffix of [
   "?shop="+shop+"&shop=other.myshopify.com",
   "?shop="+shop+"&%73hop="+shop,
+  "?shop="+shop+"&host=first&host=last",
+  "?shop="+shop+"&embedded=1&%65mbedded=0",
+  "?shop="+shop+"&id_token=one&id_token=two",
+  "?shop="+shop+"&%68ost=one&host=two",
+  "?shop="+shop+"&foreign=first&foreign=second",
  ]){
   const fx=fixture();
   const req=new Request(env.SHOPIFY_APP_URL+"/app/settings"+suffix,{method:"POST"});
@@ -126,6 +131,20 @@ test("ambiguous POST merchant query never authenticates SDK or starts transactio
   assert.equal(fx.closes,0);
   assert.deepEqual(fx.actions,[]);
  }
+});
+
+test("canonical Shopify App Bridge metadata is permitted without duplicate keys",async()=>{
+ const fx=fixture();
+ const req=new Request(env.SHOPIFY_APP_URL+"/app/settings?shop="+shop+
+   "&host=single-host&embedded=1&id_token=synthetic",{method:"POST"});
+ const response=await acceptWorkerShopifyAdminMutation(req,env,{
+  createSdkContext:fx.createSdkContext,
+  async onAuthenticated(){return new Response(null,{status:204})},
+ });
+ assert.equal(response.status,204);
+ assert.equal(fx.authCalls,1);
+ assert(fx.actions.includes("commit"));
+ assert.equal(fx.closes,1);
 });
 
 test("uninstall committed between snapshot and lock blocks callback and no writes",async()=>{

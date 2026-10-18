@@ -105,11 +105,25 @@ test("duplicate or percent-aliased Shopify shop query denied before SDK/Neon",as
   "/app?shop="+shop+"&shop=foreign.myshopify.com",
   "/app?shop="+shop+"&%73hop="+shop,
   "/app/__vsn/page-summary?shop="+shop+"&shop="+shop,
+  "/app?shop="+shop+"&host=encoded-host&host=other-host",
+  "/app?shop="+shop+"&embedded=1&%65mbedded=0",
+  "/app?shop="+shop+"&id_token=first&id_token=second",
+  "/app?shop="+shop+"&%68ost=one&host=two",
+  "/app?shop="+shop+"&unknown=x&unknown=y",
  ]){
   const {response,calls}=await run({},request(uri));
   assert.equal(response.status,400,uri);
   assert.equal(await response.text(),"");
   assert.deepEqual(calls,[],"no request-scoped SDK context should open");
+ }
+ for(const allowed of [
+   "/app?shop="+shop+"&host=encoded-host&embedded=1",
+   "/app?shop="+shop+"&id_token=one-token",
+   "/app?shop="+shop+"&unknown=x",
+ ]){
+   const {response,calls}=await run({},request(allowed));
+   assert.equal(response.status,200,allowed);
+   assert(calls.some(([event])=>event==="official-admin"));
  }
  const {response}=await run({},request("/app?shop="+shop));
  assert.equal(response.status,200,"canonical Shopify hint unaffected");
