@@ -42,6 +42,21 @@ function makeSyntheticValidPng(width=1600,height=900){
  const body=deflateSync(raw,{level:1});
  return Buffer.concat([PNG,chunk("IHDR",ihdr),chunk("IDAT",body),chunk("IEND",Buffer.alloc(0))]);
 }
+
+// Insert real, CRC-correct PNG chunks; a valid PNG parser can accept these,
+// but an App Store evidence image must not include private metadata.
+const ihdrEnd=8+12+13;
+function beforeImageData(bytes,name,data){
+ return Buffer.concat([
+  bytes.subarray(0,ihdrEnd),chunk(name,Buffer.from(data)),bytes.subarray(ihdrEnd),
+ ]);
+}
+function afterImageData(bytes,name,data){
+ const offset=bytes.length-12; // Original final IEND chunk
+ return Buffer.concat([
+  bytes.subarray(0,offset),chunk(name,Buffer.from(data)),bytes.subarray(offset),
+ ]);
+}
 function fixture(bytes,fn){
  const created=!existsSync(ROOT);
  if(created)mkdirSync(ROOT,{recursive:true});
@@ -81,6 +96,66 @@ test("corrupt CRC, malformed PNG and incorrect dimensions fail closed",()=>{
   assert.equal(inspectRealListingPng(path),null,"magic-only forged PNG cannot pass");
   writeFileSync(path,makeSyntheticValidPng(1920,1080));
   assert.equal(inspectRealListingPng(path),null);
+ });
+});
+test("CRC-correct hidden text, EXIF, private and animated chunks cannot ship as listing images",()=>{
+ const base=makeSyntheticValidPng();
+ const privateBytes=Buffer.from("Shopify-Token=secret; Merchant-Customer=42");
+ const cases=[
+  ["tEXt",privateBytes],
+  ["zTXt",privateBytes],
+  ["iTXt",privateBytes],
+  ["eXIf",privateBytes],
+  ["iCCP",privateBytes],
+  ["acTL",Buffer.alloc(8)],
+  ["fcTL",Buffer.alloc(26)],
+  ["fdAT",privateBytes],
+  ["vpAg",privateBytes],
+  ["ABCD",privateBytes],
+ ];
+ fixture(base,path=>{
+  for(const [name,data] of cases){
+   const image=beforeImageData(base,name,data);
+   writeFileSync(path,image);
+   assert.equal(inspectRealListingPng(path),null,
+    "PNG with CRC-correct "+name+" cannot be privacy-safe evidence");
+   const trailing=afterImageData(base,name,data);
+   writeFileSync(path,trailing);
+   assert.equal(inspectRealListingPng(path),null,
+    "no hidden chunk after IDAT: "+name);
+  }
+ });
+});
+test("strict validator accepts safe fixed-width color profile/pixel density chunks",()=>{
+ const base=makeSyntheticValidPng();
+ const cases=[
+  ["sRGB",Buffer.from([0])],
+  ["gAMA",Buffer.from([0,0,0,1])],
+  ["cHRM",Buffer.alloc(32)],
+  ["pHYs",Buffer.alloc(9)],
+ ];
+ fixture(base,path=>{
+  for(const [name,data] of cases){
+   const image=beforeImageData(base,name,data);
+   writeFileSync(path,image);
+   const got=inspectRealListingPng(path);
+   assert(got,name+" must remain supported before IDAT");
+   assert.equal(got.sha256,createHash("sha256").update(image).digest("hex"));
+   writeFileSync(path,afterImageData(base,name,data));
+   assert.equal(inspectRealListingPng(path),null,
+    name+" after IDAT is forbidden to keep image payload contiguous");
+  }
+ });
+});
+test("duplicated and non-contiguous IDAT chunks fail closed",()=>{
+ const base=makeSyntheticValidPng();
+ fixture(base,path=>{
+  const extra=chunk("IDAT",Buffer.from([0x00]));
+  const broken=Buffer.concat([base.subarray(0,base.length-12),extra,
+    base.subarray(base.length-12)]);
+  writeFileSync(path,broken);
+  assert.equal(inspectRealListingPng(path),null,
+    "invalid inflated content appended to existing IDAT must be refused");
  });
 });
 test("a filesystem symlink to even a valid image is rejected",()=>{
