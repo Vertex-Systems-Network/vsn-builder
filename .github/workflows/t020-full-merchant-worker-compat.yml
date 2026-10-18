@@ -33,6 +33,7 @@ on:
       - "tests/t020-worker-draft-save-request.test.mjs"
       - "tests/t020-worker-page-create-mvp.test.mjs"
       - "tests/t020-staging-mvp-editor-ui.test.mjs"
+      - "tests/t020-staging-mvp-editor-browser-flow.test.mjs"
       - "app/services/worker-shopify-staging-editor-html.js"
       - "workers/staging-editor-ui.js"
       - "tests/shopify-worker-configuration.test.mjs"
@@ -141,6 +142,8 @@ jobs:
         run: node --test tests/t020-worker-page-create-mvp.test.mjs
       - name: Verify Staging merchant create/edit UI remains Shopify-authenticated and Live-locked
         run: node --test tests/t020-staging-mvp-editor-ui.test.mjs
+      - name: Verify real browser script create-edit-save-reload and optimistic conflict flow
+        run: node --test tests/t020-staging-mvp-editor-browser-flow.test.mjs
       - name: Compile FULL merchant route graph + official Shopify SDK + PrismaNeon for Workerd
         run: |
           npm exec --yes --package=wrangler@4.149.0 -- wrangler deploy --config wrangler.full-merchant-graph-ci.jsonc --dry-run --outdir /tmp/vsn-t020-merchant-graph-compat
