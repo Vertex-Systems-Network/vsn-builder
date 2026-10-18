@@ -87,6 +87,33 @@ test("idempotent existing binding inventory performs no secret writes",async()=>
  assert.equal(result.updated,false);
  assert.equal(cloud.ops.some(x=>x.method==="PATCH"),false);
 });
+test("already-bound PUBLIC Staging endpoint is re-attested GET-only without deployment or secret PATCH",async()=>{
+ const cloud=provider({alreadyBound:true,publicRoute:true});
+ const result=await syncPrivateStagingSecrets(baseEnv(),{fetchImpl:cloud.fake});
+ assert.deepEqual(result,{
+  ready:true,worker:"vsn-builder-staging",secretCount:3,updated:false,
+  activeDeploymentUnchanged:true,publicRouteEnabled:true,
+  merchantOAuthVerified:false,productionTouched:false,
+ });
+ assert.equal(cloud.ops.length,8);
+ assert(cloud.ops.every(x=>x.method==="GET" && x.body===undefined));
+ const metadata=JSON.stringify(result);
+ for(const value of ["synthetic-private-cloud-token-not-real",
+   "synthetic-private-shopify-secret-not-real","postgresql://"])
+  assert(!metadata.includes(value));
+});
+test("public Staging endpoint with partial secrets never attempts credential upload",async()=>{
+ for(const mutate of [
+  undefined,
+  s=>{s.secrets.push({name:"DATABASE_URL",type:"secret_text"});
+    s.bindings.push({name:"DATABASE_URL",type:"secret_text"});},
+ ]){
+  const cloud=provider({publicRoute:true,...(mutate?{mutate}:{})});
+  await assert.rejects(syncPrivateStagingSecrets(baseEnv(),{fetchImpl:cloud.fake}),
+   {code:"T019_STAGING_PRIVATE_SECRET_SYNC_BLOCKED"});
+  assert(cloud.ops.every(x=>x.method==="GET"));
+ }
+});
 test("untrusted ref, fork, missing/wrong tier identities and bad Neon host reject before any Cloudflare request",async()=>{
  const cases=[
  {GITHUB_REPOSITORY:"attacker/fork"},

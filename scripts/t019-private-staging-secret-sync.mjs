@@ -1,4 +1,7 @@
-// T019: one atomic encrypted binding update to PRIVATE Staging Worker only.
+// T019: one atomic encrypted binding update to Staging Worker only.
+// An already-public Staging workers.dev URL may be REATTESTED read-only if
+// all three encrypted secrets are present. Never PATCH missing secrets to
+// a publicly routed Worker; fail closed instead.
 // Trigger only from an audited, protected development push with trusted
 // cloudflare-staging GitHub Environment secrets. No worker deployment or routes.
 // Do not log secret contents, request bodies, provider errors or URLs.
@@ -45,7 +48,7 @@ const secretShape=x=>x&&typeof x.name==="string"&&
  (x.type==="secret_text"||x.type==="secret_key");
 function inventory(settings,secrets,subdomain){
  if(!Array.isArray(settings?.bindings)||!Array.isArray(secrets)||
-    subdomain?.enabled!==false || subdomain?.previews_enabled!==false)
+    typeof subdomain?.enabled!=="boolean" || subdomain?.previews_enabled!==false)
    throw fail();
  const items=settings.bindings;
  const map=new Map();
@@ -78,7 +81,7 @@ function inventory(settings,secrets,subdomain){
   if(bound?.type!=="secret_text"||listed!=="secret_text")throw fail();
   return true;
  }).length;
- return count;
+ return {secretCount:count,publicRouteEnabled:subdomain.enabled};
 }
 async function call(fetchImpl,suffix,method,token,body){
  const headers={authorization:"Bearer "+token,accept:"application/json"};
@@ -105,7 +108,7 @@ async function readSnapshot(fetchImpl,token){
  const list=Array.isArray(deployments?.deployments)?deployments.deployments:
   Array.isArray(deployments)?deployments:null;
  if(!list || !list[0]?.id)throw fail();
- return {count:inventory(settings,secrets,subdomain),deploymentId:list[0].id};
+ return {...inventory(settings,secrets,subdomain),deploymentId:list[0].id};
 }
 export async function syncPrivateStagingSecrets(env={}, {fetchImpl=fetch}={}){
  // No provider request OR sensitive-value handling on an unprotected ref.
@@ -113,9 +116,14 @@ export async function syncPrivateStagingSecrets(env={}, {fetchImpl=fetch}={}){
  if(typeof fetchImpl!=="function")throw fail();
  const token=env.CLOUDFLARE_API_TOKEN;
  const before=await readSnapshot(fetchImpl,token);
- if(before.count!==0 && before.count!==SECRET_NAMES.length)throw fail();
+ if(before.secretCount!==0 && before.secretCount!==SECRET_NAMES.length)throw fail();
+ // The Staging HTTPS route is currently public but serves a fail-closed
+ // placeholder. Existing bound secrets can be re-attested with GET only;
+ // exposing previously unbound secrets would require a separate review.
+ if(before.publicRouteEnabled && before.secretCount!==SECRET_NAMES.length)
+  throw fail();
  let updated=false;
- if(before.count===0){
+ if(before.secretCount===0){
   const payload={secrets:Object.fromEntries(SECRET_NAMES.map(name=>[
    name,{name,type:"secret_text",text:env[name]},
   ]))};
@@ -124,17 +132,18 @@ export async function syncPrivateStagingSecrets(env={}, {fetchImpl=fetch}={}){
   updated=true;
  }
  const after=await readSnapshot(fetchImpl,token);
- if(after.count!==SECRET_NAMES.length ||
-    after.deploymentId!==before.deploymentId)throw fail();
- return {ready:true,worker:WORKER,secretCount:after.count,updated,
-  activeDeploymentUnchanged:true,publicRouteEnabled:false,
+ if(after.secretCount!==SECRET_NAMES.length ||
+    after.deploymentId!==before.deploymentId ||
+    after.publicRouteEnabled!==before.publicRouteEnabled)throw fail();
+ return {ready:true,worker:WORKER,secretCount:after.secretCount,updated,
+  activeDeploymentUnchanged:true,publicRouteEnabled:after.publicRouteEnabled,
   merchantOAuthVerified:false,productionTouched:false};
 }
 async function main(){
  try{
   const proof=await syncPrivateStagingSecrets(process.env);
   console.log("T019 private Staging Worker secret metadata: PASS; encrypted bindings="+proof.secretCount);
-  console.log("Existing Worker deployment unchanged; public subdomain remains disabled; merchant OAuth and migration not certified.");
+  console.log("Existing Worker deployment and public-route status unchanged; merchant OAuth and migration not certified.");
  }catch{
   console.error("::error::"+CODE);
   process.exitCode=1;
