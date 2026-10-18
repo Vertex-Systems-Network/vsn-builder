@@ -1,5 +1,7 @@
 {
-  // Phase 4 gated integration only. No merchant app release or public URL.
+  // Stage-only HTTPS endpoint exists, but merchant routes remain fail-closed
+  // until the protected T018 migration, reviewed deploy and hosted acceptance.
+  // Never enable previews or production workers.dev as a side effect.
   // Shopify secrets and Neon DATABASE_URL must be set via scoped secret
   // bindings; NEVER commit credentials to this file or use CLI deploy
   // until the protected environment and acceptance gates are verified.
@@ -7,7 +9,7 @@
   "main": "./workers/app.js",
   "compatibility_date": "2026-10-13",
   "compatibility_flags": ["nodejs_compat"],
-  "workers_dev": false,
+  "workers_dev": true,
   "preview_urls": false,
   "send_metrics": false,
   "vars": {
