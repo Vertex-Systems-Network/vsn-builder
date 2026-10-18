@@ -15,8 +15,8 @@ export function isLocalBillingSimulation(env=process.env){
  const worker=String(env.VSN_WORKER_NAME||"").trim().toLowerCase();
  if(worker && /(?:^|[-_])(staging|stage|production|prod|live)(?:$|[-_])/.test(worker))
   return false;
- // Preserve existing standalone local Node workflow when APP_ENV is absent.
- // It must never be used as a Shopify provider attestation; hosted adapters
- // should declare APP_ENV and VSN_WORKER_NAME explicitly.
- return true;
+ // Explicit Local/Dev opt-in is mandatory. If APP_ENV is missing from
+ // process.env (as can happen under a Worker build), never infer a local
+ // merchant entitlement from NODE_ENV=test/development alone.
+ return LOCAL_TIERS.has(declared);
 }
