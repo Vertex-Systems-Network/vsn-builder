@@ -3,6 +3,7 @@
 // The official SDK, persisted Neon session, verified paid plan and pages/view
 // RBAC must all authorize the request before any merchant data is rendered.
 import { acceptWorkerShopifyAdminRequest } from "./worker-shopify-admin-gate.js";
+import { decorateVerifiedStagingEditorUi } from "./worker-shopify-staging-editor-html.js";
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const PAGE=/^[a-zA-Z0-9_-]{1,64}$/;
@@ -124,9 +125,11 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
     requirePageViewPermission:true,
     onAuthenticated:async({shop,pageSummary})=>{
       const summary=await pageSummary();
-      return renderVerifiedStagingMerchantDashboard({
+      const html=renderVerifiedStagingMerchantDashboard({
         shop,apiKey:env.SHOPIFY_API_KEY,summary,
       });
+      return env.VSN_STAGING_DRAFT_SAVE_ENABLED==="true"?
+        decorateVerifiedStagingEditorUi(html,{shop}):html;
     },
   });
 }
@@ -221,9 +224,11 @@ export function handleVerifiedStagingPageInspection(request,env,{
       if(metadata===null)return restricted(404);
       const content=await pageContent(pageId);
       if(content===null)return restricted(404);
-      return renderVerifiedStagingPageInspection({
+      const html=renderVerifiedStagingPageInspection({
         shop,apiKey:env.SHOPIFY_API_KEY,metadata,content,
       });
+      return env.VSN_STAGING_DRAFT_SAVE_ENABLED==="true"?
+        decorateVerifiedStagingEditorUi(html,{shop,pageId}):html;
     },
   });
 }
