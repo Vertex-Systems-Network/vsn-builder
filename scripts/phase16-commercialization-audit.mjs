@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { COMMERCIAL_PLANS, PLAN_ORDER, normalizePlanKey, planAtLeast } from "../app/config/commercialPlans.js";
 import { ONBOARDING_TRACKS } from "../app/services/commercialization.server.js";
+import { isLocalBillingSimulation } from "../app/config/local-billing-simulation.js";
 
 const read=(file)=>fs.readFileSync(file,"utf8");
 let pass=0,fail=0;
@@ -56,7 +57,15 @@ check("Legacy Enterprise internal alias resolves to Platinum",normalizePlanKey("
 check("Plan ranking supports higher-tier entitlements",planAtLeast("agency","pro")&&planAtLeast("cro","pro")&&!planAtLeast("core","pro"));
 
 check("Plan usage covers pages, Marketplace, AI, CRO and team",["pages:","templates:","ai:","experiments:","team:"].every((token)=>planServer.includes(token)));
-check("Developer Mode defaults to full testing access unless explicitly overridden",entitlementService.includes('process.env.NODE_ENV !== "production"')&&entitlementService.includes('configuredDefault || "platinum"'));
+check("Developer Mode defaults to full testing access only with explicit Local tier",entitlementService.includes('isLocalBillingSimulation()') &&
+  entitlementService.includes('configuredDefault || "platinum"') &&
+  env.includes("APP_ENV=development") &&
+  isLocalBillingSimulation({NODE_ENV:"development",APP_ENV:"development"}) &&
+  isLocalBillingSimulation({NODE_ENV:"test",APP_ENV:"local"}) &&
+  !isLocalBillingSimulation({NODE_ENV:"test"}) &&
+  !isLocalBillingSimulation({NODE_ENV:"development",APP_ENV:"staging"}) &&
+  !isLocalBillingSimulation({NODE_ENV:"development",APP_ENV:"development",VSN_WORKER_NAME:"vsn-builder-staging"}) &&
+  !isLocalBillingSimulation({NODE_ENV:"production",APP_ENV:"development"}));
 check("Production fallback is no-access inactive",entitlementService.includes('key = "inactive"')&&entitlementService.includes('source = "production-no-subscription"'));
 check("Page creation enforces plan capacity",pagesRoute.includes("getQuotaDecision")&&pagesRoute.includes('"pages"'));
 check("Marketplace enforces install quota",marketplace.includes("getQuotaDecision")&&marketplace.includes('"marketplaceInstalls"'));
