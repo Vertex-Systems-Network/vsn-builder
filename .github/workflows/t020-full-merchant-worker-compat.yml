@@ -87,8 +87,6 @@ jobs:
           test -z "${DIRECT_URL:-}"
       - name: Install immutable dependencies
         run: npm ci
-      - name: Verify Staging public HTTPS retention, Production isolation and disabled merchant gates
-        run: node --test tests/t019-staging-https-retention.test.mjs
       - name: Verify read-only Worker schema health denies fake migration ledgers and wrong DB
         run: node --test tests/t020-worker-neon-schema-ledger-health.test.mjs
       - name: Generate actual Cloudflare/Neon Prisma client without connecting to Neon
@@ -96,6 +94,8 @@ jobs:
           DATABASE_URL: postgresql://nope:unused@localhost:5432/unused
           DIRECT_URL: postgresql://nope:unused@localhost:5432/unused
         run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Verify Staging public HTTPS retention, Production isolation and disabled merchant gates
+        run: node --test tests/t019-staging-https-retention.test.mjs
       - name: Build actual full merchant React Router route graph
         run: |
           npm run build
