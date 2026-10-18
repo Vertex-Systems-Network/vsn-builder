@@ -6,6 +6,10 @@ on:
     paths:
       - ".github/workflows/dev-chromium-browser-acceptance.yml"
       - "scripts/dev-browser-chromium.mjs"
+      - "scripts/t020-staging-real-chromium.mjs"
+      - "workers/staging-editor-ui.js"
+      - "app/services/worker-shopify-staging-editor-html.js"
+      - "app/services/worker-shopify-staging-dashboard.js"
       - "tests/phase34-hosted-worker-gate.test.mjs"
       - "tests/t020-worker-draft-save-contract.test.mjs"
   workflow_dispatch:
@@ -71,6 +75,8 @@ jobs:
           # prisma generate is offline: no Neon access, migration or Worker deploy.
           npx prisma generate --schema prisma/cloud/schema.prisma
           node scripts/verify-prisma-worker-client.mjs --generated
+      - name: Real Chromium synthetic Shopify merchant editor create-save-reload and mobile
+        run: node scripts/t020-staging-real-chromium.mjs
       - name: Verify isolated Development test and guarded hosted Worker source (No Deploy)
         shell: bash
         run: |
