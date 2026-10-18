@@ -36,7 +36,11 @@ export async function getVerifiedWorkerPaidPlan(database,verifiedShop,now=new Da
      (!(row.trialEndsAt instanceof Date) ||
       !Number.isFinite(row.trialEndsAt.getTime()) ||
       row.trialEndsAt.getTime()<=now.getTime()))return null;
-  if(row.status==="canceling" && row.cancelEffectiveOn!=null &&
+  // A canceling subscription must have a verified future cutoff. A NULL,
+  // invalid or past effective date is ambiguous Partner mirror state, not
+  // evidence of continued paid access. Fail closed rather than renewing an
+  // otherwise 24h-fresh mirror forever without a cancellation boundary.
+  if(row.status==="canceling" &&
      (!(row.cancelEffectiveOn instanceof Date) ||
       !Number.isFinite(row.cancelEffectiveOn.getTime()) ||
       row.cancelEffectiveOn.getTime()<=now.getTime()))return null;

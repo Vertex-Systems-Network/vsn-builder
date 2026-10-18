@@ -114,6 +114,10 @@ test("expired trial and elapsed cancellation cannot keep merchant page read acce
   for(const variant of [
     {status:"trialing",trialEndsAt:null},
     {status:"trialing",trialEndsAt:past},
+    {status:"canceling",cancelEffectiveOn:null},
+    {status:"canceling",cancelEffectiveOn:undefined},
+    {status:"canceling",cancelEffectiveOn:"2026-10-18T00:00:00Z"},
+    {status:"canceling",cancelEffectiveOn:new Date("invalid")},
     {status:"canceling",cancelEffectiveOn:past},
   ]){
     const f=fixture(paid(variant));
@@ -125,6 +129,19 @@ test("expired trial and elapsed cancellation cannot keep merchant page read acce
   ]){
     assert.equal((await getPaidPage(fixture(paid(variant)))).status,200);
   }
+});
+
+test("incomplete cancellation never grants another merchant paid page access",async()=>{
+ const record=paid({status:"canceling",cancelEffectiveOn:null});
+ const f=fixture(record);
+ assert.equal((await getPaidPage(f)).status,403);
+ assert.equal(f.calls.includes("callback"),false);
+ assert.equal(f.calls.some(x=>x==="page-read"),false);
+ assert.equal(f.calls.at(-1),"close");
+ const future=new Date(Date.now()+90_000);
+ const g=fixture(paid({status:"canceling",cancelEffectiveOn:future}));
+ assert.equal((await getPaidPage(g)).status,200);
+ assert.equal(g.calls.includes("callback"),true);
 });
 
 test("missing subscription delegate and query exception deny with no secret disclosure",async()=>{
