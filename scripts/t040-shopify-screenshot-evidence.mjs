@@ -77,8 +77,15 @@ function authenticPngStructure(bytes){
  try{
   const rowBytes=1+WIDTH*channels;
   const expected=HEIGHT*rowBytes;
-  const scanlines=inflateSync(Buffer.concat(deflate),{maxOutputLength:expected});
-  if(scanlines.byteLength!==expected)return false;
+  const compressed=Buffer.concat(deflate);
+  // Node/zlib can successfully decode a complete image and silently ignore
+  // data appended AFTER the zlib end marker inside IDAT. Such hidden bytes
+  // must never travel inside purported privacy-reviewed app screenshots.
+  const {buffer:scanlines,engine}=inflateSync(compressed,{
+   maxOutputLength:expected,info:true,
+  });
+  if(engine.bytesWritten!==compressed.length ||
+     scanlines.byteLength!==expected)return false;
   for(let row=0;row<HEIGHT;row++){
    if(scanlines[row*rowBytes]>4)return false;
   }
