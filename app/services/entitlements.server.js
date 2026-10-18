@@ -1,3 +1,4 @@
+import { isLocalBillingSimulation } from "../config/local-billing-simulation.js";
 import { COMMERCIAL_PLANS, UNSUBSCRIBED_PLAN, normalizePlanKey, planAtLeast, planRank } from "../config/commercialPlans.js";
 import { ENTITLEMENT_FEATURES, ENTITLEMENT_QUOTAS, ENTITLEMENT_VERSION, getEntitlementFeatureDefinition, getEntitlementQuotaDefinition } from "../config/entitlements.js";
 import { subscriptionMirrorIsTrusted } from "./shopify-subscription.server.js";
@@ -50,7 +51,7 @@ export class EntitlementDeniedError extends Error {
 
 export async function resolveEntitlementPlan(db, shop, { now = new Date() } = {}) {
   const row = await db.builderSubscription.findUnique({ where: { shop } }).catch(() => null);
-  const developerMode = process.env.NODE_ENV !== "production";
+  const developerMode = isLocalBillingSimulation();
   const configuredDefault = process.env.VSN_DEFAULT_PLAN ? normalizePlanKey(process.env.VSN_DEFAULT_PLAN) : null;
   const developerActive = developerMode && row?.status === "active";
   const mirrorTrusted = !developerMode && subscriptionMirrorIsTrusted(row, now);
