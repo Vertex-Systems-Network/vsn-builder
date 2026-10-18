@@ -13,6 +13,15 @@ const HEADER=Buffer.from([137,80,78,71,13,10,26,10]);
 const MAX_BYTES=15*1024*1024;
 const MIN_BYTES=24*1024;
 const WIDTH=1600,HEIGHT=900;
+// PNG can carry non-pixel payloads (tEXt/zTXt/iTXt, eXIf, iCCP,
+// arbitrary private chunks and APNG animation frames). A cropped screenshot
+// could still leak Shopify merchant tokens, user identifiers or support data
+// through that metadata. Accept only fixed-width color/pixel density chunks
+// BEFORE IDAT; all other ancillary chunks require a privacy-safe re-export.
+// Pixel data itself still needs independent human/merchant privacy review.
+const SAFE_PRE_IMAGE_CHUNKS=Object.freeze({
+  sRGB:1,gAMA:4,cHRM:32,pHYs:9,
+});
 const crcTable=Uint32Array.from({length:256},(_,i)=>{
  let c=i;
  for(let j=0;j<8;j++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;
@@ -26,7 +35,7 @@ function pngCrc(data){
 // Decode the PNG container, CRCs and bounded deflate stream. A renamed file
 // with only a PNG magic/header/footer is NOT a real valid image.
 function authenticPngStructure(bytes){
- let offset=8,first=true,sawEnd=false;
+ let offset=8,first=true,sawEnd=false,sawImageData=false;
  const deflate=[];
  let total=0,channels=0;
  while(offset+12<=bytes.length){
@@ -45,15 +54,22 @@ function authenticPngStructure(bytes){
    channels=bytes[offset+17]===2?3:4;
    first=false;
   }else if(name==="IDAT"){
+   sawImageData=true;
    total+=len;
    if(total>MAX_BYTES)return false;
    deflate.push(bytes.subarray(offset+8,offset+8+len));
   }else if(name==="IEND"){
-   if(len!==0||offset+12!==bytes.length){return false}
+   if(!sawImageData||len!==0||offset+12!==bytes.length)return false;
    sawEnd=true;
    break;
-  }else if(name==="IHDR"||!/^[-a-zA-Z]{4}$/.test(name)){
-   return false;
+  }else{
+   // Metadata/unknown chunks, even with perfectly valid CRCs, are not
+   // Shopify listing screenshot evidence. IDAT must be contiguous and
+   // immediately followed by IEND to rule out hidden trailing payloads.
+   // In particular disallow text, EXIF, embedded ICC, private chunks,
+   // animation controls/frames and any chunk after image data.
+   if(sawImageData || !Object.hasOwn(SAFE_PRE_IMAGE_CHUNKS,name) ||
+      len!==SAFE_PRE_IMAGE_CHUNKS[name])return false;
   }
   offset+=12+len;
  }
