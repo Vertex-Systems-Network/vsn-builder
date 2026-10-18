@@ -50,11 +50,11 @@ test("Staging, Production and Live never grant developer default paid tier under
  assert.equal(isLocalBillingSimulation(envCase("test",undefined,undefined,"staging")),false);
  assert.equal(isLocalBillingSimulation(envCase("test","development","vsn-builder-staging",undefined)),false);
 });
-test("only explicit Local/Dev or legacy unmarked Node test can use local paid simulation",()=>{
+test("only explicit Local/Dev can use paid simulation; missing tier fails closed",()=>{
  for(const node of ["development","test",undefined]){
   assert.equal(isLocalBillingSimulation(envCase(node,"development",undefined,undefined)),true);
   assert.equal(isLocalBillingSimulation(envCase(node,"local",undefined,undefined)),true);
-  assert.equal(isLocalBillingSimulation(envCase(node,undefined,undefined,undefined)),true);
+  assert.equal(isLocalBillingSimulation(envCase(node,undefined,undefined,undefined)),false);
  }
  assert.equal(isLocalBillingSimulation(envCase("production","development",undefined,undefined)),false);
 });
