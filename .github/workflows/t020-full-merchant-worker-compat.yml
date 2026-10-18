@@ -17,6 +17,7 @@ on:
       - "wrangler.production.jsonc"
       - "tests/t019-staging-https-retention.test.mjs"
       - "tests/phase34-hosted-worker-gate.test.mjs"
+      - "tests/worker-shopify-webhook-gate.test.mjs"
       - "tests/t020-worker-neon-schema-ledger-health.test.mjs"
       - "tests/t020-worker-merchant-page-summary.test.mjs"
       - "tests/t020-worker-staging-dashboard.test.mjs"
@@ -100,6 +101,8 @@ jobs:
         run: node --test tests/t019-staging-https-retention.test.mjs
       - name: Verify established hosted Worker Browser contract matches Staging-only HTTPS
         run: node --test tests/phase34-hosted-worker-gate.test.mjs
+      - name: Verify canonical signed webhook UTC dates and immutable SDK HMAC gate
+        run: node --test tests/worker-shopify-webhook-gate.test.mjs
       - name: Build actual full merchant React Router route graph
         run: |
           npm run build
