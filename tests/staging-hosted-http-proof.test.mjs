@@ -106,3 +106,73 @@ test("oversized JSON body cannot claim readiness",async()=>{
   const proof=await probeStagingHostedRuntime(origin,{fetchImpl:mock.fetchImpl});
   assert.equal(proof.merchantReady,false);
 });
+
+
+test("stalled Staging readiness JSON body fails closed within one deadline, without awaiting cancel",async()=>{
+ let cancelled=false;
+ const stuck=new ReadableStream({
+  start(controller){
+   controller.enqueue(new TextEncoder().encode('{"service":"VSN Builder",'));
+  },
+  cancel(){cancelled=true;return new Promise(()=>{});},
+ });
+ const mock=fixture({"/readyz":new Response(stuck,{status:200,headers:{
+   "content-type":"application/json","cache-control":"no-store",
+ }})});
+ const started=Date.now();
+ const proof=await probeStagingHostedRuntime(origin,{
+   fetchImpl:mock.fetchImpl,timeoutMs:100,
+ });
+ checkElapsed();
+ function checkElapsed(){
+   assert(Date.now()-started<1800,"stalled response body cannot hang readiness");
+ }
+ assert.equal(cancelled,true);
+ assert.equal(proof.liveness,true);
+ assert.equal(proof.merchantReady,false);
+ assert.equal(proof.readyStatus,200,"HTTP 200 alone must never constitute readiness");
+ assert.equal(proof.merchantRoute,true,"an independent /app HTTP response can still be observed");
+ assert.deepEqual(mock.captured.map(x=>x.path),["/healthz","/readyz","/app"]);
+});
+test("slow trickle cannot reset the total hosted readiness JSON deadline",async()=>{
+ let pulls=0,cancelled=false;
+ const trickle=new ReadableStream({
+  async pull(controller){
+   await new Promise(resolve=>setTimeout(resolve,38));
+   pulls++;
+   controller.enqueue(new Uint8Array([32]));
+  },
+  cancel(){cancelled=true;return new Promise(()=>{});},
+ });
+ const mock=fixture({"/readyz":new Response(trickle,{status:200,headers:{
+   "content-type":"application/json","cache-control":"no-store",
+ }})});
+ const started=Date.now();
+ const proof=await probeStagingHostedRuntime(origin,{
+   fetchImpl:mock.fetchImpl,timeoutMs:150,
+ });
+ assert(Date.now()-started<1900,"slow JSON chunks cannot refresh per-chunk timeout");
+ assert(pulls>=2,"fixture must deliver multiple chunks");
+ assert.equal(cancelled,true);
+ assert.equal(proof.merchantReady,false);
+ assert.equal(proof.readyStatus,200);
+});
+test("stalled Staging health body cannot falsely establish liveness",async()=>{
+ let cancelled=false;
+ const stream=new ReadableStream({
+   start(){},
+   cancel(){cancelled=true;return new Promise(()=>{});},
+ });
+ const mock=fixture({"/healthz":new Response(stream,{status:200,headers:{
+   "content-type":"application/json","cache-control":"no-store",
+ }})});
+ const started=Date.now();
+ const proof=await probeStagingHostedRuntime(origin,{
+   fetchImpl:mock.fetchImpl,timeoutMs:90,
+ });
+ assert(Date.now()-started<1800,"stalled /healthz body must not block the job");
+ assert.equal(cancelled,true);
+ assert.equal(proof.liveness,false);
+ assert.equal(proof.merchantReady,false);
+ assert.equal(proof.merchantRoute,false);
+});

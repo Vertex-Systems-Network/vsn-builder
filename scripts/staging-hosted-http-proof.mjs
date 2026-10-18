@@ -12,15 +12,28 @@ const allowedRedirect = (value, origin) => {
   } catch { return false; }
 };
 
-async function boundedJson(response) {
+async function boundedJson(response, timeoutMs) {
   if (!response.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return null;
   if (!response.body) return null;
   const reader = response.body.getReader();
   const chunks = [];
   let length = 0;
+  // fetch() resolving its headers does not guarantee a streaming response
+  // body will finish. Use ONE total deadline across all chunks; slow trickle
+  // must not restart it. This is a read-only readiness probe, not an HTTP
+  // request body authorization or real hosted Shopify acceptance.
+  const deadline = Date.now() + timeoutMs;
   try {
     while (true) {
-      const next = await reader.read();
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) return null;
+      let timer;
+      const next = await Promise.race([
+        reader.read(),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error("Staging HTTP body deadline exceeded")), remaining);
+        }),
+      ]).finally(() => clearTimeout(timer));
       if (next.done) break;
       if (!(next.value instanceof Uint8Array)) return null;
       length += next.value.byteLength;
@@ -74,7 +87,7 @@ export async function probeStagingHostedRuntime(rawOrigin, {
   const health = await get("/healthz", "application/json");
   report.healthStatus = health?.status ?? null;
   if (health?.status === 200) {
-    const json = await boundedJson(health);
+    const json = await boundedJson(health, timeoutMs);
     report.liveness = json?.service === "VSN Builder" && json?.tier === "staging" &&
       json?.liveness === true && health.headers.get("cache-control")?.includes("no-store") === true;
   }
@@ -82,7 +95,7 @@ export async function probeStagingHostedRuntime(rawOrigin, {
   const ready = await get("/readyz", "application/json");
   report.readyStatus = ready?.status ?? null;
   if (ready?.status === 200) {
-    const json = await boundedJson(ready);
+    const json = await boundedJson(ready, timeoutMs);
     // A plain HTTP 200 or a database-only health check cannot qualify as
     // a Shopify merchant application. Full merchant E2E remains a separate gate.
     report.merchantReady = report.liveness &&
