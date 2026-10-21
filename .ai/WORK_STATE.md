@@ -2,19 +2,19 @@
 
 ---
 schema_version: 1
-status: complete
-mode: repository_baseline
-task_key: ai-native-platform-foundation
-owner_intent: "Land the reconciled AI-native engineering operating system on the security-hardened main baseline and use repository evidence for future automatic resume."
-base_branch: main
-working_branch: main
+status: active
+mode: environment_promotion
+task_key: development-staging-production-alignment
+owner_intent: "Align all AI work to the Development -> Staging -> Production promotion contract (.ai/ENVIRONMENT-PROMOTION.md) and remove known lint/security errors on the development baseline."
+base_branch: development
+working_branch: claude/focused-thompson-t0s1vi
 pull_request: none
-last_verified_commit: 5edbece879d5eca0650fe34b96b07447ad6b5739
-last_verified_step: "Security remediation #8/#10/#11 is merged to main; post-merge Production Confidence run #385 passed; AI-native documentation has been reconciled to that baseline."
-in_flight_step: none
-next_exact_action: "On the next authorized AI-native implementation task, start from current main on a fresh feature branch and begin with the earliest uncompleted roadmap item (P0.2 AI provider/behavior versioning), after verifying current repository state."
+last_verified_commit: b13331b
+last_verified_step: "Audit of development@b13331b: typecheck PASS, qa PASS, env tests 21/21 PASS; lint previously failed (4613 errors) while CI masked it with continue-on-error; stock media downloads followed unvalidated redirects."
+in_flight_step: "Lint config alignment (ES2022/node globals, react/prop-types off, import-attribute parser), lint error cleanup, validated-redirect stock downloads."
+next_exact_action: "Open PR into development; after exact-head CI is green, make lint blocking in CI. Staging promotion stays blocked until: development branch protected, Cloudflare vsn-builder-staging secrets/bindings/HTTPS set, Neon Staging migrated via protected workflow, T020 Worker merchant router serving /app (currently 503)."
 approval_needed_now: false
-updated_at: 2026-09-18
+updated_at: 2026-10-21
 ---
 
 ## Purpose
@@ -92,6 +92,10 @@ Do not update it for every keystroke or trivial local edit.
 - If a task is fully complete, set `status: complete`, clear `in_flight_step`, and set `next_exact_action` to the next roadmap item or `none`.
 
 ## Current state
+
+**2026-10-21:** Active development happens on `development` (TASKS.md is the canonical task board: 19 closed / 22 active of 41). All changes follow `.ai/ENVIRONMENT-PROMOTION.md`. Current tier status: Development = working; Staging = BLOCKED (Worker 503 for /app and /auth, 0 Worker secrets/bindings, Neon Staging 0 app tables, `development` unprotected); Production = LOCKED until a Staging-certified SHA and owner approval exist.
+
+Historical note (2026-09-18):
 
 The documentation operating-system task is complete once this reconciled PR lands on `main`. The previous runtime-alignment implementation task is also complete and validated independently.
 

@@ -71,10 +71,10 @@ await check("Unsplash download tracking remains required",()=>assert.ok(imageSer
 await check("Pexels image import avoids original source",()=>{const fn=imageService.slice(imageService.indexOf("function pexelsShopifyUrl"),imageService.indexOf("function pixabayShopifyUrl"));assert.doesNotMatch(fn,/\.original/);assert.match(fn,/large2x|large|medium/)});
 await check("Pixabay image import avoids original imageURL",()=>{const fn=imageService.slice(imageService.indexOf("function pixabayShopifyUrl"),imageService.indexOf("async function providerPhoto"));assert.doesNotMatch(fn,/imageURL/);assert.match(fn,/fullHDURL|largeImageURL|webformatURL/)});
 await check("Image import reports Shopify-safe target",()=>assert.ok(imageService.includes("shopifyTarget")&&imageRoute.includes("shopifyTarget")));
-await check("Image download keeps HTTPS/MIME/redirect checks",()=>assert.ok(imageService.includes("assertSourceUrl(provider, response.url || url)")&&imageService.includes("ALLOWED_IMAGE_TYPES")));
+await check("Image download keeps HTTPS/MIME/redirect checks",()=>assert.ok(imageService.includes("fetchTrustedRedirects(url, (value) => assertSourceUrl(provider, value)")&&imageService.includes("ALLOWED_IMAGE_TYPES")));
 
 await check("Shared stock media Shopify service exists",()=>assert.ok(exists("app/services/stock-media-shopify.server.js")));
-await check("Shared media downloader revalidates redirected hosts",()=>assert.ok(mediaShopify.includes("assertTrustedMediaUrl(response.url || url")));
+await check("Shared media downloader revalidates redirected hosts",()=>assert.ok(mediaShopify.includes("redirect: \"manual\"")&&mediaShopify.includes("current = assertUrl(new URL(location, current)")));
 await check("Shared media downloader checks MIME and max bytes",()=>assert.ok(mediaShopify.includes("allowedMimeTypes")&&mediaShopify.includes("maxBytes")));
 await check("Video staged upload uses VIDEO resource fileSize",()=>assert.ok(mediaShopify.includes('resource === "VIDEO"')&&mediaShopify.includes("fileSize: String(bytes.byteLength)")));
 await check("Generic media staged upload supports FILE resource",()=>assert.ok(mediaShopify.includes('resource = "FILE"')));

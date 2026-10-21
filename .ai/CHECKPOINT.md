@@ -5,6 +5,14 @@
 **Base reviewed:** `main` @ `5edbece879d5eca0650fe34b96b07447ad6b5739`  
 **Working branch:** `docs/ai-native-operating-system`
 
+## 2026-10-21 reconciliation (supersedes the header above where they differ)
+
+- Active integration branch is `development` (`b13331b` at audit time), not `docs/ai-native-operating-system`; `TASKS.md` is the canonical task board.
+- Environment flow is governed by `.ai/ENVIRONMENT-PROMOTION.md`: Development (Node + SQLite) → Staging (Cloudflare Worker + Neon Staging) → Production (same certified SHA + owner approval).
+- Correction: repository-wide ESLint was **not** passing; the CI lint step used `continue-on-error`. On `b13331b` it reported 4613 errors (4185 `react/prop-types`, the rest config globals and real code findings). Alignment work is in progress on `claude/focused-thompson-t0s1vi`.
+- Stock media downloads now validate every redirect hop before requesting it (previously followed redirects and validated only the final URL).
+- Staging and Production are not release-ready; see `WORK_STATE.md` for the exact blockers.
+
 ## Completed and verified by repository inspection
 
 - Reviewed root repository structure, package/runtime commands, SRS, CI workflow, Docker runtime, Shopify config, Prisma schema, current AI page service/route/normalization, Email AI service, AI audit script, server command bus, editor command/history primitive, storefront proxy integration hotspot and current motion plan.
