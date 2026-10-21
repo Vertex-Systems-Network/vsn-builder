@@ -17,7 +17,7 @@ export function renderSdkEditorValue(value, key = "sdk") {
   if (value?.__vsnSdkDescriptor === true) {
     const allowedTags=new Set(["div","span","strong","em","small","p","section","article","aside","nav","a","button","ul","ol","li","figure","figcaption","img"]);
     const Tag=allowedTags.has(String(value.tag||""))?String(value.tag):"div"; const props={...sanitizeVsnDescriptorProps(value.props||{}),key};
-    if(Tag==="img")return <img {...props}/>; if(Tag==="a")props.onClick=(event)=>event.preventDefault(); if(Tag==="button"&&!props.type)props.type="button";
+    if(Tag==="img")return <img /* eslint-disable-line jsx-a11y/alt-text -- alt is forwarded through spread props */ {...props}/>; if(Tag==="a")props.onClick=(event)=>event.preventDefault(); if(Tag==="button"&&!props.type)props.type="button";
     return <Tag {...props}>{renderSdkEditorValue(value.children||[],`${key}-child`)}</Tag>;
   }
   return value;
@@ -27,6 +27,7 @@ export default function SdkWidgetView({node,context={},style={},staticPreview=fa
   const mountRef=useRef(null); const hooks=getVsnWidgetHooks(node?.type); let previewNode=node;
   if(typeof hooks?.preview==="function"){try{previewNode=hooks.preview({node,context})||node;}catch(error){reportVsnSdkError("widget.preview",node?.type||"unknown",error);}}
   const result=renderVsnEditorWidget(previewNode,{...context,style});
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount/unmount only on node identity changes; hooks/context objects are recreated each render
   useEffect(()=>{if(staticPreview)return undefined;const element=mountRef.current;try{hooks?.mount?.({element,node:previewNode,context});}catch(error){reportVsnSdkError("widget.mount",node?.type||"unknown",error);}return()=>{try{hooks?.unmount?.({element,node:previewNode,context});}catch(error){reportVsnSdkError("widget.unmount",node?.type||"unknown",error);}};},[node?.id,node?.type,staticPreview]);
   if(!result.handled)return null;
   return <SdkWidgetErrorBoundary node={node}><div ref={mountRef} data-vsn-id={node.id} data-vsn-sdk-widget={node.type} style={style}>{result.error?<div data-vsn-sdk-error="1" style={{padding:12,border:"1px dashed #d72c0d",borderRadius:8,color:"#8a1f0d"}}>Plugin widget unavailable</div>:renderSdkEditorValue(result.value,node.id||node.type)}</div></SdkWidgetErrorBoundary>;

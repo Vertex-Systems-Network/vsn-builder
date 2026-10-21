@@ -26,6 +26,7 @@ export async function boundedStorefrontFormData(
   let total = 0;
 
   try {
+    // eslint-disable-next-line no-constant-condition -- intentional bounded loop
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
@@ -34,7 +35,7 @@ export async function boundedStorefrontFormData(
       if (total > limit) {
         try {
           await reader.cancel();
-        } catch {}
+        } catch { /* best-effort */ }
         throw payloadTooLarge();
       }
 
@@ -43,7 +44,7 @@ export async function boundedStorefrontFormData(
   } finally {
     try {
       reader.releaseLock();
-    } catch {}
+    } catch { /* best-effort */ }
   }
 
   const headers = new Headers(request.headers);

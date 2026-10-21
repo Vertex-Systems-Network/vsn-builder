@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { loadStockProviderCredentials, STOCK_IMAGE_IMPORT_PROVIDERS, STOCK_IMAGE_PROVIDERS } from "./stock-image-integrations.server.js";
 import { trackedStockFetch } from "./stock-api-usage.server.js";
 import { searchGetty, searchShutterstock } from "./stock-premium-providers.server.js";
+import { fetchTrustedRedirects } from "./stock-media-shopify.server.js";
 
 const PROVIDER_LABELS = Object.freeze({ unsplash: "Unsplash", pexels: "Pexels", pixabay: "Pixabay", shutterstock: "Shutterstock", getty: "Getty/iStock" });
 const CACHE_TTL_MS = Object.freeze({ unsplash: 60_000, pexels: 300_000, pixabay: 86_400_000, shutterstock: 300_000, getty: 300_000 });
@@ -203,10 +204,8 @@ async function trackUnsplashDownload(db, shop, auth, result) {
 }
 
 async function downloadImage(provider, url) {
-  assertSourceUrl(provider, url);
-  const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout?.(30000) });
+  const response = await fetchTrustedRedirects(url, (value) => assertSourceUrl(provider, value), { signal: AbortSignal.timeout?.(30000) });
   if (!response.ok) throw new Error(`Could not download ${PROVIDER_LABELS[provider]} image (${response.status}).`);
-  assertSourceUrl(provider, response.url || url);
   const contentType = String(response.headers.get("content-type") || "").split(";")[0].toLowerCase();
   if (!ALLOWED_IMAGE_TYPES.has(contentType)) throw new Error(`Unsupported stock image MIME type: ${contentType || "unknown"}.`);
   const contentLength = Number(response.headers.get("content-length") || 0); if (contentLength > MAX_IMPORT_BYTES) throw new Error("Stock image is larger than the safe 18 MB Shopify import limit.");
@@ -237,7 +236,7 @@ function fileNode(file) {
   return { id: file?.id || "", fileStatus: file?.fileStatus || "PROCESSING", alt: file?.alt || "", url: file?.image?.url || file?.preview?.image?.url || "", width: file?.image?.width || 0, height: file?.image?.height || 0 };
 }
 
-async function createShopifyFile(admin, stagedUrl, result, filename) {
+async function createShopifyFile(admin, stagedUrl, result) {
   const response = await admin.graphql(`#graphql
     mutation VsnStockFileCreate($files:[FileCreateInput!]!){ fileCreate(files:$files){ files{id fileStatus alt ... on MediaImage{image{url width height}}} userErrors{field message code} } }
   `, { variables: { files: [{ originalSource: stagedUrl, alt: result.alt || result.title || "Stock image", contentType: "IMAGE", duplicateResolutionMode: "APPEND_UUID" }] } });
@@ -246,7 +245,7 @@ async function createShopifyFile(admin, stagedUrl, result, filename) {
   const file = payload.files?.[0]; if (!file?.id) throw new Error("Shopify did not create the stock image file."); return fileNode(file);
 }
 
-async function updateShopifyFile(admin, fileId, stagedUrl, result, filename) {
+async function updateShopifyFile(admin, fileId, stagedUrl, result) {
   const statusResponse = await admin.graphql(`#graphql
     query VsnStockFileStatus($id:ID!){node(id:$id){... on MediaImage{id fileStatus}}}`, { variables: { id: fileId } });
   const statusJson = await statusResponse.json(); const status = statusJson.data?.node?.fileStatus;

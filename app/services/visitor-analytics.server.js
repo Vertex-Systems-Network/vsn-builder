@@ -3,7 +3,7 @@ async function visitorAnalyticsEnabled(db, shop) {
   const cached=SETTINGS_CACHE.get(shop); const now=Date.now();
   if(cached && now-cached.at<30000) return cached.enabled;
   const row=await db.builderShopSetting.findUnique({where:{shop},select:{appSettingsJson:true}}).catch(()=>null);
-  let enabled=true; try{const parsed=JSON.parse(String(row?.appSettingsJson||"{}"));enabled=parsed.visitorAnalytics!==false;}catch{}
+  let enabled=true; try{const parsed=JSON.parse(String(row?.appSettingsJson||"{}"));enabled=parsed.visitorAnalytics!==false;}catch{ /* best-effort */ }
   SETTINGS_CACHE.set(shop,{enabled,at:now}); return enabled;
 }
 

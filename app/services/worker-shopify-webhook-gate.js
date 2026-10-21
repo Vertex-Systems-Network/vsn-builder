@@ -75,6 +75,7 @@ async function boundedWebhookBody(request) {
   let shouldCancel=true;
   const deadline=Date.now()+MAX_WEBHOOK_READ_MS;
   try {
+    // eslint-disable-next-line no-constant-condition -- intentional bounded loop
     while(true) {
       const remaining=deadline-Date.now();
       if(remaining<=0)throw denied(408);
@@ -100,9 +101,9 @@ async function boundedWebhookBody(request) {
     if(shouldCancel) {
       // A malicious stream can return a never-settling cancel() promise.
       // Never await cancellation while the incoming request holds a Worker.
-      try{void reader.cancel().catch(()=>{})}catch{}
+      try{void reader.cancel().catch(()=>{})}catch{ /* best-effort */ }
     }
-    try{reader.releaseLock()}catch{}
+    try{reader.releaseLock()}catch{ /* best-effort */ }
   }
   const body=new Uint8Array(length);
   let offset=0;

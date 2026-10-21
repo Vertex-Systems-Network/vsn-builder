@@ -18,7 +18,7 @@ const AI_REDACTED_KEYS = new Set([
 ]);
 
 export function aiNodeId(prefix="ai") {
-  try { if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`; } catch {}
+  try { if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`; } catch { /* ignore */ }
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
 }
 
@@ -27,10 +27,12 @@ function px(value) {
   return Number.isFinite(n) && n >= 0 ? `${Math.min(2400,n)}px` : undefined;
 }
 function color(value) { return /^#[0-9a-f]{3,8}$/i.test(String(value||"")) ? String(value) : undefined; }
+// eslint-disable-next-line no-control-regex -- intentionally strips control characters
 function cleanText(value, max=4000) { return String(value ?? "").replace(/\u0000/g,"").slice(0,max); }
 function cleanAiText(value,max=4000){return cleanText(value,max).replace(/\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g,"");}
 function cssLength(value){const raw=cleanText(value,40).trim().toLowerCase();if(!raw)return"";if(["auto","min-content","max-content","fit-content"].includes(raw))return raw;return /^(?:0|(?:\d+(?:\.\d+)?|\.\d+)(?:px|%|vw|vh|rem|em))$/.test(raw)?raw:"";}
 function number(value, min, max, fallback=undefined) { const n=Number(value); return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback; }
+// eslint-disable-next-line no-control-regex -- intentionally strips control characters
 function cleanUrlText(value,max=2000){return cleanText(value,max).replace(/[\u0000-\u001f\u007f]/g,"").trim();}
 function unsafeNetworkHost(hostname=""){
   const host=String(hostname||"").toLowerCase().replace(/^\[|\]$/g,"").replace(/\.$/,"");

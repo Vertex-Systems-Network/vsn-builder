@@ -61,7 +61,7 @@ export async function action({ request }) {
       let metadata = null;
       try {
         metadata = JSON.parse(metadataRaw);
-      } catch {}
+      } catch { /* best-effort */ }
 
       const result = await recordExperimentEvent({
         db,

@@ -51,7 +51,7 @@ export function parseVisualTemplate(html=""){
 }
 
 function attrValue(value,props){return interpolateVisualTemplateText(value,props);}
-function safeHref(value){const raw=String(value||"").trim();if(!raw)return"";if(raw.startsWith("/")||raw.startsWith("#"))return raw;try{const u=new URL(raw);if(["https:","http:","mailto:","tel:"].includes(u.protocol))return raw;}catch{}return"";}
+function safeHref(value){const raw=String(value||"").trim();if(!raw)return"";if(raw.startsWith("/")||raw.startsWith("#"))return raw;try{const u=new URL(raw);if(["https:","http:","mailto:","tel:"].includes(u.protocol))return raw;}catch{ /* ignore */ }return"";}
 function attrsHtml(node,props,templateKey){const attrs=[];for(const[key,raw]of Object.entries(node.attrs||{})){let value=attrValue(raw,props);if(key.toLowerCase()==="href"||key.toLowerCase()==="src")value=safeHref(value);if(value==="")continue;attrs.push(`${key}="${escapeHtml(value)}"`);}if(node.rootToken){attrs.push(`data-vsn-template="${escapeHtml(templateKey)}"`);attrs.push('data-vsn-template-root="1"');}return attrs.length?` ${attrs.join(" ")}`:"";}
 export function renderVisualTemplateHtml(tree,{props={},slotHtml="",templateKey="custom"}={}){const render=(node)=>{if(node.type==="slot")return String(slotHtml||"");if(node.type==="text")return escapeHtml(interpolateVisualTemplateText(node.value,props));if(node.type!=="element")return"";const attrs=attrsHtml(node,props,templateKey);if(VOID_TAGS.has(node.tag))return`<${node.tag}${attrs}>`;return`<${node.tag}${attrs}>${(node.children||[]).map(render).join("")}</${node.tag}>`;};return render(tree);}
 

@@ -42,18 +42,19 @@ async function boundedFormData(request) {
   const chunks = [];
   let total = 0;
   try {
+    // eslint-disable-next-line no-constant-condition -- intentional bounded loop
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
       total += value?.byteLength || 0;
       if (total > MAX_REQUEST_BYTES) {
-        try { await reader.cancel(); } catch {}
+        try { await reader.cancel(); } catch { /* best-effort */ }
         throw new Response("AI Builder request is too large.", { status: 413 });
       }
       if (value?.byteLength) chunks.push(Buffer.from(value));
     }
   } finally {
-    try { reader.releaseLock(); } catch {}
+    try { reader.releaseLock(); } catch { /* best-effort */ }
   }
   const replay = new Request(request.url, {
     method: request.method,

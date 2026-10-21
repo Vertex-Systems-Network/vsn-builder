@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { Copy, Pencil, Play, Plus, Star } from "lucide-react";
-import { VsnButton, VsnCard, VsnEmpty, VsnInput, VsnModal, VsnPage, VsnSearchInput, VsnSelect, VsnTabs, VsnTextarea } from "../ui/VsnToolkit.jsx";
+import { VsnButton, VsnCard, VsnEmpty, VsnModal, VsnPage, VsnSearchInput, VsnSelect, VsnTabs } from "../ui/VsnToolkit.jsx";
 import PanelNotice from "./PanelNotice.jsx";
 import MotionAdvancedEditor from "./MotionAdvancedEditor.jsx";
 import { humanLabel } from "../../utils/display-format.js";
@@ -42,6 +42,7 @@ function MotionPreview({timeline}) {
     if(typeof node.animate==="function")animationRef.current=node.animate(frames,{duration,easing,fill:"both"});
     else Object.assign(node.style,frames[frames.length-1]||{});
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- replay only when timeline changes; run is recreated every render
   useEffect(()=>{run();return()=>animationRef.current?.cancel?.();},[timeline]);
   return <div className="vsn-motion-preview"><div className="vsn-motion-preview-stage"><div ref={ref} className="vsn-motion-preview-object"><span>VSN</span></div></div><VsnButton size="xs" icon={<Play size={13}/>} onClick={run}>Preview</VsnButton></div>;
 }

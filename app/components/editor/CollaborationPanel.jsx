@@ -55,7 +55,7 @@ export default function CollaborationPanel({
   const [comment, setComment] = useState("");
   const [reviewLabel, setReviewLabel] = useState("Client review");
   const [branchName, setBranchName] = useState("");
-  const comments = data?.comments || [];
+  const comments = useMemo(() => data?.comments || [], [data?.comments]);
   const unresolved = useMemo(() => comments.filter((item) => !item.resolvedAt), [comments]);
   const workflow = data?.workflowStatus || "draft";
   const lock = data?.lock || null;

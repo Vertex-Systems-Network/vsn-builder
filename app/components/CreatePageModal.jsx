@@ -27,13 +27,15 @@ export default function CreatePageModal({ collections = [], products = [], blogs
   const [articlePath, setArticlePath] = useState("news/article-handle");
   const [title, setTitle] = useState("Untitled page");
 
-  const resources = type === "collection-specific" ? collections : type === "product-specific" ? products : type === "blog-specific" ? blogs : [];
+  const resources = useMemo(() => (type === "collection-specific" ? collections : type === "product-specific" ? products : type === "blog-specific" ? blogs : []), [type, collections, products, blogs]);
   const selectedResource = useMemo(() => resources.find((item) => String(item.id) === String(resource)) || null, [resources, resource]);
 
   useEffect(() => {
     if (resources.length && !resource) setResource(String(resources[0].id));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally re-runs only when type/selected resource identity changes, not on every edit
   }, [type]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally re-runs only when type/selected resource identity changes, not on every edit
   useEffect(() => { setTitle(titleFor(type, selectedResource?.title)); }, [type, selectedResource?.id]);
 
   const submit = () => {

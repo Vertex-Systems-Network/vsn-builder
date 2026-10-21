@@ -22,6 +22,7 @@ const UNSAFE_DATA_HTML = /\bdata\s*:\s*text\/html/gi;
 
 function plainText(value, max) {
   const raw = String(value ?? "")
+    // eslint-disable-next-line no-control-regex -- intentionally strips control characters
     .replace(/[\u0000-\u001f\u007f]/g, " ")
     .replace(/[<>{}]/g, "")
     .replace(UNSAFE_SCHEME, "")

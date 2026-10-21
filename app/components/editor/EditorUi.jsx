@@ -9,6 +9,7 @@ export function VsnButton({
   loading = false,
   disabled = false,
   accessibilityLabel,
+  // eslint-disable-next-line no-unused-vars -- omitted from ...props so it is not forwarded to the DOM
   interestFor,
   className = "",
   children,
@@ -79,7 +80,7 @@ export function VsnCheckbox({ children, className = "", checked = false, onChang
     event.stopPropagation();
     onChange?.(event);
   };
-  return <label className={cx("vsn-ui-checkbox", className)} onClick={(event) => event.stopPropagation()}><input type="checkbox" {...props} checked={checked === true} disabled={disabled} onClick={(event) => event.stopPropagation()} onChange={handleChange}/><span className="vsn-ui-checkbox-box"><PolarisIcon type="check" size={12}/></span><span className="vsn-ui-checkbox-label">{children}</span></label>;
+  return <label /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- only stops event propagation; not an interactive control */ className={cx("vsn-ui-checkbox", className)} onClick={(event) => event.stopPropagation()}><input type="checkbox" {...props} checked={checked === true} disabled={disabled} onClick={(event) => event.stopPropagation()} onChange={handleChange}/><span className="vsn-ui-checkbox-box"><PolarisIcon type="check" size={12}/></span><span className="vsn-ui-checkbox-label">{children}</span></label>;
 }
 export function VsnColorField({ label, labelAccessibilityVisibility, className = "", value = "#000000", onInput, ...props }) {
   return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"}><span className="vsn-ui-color-wrap"><span className="vsn-ui-color-chip" style={{background:value || "#000000"}}/><input type="text" value={value || "#000000"} {...props} onInput={onInput} className={cx("vsn-ui-input", className)} aria-label={inputAria(label, labelAccessibilityVisibility, props)} /></span></FieldShell>;

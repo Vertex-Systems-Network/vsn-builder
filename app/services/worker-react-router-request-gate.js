@@ -79,6 +79,7 @@ export function createIsolatedReactRouterGateway({
         let bytes=0;
         const deadline=Date.now()+1500;
         try{
+          // eslint-disable-next-line no-constant-condition -- intentional bounded loop
           while(true){
             const ms=deadline-Date.now();
             if(ms<=0)return blocked();
@@ -94,8 +95,8 @@ export function createIsolatedReactRouterGateway({
             chunks.push(next.value);
           }
         }finally{
-          try{void reader.cancel().catch(()=>{})}catch{}
-          try{reader.releaseLock()}catch{}
+          try{void reader.cancel().catch(()=>{})}catch{ /* best-effort */ }
+          try{reader.releaseLock()}catch{ /* best-effort */ }
         }
         const payload=new Uint8Array(bytes);
         let offset=0;

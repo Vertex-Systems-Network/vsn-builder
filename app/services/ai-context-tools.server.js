@@ -67,6 +67,7 @@ export const AI_CONTEXT_SHOPIFY_QUERIES = Object.freeze({
 });
 
 function text(value, max = 400) {
+  // eslint-disable-next-line no-control-regex -- intentional control-char sanitizer
   return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
 function iso(value) {

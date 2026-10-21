@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useFetcher } from 'react-router';
+import { formatDate } from '../../../utils/format-date.js';
 import { Bell, Shield, CreditCard, Cpu, CheckCheck, X, LifeBuoy, ExternalLink } from 'lucide-react';
 
 const typeConfig = {
@@ -10,19 +11,22 @@ const typeConfig = {
   system: { icon: Cpu, color: '#6B7280', bg: 'rgba(107,114,128,0.1)', label: 'System' },
 };
 
-function ago(value) {
+function ago(value, now) {
   const time = new Date(value).getTime();
   if (!Number.isFinite(time)) return '';
-  const mins = Math.floor((Date.now() - time) / 60000);
+  if (!now) return formatDate(value, 'date', '');
+  const mins = Math.floor((now - time) / 60000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60); if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24); if (days < 14) return `${days}d ago`;
-  return new Date(value).toLocaleDateString();
+  return formatDate(value, 'date', '');
 }
 
 export default function Notifications({ darkMode, notifications = [], onNotificationsChange, onNavigate }) {
   const fetcher = useFetcher();
+  const [now, setNow] = useState(null);
+  useEffect(() => { setNow(Date.now()); const timer = window.setInterval(() => setNow(Date.now()), 60000); return () => window.clearInterval(timer); }, []);
   const [activeTab, setActiveTab] = useState('all');
   const [pending, setPending] = useState(null);
   const text = darkMode ? '#F9FAFB' : '#1A1F36';
@@ -83,12 +87,12 @@ export default function Notifications({ darkMode, notifications = [], onNotifica
 
       {filtered.length ? filtered.map((item, index) => {
         const cfg = typeConfig[item.type] || typeConfig.system; const Icon = cfg.icon;
-        return <div key={item.id} onClick={(event) => openNotificationTarget(item, event)} style={{ padding: '15px 18px', display: 'flex', gap: 13, cursor: item.href ? 'pointer' : 'default', background: !item.readAt ? (darkMode ? 'rgba(var(--vsn-accent-rgb),.035)' : '#FCFFF8') : 'transparent', borderBottom: index < filtered.length - 1 ? `1px solid ${darkMode ? '#222938' : '#F0F1F2'}` : 0 }}>
+        return <div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */ key={item.id} onClick={(event) => openNotificationTarget(item, event)} style={{ padding: '15px 18px', display: 'flex', gap: 13, cursor: item.href ? 'pointer' : 'default', background: !item.readAt ? (darkMode ? 'rgba(var(--vsn-accent-rgb),.035)' : '#FCFFF8') : 'transparent', borderBottom: index < filtered.length - 1 ? `1px solid ${darkMode ? '#222938' : '#F0F1F2'}` : 0 }}>
           <div style={{ width: 36, height: 36, borderRadius: 9, background: cfg.bg, color: cfg.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon size={16}/></div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><strong style={{ color: text, fontSize: 13.5 }}>{item.title}</strong>{!item.readAt ? <span style={{ width: 7, height: 7, background: 'var(--vsn-green)', borderRadius: '50%' }}/> : null}</div>
             <p style={{ margin: '4px 0 0', fontSize: 12.5, lineHeight: 1.55, color: muted }}>{item.message}</p>
-            <div style={{ marginTop: 7, display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, color: muted }}><span>{cfg.label}</span><span>·</span><span>{ago(item.createdAt)}</span>{item.href ? <><span>·</span><button type="button" onClick={(event) => openNotificationTarget(item, event)} style={{ display: 'inline-flex', gap: 4, alignItems: 'center', color: cfg.color, border: 0, background: 'transparent', padding: 0, font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>Open <ExternalLink size={10}/></button></> : null}</div>
+            <div style={{ marginTop: 7, display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, color: muted }}><span>{cfg.label}</span><span>·</span><span>{ago(item.createdAt, now)}</span>{item.href ? <><span>·</span><button type="button" onClick={(event) => openNotificationTarget(item, event)} style={{ display: 'inline-flex', gap: 4, alignItems: 'center', color: cfg.color, border: 0, background: 'transparent', padding: 0, font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>Open <ExternalLink size={10}/></button></> : null}</div>
           </div>
           <button aria-label="Dismiss notification" onClick={(event) => { event.stopPropagation(); submit('notification-dismiss', item.id); }} disabled={fetcher.state !== 'idle'} style={{ width: 30, height: 30, border: 0, background: 'transparent', color: muted, cursor: 'pointer', display: 'grid', placeItems: 'center', borderRadius: 7 }}><X size={14}/></button>
         </div>;

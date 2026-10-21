@@ -8,6 +8,7 @@ const ALLOWED = new Map([
   ["font/woff2", "woff2"], ["application/font-woff2", "woff2"], ["application/x-font-woff", "woff"], ["font/woff", "woff"],
   ["font/ttf", "ttf"], ["application/x-font-ttf", "ttf"], ["font/otf", "otf"], ["application/x-font-opentype", "otf"], ["application/vnd.ms-opentype", "otf"],
 ]);
+// eslint-disable-next-line no-control-regex -- intentional control-char sanitizer
 function safeFamily(value){return String(value||"").trim().replace(/[<>\u0000-\u001f]/g,"").slice(0,100)}
 function safeWeight(value){return Math.max(100,Math.min(900,Math.round((Number(value)||400)/100)*100))}
 function safeStyle(value){return ["normal","italic"].includes(String(value||""))?String(value):"normal"}

@@ -1,4 +1,4 @@
-import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnColorField, VsnSearchField, VsnUrlField, VsnDateField, VsnSpinner } from "./EditorUi";
+import { VsnButton, VsnTextField, VsnSearchField } from "./EditorUi";
 import { useMemo, useState } from "react";
 import PolarisIcon, { WidgetPolarisIcon } from "../ui/PolarisIcon";
 import { acceptsChildren } from "../../builder/widgetRegistry";

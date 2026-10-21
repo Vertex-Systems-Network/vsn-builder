@@ -11,6 +11,7 @@ import { loadGlobalCodeStudio, mutateGlobalCode, saveGlobalCode } from "../servi
 import { VsnButton, VsnCard, VsnCodeEditor, VsnEmpty, VsnInput, VsnNotice, VsnPage, VsnSearchInput, VsnSelect, VsnTabs } from "../components/ui/VsnToolkit";
 import { useVsnConfirm } from "../components/ui/VsnConfirmProvider";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
+import { formatDate } from "../utils/format-date.js";
 
 const STARTER_QUERY = `query VsnShopOverview {
   shop {
@@ -27,7 +28,6 @@ const LOCATION_OPTIONS = [["head","Head"],["body-start","Body start"],["body-end
 
 function clientOperation(source="") { const cleaned=String(source||"").replace(/#[^\n]*/g,"").trim(); const match=cleaned.match(/^(query|mutation|subscription)\b\s*([_A-Za-z][_0-9A-Za-z]*)?/i); const type=cleaned.startsWith("{")?"query":String(match?.[1]||"query").toLowerCase(); return {type,name:match?.[2]||null,destructive:type==="mutation"&&/\b(delete|remove|revoke|cancel|destroy|archive|uninstall|reset|erase|purge)\w*\b/i.test(cleaned)}; }
 function prettyJson(value){try{return JSON.stringify(value,null,2);}catch{return String(value??"");}}
-function formatDate(value){try{return new Date(value).toLocaleString();}catch{return String(value||"");}}
 function typeLabel(type){if(!type)return"";if(type.kind==="NON_NULL")return`${typeLabel(type.ofType)}!`;if(type.kind==="LIST")return`[${typeLabel(type.ofType)}]`;return type.name||type.kind||"";}
 function codeFromEntry(row){return {id:row.id,name:row.name,kind:row.kind,scope:row.scope,target:row.target||"",location:row.location,priority:row.priority,enabled:row.enabled,code:row.code};}
 
@@ -204,6 +204,7 @@ export default function DeveloperStudio() {
   if(data.permissions.graphql.readQueries)tabs.push({value:"graphql",label:"GraphQL Studio"});
   if(data.permissions.globalCode.view)tabs.push({value:"global-code",label:"Global CSS / JS"});
   const [tab,setTab]=useState(tabs[0]?.value||"graphql");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- tabs is rebuilt every render from the listed permission flags
   useEffect(()=>{if(!tabs.some((item)=>item.value===tab)&&tabs[0])setTab(tabs[0].value);},[tab,data.permissions.graphql.readQueries,data.permissions.globalCode.view]);
   return <VsnPage title="Developer Studio" subtitle="Shopify-aware GraphQL tooling and revisioned storefront code for development workflows." actions={tabs.length>1?<VsnTabs items={tabs} value={tab} onChange={setTab}/>:null}>
     <div className="vsn-dev-banner"><Code2 size={17}/><div><strong>Developer Mode</strong><span>Queries use the current app installation and cannot exceed Shopify-granted scopes. VSN action permissions are also enforced on the server.</span></div></div>

@@ -16,7 +16,7 @@ export async function inspectNativeShopifyBridge(admin) {
     const response = await admin.graphql(`#graphql\nquery VsnNativeThemes { themes(first: 20) { nodes { id name role } } }`);
     const json = await response.json();
     themes = json.data?.themes?.nodes || [];
-  } catch {}
+  } catch { /* best-effort */ }
   const current = themes.find((theme) => theme.role === 'MAIN') || themes[0] || null;
   return { currentTheme: current, themes, blockCount: NATIVE_APP_BLOCKS.length, appBlockLimit: 30 };
 }

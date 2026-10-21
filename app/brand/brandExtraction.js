@@ -37,6 +37,7 @@ export function publicBrandSourceText(value) {
     .replace(/<[^>]*>/g, " ")
     .replace(/&(?:nbsp|amp|quot|apos|lt|gt|#\d+|#x[0-9a-f]+);/gi, " ")
     .replace(/[<>{}]/g, " ")
+    // eslint-disable-next-line no-control-regex -- intentionally strips control characters
     .replace(/[\u0000-\u001f\u007f]/g, " ")
     .replace(/\s+/g, " ")
     .trim()

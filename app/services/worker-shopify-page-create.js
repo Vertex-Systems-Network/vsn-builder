@@ -33,6 +33,7 @@ export async function parseBoundedWorkerPageCreateRequest(request) {
   let total=0,shouldCancel=true;
   const deadline=Date.now()+MAX_READ_MS;
   try {
+    // eslint-disable-next-line no-constant-condition -- intentional bounded loop
     while(true){
       const remaining=deadline-Date.now();
       if(remaining<=0)throw new BuilderDraftSaveError(408,"PAGE_CREATE_TIMEOUT");
@@ -57,8 +58,8 @@ export async function parseBoundedWorkerPageCreateRequest(request) {
     if(error instanceof BuilderDraftSaveError)throw error;
     throw new BuilderDraftSaveError(400,"PAGE_CREATE_BAD_BODY");
   }finally{
-    if(shouldCancel)try{void reader.cancel().catch(()=>{})}catch{}
-    try{reader.releaseLock()}catch{}
+    if(shouldCancel)try{void reader.cancel().catch(()=>{})}catch{ /* best-effort */ }
+    try{reader.releaseLock()}catch{ /* best-effort */ }
   }
   const bytes=new Uint8Array(total);
   let index=0;
@@ -71,6 +72,7 @@ export async function parseBoundedWorkerPageCreateRequest(request) {
      typeof value.title!=="string")
     throw new BuilderDraftSaveError(400,"PAGE_CREATE_BAD_FIELDS");
   const title=value.title.trim();
+  // eslint-disable-next-line no-control-regex -- intentional control-char sanitizer
   if(!title || title.length>120 || /[\u0000-\u001f\u007f]/.test(title) ||
      new TextEncoder().encode(title).byteLength>256)
     throw new BuilderDraftSaveError(400,"PAGE_CREATE_BAD_TITLE");
@@ -86,6 +88,7 @@ export async function authorizeAndCreateVerifiedWorkerPage({
      typeof session.isOnline!=="boolean")
     throw new BuilderDraftSaveError(403,"PAGE_CREATE_SESSION_REQUIRED");
   if(typeof title!=="string" || !title.trim() || title.length>120 ||
+     // eslint-disable-next-line no-control-regex -- intentional control-char sanitizer
      /[\u0000-\u001f\u007f]/.test(title) ||
      new TextEncoder().encode(title).byteLength>256)
     throw new BuilderDraftSaveError(400,"PAGE_CREATE_BAD_TITLE");

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnColorField, VsnSearchField, VsnUrlField, VsnDateField, VsnSpinner } from "./EditorUi";
+import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnUrlField } from "./EditorUi";
 import { openShopifyFilePicker } from "./EditorControls";
 import PolarisIcon from "../ui/PolarisIcon";
 import { isCampaignTemplate } from "../../builder/campaignSystem";
@@ -12,8 +12,6 @@ function Field({ label, children }) {
     </label>
   );
 }
-
-const inputClass = "w-full rounded-lg border border-[#e3e3e3] bg-[#f6f6f7] px-2.5 py-2 text-xs text-[#202223] outline-none focus:border-[#95BF47]";
 
 export default function PageSettingsPanel({
   open,

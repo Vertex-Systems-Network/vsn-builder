@@ -1,8 +1,7 @@
 import { decryptSecret, encryptSecret, maskSecret } from "./secret-vault.server.js";
 import { trackedStockFetch } from "./stock-api-usage.server.js";
 import {
-  STOCK_AUDIO_IMPORT_PROVIDERS, STOCK_AUDIO_PROVIDERS, STOCK_IMAGE_IMPORT_PROVIDERS, STOCK_IMAGE_PROVIDERS,
-  STOCK_PROVIDER_NAMES, STOCK_PROVIDERS, STOCK_VIDEO_IMPORT_PROVIDERS, STOCK_VIDEO_PROVIDERS,
+  STOCK_PROVIDER_NAMES, STOCK_PROVIDERS,
 } from "../config/stock-media.js";
 
 export {

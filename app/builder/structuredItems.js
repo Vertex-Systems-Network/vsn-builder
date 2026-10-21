@@ -26,7 +26,7 @@ export function structuredItemSchema(type='') { return STRUCTURED_ITEM_SCHEMAS[t
 function parseLegacy(type, text='') {
   const keys = FIELD_KEYS[type] || [];
   const lines = String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-  return lines.map((line,index)=>{
+  return lines.map((line)=>{
     const values = line.split('|').map(x=>x.trim());
     const item={id:uid(`${type}-item`)};
     keys.forEach((key,i)=>item[key]=values[i] || '');

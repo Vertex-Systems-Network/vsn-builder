@@ -34,9 +34,9 @@ export default function About({ darkMode }) {
           The most complete Elementor-style component library for Shopify store builders. 32 professionally crafted components, zero compromises.
         </p>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 24 }}>
-          <a href="#" style={{ color: muted, display: 'flex', alignItems: 'center' }}><ExternalLink size={18}/></a>
-          <a href="#" style={{ color: muted, display: 'flex', alignItems: 'center' }}><ExternalLink size={18}/></a>
-          <a href="#" style={{ color: muted, display: 'flex', alignItems: 'center' }}><ExternalLink size={18}/></a>
+          <a /* eslint-disable-line jsx-a11y/anchor-is-valid -- placeholder link kept as-is; navigation intentionally inert */ href="#" style={{ color: muted, display: 'flex', alignItems: 'center' }}><ExternalLink size={18}/></a>
+          <a /* eslint-disable-line jsx-a11y/anchor-is-valid -- placeholder link kept as-is; navigation intentionally inert */ href="#" style={{ color: muted, display: 'flex', alignItems: 'center' }}><ExternalLink size={18}/></a>
+          <a /* eslint-disable-line jsx-a11y/anchor-is-valid -- placeholder link kept as-is; navigation intentionally inert */ href="#" style={{ color: muted, display: 'flex', alignItems: 'center' }}><ExternalLink size={18}/></a>
         </div>
       </div>
 

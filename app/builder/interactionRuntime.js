@@ -153,11 +153,11 @@ export function setupInteractionRuntime(root = document) {
     let raf=0; const update=()=>{raf=0;const vh=window.innerHeight||document.documentElement.clientHeight||800;scrollRows.filter(r=>r.type==="scroll-progress").forEach(({element,timeline})=>{const rect=element.getBoundingClientRect();const progress=Math.max(0,Math.min(1,(vh-rect.top)/(vh+rect.height||1)));execute(element,timeline,{type:"scroll-progress"},progress);});};
     const schedule=()=>{if(!raf)raf=requestAnimationFrame(update)}; add(window,"scroll",schedule,{passive:true}); add(window,"resize",schedule,{passive:true}); schedule(); cleanups.push(()=>raf&&cancelAnimationFrame(raf));
   }
-  for (const {element,timeline,type} of scrollRows.filter((row)=>row.type==="mouse-move")) {
+  for (const {element,timeline} of scrollRows.filter((row)=>row.type==="mouse-move")) {
     add(element,"pointermove",(event)=>{const rect=element.getBoundingClientRect();const nx=rect.width?((event.clientX-rect.left)/rect.width-.5)*2:0;const ny=rect.height?((event.clientY-rect.top)/rect.height-.5)*2:0;const t={...timeline,actions:(timeline.actions||[]).map((a)=>a.type==="animate"?{...a,to:{...a.to,x:Number(a.to?.x||0)*nx,y:Number(a.to?.y||0)*ny}}:a)};execute(element,t,event);},{passive:true});
   }
   add(document,"vsn:preview-interaction",(event)=>{const id=String(event.detail?.elementId||"");const timelineId=String(event.detail?.timelineId||"");const element=(root.querySelector?.(`[data-vsn-id="${id.replace(/"/g,'\\"')}"]`)||document.querySelector?.(`[data-vsn-id="${id.replace(/"/g,'\\"')}"]`));const config=element?parseConfig(element):null;const timeline=config?.timelines?.find((item)=>item.id===timelineId);if(element&&timeline)runTimeline(element,timeline,event,root);});
-  return () => { cleanups.forEach((fn)=>{try{fn()}catch{}}); observers.forEach((observer)=>observer.disconnect?.()); };
+  return () => { cleanups.forEach((fn)=>{try{fn()}catch{ /* ignore */ }}); observers.forEach((observer)=>observer.disconnect?.()); };
 }
 
 export { runTimeline };

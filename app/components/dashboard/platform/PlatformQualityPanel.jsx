@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Activity, Camera, Gauge, PlugZap, RefreshCw, ShieldCheck, TerminalSquare } from 'lucide-react';
+import { Camera, Gauge, PlugZap, RefreshCw, ShieldCheck, TerminalSquare } from 'lucide-react';
 
 function Card({children,darkMode=false,className=''}){return <section className={`rounded-xl border p-4 ${darkMode?'border-[#273142] bg-[#151b26]':'border-[#e3e3e3] bg-white'} ${className}`}>{children}</section>}
 function Badge({tone='neutral',children}){const cls=tone==='pass'?'bg-emerald-50 text-emerald-700':tone==='fail'||tone==='high'?'bg-red-50 text-red-700':tone==='warn'||tone==='medium'?'bg-amber-50 text-amber-700':'bg-slate-100 text-slate-700';return <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase ${cls}`}>{children}</span>}

@@ -33,6 +33,7 @@ export async function parseBoundedWorkerDraftSaveRequest(request){
  const deadline=Date.now()+READ_DEADLINE_MS;
  let cancel=true;
  try{
+  // eslint-disable-next-line no-constant-condition -- intentional bounded loop
   while(true){
    const remaining=deadline-Date.now();
    if(remaining<=0)throw new BuilderDraftSaveError(408,"DRAFT_READ_TIMEOUT");

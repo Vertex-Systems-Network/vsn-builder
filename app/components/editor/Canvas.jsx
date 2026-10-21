@@ -24,7 +24,6 @@ import SdkWidgetView, { renderSdkEditorValue } from './SdkWidgetView.jsx';
 import { parseVisualTemplate, scopeVisualTemplateCss, visualTemplateTreeToDescriptor } from '../../builder/visualTemplate.js';
 import { SAMPLE_COLLECTION_PRODUCTS } from './canvasSamples.js';
 
-const PREVIEW_WIDTHS = { desktop: '100%', tablet: '768px', mobile: '390px' };
 const LoopItemContext = createContext(null);
 const ComponentLibraryContext = createContext([]);
 const ComponentStackContext = createContext([]);
@@ -109,7 +108,7 @@ function VideoCanvasWidget({ node }) {
   if (!props.url) return <div style={{...frameStyle,color:"#fff",display:"grid",placeItems:"center"}}>Choose or paste a video</div>;
   if (poster) return <div style={{...frameStyle,position:"relative",overflow:"hidden"}}><img src={poster} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>{props.showPlayIcon?<span style={{position:"absolute",inset:"50% auto auto 50%",transform:"translate(-50%,-50%)",width:props.playIconSize,height:props.playIconSize,borderRadius:999,display:"grid",placeItems:"center",background:"rgba(0,0,0,.68)",color:"#fff",fontSize:Math.round(props.playIconSize*.42)}}>{props.playIcon?.source==="svg-file"&&props.playIcon?.url?<img src={props.playIcon.url} alt="" style={{width:"46%",height:"46%",objectFit:"contain"}}/>:(props.playIcon?.glyph||"▶")}</span>:null}</div>;
   if (["youtube","vimeo","dailymotion"].includes(props.provider) && embed) return <iframe title="Video preview" src={embed} loading="lazy" allow="autoplay; fullscreen; picture-in-picture" style={frameStyle}/>;
-  return <video src={props.url} muted={props.muted} loop={props.loop} controls={props.controls} playsInline={props.playsInline} preload={props.preload} style={frameStyle}/>;
+  return <video /* eslint-disable-line jsx-a11y/media-has-caption -- user-supplied media; no caption track available */ src={props.url} muted={props.muted} loop={props.loop} controls={props.controls} playsInline={props.playsInline} preload={props.preload} style={frameStyle}/>;
 }
 
 function SliderCanvasWidget({ node, selectedId, onSelect, onDrop, onRequestAddChild, onMoveNode, previewCollection, previewProduct, previewBlog, previewArticle, previewSearch, reusableSections, previewMode }) {
@@ -282,7 +281,6 @@ const SAMPLE_COLLECTION_IMAGE = "/vsn-stock/seasonal.svg";
 
 
 const PHASE10_CANVAS_TYPES = new Set(["breadcrumbs","icon-list","icon-box","image-box","accordion","toggle","social-icons","map","progress-bar","counter","pricing-table","timeline","data-table","menu-anchor","form-builder","product-media","inventory-status","collection-filters","collection-sorting","collection-pagination","cart-drawer","countdown","product-grid","product-card","collection-grid","html","liquid"]);
-function phase10CanvasRows(value,n=3){return String(value||"").split(/\r?\n/).map(l=>l.split("|").map(x=>x.trim()).slice(0,n)).filter(r=>r.some(Boolean));}
 function Phase10CanvasWidget({node,previewProduct}){const p=node.props||{},t=node.type,gap=node.styles?.spacing?.gap||node.styles?.grid?.gap||"12px";
  if(t==="breadcrumbs"){const items=normalizeStructuredItems(t,p).filter((_,i)=>p.showHome!==false||i>0);return <div style={{display:"flex",gap,flexWrap:"wrap"}}>{items.map((item,i)=><span key={item.id||i}>{i?`${p.separator||"/"} `:""}{item.label}</span>)}</div>;}
  if(t==="icon-list"){const items=normalizeStructuredItems(t,p);return <div style={{display:"grid",gap}}>{items.map((item,i)=><div key={item.id||i}>{item.icon||"•"} {item.label}</div>)}</div>;}
@@ -1130,7 +1128,7 @@ function RenderNode({
     }
   }
 
-  return <div
+  return <div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */
     data-vsn-id={node.id}
     data-vsn-node-type={node.type}
     data-vsn-component-id={node.type === "component-instance" ? String(node.props?.componentId || "") : undefined}
@@ -1369,7 +1367,7 @@ export default function Canvas({
     event.preventDefault();
     event.stopPropagation();
     panSessionRef.current = { pointerId:event.pointerId, x:event.clientX, y:event.clientY, left:root.scrollLeft, top:root.scrollTop };
-    try { root.setPointerCapture(event.pointerId); } catch {}
+    try { root.setPointerCapture(event.pointerId); } catch { /* ignore: best-effort */ }
     setIsPanning(true);
   };
   const moveCanvasPan = (event) => {
@@ -1386,13 +1384,13 @@ export default function Canvas({
     const session = panSessionRef.current;
     if (!session || session.pointerId !== event.pointerId) return;
     panSessionRef.current = null;
-    try { root?.releasePointerCapture(event.pointerId); } catch {}
+    try { root?.releasePointerCapture(event.pointerId); } catch { /* ignore: best-effort */ }
     setIsPanning(false);
   };
 
   return (
     <CanvasRenderBoundary resetKey={resetKey}>
-    <div
+    <div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */
       ref={canvasRootRef}
       data-vsn-canvas-root="true"
       data-vsn-locale={localizationLocale || undefined}
@@ -1446,7 +1444,7 @@ export default function Canvas({
       <WidgetTemplateContext.Provider value={widgetPlatform.templates || {}}>
       <div className="vsn-canvas-scaled-shell" style={{ width: `${Math.max(240, Number(previewWidth) || 1440) * Math.max(.25, Number(zoom) || 1)}px`, minHeight: `${650 * Math.max(.25, Number(zoom) || 1)}px` }}>
         <div className="vsn-canvas-width-frame" style={{ width: `${Math.max(240, Number(previewWidth) || 1440)}px`, transform: `scale(${Math.max(.25, Number(zoom) || 1)})`, transformOrigin: "top left" }}>
-        <button type="button" aria-label="Resize canvas" className="vsn-canvas-resize-handle" onPointerDown={(event)=>{event.preventDefault();event.stopPropagation();const handle=event.currentTarget;const pointerId=event.pointerId;const startX=event.clientX;const startWidth=Math.max(240,Number(previewWidth)||1440);const scale=Math.max(.25,Number(zoom)||1);try{handle.setPointerCapture(pointerId);}catch{}const move=(e)=>{if(e.pointerId!==pointerId)return;const delta=(e.clientX-startX)/scale;onPreviewWidthChange?.(Math.max(240,Math.min(2560,startWidth+delta*2)));};const up=(e)=>{if(e.pointerId!==pointerId)return;handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',up);try{handle.releasePointerCapture(pointerId);}catch{}};handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',up);}}><span>↔</span></button>
+        <button type="button" aria-label="Resize canvas" className="vsn-canvas-resize-handle" onPointerDown={(event)=>{event.preventDefault();event.stopPropagation();const handle=event.currentTarget;const pointerId=event.pointerId;const startX=event.clientX;const startWidth=Math.max(240,Number(previewWidth)||1440);const scale=Math.max(.25,Number(zoom)||1);try{handle.setPointerCapture(pointerId);}catch{ /* ignore: best-effort */ }const move=(e)=>{if(e.pointerId!==pointerId)return;const delta=(e.clientX-startX)/scale;onPreviewWidthChange?.(Math.max(240,Math.min(2560,startWidth+delta*2)));};const up=(e)=>{if(e.pointerId!==pointerId)return;handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',up);try{handle.releasePointerCapture(pointerId);}catch{ /* ignore: best-effort */ }};handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',up);}}><span>↔</span></button>
         <div
           data-vsn-page-boundary="1"
           className="vsn-canvas-page rounded-xl shadow-lg min-h-[650px] p-6 space-y-4"

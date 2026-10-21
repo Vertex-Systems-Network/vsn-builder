@@ -64,6 +64,7 @@ export default function InteractionTimelinePanel({ value, elementId, onChange, g
   const loadLibrary=async()=>{try{const response=await fetch("/app/builder-panel/animations",{headers:{Accept:"application/json"},credentials:"same-origin"});const data=await response.json();if(response.ok){setLibrary([...(data.builtins||[]),...(data.presets||[])]);setLibraryMessage("");}else setLibraryMessage(data?.error||"Motion Library could not be loaded.");}catch{setLibraryMessage("Motion Library could not be loaded.");}};
   useEffect(()=>{loadLibrary();},[]);
   const selected=interactions.timelines.find((item)=>item.id===selectedId)||interactions.timelines[0]||null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- interactions is derived from value; value is the stable source key
   const warnings=useMemo(()=>motionConflictWarnings(interactions),[value]);
   const commit=(timelines)=>onChange?.({timelines:timelines.map(normalizeMotionTimeline)});
   const patchSelected=(patch)=>{if(!selected)return;commit(interactions.timelines.map((item)=>item.id===selected.id?normalizeMotionTimeline({...item,...patch}):item));};

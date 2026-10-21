@@ -47,7 +47,7 @@ export default function useAgentEditorSync({
     if (Number.isFinite(Number(data?.page?.version))) {
       setLocalizationData((current) => ({ ...current, pageVersion: Number(data.page.version) }));
     }
-    try { localStorage.setItem(storageKey(pageId), JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(storageKey(pageId), JSON.stringify(next)); } catch { /* ignore: best-effort */ }
   }, [
     pageId, historyIdx, designTokens, readGlobalStyles, readPageSettings, storageKey,
     setElements, setGlobalStyles, setPageSettings, setHistory, setHistoryIdx,

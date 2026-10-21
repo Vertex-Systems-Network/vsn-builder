@@ -1,12 +1,10 @@
 import { useFetcher } from 'react-router';
-import { AlertTriangle, ArrowRightLeft, ArrowUpRight, Boxes, CalendarDays, CheckCircle, Clock3, CreditCard, DatabaseBackup, Lock, RefreshCw, ShieldCheck, Store } from 'lucide-react';
+import { AlertTriangle, ArrowRightLeft, ArrowUpRight, Boxes, CheckCircle, Clock3, CreditCard, DatabaseBackup, Lock, RefreshCw, ShieldCheck, Store } from 'lucide-react';
 import { buildBillingLifecycle } from '../../../config/billingLifecycle.js';
+import { formatDate as formatUtcDate } from '../../../utils/format-date.js';
 
 function formatDate(value, withTime = false) {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return withTime ? date.toLocaleString() : date.toLocaleDateString();
+  return formatUtcDate(value, withTime ? 'datetime' : 'date');
 }
 
 function statusColors(tone, darkMode) {

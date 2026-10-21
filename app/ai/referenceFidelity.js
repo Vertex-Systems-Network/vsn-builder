@@ -86,6 +86,7 @@ export const REFERENCE_ANALYSIS_SCHEMA = Object.freeze({
 
 function cleanText(value, max = 600) {
   return String(value ?? "")
+    // eslint-disable-next-line no-control-regex -- intentionally strips control characters
     .replace(/[\u0000-\u001f\u007f]/g, " ")
     .replace(/<[^>]*>/g, " ")
     .replace(/{{[\s\S]*?}}/g, " ")

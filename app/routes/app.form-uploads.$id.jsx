@@ -2,7 +2,7 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 
 function safeDownloadName(value) {
-  return String(value || "upload").replace(/[\r\n\"]+/g, "_").slice(0, 180) || "upload";
+  return String(value || "upload").replace(/[\r\n"]+/g, "_").slice(0, 180) || "upload";
 }
 
 export async function loader({ request, params }) {

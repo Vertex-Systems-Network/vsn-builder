@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router';
 import { DynamicSourcePanel, DynamicBindingsPanel, ConditionsBuilder, ResponsivePanel, AdvancedLayoutPanel, StateStylesPanel, BreakpointControls } from "./AdvancedBuilderControls";
 import PolarisIcon from '../ui/PolarisIcon';
-import { ColorGradientControl, CssLengthControl, DimensionsControl, SelectControl, SliderControl, TextControl, NumberControl, TypographyControl, DateTimeControl, TimeControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, BoxShadowControl, TextStrokeControl, BorderControl, BackgroundControl } from './EditorControls';
+import { ColorGradientControl, CssLengthControl, DimensionsControl, SliderControl, TextControl, NumberControl, TypographyControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, BoxShadowControl, TextStrokeControl, BorderControl, BackgroundControl } from './EditorControls';
 import FilterEffectsControl from './FilterEffectsControl';
 import FontFamilyControl from './fonts/FontFamilyControl';
 import { getWidgetCapabilities } from '../../builder/widgetCapabilities';
@@ -304,40 +304,6 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
       },
     });
   };
-
-  const responsive = selectedElement?.responsive ?? {};
-  const deviceResponsive = responsive?.[deviceMode] ?? {};
-  const updateResponsiveStyle = (section, key, value) => {
-    if (!selectedElement) return;
-    onUpdate(selectedElement.id, {
-      responsive: {
-        ...responsive,
-        [deviceMode]: {
-          ...deviceResponsive,
-          styles: {
-            ...(deviceResponsive.styles || {}),
-            [section]: {
-              ...(deviceResponsive.styles?.[section] || {}),
-              [key]: value,
-            },
-          },
-        },
-      },
-    });
-  };
-
-  const updateResponsiveProp = (key, value) => {
-    if (!selectedElement) return;
-    onUpdate(selectedElement.id, {
-      responsive: {
-        ...responsive,
-        [deviceMode]: {
-          ...deviceResponsive,
-          props: { ...(deviceResponsive.props || {}), [key]: value },
-        },
-      },
-    });
-  };
   return (<div className="vsn-properties-panel" style={{ width }}>
     {!hideTabs ? <div className="vsn-inspector-tabs">
       {['content', 'style', 'advanced'].map(tab => (<button type="button" key={tab.charAt(0).toUpperCase()+tab.slice(1)} onClick={() => onTabChange(tab)} className={activeTab === tab ? 'is-active' : ''}>{tab.charAt(0).toUpperCase()+tab.slice(1)}</button>))}
@@ -357,7 +323,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         <FontFamilyControl label="Body font family" value={globalStyles.fontFamily || "Inter, system-ui, sans-serif"} onChange={(fontFamily)=>onGlobalStylesChange?.({fontFamily})} />
         <FontFamilyControl label="Heading font family" value={globalStyles.headingFontFamily || "inherit"} onChange={(headingFontFamily)=>onGlobalStylesChange?.({headingFontFamily})} />
       </SectionHeader>
-      <SectionHeader title="Motion Defaults"><MotionLibrarySelect label="Page motion preset" value={globalStyles.motionPresetId || ""} onChange={(motionPresetId)=>onGlobalStylesChange?.({motionPresetId})} onPreset={(preset)=>onGlobalStylesChange?.({motionPresetId:preset?.id||"",motionPresetTimeline:preset?.timeline||null})} /><div><Label>Reduced motion</Label><Select value={globalStyles.motionReducedMode || "system"} onChange={(motionReducedMode)=>onGlobalStylesChange?.({motionReducedMode})} options={[{value:"system",label:"Follow visitor preference"},{value:"reduce",label:"Prefer reduced motion"},{value:"full",label:"Allow full motion"}]} /></div><p className="text-[10px] leading-4 text-[#8c9196]">Saved Motion Library presets can be applied from any element's Advanced → Animation & Interaction panel. This page default is available there as a one-click preset.</p></SectionHeader>
+      <SectionHeader title="Motion Defaults"><MotionLibrarySelect label="Page motion preset" value={globalStyles.motionPresetId || ""} onChange={(motionPresetId)=>onGlobalStylesChange?.({motionPresetId})} onPreset={(preset)=>onGlobalStylesChange?.({motionPresetId:preset?.id||"",motionPresetTimeline:preset?.timeline||null})} /><div><Label>Reduced motion</Label><Select value={globalStyles.motionReducedMode || "system"} onChange={(motionReducedMode)=>onGlobalStylesChange?.({motionReducedMode})} options={[{value:"system",label:"Follow visitor preference"},{value:"reduce",label:"Prefer reduced motion"},{value:"full",label:"Allow full motion"}]} /></div><p className="text-[10px] leading-4 text-[#8c9196]">Saved Motion Library presets can be applied from any element&apos;s Advanced → Animation & Interaction panel. This page default is available there as a one-click preset.</p></SectionHeader>
       <SectionHeader title="Buttons">
         <div><Label>Background</Label><ColorInput value={globalStyles.buttonBackground || "#1a1a1a"} onChange={(value) => onGlobalStylesChange?.({ buttonBackground: value })} /></div>
         <div><Label>Text</Label><ColorInput value={globalStyles.buttonTextColor || "#ffffff"} onChange={(value) => onGlobalStylesChange?.({ buttonTextColor: value })} /></div>

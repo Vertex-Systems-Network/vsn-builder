@@ -2,7 +2,7 @@ import {
   Info, Star, Heart, Check, Plus, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ShoppingCart, User, Search,
   Grid2X2, Image, FileText, Minus, Columns3, CircleAlert, ListTree, Menu, Mail,
   CircleHelp, MapPin, SlidersHorizontal, Clock3, DollarSign, Tags, Store, Package,
-  Map, Truck, Settings, RotateCcw, LogOut, ChevronRight, ChevronDown, Clipboard,
+  Map, Truck, Settings, RotateCcw, ChevronRight, ChevronDown, Clipboard,
   Copy, Pencil, ExternalLink, Paintbrush, Save, Trash2, Undo2, Redo2, RefreshCw,
   Upload, X, CheckCircle2, LayoutTemplate, Blocks, Monitor, Tablet, Smartphone,
   MousePointerClick, List, AlignLeft, Heading, BarChart3, Images, ImagePlus,
@@ -76,7 +76,7 @@ function pxSize(size) {
   return ({ small: 14, base: 16, large: 20 }[size] || 16);
 }
 
-export default function PolarisIcon({ type = "info", size = "base", tone, className = "", style }) {
+export default function PolarisIcon({ type = "info", size = "base", className = "", style }) {
   const Icon = ICONS[type] || Info;
   return <Icon size={pxSize(size)} strokeWidth={1.9} className={className} style={style} aria-hidden="true" />;
 }

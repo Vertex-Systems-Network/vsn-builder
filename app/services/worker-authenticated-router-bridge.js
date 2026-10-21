@@ -27,6 +27,7 @@ async function boundedHtml(response){
   let length=0;
   const deadline=Date.now()+DEADLINE_MS;
   try{
+    // eslint-disable-next-line no-constant-condition -- intentional bounded loop
     while(true){
       const remaining=deadline-Date.now();
       if(remaining<=0)return failed();
@@ -44,8 +45,8 @@ async function boundedHtml(response){
   }catch{
     return failed();
   }finally{
-    try{void reader.cancel().catch(()=>{})}catch{}
-    try{reader.releaseLock()}catch{}
+    try{void reader.cancel().catch(()=>{})}catch{ /* best-effort */ }
+    try{reader.releaseLock()}catch{ /* best-effort */ }
   }
   const bytes=new Uint8Array(length);
   let offset=0;

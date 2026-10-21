@@ -46,10 +46,6 @@ function addRule(rules, selector, style) {
   if (selector && declarations) rules.push(`${selector}{${declarations}}`);
 }
 
-function addRawRule(rules, selector, declarations = {}) {
-  addRule(rules, selector, declarations);
-}
-
 function safeId(id) {
   return String(id || "").replace(/["'\\]/g, "");
 }

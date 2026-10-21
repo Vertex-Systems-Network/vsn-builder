@@ -4,7 +4,7 @@ import { VsnButton, VsnTextField, VsnSelect, VsnOption } from "../EditorUi";
 import { AnchoredOverlay, ModalPortal } from "../OverlayManager";
 import { useFontRegistry } from "./FontRegistryContext";
 
-const primary = (value = "") => String(value || "").split(",")[0].trim().replace(/^[\'"]|[\'"]$/g, "");
+const primary = (value = "") => String(value || "").split(",")[0].trim().replace(/^['"]|['"]$/g, "");
 
 export default function FontFamilyControl({ label = "Font family", value = "Inter, system-ui, sans-serif", fontWeight = 400, fontStyle = "normal", onChange }) {
   const { catalog, loading, ensureFontLoaded, uploadCustomFont, deleteCustomFont } = useFontRegistry();
@@ -77,7 +77,7 @@ export default function FontFamilyControl({ label = "Font family", value = "Inte
       >
         <div className="vsn-font-search">
           <Search size={14} />
-          <input autoFocus value={query} placeholder="Search fonts…" onChange={(event) => setQuery(event.target.value)} />
+          <input /* eslint-disable-line jsx-a11y/no-autofocus -- intentional focus when the picker/dialog opens */ autoFocus value={query} placeholder="Search fonts…" onChange={(event) => setQuery(event.target.value)} />
           {query ? <button type="button" onClick={() => setQuery("")}><X size={13} /></button> : null}
         </div>
         <div className="vsn-font-list">
@@ -112,7 +112,7 @@ export default function FontFamilyControl({ label = "Font family", value = "Inte
 
       {uploadOpen ? (
         <ModalPortal>
-          <div className="vsn-editor-modal-backdrop vsn-font-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setUploadOpen(false); }}>
+          <div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop vsn-font-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setUploadOpen(false); }}>
             <div className="vsn-font-modal">
               <div className="vsn-font-modal-head">
                 <div><strong>Upload custom font</strong><span>WOFF2, WOFF, TTF or OTF · max 8 MB</span></div>

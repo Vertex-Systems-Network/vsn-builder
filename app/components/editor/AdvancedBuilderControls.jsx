@@ -107,7 +107,7 @@ export function DynamicBindingInspector({ element, context = {} }) {
   const rows = inspectDynamicBindings(element, context);
   if (!rows.length) return null;
   return <Panel title="Data Binding Inspector" badge={`${rows.length} ACTIVE`} defaultOpen={false}>
-    <p className="text-[10px] leading-4 text-[#6d7175]">Inspect the selected element's source, resolved preview value and fallback behavior without changing the binding.</p>
+    <p className="text-[10px] leading-4 text-[#6d7175]">Inspect the selected element&apos;s source, resolved preview value and fallback behavior without changing the binding.</p>
     <div className="space-y-2">{rows.map((row)=><div key={`${row.path}:${row.source}`} className="rounded-lg border border-[#e3e3e3] bg-[#fafafa] p-2.5"><div className="flex items-start justify-between gap-2"><div><strong className="text-[11px] text-[#303030]">{row.label}</strong><div className="mt-0.5 font-mono text-[9px] text-[#8c9196]">{row.path}</div></div><span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${row.value==null||row.value===''?'bg-amber-50 text-amber-700':row.usedFallback?'bg-blue-50 text-blue-700':'bg-emerald-50 text-emerald-700'}`}>{row.value==null||row.value===''?'EMPTY':row.usedFallback?'FALLBACK':'RESOLVED'}</span></div><div className="mt-2 grid gap-1 text-[10px]"><div className="flex justify-between gap-2"><span className="text-[#8c9196]">Source</span><code className="max-w-[190px] truncate text-[#303030]">{row.source}</code></div><div className="flex justify-between gap-2"><span className="text-[#8c9196]">Preview</span><code className="max-w-[190px] truncate text-[#303030]">{row.value==null||row.value===''?'—':String(row.value)}</code></div>{row.fallback?<div className="flex justify-between gap-2"><span className="text-[#8c9196]">Fallback</span><code className="max-w-[190px] truncate text-[#303030]">{row.fallback}</code></div>:null}</div></div>)}</div>
   </Panel>;
 }
@@ -175,7 +175,6 @@ export function ConditionsBuilder({ element, onUpdate }) {
 
 export function ResponsivePanel({ element, deviceMode, onUpdate, capabilities, globalStyles = {} }) {
   const caps = capabilities || getWidgetCapabilities(element?.type);
-  const breakpoints = normalizeResponsiveBreakpoints(globalStyles);
   const active = breakpointById(globalStyles, deviceMode);
   const responsive = element?.responsive || {};
   const device = responsive?.[deviceMode] || {};
