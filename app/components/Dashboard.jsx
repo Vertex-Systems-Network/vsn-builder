@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useFetcher, useLocation } from "react-router";
 import {
   BarChart3, CalendarDays, Check, CheckSquare2, Clock3, Copy, Download, Edit3, ExternalLink,
@@ -8,6 +8,7 @@ import {
 import Badge from "./ui/Badge";
 import Button from "./ui/Button";
 import { VsnNotice } from "./ui/VsnToolkit";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   normalizeDataViewConfig, VsnDataViewActionMenu, VsnDataViewBulkMenu, VsnDataViewPagination,
   VsnDataViewSettings, VsnDataViewSortControls, VsnDataViewToggle,
@@ -116,9 +117,11 @@ function TemplateThumb({ page, large = false }) {
 }
 
 function Modal({ title, children, onClose, footer }) {
+  const dialogRef = useRef(null); const titleId = useId();
+  useFocusTrap(dialogRef, true, { onEscape: onClose });
   return <div className="vsn-template-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose?.(); }}>
-    <section className="vsn-template-modal" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="vsn-template-modal-head"><strong>{title}</strong><button type="button" onClick={onClose} aria-label="Close"><X size={17} /></button></div>
+    <section ref={dialogRef} tabIndex={-1} className="vsn-template-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div className="vsn-template-modal-head"><strong id={titleId}>{title}</strong><button type="button" onClick={onClose} aria-label="Close"><X size={17} /></button></div>
       <div className="vsn-template-modal-body">{children}</div>
       {footer ? <div className="vsn-template-modal-foot">{footer}</div> : null}
     </section>

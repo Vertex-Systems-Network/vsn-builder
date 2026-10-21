@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, Search, Settings2, UploadCloud, X, AlertTriangle, RotateCcw } from "lucide-react";
 import Button from "./Button";
+import { useFocusTrap } from "../../hooks/useFocusTrap.js";
 
 export function VsnPage({ title, subtitle = "", actions = null, children, compact = false, profile = "workspace" }) {
   return <div className="vsn-workspace-page" data-vsn-ui-profile={profile}>
@@ -147,18 +148,13 @@ export function VsnFileButton({ children = "Choose file", accept, onChange, disa
 
 export function VsnModal({ open, title, subtitle = "", children, footer = null, onClose, size = "md", danger = false }) {
   const closeRef = useRef(null);
-  useEffect(() => {
-    if (!open) return undefined;
-    const previous = document.activeElement;
-    const onKey = (event) => { if (event.key === "Escape") onClose?.(); };
-    document.addEventListener("keydown", onKey);
-    const timer = window.setTimeout(() => closeRef.current?.focus?.(), 0);
-    return () => { document.removeEventListener("keydown", onKey); window.clearTimeout(timer); previous?.focus?.(); };
-  }, [open, onClose]);
+  const dialogRef = useRef(null);
+  const titleId = useId();
+  useFocusTrap(dialogRef, open, { onEscape: onClose, initialFocusRef: closeRef });
   if (!open) return null;
   return <div className="vsn-modal-backdrop" role="presentation" onMouseDown={(event)=>{if(event.target===event.currentTarget)onClose?.();}}>
-    <section className={`vsn-modal vsn-modal--${size} ${danger?"is-danger":""}`} role="dialog" aria-modal="true" aria-label={title}>
-      <header className="vsn-modal-head"><div>{danger?<span className="vsn-modal-danger-mark"><AlertTriangle size={17}/></span>:null}<div><h2>{title}</h2>{subtitle?<p>{subtitle}</p>:null}</div></div><button ref={closeRef} type="button" className="vsn-modal-close" onClick={onClose} aria-label="Close"><X size={18}/></button></header>
+    <section ref={dialogRef} tabIndex={-1} className={`vsn-modal vsn-modal--${size} ${danger?"is-danger":""}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <header className="vsn-modal-head"><div>{danger?<span className="vsn-modal-danger-mark"><AlertTriangle size={17}/></span>:null}<div><h2 id={titleId}>{title}</h2>{subtitle?<p>{subtitle}</p>:null}</div></div><button ref={closeRef} type="button" className="vsn-modal-close" onClick={onClose} aria-label="Close"><X size={18}/></button></header>
       <div className="vsn-modal-body">{children}</div>
       {footer?<footer className="vsn-modal-footer">{footer}</footer>:null}
     </section>
