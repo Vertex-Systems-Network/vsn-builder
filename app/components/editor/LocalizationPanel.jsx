@@ -24,6 +24,7 @@ export default function LocalizationPanel({ open, onClose, data = {}, elements =
     setOverrides(record?.overrides || {});
     setSeo(record?.seo || {});
     setStatus(record?.status || "draft");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reset form only when the record identity/locale changes, not on each record object refresh
   }, [open, record?.id, locale, marketKey]);
 
   useEffect(() => {

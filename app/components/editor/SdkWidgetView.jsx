@@ -27,6 +27,7 @@ export default function SdkWidgetView({node,context={},style={},staticPreview=fa
   const mountRef=useRef(null); const hooks=getVsnWidgetHooks(node?.type); let previewNode=node;
   if(typeof hooks?.preview==="function"){try{previewNode=hooks.preview({node,context})||node;}catch(error){reportVsnSdkError("widget.preview",node?.type||"unknown",error);}}
   const result=renderVsnEditorWidget(previewNode,{...context,style});
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount/unmount only on node identity changes; hooks/context objects are recreated each render
   useEffect(()=>{if(staticPreview)return undefined;const element=mountRef.current;try{hooks?.mount?.({element,node:previewNode,context});}catch(error){reportVsnSdkError("widget.mount",node?.type||"unknown",error);}return()=>{try{hooks?.unmount?.({element,node:previewNode,context});}catch(error){reportVsnSdkError("widget.unmount",node?.type||"unknown",error);}};},[node?.id,node?.type,staticPreview]);
   if(!result.handled)return null;
   return <SdkWidgetErrorBoundary node={node}><div ref={mountRef} data-vsn-id={node.id} data-vsn-sdk-widget={node.type} style={style}>{result.error?<div data-vsn-sdk-error="1" style={{padding:12,border:"1px dashed #d72c0d",borderRadius:8,color:"#8a1f0d"}}>Plugin widget unavailable</div>:renderSdkEditorValue(result.value,node.id||node.type)}</div></SdkWidgetErrorBoundary>;

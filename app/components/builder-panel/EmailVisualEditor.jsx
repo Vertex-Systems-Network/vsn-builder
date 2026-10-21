@@ -30,6 +30,7 @@ function SourcePanel({html,mjml,text,fileBase}){
 function PreviewPanel({html,device,appearance}){return <div className={`vsn-email-preview-frame is-${device} is-${appearance}`}><iframe title={`${appearance} email preview`} srcDoc={html}/></div>}
 
 export function EmailVisualEditor({template,previewBindings,savedBlocks=[],commerceCatalog={},aiStatus={},onSave,onClose,busy=false}){
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on template id / listed state; handlers are recreated every render
   const initial=useMemo(()=>normalizeEmailDocument(clone(template.document||{})),[template.id]);
   const history=useEmailHistory(initial,{limit:100});
   const emailDocument=history.state;const setDocument=history.setState;
@@ -72,6 +73,7 @@ export function EmailVisualEditor({template,previewBindings,savedBlocks=[],comme
   const insertAiBlocks=(blocks)=>{const rows=(Array.isArray(blocks)?blocks:[]).map(input=>{const normalized=normalizeEmailBlock(input||createEmailBlock("text"));return {...clone(normalized),id:createEmailBlock(normalized.type).id}});if(!rows.length)return;setDocument(current=>({...current,blocks:[...current.blocks,...rows]}));setSelectedId(rows[rows.length-1].id);setView("design");setTokenNotice(`${rows.length} AI block${rows.length===1?"":"s"} inserted`)};
   const applyAiMeta=(patch)=>setMeta(current=>({...current,...Object.fromEntries(Object.entries(patch||{}).filter(([,value])=>value))}));
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on template id / listed state; handlers are recreated every render
   useEffect(()=>{const key=(event)=>{const target=event.target;const editing=target?.matches?.("input,textarea,select,[contenteditable=true]");if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="s"){event.preventDefault();save();return}if(editing)return;if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="z"){event.preventDefault();event.shiftKey?history.redo():history.undo();return}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="y"){event.preventDefault();history.redo();return}if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="d"&&selectedId){event.preventDefault();duplicate(selectedId);return}if((event.key==="Delete"||event.key==="Backspace")&&selectedId){event.preventDefault();remove(selectedId)}};window.document.addEventListener("keydown",key);return()=>window.document.removeEventListener("keydown",key)},[selectedId,emailDocument,meta,history]);
 
   return <div className="vsn-email-editor vsn-email-studio">

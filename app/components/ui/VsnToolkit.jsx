@@ -217,6 +217,7 @@ function VsnCodeSuggestionPortal({ open, anchorRef, children, onClose }) {
     const desiredTop = availableBelow >= 180 ? rect.bottom + 6 : Math.max(viewportGap, rect.top - Math.min(maxHeight, 260) - 6);
     setPosition({ left: Math.max(viewportGap, Math.min(rect.left, window.innerWidth - rect.width - viewportGap)), top: desiredTop, width: Math.max(260, Math.min(rect.width, window.innerWidth - viewportGap * 2)), maxHeight, ready: true });
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- update is recreated every render; listeners are bound per open state
   useEffect(() => { if (!open) return undefined; update(); const handler = () => update(); window.addEventListener("resize", handler); window.addEventListener("scroll", handler, true); return () => { window.removeEventListener("resize", handler); window.removeEventListener("scroll", handler, true); }; }, [open]);
   useEffect(() => { if (!open || typeof document === "undefined") return undefined; const outside = (event) => { if (popupRef.current?.contains(event.target) || anchorRef?.current?.contains(event.target)) return; onClose?.(); }; document.addEventListener("pointerdown", outside, true); return () => document.removeEventListener("pointerdown", outside, true); }, [open, anchorRef, onClose]);
   if (!open || typeof document === "undefined") return null;

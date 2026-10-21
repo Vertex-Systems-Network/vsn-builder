@@ -62,6 +62,7 @@ export default function BuilderPanelHost({ activeView, onViewChange, panelData =
     panelLoadViewRef.current=activeView;
     panelLoadGenerationRef.current=refreshGeneration;
     panelLoader.load(`/app/builder-panel/${encodeURIComponent(activeView)}?refresh=${refreshGeneration}`);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed to the trigger value only; adding fetcher/state deps would re-run loads or re-apply action results
   },[activeView,staticData,lazyData,refreshGeneration]);
   useEffect(()=>{
     if(panelLoader.state!=="idle"||panelLoader.data==null)return;
@@ -182,6 +183,7 @@ function LibraryPanel({data, actionData, submit, busy=false, confirmAction}) {
     if(d.intent==="favorite"&&d.item)setRows(c=>[d.item,...c.filter(x=>x.id!==d.item.id)]);
     if(d.intent==="inspect-import"&&d.inspection)setImportInspection(d.inspection);
     if(d.intent==="import"&&Array.isArray(d.items)){setRows(c=>[...d.items,...c]);setImportInspection(null);setImportPayload("");}
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed to the trigger value only; adding fetcher/state deps would re-run loads or re-apply action results
   },[actionData]);
 
   const source=tab==="trash"?trashRows:rows;
@@ -284,6 +286,7 @@ function brandKitForm(kit){if(!kit)return {...EMPTY_BRAND_KIT};return {id:kit.id
 function BrandKitsPanel({data,actionData,submit,busy,confirmAction}) {
   const [tab,setTab]=useState("active"); const [q,setQ]=useState(""); const [form,setForm]=useState(()=>brandKitForm(data.kits?.find(x=>x.isDefault)||data.kits?.[0])); const [applyTarget,setApplyTarget]=useState("");
   const rows=(tab==="trash"?data.trash:data.kits)||[]; const filtered=rows.filter(x=>!q||x.name.toLowerCase().includes(q.toLowerCase())); const field=(key,value)=>setForm(current=>({...current,[key]:value}));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed to the trigger value only; adding fetcher/state deps would re-run loads or re-apply action results
   useEffect(()=>{if(!form.id&&data.kits?.length)setForm(brandKitForm(data.kits.find(x=>x.isDefault)||data.kits[0]));},[data.kits]);
   const save=()=>submit({intent:"save",...form});
   return <VsnPage title="Brand Kits" subtitle="Centralize logo, colors, typography, spacing, border radius and shadows, then apply the system to Global Design or any saved template." actions={<VsnButton variant="primary" icon={<Plus size={14}/>} onClick={()=>setForm({...EMPTY_BRAND_KIT})}>New Brand Kit</VsnButton>}>
@@ -351,6 +354,7 @@ function SvgAssetsPanel({data,actionData,submit,busy,confirmAction}) {
     if(intent==="trash"&&actionData.id){const row=files.find(item=>item.id===actionData.id);setFiles(current=>current.filter(item=>item.id!==actionData.id));if(row)setTrash(current=>[{...row,deletedAt:new Date().toISOString()},...current.filter(item=>item.id!==row.id)]);}
     if(intent==="restore"&&actionData.asset){setTrash(current=>current.filter(item=>item.id!==actionData.asset.id));setFiles(current=>[actionData.asset,...current.filter(item=>item.id!==actionData.asset.id)]);}
     if(intent==="hard-delete"&&actionData.id)setTrash(current=>current.filter(item=>item.id!==actionData.id));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed to the trigger value only; adding fetcher/state deps would re-run loads or re-apply action results
   },[actionData]);
 
   const source=tab==="trash"?trash:files;
@@ -382,6 +386,7 @@ function SvgEditModal({asset,onSave,onClose,busy}) {
   const [name,setName]=useState(asset?.name||"");
   const [tags,setTags]=useState(asset?.tags||"");
   const [svgText,setSvgText]=useState(asset?.svgText||"");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed to the trigger value only; adding fetcher/state deps would re-run loads or re-apply action results
   useEffect(()=>{setName(asset?.name||"");setTags(asset?.tags||"");setSvgText(asset?.svgText||"");},[asset?.id]);
   return <VsnModal open={Boolean(asset)} title={asset?`Edit ${asset.name}`:"Edit SVG"} subtitle="Edit sanitized SVG/XML source. The server validates and sanitizes markup again before saving." size="xl" onClose={onClose} footer={<><VsnButton onClick={onClose}>Cancel</VsnButton><VsnButton variant="primary" loading={busy} onClick={()=>onSave({name,tags,svgText})}>Save SVG</VsnButton></>}>
     <div className="vsn-svg-edit-layout"><VsnCodeEditor label="SVG source" language="html" value={svgText} onChange={setSvgText} rows={22}/><div className="vsn-svg-edit-side"><VsnInput label="Name" value={name} onChange={e=>setName(e.target.value)}/><VsnInput label="Tags" value={tags} onChange={e=>setTags(e.target.value)} placeholder="arrow, brand, UI"/><div><strong style={{fontSize:12}}>Live preview</strong><p className="vsn-help-text">Preview runs in a sandbox with scripts and external network requests disabled.</p></div><div className="vsn-svg-live-frame"><iframe sandbox="" title="SVG live preview" srcDoc={svgPreviewDocument(svgText)}/></div></div></div>

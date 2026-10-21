@@ -77,7 +77,7 @@ export default function GlobalInteractionLoader() {
       if (timer.current) clearTimeout(timer.current);
       if (watchdog.current) clearTimeout(watchdog.current);
     };
-  }, [show, hideWhenReady]);
+  }, [show, hideWhenReady, setLoaderVisible]);
 
   return visible ? (
     <div className="vsn-global-loader" role="status" aria-label="Loading">

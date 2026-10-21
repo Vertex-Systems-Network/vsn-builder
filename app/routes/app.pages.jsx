@@ -1009,7 +1009,7 @@ export default function PagesRoute() {
 		if (data?.success && data?.intent === "create" && data?.pageId) {
 			editPage({ id: data.pageId }, { newPage: data.existing !== true });
 		}
-	}, [fetcher.data]);
+	}, [fetcher.data]); // eslint-disable-line react-hooks/exhaustive-deps -- react only to new fetcher.data; editPage identity is not stable
 
 	function previewPage(page) {
 		const params = new URLSearchParams(window.location.search);

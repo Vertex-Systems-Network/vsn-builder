@@ -204,6 +204,7 @@ export default function DeveloperStudio() {
   if(data.permissions.graphql.readQueries)tabs.push({value:"graphql",label:"GraphQL Studio"});
   if(data.permissions.globalCode.view)tabs.push({value:"global-code",label:"Global CSS / JS"});
   const [tab,setTab]=useState(tabs[0]?.value||"graphql");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- tabs is rebuilt every render from the listed permission flags
   useEffect(()=>{if(!tabs.some((item)=>item.value===tab)&&tabs[0])setTab(tabs[0].value);},[tab,data.permissions.graphql.readQueries,data.permissions.globalCode.view]);
   return <VsnPage title="Developer Studio" subtitle="Shopify-aware GraphQL tooling and revisioned storefront code for development workflows." actions={tabs.length>1?<VsnTabs items={tabs} value={tab} onChange={setTab}/>:null}>
     <div className="vsn-dev-banner"><Code2 size={17}/><div><strong>Developer Mode</strong><span>Queries use the current app installation and cannot exceed Shopify-granted scopes. VSN action permissions are also enforced on the server.</span></div></div>

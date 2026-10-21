@@ -486,6 +486,7 @@ export default function PageEditor({
     } catch (error) {
       console.warn("VSN local draft restore skipped:", error);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on a subset; fetchers/non-memoized handlers change identity every render and would loop
   }, [page.id]);
 
   useEffect(() => {
@@ -493,6 +494,7 @@ export default function PageEditor({
       setEditorLibraryItems((current) => [libraryFetcher.data.item, ...current.filter((item) => item.id !== libraryFetcher.data.item.id)]);
       if (libraryFetcher.data.intent !== "favorite") setSaveStatus(libraryFetcher.data.intent === "update" ? "Synced library item updated" : "Saved to Library");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on a subset; fetchers/non-memoized handlers change identity every render and would loop
   }, [libraryFetcher.data]);
   useEffect(() => {
     try {
@@ -608,6 +610,7 @@ export default function PageEditor({
         method: "post",
       },
     );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on a subset; fetchers/non-memoized handlers change identity every render and would loop
   }, [
     previewCollectionHandle,
     page?.template,
@@ -642,6 +645,7 @@ export default function PageEditor({
       { intent: "preview-product", handle: previewProductHandle },
       { method: "post" },
     );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on a subset; fetchers/non-memoized handlers change identity every render and would loop
   }, [previewProductHandle, page?.template]);
 
   useEffect(() => {
@@ -659,6 +663,7 @@ export default function PageEditor({
       setShowSaveTemplate(false); setSaveStatus("Template saved to My Library");
     }
     if (data.intent === "delete-page") onBack?.();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on a subset; fetchers/non-memoized handlers change identity every render and would loop
   }, [editorActionFetcher.data, onBack]);
 
   useEffect(() => {
@@ -875,6 +880,7 @@ export default function PageEditor({
   const handleWidgetClickAdd = useCallback((type) => {
     const target = insertTarget || { parentId: null, beforeId: null, afterId: null };
     handleDrop({ type, ...target, mode: "create" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on a subset; fetchers/non-memoized handlers change identity every render and would loop
   }, [insertTarget, elements]);
 
   const handleMoveNode = useCallback((id, destination) => {
@@ -1029,14 +1035,14 @@ export default function PageEditor({
     });
   }, []);
 
-  const activeSelectionIds = (explicitId = null) => explicitId ? [explicitId] : (selectedIds.length > 1 ? selectedIds : (selectedId ? [selectedId] : []));
+  const activeSelectionIds = useCallback((explicitId = null) => explicitId ? [explicitId] : (selectedIds.length > 1 ? selectedIds : (selectedId ? [selectedId] : [])), [selectedIds, selectedId]);
 
   const handleBulkDelete = useCallback((explicitId = null) => {
     const ids = activeSelectionIds(explicitId); if (!ids.length) return;
     let next = elements; ids.forEach((id) => { const node = findNode(next, id); if (!node?.meta?.locked) next = removeNode(next, id); });
     commit(next, ids.length > 1 ? `Deleted ${ids.length} elements` : "Deleted element", "delete");
     setSelectedId(null); setSelectedIds([]);
-  }, [elements, selectedIds, selectedId, commit]);
+  }, [elements, commit, activeSelectionIds]);
 
   const handleBulkDuplicate = useCallback((explicitId = null) => {
     const ids = activeSelectionIds(explicitId); if (!ids.length) return;
@@ -1044,7 +1050,7 @@ export default function PageEditor({
     ids.forEach((id) => { const result = duplicateNode(next, id); next = result.nodes; if (result.newId) newIds.push(result.newId); });
     commit(next, `Duplicated ${newIds.length || ids.length} element${ids.length === 1 ? "" : "s"}`, "duplicate");
     setSelectedIds(newIds); setSelectedId(newIds[newIds.length - 1] || null);
-  }, [elements, selectedIds, selectedId, commit]);
+  }, [elements, commit, activeSelectionIds]);
 
   const handleCopyStyles = useCallback((explicitId = null) => {
     const id = explicitId || selectedId;
@@ -1056,14 +1062,14 @@ export default function PageEditor({
     if (!styleClipboardRef.current) return; const ids = activeSelectionIds(explicitId); if (!ids.length) return;
     let next = elements; ids.forEach((id) => { next = updateNode(next, id, (node) => ({ ...node, styles: structuredClone(styleClipboardRef.current) })); });
     commit(next, `Pasted styles to ${ids.length} element${ids.length === 1 ? "" : "s"}`, "paint");
-  }, [elements, selectedIds, selectedId, commit]);
+  }, [elements, commit, activeSelectionIds]);
 
   const handleMoveSelection = useCallback((position) => {
     const ids = activeSelectionIds(); if (!ids.length) return; const selectedNodes = ids.map((id) => findNode(elements, id)).filter(Boolean);
     let next = elements; ids.forEach((id) => { next = removeNode(next, id); });
     const clones = selectedNodes; next = position === "top" ? [...clones, ...next] : [...next, ...clones];
     commit(next, `Moved ${ids.length} selected element${ids.length === 1 ? "" : "s"} to ${position}`, "move");
-  }, [elements, selectedIds, selectedId, commit]);
+  }, [elements, commit, activeSelectionIds]);
 
   const handleSaveToLibrary = useCallback(() => {
     const ids = activeSelectionIds(); if (!ids.length) return;
@@ -1075,7 +1081,7 @@ export default function PageEditor({
     if (nodes.length === 1) { content = structuredClone(nodes[0]); kind = ["section","container"].includes(nodes[0].type) ? nodes[0].type : "widget"; }
     else { content = { id: editorNodeId("section"), type: "section", label: title.trim(), props: {}, styles: {}, children: nodes.map((node) => structuredClone(node)) }; kind = "section"; }
     libraryFetcher.submit({ intent: "save", title: title.trim(), kind, category: "Personal", syncMode: globalSync ? "global" : "local", content: JSON.stringify(content) }, { method: "post", action: "/app/library" });
-  }, [elements, selectedIds, selectedId, libraryFetcher]);
+  }, [elements, libraryFetcher, activeSelectionIds]);
 
   const handleUpdateSyncedLibraryItem = useCallback(() => {
     const node = selectedId ? findNode(elements, selectedId) : null;
@@ -1104,7 +1110,7 @@ export default function PageEditor({
     const ids = activeSelectionIds(); let next = elements;
     ids.forEach((id) => { next = updateNode(next, id, (node) => ({ ...node, styles: structuredClone(presetStyles || {}) })); });
     commit(next, `Applied style: ${item.title || "Saved style"}`, "paint");
-  }, [elements, selectedId, selectedIds, commit]);
+  }, [elements, selectedId, commit, activeSelectionIds]);
 
   const handleInsertLibraryItem = useCallback((item) => {
     if (!item) return;
@@ -1255,6 +1261,7 @@ export default function PageEditor({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on a subset; fetchers/non-memoized handlers change identity every render and would loop
   }, [selectedId, selectedIds, elements, handleCopy, handlePaste, handleBulkDuplicate, handleBulkDelete, historyIdx, history]);
 
   const handleBackRequest = useCallback(() => {

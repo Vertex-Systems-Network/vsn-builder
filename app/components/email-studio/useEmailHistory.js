@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 const clone=(value)=>JSON.parse(JSON.stringify(value));
 
 export function useEmailHistory(initialValue,{limit=80}={}){
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- initial value is captured once on mount by design
   const initial=useMemo(()=>clone(initialValue),[]);
   const [state,setState]=useState(initial);
   const past=useRef([]);const future=useRef([]);

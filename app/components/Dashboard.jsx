@@ -244,6 +244,7 @@ export default function Dashboard({
     params.set("page", String(override.page ?? currentPage));
     params.set("pageSize", String(override.pageSize ?? pageSize));
     tableFetcher.load(`${location.pathname}?${params.toString()}`);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetcher object identity changes every render; adding it would loop table loads
   }, [location.pathname, location.search, search, activeFilter, templateFilter, seoFilter, authorFilter, dateFilter, dateFrom, dateTo, sortField, sortDirection, currentPage, pageSize]);
 
   useEffect(() => {
@@ -255,6 +256,7 @@ export default function Dashboard({
   useEffect(() => {
     const timer = window.setTimeout(() => loadTable(), search ? 260 : 40);
     return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetcher object identity changes every render; adding it would loop table loads
   }, [loadTable]);
 
   useEffect(() => {
@@ -288,7 +290,7 @@ export default function Dashboard({
     const q = search.trim().toLowerCase();
     return records.filter((row) => `${row.title} ${row.handle} ${row.createdBy}`.toLowerCase().includes(q));
   }, [records, search, localSearchPending, nonSearchQueryPending]);
-  const displayRows = nonSearchQueryPending ? [] : (localSearchPending ? immediateRows : records);
+  const displayRows = useMemo(() => (nonSearchQueryPending ? [] : (localSearchPending ? immediateRows : records)), [nonSearchQueryPending, localSearchPending, immediateRows, records]);
   const dbLoading = tableFetcher.state !== "idle";
   const trashMode = activeFilter === "Trash";
 

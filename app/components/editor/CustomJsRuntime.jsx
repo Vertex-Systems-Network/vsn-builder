@@ -51,6 +51,7 @@ export default function CustomJsRuntime({ rootRef, elements = [], mode = "editor
         try { cleanup(); } catch { /* ignore: best-effort */ }
       });
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- signature is the content hash of scripts; re-run only when it changes
   }, [rootRef, signature, mode]);
 
   return null;

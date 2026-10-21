@@ -175,6 +175,7 @@ export function DimensionsControl({ label, values = {}, onChange, unit = "px" })
       }
     }
     return unit;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on individual side values to avoid recompute on new object identities
   }, [values?.top, values?.right, values?.bottom, values?.left, unit]);
   const [selectedUnit, setSelectedUnit] = useState(inferredUnit);
   useEffect(() => { setSelectedUnit(inferredUnit); }, [inferredUnit]);
