@@ -56,7 +56,6 @@ export default function DashboardApp({ session, ownerInfo, widgetSettings, dashb
   useEffect(() => { startTransition(()=>setActivePage(normalizeView(new URLSearchParams(location.search).get('view')))); }, [location.search]);
 
   const widgetsFeatcher = useMemo(() => ({ state: 'idle', data: { settings } }), [settings]);
-  const unreadCount = notifications.filter((item) => !item.readAt).length;
 
   const addToast = useCallback((toast) => {
     const id = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);

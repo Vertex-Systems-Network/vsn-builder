@@ -215,14 +215,14 @@ export default function Dashboard({
       if (Array.isArray(parsed?.widgets)) setVisibleWidgets(new Set(parsed.widgets.filter((key) => DEFAULT_WIDGETS.includes(key))));
       if (Number.isFinite(Number(parsed?.pageSize)) && Number(parsed.pageSize) >= 1 && Number(parsed.pageSize) <= 100) setPageSize(Math.floor(Number(parsed.pageSize)));
       if (["list", "grid"].includes(parsed?.viewMode)) setViewMode(parsed.viewMode);
-    } catch {}
+    } catch { /* ignore: best-effort */ }
     hydratedRef.current = true;
   }, [savedViewSettings]);
 
   useEffect(() => {
     if (!hydratedRef.current) return;
     const settings = { columns: [...visibleColumns], widgets: [...visibleWidgets], pageSize, viewMode };
-    try { window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+    try { window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { /* ignore: best-effort */ }
     const timer = window.setTimeout(() => onSaveViewSettings?.(settings), 350);
     return () => window.clearTimeout(timer);
   }, [visibleColumns, visibleWidgets, pageSize, viewMode, onSaveViewSettings]);
@@ -475,7 +475,7 @@ export default function Dashboard({
       </div>
     </VsnDataViewSettings> : null}
 
-    {renameTarget ? <Modal title="Rename template" onClose={() => setRenameTarget(null)} footer={<><button type="button" className="vsn-button vsn-button--secondary vsn-button--sm" onClick={() => setRenameTarget(null)}>Cancel</button><button type="button" className="vsn-button vsn-button--primary vsn-button--sm" disabled={!renameValue.trim() || busy} onClick={submitRename}>Save changes</button></>}><label className="vsn-template-field"><span>Current Name</span><input value={renameTarget.title} disabled /></label><label className="vsn-template-field"><span>New Name</span><input autoFocus value={renameValue} onChange={(event) => setRenameValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitRename(); }} /></label></Modal> : null}
+    {renameTarget ? <Modal title="Rename template" onClose={() => setRenameTarget(null)} footer={<><button type="button" className="vsn-button vsn-button--secondary vsn-button--sm" onClick={() => setRenameTarget(null)}>Cancel</button><button type="button" className="vsn-button vsn-button--primary vsn-button--sm" disabled={!renameValue.trim() || busy} onClick={submitRename}>Save changes</button></>}><label className="vsn-template-field"><span>Current Name</span><input value={renameTarget.title} disabled /></label><label className="vsn-template-field"><span>New Name</span><input /* eslint-disable-line jsx-a11y/no-autofocus -- intentional focus when the picker/dialog opens */ autoFocus value={renameValue} onChange={(event) => setRenameValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitRename(); }} /></label></Modal> : null}
 
     {scheduleOpen ? <Modal title="Schedule selected templates" onClose={() => setScheduleOpen(false)} footer={<><button type="button" className="vsn-button vsn-button--secondary vsn-button--sm" onClick={() => setScheduleOpen(false)}>Cancel</button><button type="button" className="vsn-button vsn-button--primary vsn-button--sm" disabled={!scheduleDate || !scheduleTime || busy} onClick={submitSchedule}>Schedule {selectedIds.size}</button></>}><p className="vsn-template-modal-copy">Choose the future date and time that will be stored on all selected templates.</p><div className="vsn-template-field-grid"><label className="vsn-template-field"><span>Date</span><input type="date" value={scheduleDate} min={new Date().toISOString().slice(0, 10)} onChange={(event) => setScheduleDate(event.target.value)} /></label><label className="vsn-template-field"><span>Time</span><input type="time" value={scheduleTime} onChange={(event) => setScheduleTime(event.target.value)} /></label></div></Modal> : null}
 

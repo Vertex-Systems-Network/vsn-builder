@@ -48,7 +48,7 @@ export default function CustomJsRuntime({ rootRef, elements = [], mode = "editor
       disposed = true;
       window.clearTimeout(timer);
       cleanups.forEach((cleanup) => {
-        try { cleanup(); } catch {}
+        try { cleanup(); } catch { /* ignore: best-effort */ }
       });
     };
   }, [rootRef, signature, mode]);

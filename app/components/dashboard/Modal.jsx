@@ -2,13 +2,13 @@ import { X, AlertTriangle } from 'lucide-react';
 export default function Modal({ open, title, description, confirmLabel = 'Confirm', confirmDanger, onConfirm, onCancel, darkMode }) {
     if (!open)
         return null;
-    return (<div onClick={onCancel} style={{
+    return (<div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ onClick={onCancel} style={{
             position: 'fixed', inset: 0, zIndex: 500,
             background: 'rgba(0,0,0,0.4)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             backdropFilter: 'blur(2px)',
         }}>
-      <div onClick={e => e.stopPropagation()} style={{
+      <div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- only stops event propagation; not an interactive control */ onClick={e => e.stopPropagation()} style={{
             background: darkMode ? '#1A1F2E' : '#FFFFFF',
             borderRadius: 16,
             padding: 28,

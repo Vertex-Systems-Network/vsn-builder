@@ -39,8 +39,7 @@ jobs:
         run: node scripts/legacy-webhook-egress-audit.mjs
       - run: npm run prisma -- generate
       - run: npm run prisma -- migrate deploy
-      - name: Repository lint diagnostics
-        continue-on-error: true
+      - name: Repository lint (blocking)
         run: npm run lint -- --format json --output-file lint-report.json
       - name: Upload lint diagnostics
         if: always()

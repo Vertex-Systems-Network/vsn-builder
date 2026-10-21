@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useFetcher, useLocation } from "react-router";
-import { Download, Trash2, RotateCcw, CheckCircle2, AlertTriangle, Activity, ShieldCheck, Webhook, Mail, Filter, Wrench, ArrowLeft, CheckSquare2, Square, FileDown, Plus, Copy, Pencil, Code2 } from "lucide-react";
+import { Download, Trash2, RotateCcw, CheckCircle2, Activity, Webhook, Filter, Wrench, ArrowLeft, CheckSquare2, Square, FileDown, Plus, Copy, Pencil, Code2 } from "lucide-react";
 import { VsnPage, VsnCard, VsnButton, VsnInput, VsnSearchInput, VsnSelect, VsnCheckbox, VsnTabs, VsnNotice, VsnEmpty, VsnFileButton, VsnTextarea, VsnModal, VsnCodeEditor } from "./ui/VsnToolkit";
 import { useVsnConfirm } from "./ui/VsnConfirmProvider";
 import { extractLibraryImportItems, makeLibraryBundleExport, makeLibrarySingleExport } from "../utils/library-transfer.js";

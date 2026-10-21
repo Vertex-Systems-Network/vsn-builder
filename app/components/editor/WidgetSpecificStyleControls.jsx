@@ -40,7 +40,7 @@ export default function WidgetSpecificStyleControls({ type, value = {}, onChange
 
   return <div className="vsn-widget-specific-styles">
     {has("structureItems") ? <Group title="Direct child items">
-      <p className="vsn-control-help">Optional styles for immediate child elements. Leave fields empty to keep each child widget's own styling.</p>
+      <p className="vsn-control-help">Optional styles for immediate child elements. Leave fields empty to keep each child widget&apos;s own styling.</p>
       <div className="grid grid-cols-2 gap-2"><CssLengthControl label="Child min width" value={value.structureItems?.minWidth || ""} defaultUnit="px" keywords={["auto","min-content","max-content","fit-content"]} onChange={(v)=>patch("structureItems",{minWidth:v})}/><CssLengthControl label="Child min height" value={value.structureItems?.minHeight || ""} defaultUnit="px" keywords={["auto","min-content","max-content","fit-content"]} onChange={(v)=>patch("structureItems",{minHeight:v})}/></div>
       <ColorGradientControl toggleable label="Child background" value={value.structureItems?.background || {type:"color",color:"transparent"}} onChange={(v)=>patch("structureItems",{background:v})}/>
       <div className="grid grid-cols-2 gap-2"><CssLengthControl label="Child padding" value={value.structureItems?.padding || ""} defaultUnit="px" onChange={(v)=>patch("structureItems",{padding:v})}/><CssLengthControl label="Child radius" value={value.structureItems?.radius || ""} defaultUnit="px" onChange={(v)=>patch("structureItems",{radius:v})}/></div>

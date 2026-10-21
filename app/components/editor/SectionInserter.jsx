@@ -151,8 +151,8 @@ export default function SectionInserter({
       </div>
     </div>
 
-    {panel === "library" ? <ModalPortal><div className="vsn-editor-modal-backdrop vsn-library-modal-backdrop" onMouseDown={(event)=>{if(event.currentTarget===event.target)setPanel(null)}}>
-      <div className="vsn-library-modal" onMouseDown={(event)=>event.stopPropagation()}>
+    {panel === "library" ? <ModalPortal><div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop vsn-library-modal-backdrop" onMouseDown={(event)=>{if(event.currentTarget===event.target)setPanel(null)}}>
+      <div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- only stops event propagation; not an interactive control */ className="vsn-library-modal" onMouseDown={(event)=>event.stopPropagation()}>
         <header className="vsn-library-modal-header">
           <div><strong>Template Browser</strong><span>My Library and Marketplace are separate sources. Nothing is silently merged.</span></div>
           <VsnButton type="button" variant="icon" accessibilityLabel="Close template browser" title="Close template browser" onClick={()=>setPanel(null)}><PolarisIcon type="x"/></VsnButton>

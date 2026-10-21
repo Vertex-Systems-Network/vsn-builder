@@ -1,5 +1,5 @@
 import { useFetcher } from 'react-router';
-import { AlertTriangle, ArrowRightLeft, ArrowUpRight, Boxes, CalendarDays, CheckCircle, Clock3, CreditCard, DatabaseBackup, Lock, RefreshCw, ShieldCheck, Store } from 'lucide-react';
+import { AlertTriangle, ArrowRightLeft, ArrowUpRight, Boxes, CheckCircle, Clock3, CreditCard, DatabaseBackup, Lock, RefreshCw, ShieldCheck, Store } from 'lucide-react';
 import { buildBillingLifecycle } from '../../../config/billingLifecycle.js';
 
 function formatDate(value, withTime = false) {

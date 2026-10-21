@@ -28,7 +28,6 @@ export default function WidgetsPage({ widgetsFeatcher, darkMode, onToast, onSett
 
   const fetcher = useFetcher();
 
-  const iswidgetsLoaded = widgetsFeatcher.state === "loading" ? true : false;
   const widgetLoadedData = widgetsFeatcher.data?.settings;
 
   // State for widgets, search, category, view mode, and saving status
@@ -235,7 +234,7 @@ const WidgetCard = ({ comp, onToggle, darkMode }) => {
       }}>
         {iconMap[comp.icon] || <Box size={18} />}
       </div>
-      <label className="toggle-switch">
+      <label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="toggle-switch">
         <input type="checkbox" checked={comp.enabled} onChange={() => onToggle(comp.id)} />
         <span className="toggle-slider" />
       </label>
@@ -289,7 +288,7 @@ const WidgetListRow = ({ comp, onToggle, darkMode }) => {
     }}>
       {comp.enabled ? 'Active' : 'Disabled'}
     </span>
-    <label className="toggle-switch" title={comp.enabled ? "Disable widget" : "Enable widget"}>
+    <label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="toggle-switch" title={comp.enabled ? "Disable widget" : "Enable widget"}>
       <input type="checkbox" checked={comp.enabled} onChange={() => onToggle(comp.id)} />
       <span className="toggle-slider" />
     </label>

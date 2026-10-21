@@ -11,7 +11,7 @@ const EMPTY_STOCK_CREDENTIALS=Object.freeze({unsplash:{accessKey:'',secretKey:''
 const freshStockCredentials=()=>Object.fromEntries(Object.entries(EMPTY_STOCK_CREDENTIALS).map(([provider,value])=>[provider,{...value}]));
 const cloneStock=(value)=>Object.fromEntries(Object.entries(value||{}).map(([key,item])=>[key,{...(item||{}),config:{...(item?.config||{})}}]));
 
-export default function Settings({ darkMode, themePreference='system', onThemePreferenceChange, colorSchemePreference='lime', customAccent='#95BF47', onColorSchemeChange, onCustomAccentChange, onToast, ownerInfo={}, settings={}, isOwner=false }) {
+export default function Settings({ themePreference='system', onThemePreferenceChange, colorSchemePreference='lime', customAccent='#95BF47', onColorSchemeChange, onCustomAccentChange, onToast, ownerInfo={}, settings={}, isOwner=false }) {
   const [enterprise,setEnterprise]=useState({...ENTERPRISE_DEFAULTS,...(settings?.enterprise||{})});
   const [app,setApp]=useState({...APP_DEFAULTS,...(settings?.app||{})});
   const [stock,setStock]=useState(()=>cloneStock(settings?.stockImages||{}));
@@ -58,7 +58,7 @@ export default function Settings({ darkMode, themePreference='system', onThemePr
     {label:'Timezone',value:ownerInfo?.ianaTimezone||'Managed in Shopify',href:adminBase?`${adminBase}/settings/general`:''},
     {label:'Primary language',value:ownerInfo?.primaryLocale||'Managed in Shopify',href:adminBase?`${adminBase}/settings/languages`:''},
   ],[adminBase,ownerInfo]);
-  const Toggle=({label,description,checked,onChange})=><label className="vsn-settings-toggle-row"><span><strong>{label}</strong><small>{description}</small></span><span className="toggle-switch"><input type="checkbox" checked={checked} onChange={(e)=>onChange(e.currentTarget.checked)}/><span className="toggle-slider"/></span></label>;
+  const Toggle=({label,description,checked,onChange})=><label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-settings-toggle-row"><span><strong>{label}</strong><small>{description}</small></span><span className="toggle-switch"><input type="checkbox" checked={checked} onChange={(e)=>onChange(e.currentTarget.checked)}/><span className="toggle-slider"/></span></label>;
   return <div className="vsn-settings-page page-fade">
     <header className="vsn-settings-head"><div><h1>Settings</h1><p>Only options that VSN Builder can actually apply are editable here. Shopify-owned store settings remain read-only.</p></div><button type="button" className="dashboard-primary-action" disabled={saving} onClick={save}><Save size={14}/>{saving?'Saving…':'Save changes'}</button></header>
 

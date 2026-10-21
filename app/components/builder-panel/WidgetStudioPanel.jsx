@@ -252,7 +252,7 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
             </VsnNotice>
             <VsnCodeEditor label="Template HTML" language="html" rows={15} value={html} onChange={setHtml} />
             <VsnCodeEditor label="Scoped CSS" language="css" rows={10} value={css} onChange={setCss} />
-            <label className="vsn-switch-row">
+            <label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-switch-row">
               <span><b>Enable override</b><small>Fallback remains the native VSN renderer.</small></span>
               <button type="button" role="switch" aria-checked={enabled} className={`vsn-toggle ${enabled ? "is-on" : ""}`} onClick={() => setEnabled(!enabled)}><span /></button>
             </label>

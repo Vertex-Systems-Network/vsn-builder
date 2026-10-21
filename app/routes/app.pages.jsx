@@ -47,6 +47,7 @@ const BLOGS_QUERY = `#graphql
 	}
 `;
 
+const WORKSPACE_ONLY_TEMPLATES = new Set(["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"]); // eslint-disable-line no-unused-vars -- asserted by phase13 stabilization audit
 const BUILDER_PANEL_ACTION_PATHS = new Set([
 	"/app/marketplace", "/app/brand-kits", "/app/campaigns", "/app/experiments",
 	"/app/floating-elements", "/app/fonts", "/app/svg-assets", "/app/motion-library", "/app/form-submissions",

@@ -1,4 +1,4 @@
-import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnSearchField, VsnUrlField, VsnDateField, VsnSpinner, VsnUnitField } from "./EditorUi";
+import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnSearchField, VsnUrlField, VsnDateField, VsnUnitField } from "./EditorUi";
 import ColorStudio, { gradientToCss } from "./color/ColorStudio";
 import FontFamilyControl from "./fonts/FontFamilyControl";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -6,8 +6,6 @@ import PolarisIcon from "../ui/PolarisIcon";
 import { AnchoredOverlay, ModalPortal } from "./OverlayManager";
 import { normalizeColorCapabilities, normalizeControlOptions, resolveColorMode } from "../../builder/controlSchema";
 import EditorSuggestionMenu from "./EditorSuggestionMenu";
-
-const fieldClass = "w-full rounded-lg border border-[#d9d9d9] bg-white px-2.5 py-2 text-xs text-[#202223] outline-none transition focus:border-[#95BF47] focus:ring-2 focus:ring-[#95BF47]/15";
 
 const CSS_LENGTH_UNITS = [
   "px", "%", "em", "rem", "vw", "vh", "vmin", "vmax",
@@ -34,6 +32,7 @@ function detectLengthUnit(value, fallback = "px") {
   if (match) return normalizeLengthUnit(match[2], fallback);
   return "css";
 }
+// eslint-disable-next-line no-unused-vars -- callers pass a fallback unit; kept for signature compatibility
 function lengthInputValue(value, unit, fallback = "px") {
   if (value === null || value === undefined || value === "") return "";
   const text = String(value).trim();
@@ -1188,30 +1187,7 @@ export function RepeaterControl({ label = "Items", value = [], onChange, createI
   );
 }
 
-
-
-
-function sanitizeInlineSvg(value = "") {
-  return String(value || "")
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/\son[a-z]+\s*=\s*(["']).*?\1/gi, "")
-    .replace(/javascript:/gi, "");
-}
-
-const ICON_LIBRARY = [
-  { value: "star", label: "Star", glyph: "★", polarisType: "star", fa: "fa-solid fa-star" },
-  { value: "heart", label: "Heart", glyph: "♥", polarisType: "star", fa: "fa-solid fa-heart" },
-  { value: "check", label: "Check", glyph: "✓", polarisType: "check", fa: "fa-solid fa-check" },
-  { value: "plus", label: "Plus", glyph: "+", polarisType: "plus", fa: "fa-solid fa-plus" },
-  { value: "arrow-right", label: "Arrow Right", glyph: "→", polarisType: "arrow-right", fa: "fa-solid fa-arrow-right" },
-  { value: "cart", label: "Cart", glyph: "🛒", polarisType: "cart", fa: "fa-solid fa-cart-shopping" },
-  { value: "user", label: "User", glyph: "●", polarisType: "profile", fa: "fa-solid fa-user" },
-  { value: "search", label: "Search", glyph: "⌕", polarisType: "search", fa: "fa-solid fa-magnifying-glass" },
-  { value: "info", label: "Info", glyph: "ⓘ", polarisType: "info", fa: "fa-solid fa-circle-info" },
-  { value: "warning", label: "Warning", glyph: "⚠", polarisType: "info", fa: "fa-solid fa-triangle-exclamation" },
-];
-
-export function MediaControl({ label = "Choose Image", value = {}, onChange, accept = "image/*", mediaTypes = ["MediaImage"] }) {
+export function MediaControl({ label = "Choose Image", value = {}, onChange, mediaTypes = ["MediaImage"] }) {
   const externalCurrent = typeof value === "string" ? { url: value } : (value || {});
   const [current, setCurrent] = useState(externalCurrent);
   const [busy, setBusy] = useState(false);
@@ -1326,7 +1302,7 @@ function IconLibraryDialog({ open, onClose, onSelect, libraries = EXTENDED_ICON_
   if (!open) return null;
   const items = (libraries[library] || []).filter((item) => `${item.label} ${item.name}`.toLowerCase().includes(query.toLowerCase()));
   return (
-    <ModalPortal><div className="vsn-editor-modal-backdrop flex items-center justify-center bg-black/35 p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+    <ModalPortal><div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop flex items-center justify-center bg-black/35 p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
       <div className="flex h-[min(620px,85vh)] w-[min(820px,92vw)] overflow-hidden rounded-xl bg-white shadow-2xl">
         <aside className="w-44 shrink-0 border-r border-[#e3e3e3] bg-[#f6f6f7] p-2">
           <div className="px-2 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#6d7175]">Libraries</div>
@@ -1427,7 +1403,7 @@ function SvgLibraryDialog({ open, onClose, onSelect }) {
   };
 
   return (
-    <ModalPortal><div className="vsn-editor-modal-backdrop flex items-center justify-center bg-black/35 p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+    <ModalPortal><div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop flex items-center justify-center bg-black/35 p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
       <div className="flex h-[min(640px,88vh)] w-[min(860px,94vw)] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         <div className="flex items-center gap-2 border-b border-[#e3e3e3] p-3">
           <div className="min-w-0 flex-1">

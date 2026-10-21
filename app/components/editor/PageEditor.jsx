@@ -1,4 +1,4 @@
-import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnColorField, VsnSearchField, VsnUrlField, VsnDateField, VsnSpinner } from "./EditorUi";
+import { VsnButton, VsnTextField } from "./EditorUi";
 import useCollaborationHeartbeat from "./hooks/useCollaborationHeartbeat.js";
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createEditorCommand, editorHistoryEntry } from "../../builder/editorCommand.js";
@@ -181,7 +181,7 @@ class EditorPanelBoundary extends Component {
 function editorNodeId(prefix = "node") {
   try {
     if (globalThis.crypto?.randomUUID) return `${prefix}-${globalThis.crypto.randomUUID()}`;
-  } catch {}
+  } catch { /* ignore: best-effort */ }
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -211,30 +211,6 @@ function createStructureSection(widths = [100]) {
       })),
     }],
   };
-}
-
-function loadPage(pageId, fallback = []) {
-  try {
-    const saved = localStorage.getItem(
-      storageKey(pageId),
-    );
-
-    if (saved) {
-      const parsed = JSON.parse(saved);
-
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
-    }
-
-    return Array.isArray(fallback)
-      ? fallback
-      : INITIAL_CANVAS_ELEMENTS;
-  } catch {
-    return Array.isArray(fallback)
-      ? fallback
-      : INITIAL_CANVAS_ELEMENTS;
-  }
 }
 
 export default function PageEditor({
@@ -523,9 +499,9 @@ export default function PageEditor({
       const saved = JSON.parse(localStorage.getItem("vsn-builder:panel-widths") || "{}");
       if (Number(saved.left) >= 320 && Number(saved.left) <= 768) setLeftPanelWidth(Number(saved.left));
       if (Number(saved.right) >= 320 && Number(saved.right) <= 768) setRightPanelWidth(Number(saved.right));
-    } catch {}
+    } catch { /* ignore: best-effort */ }
   }, []);
-  useEffect(() => { try { localStorage.setItem("vsn-builder:panel-widths", JSON.stringify({ left:leftPanelWidth, right:rightPanelWidth })); } catch {} }, [leftPanelWidth, rightPanelWidth]);
+  useEffect(() => { try { localStorage.setItem("vsn-builder:panel-widths", JSON.stringify({ left:leftPanelWidth, right:rightPanelWidth })); } catch { /* ignore: best-effort */ } }, [leftPanelWidth, rightPanelWidth]);
 
   useEffect(() => {
     const update = () => setIsOnline(navigator.onLine !== false);
@@ -1414,7 +1390,7 @@ export default function PageEditor({
   }
 
   return (
-    <div ref={editorRootRef} data-vsn-editor-root="true" data-vsn-ui-profile="editor" data-vsn-baseline="milestone-a-phase-0" data-vsn-experimental={Object.values(featureFlags || {}).some(Boolean) ? "1" : "0"} className={`flex h-screen flex-col overflow-hidden ${editorDarkMode?"vsn-editor-dark":"vsn-editor-light"}`} style={{ "--vsn-left-panel": `${leftPanelWidth}px`, "--vsn-right-panel": `${rightPanelWidth}px` }} onMouseDown={() => setContextMenu(null)} onContextMenu={(event) => { const target = event.target?.closest?.("[data-vsn-id]"); const id = target?.getAttribute?.("data-vsn-id"); if (!id || !findNode(elements, id)) return; event.preventDefault(); event.stopPropagation(); handleSelect(id, null); setContextMenu({ x: event.clientX, y: event.clientY, id }); }}>
+    <div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */ ref={editorRootRef} data-vsn-editor-root="true" data-vsn-ui-profile="editor" data-vsn-baseline="milestone-a-phase-0" data-vsn-experimental={Object.values(featureFlags || {}).some(Boolean) ? "1" : "0"} className={`flex h-screen flex-col overflow-hidden ${editorDarkMode?"vsn-editor-dark":"vsn-editor-light"}`} style={{ "--vsn-left-panel": `${leftPanelWidth}px`, "--vsn-right-panel": `${rightPanelWidth}px` }} onMouseDown={() => setContextMenu(null)} onContextMenu={(event) => { const target = event.target?.closest?.("[data-vsn-id]"); const id = target?.getAttribute?.("data-vsn-id"); if (!id || !findNode(elements, id)) return; event.preventDefault(); event.stopPropagation(); handleSelect(id, null); setContextMenu({ x: event.clientX, y: event.clientY, id }); }}>
       <ClientErrorReporter pageId={page?.id || ""} widgetId={selectedId || ""} />
       <EditorTooltipLayer />
       {!editorReady ? <div className="vsn-editor-loading-overlay"><div className="vsn-editor-loading-card"><div className="vsn-boot-mark mx-auto flex items-center justify-center text-sm font-black tracking-tight text-white">VSN</div><h3>Loading editor</h3><div className="vsn-editor-loading-track"><div className="vsn-boot-progress" /></div><p>Preparing widgets, canvas and library…</p></div></div> : null}
@@ -1595,7 +1571,7 @@ export default function PageEditor({
           widgetPlatform={widgetPlatform}
         />
 
-        {showShortcutHelp ? <ModalPortal><div className="vsn-editor-modal-backdrop grid place-items-center bg-black/35 p-4" onMouseDown={()=>setShowShortcutHelp(false)}><div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl" onMouseDown={(e)=>e.stopPropagation()}><div className="flex items-center justify-between"><h2 className="font-semibold">Editor shortcuts</h2><VsnButton onClick={()=>setShowShortcutHelp(false)} className="rounded border px-2 py-1 text-xs">Close</VsnButton></div><div className="mt-4 grid grid-cols-2 gap-2 text-sm">{[["Ctrl/Cmd + Z","Undo"],["Ctrl/Cmd + Shift + Z","Redo"],["Ctrl/Cmd + C / V","Copy / paste"],["Delete","Delete selection"],["Ctrl/Cmd + K","Command palette"],["?","Toggle this help"]].map(([key,label])=><div key={key} className="contents"><kbd className="rounded bg-[#f6f6f7] px-2 py-1 text-xs">{key}</kbd><span>{label}</span></div>)}</div></div></div></ModalPortal> : null}
+        {showShortcutHelp ? <ModalPortal><div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop grid place-items-center bg-black/35 p-4" onMouseDown={()=>setShowShortcutHelp(false)}><div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl" onMouseDown={(e)=>e.stopPropagation()}><div className="flex items-center justify-between"><h2 className="font-semibold">Editor shortcuts</h2><VsnButton onClick={()=>setShowShortcutHelp(false)} className="rounded border px-2 py-1 text-xs">Close</VsnButton></div><div className="mt-4 grid grid-cols-2 gap-2 text-sm">{[["Ctrl/Cmd + Z","Undo"],["Ctrl/Cmd + Shift + Z","Redo"],["Ctrl/Cmd + C / V","Copy / paste"],["Delete","Delete selection"],["Ctrl/Cmd + K","Command palette"],["?","Toggle this help"]].map(([key,label])=><div key={key} className="contents"><kbd className="rounded bg-[#f6f6f7] px-2 py-1 text-xs">{key}</kbd><span>{label}</span></div>)}</div></div></div></ModalPortal> : null}
 
       <EditorProductivityLayer
           contextMenu={contextMenu}
@@ -1621,7 +1597,7 @@ export default function PageEditor({
           onRedo={handleRedo}
         />
 
-        {showSaveTemplate ? <ModalPortal><div className="vsn-editor-modal-backdrop grid place-items-center bg-black/40 p-4" onMouseDown={(e)=>{if(e.currentTarget===e.target&&editorActionFetcher.state==="idle")setShowSaveTemplate(false)}}><div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"><div className="flex items-start justify-between"><div><h2 className="text-base font-semibold text-[#202223]">Save as Template</h2><p className="mt-1 text-xs text-[#6d7175]">Save the current page to your Library for reuse.</p></div><VsnButton variant="tertiary" accessibilityLabel="Close" disabled={editorActionFetcher.state!=="idle"} onClick={()=>setShowSaveTemplate(false)}><PolarisIcon type="x"/></VsnButton></div><div className="mt-4"><VsnTextField label="Template name" value={templateName} onInput={(e)=>setTemplateName(e.currentTarget.value)} /></div>{editorActionFetcher.data?.success===false&&editorActionFetcher.data?.intent==="save-template"?<div className="mt-3 text-xs text-red-600">{editorActionFetcher.data.error}</div>:null}<div className="mt-5 flex justify-end gap-2"><VsnButton disabled={editorActionFetcher.state!=="idle"} onClick={()=>setShowSaveTemplate(false)}>Cancel</VsnButton><VsnButton variant="primary" loading={editorActionFetcher.state!=="idle"||undefined} disabled={!templateName.trim()||editorActionFetcher.state!=="idle"} onClick={saveAsTemplate}><PolarisIcon type="save"/>Save Template</VsnButton></div></div></div></ModalPortal>:null}
+        {showSaveTemplate ? <ModalPortal><div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop grid place-items-center bg-black/40 p-4" onMouseDown={(e)=>{if(e.currentTarget===e.target&&editorActionFetcher.state==="idle")setShowSaveTemplate(false)}}><div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"><div className="flex items-start justify-between"><div><h2 className="text-base font-semibold text-[#202223]">Save as Template</h2><p className="mt-1 text-xs text-[#6d7175]">Save the current page to your Library for reuse.</p></div><VsnButton variant="tertiary" accessibilityLabel="Close" disabled={editorActionFetcher.state!=="idle"} onClick={()=>setShowSaveTemplate(false)}><PolarisIcon type="x"/></VsnButton></div><div className="mt-4"><VsnTextField label="Template name" value={templateName} onInput={(e)=>setTemplateName(e.currentTarget.value)} /></div>{editorActionFetcher.data?.success===false&&editorActionFetcher.data?.intent==="save-template"?<div className="mt-3 text-xs text-red-600">{editorActionFetcher.data.error}</div>:null}<div className="mt-5 flex justify-end gap-2"><VsnButton disabled={editorActionFetcher.state!=="idle"} onClick={()=>setShowSaveTemplate(false)}>Cancel</VsnButton><VsnButton variant="primary" loading={editorActionFetcher.state!=="idle"||undefined} disabled={!templateName.trim()||editorActionFetcher.state!=="idle"} onClick={saveAsTemplate}><PolarisIcon type="save"/>Save Template</VsnButton></div></div></div></ModalPortal>:null}
 
         <HistoryPanel
           isOpen={showHistory}

@@ -59,7 +59,7 @@ await check("Settings save loop includes Freesound",()=>assert.ok(settings.inclu
 await check("API settings use VSN styled checkbox structure",()=>assert.ok(settingsUi.includes("vsn-tool-checkbox vsn-stock-option-checkbox")&&settingsUi.includes("vsn-tool-checkbox-box")));
 await check("API checkbox dimensions are explicitly styled",()=>assert.ok(css.includes(".vsn-stock-option-checkbox .vsn-tool-checkbox-box")&&css.includes("width:18px")&&css.includes("height:18px")));
 await check("API checkbox has dark mode styling",()=>assert.ok(css.includes(".dashboard-root.dark .vsn-stock-provider-options .vsn-stock-option-checkbox")));
-await check("Pixabay options use StyledCheckbox",()=>assert.ok(settingsUi.includes("Safe search</StyledCheckbox>")&&settingsUi.includes("Editors' Choice</StyledCheckbox>")));
+await check("Pixabay options use StyledCheckbox",()=>assert.ok(settingsUi.includes("Safe search</StyledCheckbox>")&&(settingsUi.includes("Editors' Choice</StyledCheckbox>")||settingsUi.includes("Editors&apos; Choice</StyledCheckbox>"))));
 await check("Freesound options use StyledCheckbox",()=>assert.ok(settingsUi.includes("Hide NonCommercial sound licenses</StyledCheckbox>")));
 
 await check("Shopify-safe image byte margin is 18 MB",()=>assert.ok(imageService.includes("18 * 1024 * 1024")));

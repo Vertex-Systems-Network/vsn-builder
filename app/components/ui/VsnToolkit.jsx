@@ -254,7 +254,7 @@ export function VsnCodeEditor({ label = "Code", value = "", onChange, language =
     if (open && event.key === "ArrowUp") { event.preventDefault(); setActive((active-1+Math.max(1,suggestions.length))%Math.max(1,suggestions.length)); return; }
     if (open && event.key === "Enter" && suggestions[active]) { event.preventDefault(); insertSuggestion(suggestions[active][1]); }
   };
-  return <label className="vsn-code-editor-field">
+  return <label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-code-editor-field">
     <span className="vsn-code-editor-label"><b>{label}</b><small>{language.toUpperCase()} · {help}</small></span>
     <div ref={shellRef} className="vsn-code-editor-shell">
       <div className="vsn-code-editor-toolbar"><span>{language.toUpperCase()}</span>{readOnly?<span>Read only</span>:<button type="button" onClick={openSuggestions}>Suggestions</button>}</div>

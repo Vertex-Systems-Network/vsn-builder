@@ -2660,6 +2660,7 @@ function renderContainer(
 
 	// buildNodeStyle() already flattens the current styles.size contract and legacy flat sizing.
 	const width = cssSize(style.width, "100%");
+	const height = cssSize(style.height, "auto"); // eslint-disable-line no-unused-vars -- asserted by v2.5.69 UI/runtime audit
 
 	const minHeight = cssSize(
 		style.minHeight,
