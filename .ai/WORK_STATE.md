@@ -10,8 +10,8 @@ base_branch: development
 working_branch: claude/focused-thompson-t0s1vi
 pull_request: none
 last_verified_commit: b13331b
-last_verified_step: "Audit of development@b13331b: typecheck PASS, qa PASS, env tests 21/21 PASS; lint previously failed (4613 errors) while CI masked it with continue-on-error; stock media downloads followed unvalidated redirects."
-in_flight_step: "Lint config alignment (ES2022/node globals, react/prop-types off, import-attribute parser), lint error cleanup, validated-redirect stock downloads."
+last_verified_step: "Lint aligned to 0 errors (46 hook-deps warnings remain) and made blocking in CI; stock downloads validate every redirect hop; local lint, typecheck, qa, build and full qa:release PASS on claude/focused-thompson-t0s1vi."
+in_flight_step: none
 next_exact_action: "Open PR into development; after exact-head CI is green, make lint blocking in CI. Staging promotion stays blocked until: development branch protected, Cloudflare vsn-builder-staging secrets/bindings/HTTPS set, Neon Staging migrated via protected workflow, T020 Worker merchant router serving /app (currently 503)."
 approval_needed_now: false
 updated_at: 2026-10-21
