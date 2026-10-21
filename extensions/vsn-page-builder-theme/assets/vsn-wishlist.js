@@ -90,7 +90,7 @@
     if (current.length) return current;
     const legacy = normalize(readRaw(LEGACY_KEY));
     if (legacy.length) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy)); localStorage.removeItem(LEGACY_KEY); } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy)); localStorage.removeItem(LEGACY_KEY); } catch { /* ignore */ }
     }
     return legacy;
   }
@@ -99,7 +99,7 @@
   }
   function write(items, { source = "local", pushServer = true } = {}) {
     const next = normalize(items);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
     emit(next, source);
     scheduleRender();
     if (pushServer && isLoggedIn() && hydratedServer) scheduleServerSave(next);

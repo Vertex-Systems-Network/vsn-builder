@@ -10,7 +10,7 @@ const CLIENTS = Object.freeze([
 
 function issue(code,severity,title,message,clients=[],blockId="") { return {code,severity,title,message,clients,blockId}; }
 function bytes(value=""){try{return new TextEncoder().encode(String(value)).length;}catch{return String(value).length;}}
-function safeFont(value=""){const normalized=String(value||"").trim().replace(/^[\'"]|[\'"](?=,|$)/g,"");return /^(Arial|Helvetica|Verdana|Tahoma|Trebuchet MS|Georgia|Times New Roman|Courier New|system-ui|sans-serif|serif|monospace)(\s*,|$)/i.test(normalized);}
+function safeFont(value=""){const normalized=String(value||"").trim().replace(/^['"]|['"](?=,|$)/g,"");return /^(Arial|Helvetica|Verdana|Tahoma|Trebuchet MS|Georgia|Times New Roman|Courier New|system-ui|sans-serif|serif|monospace)(\s*,|$)/i.test(normalized);}
 function luminance(hex){const raw=String(hex||"").replace("#","");if(!/^[0-9a-f]{6}$/i.test(raw))return null;const vals=[0,2,4].map(i=>parseInt(raw.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*vals[0]+.7152*vals[1]+.0722*vals[2];}
 function contrast(a,b){const x=luminance(a),y=luminance(b);if(x==null||y==null)return null;return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
 

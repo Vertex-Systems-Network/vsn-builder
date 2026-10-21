@@ -49,6 +49,7 @@ export const AI_AGENT_OUTPUT_SCHEMA = Object.freeze({
 });
 
 function cleanText(value, max = 4000) {
+  // eslint-disable-next-line no-control-regex -- intentionally strips control characters
   return String(value ?? "").replace(/\u0000/g, "").trim().slice(0, max);
 }
 

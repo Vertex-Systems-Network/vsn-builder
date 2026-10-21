@@ -1,10 +1,3 @@
-const LEGACY_IMAGES = [
-  "/vsn-stock/fashion.svg",
-  "/vsn-stock/interior.svg",
-  "/vsn-stock/watch.svg",
-  "/vsn-stock/skincare.svg",
-];
-
 export const GALLERY_LAYOUT_OPTIONS = [
   { value: "grid", label: "Grid" },
   { value: "masonry", label: "Masonry" },

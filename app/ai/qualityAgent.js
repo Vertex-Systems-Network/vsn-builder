@@ -34,6 +34,7 @@ const CURRENT_RESOURCE_TYPES = Object.freeze({
 });
 
 function text(value, max = 1200) {
+  // eslint-disable-next-line no-control-regex -- intentionally strips control characters
   return String(value ?? "").replace(/\u0000/g, "").trim().slice(0, max);
 }
 

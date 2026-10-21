@@ -22,6 +22,7 @@ export const AI_CONTEXT_TOOL_NAMES = Object.freeze([
 const TOOL_SET = new Set(AI_CONTEXT_TOOL_NAMES);
 
 function text(value, max = AI_CONTEXT_MAX_QUERY_CHARS) {
+  // eslint-disable-next-line no-control-regex -- intentionally strips control characters
   return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
 

@@ -326,7 +326,7 @@ export default {
           let generation=savedInstall?{...savedInstall}:null;
           const tx={
             builderShopInstallation:{
-              async upsert({where,create,update}){
+              async upsert({create,update}){
                 generation=generation?{...generation,...update}:{...create};
                 return {...generation};
               },

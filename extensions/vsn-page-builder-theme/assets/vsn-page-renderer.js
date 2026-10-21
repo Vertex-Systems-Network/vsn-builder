@@ -39,7 +39,7 @@
 
 
 	function randomId(prefix) {
-		try { if (window.crypto?.randomUUID) return `${prefix}-${window.crypto.randomUUID()}`; } catch {}
+		try { if (window.crypto?.randomUUID) return `${prefix}-${window.crypto.randomUUID()}`; } catch { /* ignore */ }
 		return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;
 	}
 	function visitorIdentity() {
@@ -241,7 +241,7 @@
 		// URL that carries visitor analytics identifiers.
 		if (url.origin !== window.location.origin ||
 			(url.pathname !== "/apps/vsn-builder" &&
-			 !url.pathname.startsWith("/apps/vsn-builder/"))) {
+			!url.pathname.startsWith("/apps/vsn-builder/"))) {
 			throw new TypeError("Invalid VSN Builder app-proxy URL");
 		}
 		// Never put customer ID/name/email in a GET URL. The Builder proxy
@@ -424,7 +424,7 @@
 			else if (rule === "maxLength") invalid = value.length > n;
 			else if (rule === "min") invalid = value !== "" && Number(value) < n;
 			else if (rule === "max") invalid = value !== "" && Number(value) > n;
-			else if (rule === "pattern") { try { invalid = value !== "" && !(new RegExp(rawValue)).test(value); } catch {} }
+			else if (rule === "pattern") { try { invalid = value !== "" && !(new RegExp(rawValue)).test(value); } catch { /* ignore */ } }
 			if (invalid) field.setCustomValidity?.(message || "Invalid value.");
 		});
 	}
@@ -453,8 +453,8 @@
 	let googleRecaptchaPromise = null;
 	function renderGoogleRecaptchaWidgets() {
 		if (!window.grecaptcha?.render) return;
-		document.querySelectorAll(".vsn-builder-form .vsn-g-recaptcha").forEach((node) => { if (node.dataset.vsnWidgetId) return; const sitekey=node.dataset.sitekey||""; if(!sitekey)return; try { const id=window.grecaptcha.render(node,{sitekey});node.dataset.vsnWidgetId=String(id); } catch {} });
-		document.querySelectorAll(".vsn-builder-form .vsn-g-recaptcha-v3").forEach((node) => { if (node.dataset.vsnWidgetId) return; const sitekey=node.dataset.sitekey||""; if(!sitekey)return; try { const id=window.grecaptcha.render(node,{sitekey,size:"invisible",badge:"bottomright"});node.dataset.vsnWidgetId=String(id); } catch {} });
+		document.querySelectorAll(".vsn-builder-form .vsn-g-recaptcha").forEach((node) => { if (node.dataset.vsnWidgetId) return; const sitekey=node.dataset.sitekey||""; if(!sitekey)return; try { const id=window.grecaptcha.render(node,{sitekey});node.dataset.vsnWidgetId=String(id); } catch { /* ignore */ } });
+		document.querySelectorAll(".vsn-builder-form .vsn-g-recaptcha-v3").forEach((node) => { if (node.dataset.vsnWidgetId) return; const sitekey=node.dataset.sitekey||""; if(!sitekey)return; try { const id=window.grecaptcha.render(node,{sitekey,size:"invisible",badge:"bottomright"});node.dataset.vsnWidgetId=String(id); } catch { /* ignore */ } });
 	}
 	function ensureGoogleRecaptcha() {
 		if (!document.querySelector(".vsn-builder-form .vsn-g-recaptcha,.vsn-builder-form .vsn-g-recaptcha-v3")) return Promise.resolve(null);
@@ -530,7 +530,7 @@
 				if (!response.ok || !result.ok) throw new Error(result.error || `Request failed: ${response.status}`);
 				const navigated = executeFormSuccess(form, result, status);
 				window.VSNAnalytics?.track?.("form_submit",{root:form,metadata:{formKey:String(data.get("formKey")||data.get("formType")||"")}});
-				if (!navigated) { form.reset(); prepareBuilderForm(form); if (window.turnstile) form.querySelectorAll(".cf-turnstile").forEach((node) => { try { window.turnstile.reset(node); } catch {} }); if (window.hcaptcha) form.querySelectorAll(".h-captcha").forEach((node) => { try { window.hcaptcha.reset(node); } catch {} }); if(window.grecaptcha) form.querySelectorAll(".vsn-g-recaptcha").forEach((node)=>{const id=Number(node.dataset.vsnWidgetId);if(Number.isFinite(id))try{window.grecaptcha.reset(id);}catch{}}); }
+				if (!navigated) { form.reset(); prepareBuilderForm(form); if (window.turnstile) form.querySelectorAll(".cf-turnstile").forEach((node) => { try { window.turnstile.reset(node); } catch { /* ignore */ } }); if (window.hcaptcha) form.querySelectorAll(".h-captcha").forEach((node) => { try { window.hcaptcha.reset(node); } catch { /* ignore */ } }); if(window.grecaptcha) form.querySelectorAll(".vsn-g-recaptcha").forEach((node)=>{const id=Number(node.dataset.vsnWidgetId);if(Number.isFinite(id))try{window.grecaptcha.reset(id);}catch{ /* ignore */ }}); }
 			} catch (error) {
 				console.error("VSN form submit error:", error);
 				if (status) { status.textContent = error?.message || form.dataset.vsnError || "Please try again."; status.style.color = "#b42318"; }
@@ -620,7 +620,7 @@
 			const volume = Math.max(0, Math.min(1, Number(widget.dataset.vsnVideoVolume || 100) / 100));
 			if (video) {
 				video.volume = volume;
-				const seek = () => { if (start > 0 && Number.isFinite(video.duration) && video.currentTime < start) { try { video.currentTime = start; } catch {} } };
+				const seek = () => { if (start > 0 && Number.isFinite(video.duration) && video.currentTime < start) { try { video.currentTime = start; } catch { /* ignore */ } } };
 				video.addEventListener("loadedmetadata", seek, { once: true });
 				video.addEventListener("timeupdate", () => {
 					if (end > 0 && video.currentTime >= end) {
@@ -637,7 +637,7 @@
 					frame.style.display = "block";
 				}
 				if (poster) poster.style.display = "none";
-				if (video) { if (start > 0) { try { video.currentTime = start; } catch {} } video.play().catch(()=>{}); }
+				if (video) { if (start > 0) { try { video.currentTime = start; } catch { /* ignore */ } } video.play().catch(()=>{}); }
 				play.style.display = "none";
 			});
 		});
@@ -779,7 +779,7 @@
 				const current = JSON.parse(localStorage.getItem(key) || "[]");
 				const next = [productHandle, ...current.filter((item) => item !== productHandle)].slice(0, 12);
 				localStorage.setItem(key, JSON.stringify(next));
-			} catch {}
+			} catch { /* ignore */ }
 		}
 
 		root.querySelectorAll(".vsn-recently-viewed").forEach(async (section) => {
@@ -794,7 +794,7 @@
 			grid.style.gridTemplateColumns = `repeat(${desktop},minmax(0,1fr))`; grid.style.gap = `${gap}px`;
 			grid.style.setProperty('--vsn-recent-cols-tablet', String(tablet)); grid.style.setProperty('--vsn-recent-cols-mobile', String(mobile));
 			let handles = [];
-			try { handles = JSON.parse(localStorage.getItem("vsn-recent-products") || "[]"); } catch {}
+			try { handles = JSON.parse(localStorage.getItem("vsn-recent-products") || "[]"); } catch { /* ignore */ }
 			const current = section.dataset.vsnCurrentHandle || "";
 			handles = handles.filter((handle) => handle && handle !== current).slice(0, Math.max(1, Number(section.dataset.vsnLimit || 4)));
 			if (!handles.length) { grid.innerHTML = '<div style="color:#777;font-size:14px">No recently viewed products yet.</div>'; return; }
@@ -806,7 +806,7 @@
 					const product = await response.json();
 					const showImage = section.dataset.vsnShowImage !== "0", showTitle = section.dataset.vsnShowTitle !== "0", showPrice = section.dataset.vsnShowPrice !== "0"; const ratio = section.dataset.vsnImageRatio || "1 / 1";
 					cards.push(`<a href="${product.url || `/products/${handle}`}" style="color:inherit;text-decoration:none">${showImage ? `<img src="${product.featured_image || product.images?.[0] || ""}" alt="${product.title || ""}" loading="lazy" style="display:block;width:100%;aspect-ratio:${ratio};object-fit:cover;border-radius:10px">` : ""}${showTitle ? `<div style="margin-top:8px;font-weight:600">${product.title || ""}</div>` : ""}${showPrice && product.price != null ? `<div style="margin-top:4px">${moneyText(Number(product.price || 0)/100, window.Shopify?.currency?.active || "USD")}</div>` : ""}</a>`);
-				} catch {}
+				} catch { /* ignore */ }
 			}
 			grid.innerHTML = cards.join("") || '<div style="color:#777;font-size:14px">No recently viewed products yet.</div>';
 		});
@@ -1244,7 +1244,7 @@
 			main.innerHTML = html;
 			installGlobalSections(main); initializeBuilderEnhancements(main);
 			main.classList.add("vsn-builder-product");
-			try { const title=main.querySelector(".vsn-product-title")?.textContent?.trim(); const image=main.querySelector(".vsn-product-main-image")?.src||""; if(title){ const list=JSON.parse(localStorage.getItem("vsnRecentlyViewed")||"[]"); const item={title,image,url:window.location.pathname}; localStorage.setItem("vsnRecentlyViewed",JSON.stringify([item,...list.filter(x=>x.url!==item.url)].slice(0,12))); } } catch {}
+			try { const title=main.querySelector(".vsn-product-title")?.textContent?.trim(); const image=main.querySelector(".vsn-product-main-image")?.src||""; if(title){ const list=JSON.parse(localStorage.getItem("vsnRecentlyViewed")||"[]"); const item={title,image,url:window.location.pathname}; localStorage.setItem("vsnRecentlyViewed",JSON.stringify([item,...list.filter(x=>x.url!==item.url)].slice(0,12))); } } catch { /* ignore */ }
 			main.dataset.vsnProductLoaded = "true";
 			const selector = main.querySelector(".vsn-product-variant-selector");
 			if (selector?.options?.length) updateProductVariantUI(main, selector.options[selector.selectedIndex]);
