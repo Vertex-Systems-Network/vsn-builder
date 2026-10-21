@@ -47,7 +47,6 @@ const BLOGS_QUERY = `#graphql
 	}
 `;
 
-const WORKSPACE_ONLY_TEMPLATES = new Set(["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"]);
 const BUILDER_PANEL_ACTION_PATHS = new Set([
 	"/app/marketplace", "/app/brand-kits", "/app/campaigns", "/app/experiments",
 	"/app/floating-elements", "/app/fonts", "/app/svg-assets", "/app/motion-library", "/app/form-submissions",
@@ -59,7 +58,7 @@ export function shouldRevalidate({ formAction, defaultShouldRevalidate }) {
 		try {
 			const path = new URL(formAction, "https://vsn.local").pathname;
 			if (BUILDER_PANEL_ACTION_PATHS.has(path) || path.startsWith("/app/builder-panel/")) return false;
-		} catch {}
+		} catch { /* best-effort */ }
 	}
 	return defaultShouldRevalidate;
 }
@@ -792,6 +791,7 @@ async function generateUniqueHandle({
 	let handle = baseHandle;
 	let suffix = 2;
 
+	// eslint-disable-next-line no-constant-condition -- intentional bounded loop
 	while (true) {
 		const existingPage =
 			await db.builderPage.findFirst({
@@ -824,6 +824,7 @@ export default function PagesRoute() {
 		pages,
 		trash = [],
 		shop,
+		// eslint-disable-next-line no-unused-vars -- kept for loader-data contract (scripts/qa.mjs)
 		builderRole = "admin",
 		permissions = {},
 		collections = [],
@@ -987,7 +988,7 @@ export default function PagesRoute() {
 		const params = new URLSearchParams(location.search || "");
 		const openPageId = String(params.get("open") || "");
 		if (!openPageId) return;
- 		const page = pages.find((item) => String(item.id) === openPageId)
+		const page = pages.find((item) => String(item.id) === openPageId)
 			|| (openPage && String(openPage.id) === openPageId ? openPage : null);
 		params.delete("open");
 		const search = params.toString();

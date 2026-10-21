@@ -22,7 +22,7 @@ function effectiveAppOrigins(request) {
   try {
     const requestOrigin = new URL(request.url).origin;
     if (requestOrigin) origins.add(requestOrigin);
-  } catch {}
+  } catch { /* best-effort */ }
   // Never trust Forwarded/X-Forwarded-Host for an authorization decision. Those
   // headers are safe only when a deployment guarantees they are stripped and
   // rewritten by a trusted proxy, which application code cannot prove. A public
@@ -97,5 +97,6 @@ export function safeClientErrorMessage(error, fallback = "The request could not 
   const source = error instanceof Error ? error.message : String(error || "");
   if (!source) return fallback;
   if (/PrismaClient|\$queryRaw|SELECT |INSERT |UPDATE |DELETE |node_modules|[A-Z]:\\/i.test(source)) return fallback;
+  // eslint-disable-next-line no-control-regex -- intentional control-char sanitizer
   return source.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, 500) || fallback;
 }

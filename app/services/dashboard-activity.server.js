@@ -27,7 +27,7 @@ export async function loadDashboardActivity(db, shop, take = 8) {
     try {
       const parsed = JSON.parse(details);
       if (parsed && typeof parsed === "object") details = parsed.message || parsed.title || "";
-    } catch {}
+    } catch { /* best-effort */ }
     return {
       id: row.id,
       action: row.action,

@@ -46,6 +46,7 @@ export async function getPlanUsage(db, shop, plan = null) {
 
 export function serializePlan(plan) {
   if (!plan) return null;
+  // eslint-disable-next-line no-unused-vars -- omitted from rest
   const { subscription, subscriptionMirrorTrusted, ...safe } = plan;
   return {
     ...safe,

@@ -7,6 +7,7 @@ const OUTBOUND_TIMEOUT_MS = 8000;
 const OUTBOUND_MAX_RESPONSE_BYTES = 256 * 1024;
 const OUTBOUND_MAX_BODY_BYTES = 512 * 1024;
 const OUTBOUND_ABSOLUTE_MAX_BODY_BYTES = 32 * 1024 * 1024;
+// eslint-disable-next-line no-control-regex -- intentional control-char sanitizer
 export function sanitizePlainText(value, max = 5000) { return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, max); }
 
 function privateIpv4(host) {

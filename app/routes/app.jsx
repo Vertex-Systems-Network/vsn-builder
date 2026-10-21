@@ -198,7 +198,7 @@ export default function App() {
       if (["light","dark","system"].includes(theme)) savedTheme=theme;
       savedScheme=normalizeUiColorScheme(localStorage.getItem("vsn:color-scheme")||"lime");
       savedAccent=normalizeUiHex(localStorage.getItem("vsn:custom-accent")||"#95BF47");
-    } catch {}
+    } catch { /* best-effort */ }
     const media = window.matchMedia?.("(prefers-color-scheme: dark)");
     startTransition(()=>{
       setThemePreferenceState(savedTheme);
@@ -237,11 +237,11 @@ export default function App() {
   const setThemePreference = (value) => {
     const next = ["light","dark","system"].includes(value) ? value : "system";
     setThemePreferenceState(next);
-    try { localStorage.setItem("vsn:appearance", next); } catch {}
+    try { localStorage.setItem("vsn:appearance", next); } catch { /* best-effort */ }
     if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("vsn:appearance-change", { detail: { preference: next } }));
   };
-  const setColorSchemePreference=(value)=>{const next=normalizeUiColorScheme(value);setColorSchemePreferenceState(next);try{localStorage.setItem("vsn:color-scheme",next);}catch{}if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("vsn:color-scheme-change",{detail:{scheme:next,customAccent}}));};
-  const setCustomAccent=(value)=>{const next=normalizeUiHex(value,customAccent);setCustomAccentState(next);try{localStorage.setItem("vsn:custom-accent",next);localStorage.setItem("vsn:color-scheme","custom");}catch{}setColorSchemePreferenceState("custom");if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("vsn:color-scheme-change",{detail:{scheme:"custom",customAccent:next}}));};
+  const setColorSchemePreference=(value)=>{const next=normalizeUiColorScheme(value);setColorSchemePreferenceState(next);try{localStorage.setItem("vsn:color-scheme",next);}catch{ /* best-effort */ }if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("vsn:color-scheme-change",{detail:{scheme:next,customAccent}}));};
+  const setCustomAccent=(value)=>{const next=normalizeUiHex(value,customAccent);setCustomAccentState(next);try{localStorage.setItem("vsn:custom-accent",next);localStorage.setItem("vsn:color-scheme","custom");}catch{ /* best-effort */ }setColorSchemePreferenceState("custom");if(typeof window!=="undefined")window.dispatchEvent(new CustomEvent("vsn:color-scheme-change",{detail:{scheme:"custom",customAccent:next}}));};
   const [searchQuery, setSearchQuery] = useState("");
 
   const activePage = activeNavigationId(location);

@@ -167,6 +167,7 @@ export function inspectLibraryImportPackage(payload, existingItems = []) {
   const supportedKinds = new Set(["widget", "container", "section", "page", "style", "component"]);
   const invalid = items.filter((item) => !supportedKinds.has(item.kind) || item.content == null).map((item) => ({ title: item.title, reason: "Unsupported resource type or empty content." }));
   const checksumValue = typeof payload?.checksum === "string" ? payload.checksum : null;
+  // eslint-disable-next-line no-unused-vars -- omitted from rest
   const checksumValid = checksumValue ? (()=>{ const { checksum:ignored, ...unsigned } = payload; return checksum(unsigned) === checksumValue; })() : null;
   return {
     valid: items.length > 0 && invalid.length === 0 && checksumValid !== false,

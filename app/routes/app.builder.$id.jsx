@@ -109,7 +109,7 @@ function collectComponentUsageFromPages(rows = []) {
 			walk(node?.children || [], page);
 		}
 	};
-	for (const page of rows || []) { let content = []; try { content = migrateBuilderContent(safeParseJson(page.contentJson, [])); } catch {} walk(content, page); }
+	for (const page of rows || []) { let content = []; try { content = migrateBuilderContent(safeParseJson(page.contentJson, [])); } catch { /* best-effort */ } walk(content, page); }
 	return Object.fromEntries(Object.entries(usage).map(([id, entry]) => [id, { count: entry.count, pages: entry.pageIds.size, titles: entry.titles.slice(0, 20) }]));
 }
 
@@ -625,7 +625,7 @@ export async function action({
 			if (!row) return Response.json({ success:false, intent, error:"Translation record not found." }, { status:404 });
 			const translation = { id:row.id, locale:row.locale, marketKey:row.marketKey, seo:safeParseObject(row.seoJson,{}) };
 			const config = await db.builderLocalizationConfig.findUnique({ where:{ shop:session.shop } });
-			let market = null; try { const parsed = JSON.parse(config?.marketsJson || "[]"); market = Array.isArray(parsed) ? parsed.find((item)=>String(item?.handle||item?.key||item?.id||"")===translation.marketKey) || null : null; } catch {}
+			let market = null; try { const parsed = JSON.parse(config?.marketsJson || "[]"); market = Array.isArray(parsed) ? parsed.find((item)=>String(item?.handle||item?.key||item?.id||"")===translation.marketKey) || null : null; } catch { /* best-effort */ }
 			try {
 				const sync = await syncShopifyPageTranslation({ admin, db, shop:session.shop, page, translation, market });
 				return Response.json({ success:true, intent, translationId, nativeSyncedAt:new Date().toISOString(), sync });

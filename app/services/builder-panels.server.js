@@ -20,7 +20,7 @@ import { loader as widgetStudioPanelLoader, action as widgetStudioPanelAction } 
 
 const PANEL_LOADERS={library:libraryPanelLoader,marketplace:marketplacePanelLoader,"brand-kits":brandKitsPanelLoader,campaigns:campaignsPanelLoader,"email-builder":emailBuilderPanelLoader,experiments:experimentsPanelLoader,"floating-elements":floatingPanelLoader,fonts:fontsPanelLoader,"svg-assets":svgAssetsPanelLoader,animations:motionPanelLoader,"form-submissions":submissionsPanelLoader,"form-settings":formSettingsPanelLoader,onboarding:onboardingPanelLoader,backups:backupsPanelLoader,plans:plansPanelLoader,"role-manager":roleManagerPanelLoader,"control-center":controlCenterPanelLoader,"developer-sdk":pluginsPanelLoader,"widget-studio":widgetStudioPanelLoader};
 const PANEL_ACTIONS={library:libraryPanelAction,marketplace:marketplacePanelAction,"brand-kits":brandKitsPanelAction,campaigns:campaignsPanelAction,"email-builder":emailBuilderPanelAction,experiments:experimentsPanelAction,"floating-elements":floatingPanelAction,fonts:fontsPanelAction,"svg-assets":svgAssetsPanelAction,animations:motionPanelAction,"form-submissions":submissionsPanelAction,"form-settings":formSettingsPanelAction,onboarding:onboardingPanelAction,backups:backupsPanelAction,plans:plansPanelAction,"role-manager":roleManagerPanelAction,"control-center":controlCenterPanelAction,"developer-sdk":pluginsPanelAction,"widget-studio":widgetStudioPanelAction};
-function panelFailure(panel,{status=500,code="PANEL_LOAD_ERROR",message=""}={}) {
+function panelFailure(panel,{status=500,code="PANEL_LOAD_ERROR"}={}) {
   const permissionDenied = status === 401 || status === 403;
   return {
     error: true,
@@ -61,7 +61,7 @@ export async function loadBuilderPanel(panel, request){
     if(error instanceof Response){
       const contentType=error.headers.get("content-type")||"";
       let detail="";
-      try{detail=contentType.includes("application/json")?JSON.stringify(await error.json()):await error.text();}catch{}
+      try{detail=contentType.includes("application/json")?JSON.stringify(await error.json()):await error.text();}catch{ /* best-effort */ }
       return panelFailure(panel,{status:error.status,code:"PANEL_HTTP_ERROR",message:detail||error.statusText});
     }
     console.error(`VSN builder panel load failed (${panel}):`,error);
@@ -69,6 +69,6 @@ export async function loadBuilderPanel(panel, request){
   }
 }
 
-export async function preloadBuilderPanels(request){const entries=await Promise.all(Object.entries(PANEL_LOADERS).filter(([key])=>!LAZY_PANEL_KEYS.has(key)).map(async([key,loader])=>{try{return[key,await loadBuilderPanel(key,request)]}catch(error){console.error(`VSN panel preload failed (${key}):`,error);return[key,{error:error instanceof Error?error.message:"Panel failed to load."}]}}));return Object.fromEntries(entries)}
+export async function preloadBuilderPanels(request){const entries=await Promise.all(Object.entries(PANEL_LOADERS).filter(([key])=>!LAZY_PANEL_KEYS.has(key)).map(async([key])=>{try{return[key,await loadBuilderPanel(key,request)]}catch(error){console.error(`VSN panel preload failed (${key}):`,error);return[key,{error:error instanceof Error?error.message:"Panel failed to load."}]}}));return Object.fromEntries(entries)}
 export async function dispatchBuilderPanelAction(panel,request){const action=PANEL_ACTIONS[panel];if(!action)return null;return action({request})}
 export async function loadBackupPanel(request){return backupsPanelLoader({request})}

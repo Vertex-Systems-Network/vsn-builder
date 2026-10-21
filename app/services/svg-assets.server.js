@@ -28,10 +28,11 @@ function stripDangerousMarkup(svg) {
 }
 
 export function sanitizeSvg(svg) { return stripDangerousMarkup(svg); }
+// eslint-disable-next-line no-control-regex -- intentional control-char sanitizer
 export function safeSvgName(value, fallback = "Custom SVG") { return String(value || fallback).trim().replace(/[<>\u0000-\u001f]/g, "").slice(0, 120) || fallback; }
 export function safeSvgFileName(value, fallback = "custom.svg") { let name = String(value || fallback).trim().replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 140) || fallback; if (!name.toLowerCase().endsWith(".svg")) name += ".svg"; return name; }
 export function serializeSvgAsset(row) {
   let svgText = EMPTY_SAFE_SVG;
-  try { svgText = sanitizeSvg(row?.svgText || ""); } catch {}
+  try { svgText = sanitizeSvg(row?.svgText || ""); } catch { /* best-effort */ }
   return { ...row, svgText, editorUrl: `/app/svg-assets/${row.id}`, storefrontUrl: `/apps/vsn-builder/svg/${row.id}`, source: "vsn-svg" };
 }

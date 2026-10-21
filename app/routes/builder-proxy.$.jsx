@@ -63,10 +63,6 @@ import {
 	normalizeProductSort,
 } from "../storefront/productPagination.js";
 ensureBuiltinSdkPlugins();
-const TEMPLATE_CACHE = new Map();
-const TEMPLATE_CACHE_TTL = 15_000;
-function cacheGet(key) { const item = TEMPLATE_CACHE.get(key); if (!item) return null; if (Date.now() - item.at > TEMPLATE_CACHE_TTL) { TEMPLATE_CACHE.delete(key); return null; } return item.value; }
-function cacheSet(key, value) { if (TEMPLATE_CACHE.size > 250) TEMPLATE_CACHE.clear(); TEMPLATE_CACHE.set(key, { at: Date.now(), value }); return value; }
 export async function loader({ request, params }) {
 	const { admin, session } =
 		await authenticate.public.appProxy(request);
@@ -166,9 +162,9 @@ export async function loader({ request, params }) {
 				db.builderPage.findMany({ where: { shop: session.shop, deletedAt: null, status: "published", template: { in: CAMPAIGN_TEMPLATE_TYPES } }, orderBy: { publishedAt: "desc" }, take: 100 }),
 				db.builderShopSetting.findUnique({ where: { shop: session.shop } }),
 			]);
-			let tokens = {}; try { tokens = JSON.parse(shopSetting?.designTokensJson || "{}"); } catch {}
+			let tokens = {}; try { tokens = JSON.parse(shopSetting?.designTokensJson || "{}"); } catch { /* best-effort */ }
 			const campaigns = []; const byId = new Map(pages.map((item)=>[String(item.id),item])); const included = new Set();
-			let customFonts = []; try { customFonts = await db.builderCustomFont.findMany({ where: { shop: session.shop, deletedAt: null }, select: { id:true, family:true, weight:true, style:true, mimeType:true } }); } catch {}
+			let customFonts = []; try { customFonts = await db.builderCustomFont.findMany({ where: { shop: session.shop, deletedAt: null }, select: { id:true, family:true, weight:true, style:true, mimeType:true } }); } catch { /* best-effort */ }
 			const addCampaign = async (campaignPage, forceFallback = false) => {
 				if (!campaignPage || included.has(campaignPage.id)) return;
 				const campaignBaseElements = migrateBuilderContent(safeParseJson(campaignPage.publishedJson, []));
@@ -408,7 +404,7 @@ export async function loader({ request, params }) {
 		try {
 			const rules = await db.builderTemplateRule.findMany({ where: { shop: session.shop, template: requestedTemplate, enabled: true }, orderBy: [{ priority: "desc" }, { updatedAt: "desc" }], take: 50 });
 			for (const rule of rules) {
-				let conditions = {}; try { conditions = JSON.parse(rule.conditionsJson || "{}"); } catch {}
+				let conditions = {}; try { conditions = JSON.parse(rule.conditionsJson || "{}"); } catch { /* best-effort */ }
 				const includePath = String(conditions.includePath || "").trim();
 				const excludePath = String(conditions.excludePath || "").trim();
 				const customerState = String(conditions.customerState || "any");
@@ -899,7 +895,6 @@ function renderBuilderDocument({
 	designTokens = {},
 	customFonts = [],
 	enterpriseSettings = {},
-	assetPipelineOptimized = false,
 	experiment = null,
 	widgetPlatform = {},
 	googleMapsApiKey = "", googleCaptcha = {}, formConfigs = {},
@@ -1792,18 +1787,10 @@ function sanitizeRichHtml(value) {
 		.replace(/(?:href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\1/gi, 'href="#"');
 }
 function contentTypography(styles={}, fallback={}) { return productTypographyStyle(styles, fallback); }
-function parseNavigationItems(value) {
-	return String(value || "Home|/").split(/\r?\n/).map((line) => {
-		const [label, url] = line.split("|");
-		return { label: String(label || "").trim(), url: String(url || "#").trim() || "#" };
-	}).filter((item) => item.label);
-}
-
 function parseRows(value, fields = 2) {
   return String(value || "").split(/\r?\n/).map((line) => line.split("|").map((part) => String(part || "").trim()).slice(0, fields)).filter((row) => row.some(Boolean));
 }
 
-const NESTED_STOREFRONT_CONTRACT_TYPES = ["carousel", "slides", "testimonials-carousel"];
 const PHASE10_SERVER_WIDGET_TYPES = new Set(["breadcrumbs","icon-list","icon-box","image-box","accordion","toggle","social-icons","map","progress-bar","counter","pricing-table","timeline","data-table","menu-anchor","form-builder","product-media","inventory-status","collection-filters","collection-sorting","collection-pagination","cart-drawer","countdown","video","slider","product-grid","product-card","collection-grid","html","liquid"]);
 
 function parseFormFields(value) {
@@ -1868,7 +1855,7 @@ function renderFormBuilder(node, props, styles, renderContext = {}) {
 }
 
 function renderPhase10Widget(node, props, styles, renderContext) {
-  const id=escapeAttribute(node.id||""); const type=node.type; const gap=toCssSize(styles?.spacing?.gap||styles?.grid?.gap,"12px"); const product=renderContext?.product||{};
+  const id=escapeAttribute(node.id||""); const type=node.type; const gap=toCssSize(styles?.spacing?.gap||styles?.grid?.gap,"12px");
   if(type==="form-builder") return renderFormBuilder(node,props,styles,renderContext);
   if(type==="breadcrumbs") { const rows=normalizeStructuredItems("breadcrumbs",props).filter((_,i)=>props.showHome!==false||i>0); return `<nav data-vsn-id="${id}" aria-label="Breadcrumb" style="display:flex;gap:${gap};flex-wrap:wrap;">${rows.map((item,i)=>`${i?`<span>${escapeHtml(props.separator||"/")}</span>`:""}<a href="${escapeAttribute(item.url||"#")}" style="color:inherit;text-decoration:none;">${escapeHtml(item.label||"")}</a>`).join("")}</nav>`; }
   if(type==="icon-list") { const rows=normalizeStructuredItems("icon-list",props); return `<ul data-vsn-id="${id}" style="display:grid;gap:${gap};list-style:none;padding:0;margin:0;">${rows.map((item)=>`<li style="display:flex;gap:8px;align-items:center;"><span>${escapeHtml(item.icon||"•")}</span>${item.url?`<a href="${escapeAttribute(item.url)}" style="color:inherit;">${escapeHtml(item.label||"")}</a>`:escapeHtml(item.label||"")}</li>`).join("")}</ul>`; }
@@ -1964,7 +1951,7 @@ function renderExtendedWidget(node, props, styles, renderContext) {
   }
   if (type === "gallery-grid") {
     const gallery=normalizeGalleryWidgetProps(props); const ratio=galleryAspectRatio(gallery.imageRatio,gallery.customRatioWidth,gallery.customRatioHeight);
-    const item=(media,index)=>{const img=`<img class="vsn-gallery-item vsn-content-media" src="${escapeAttribute(media.url)}" alt="${escapeAttribute(media.alt||"")}" loading="lazy" style="width:100%;${ratio!=="auto"?`aspect-ratio:${ratio};`:""}object-fit:${escapeAttribute(gallery.objectFit)};object-position:${escapeAttribute(gallery.objectPosition)};border-radius:${toCssSize(styles?.image?.borderRadius,"10px")};display:block;">`;let body=img;if(gallery.clickAction==="lightbox")body=`<a href="${escapeAttribute(media.url)}" data-vsn-lightbox="1" data-vsn-lightbox-src="${escapeAttribute(media.url)}" data-vsn-lightbox-alt="${escapeAttribute(media.alt||"")}">${img}</a>`;else if(gallery.clickAction==="link"&&media.linkUrl)body=`<a href="${escapeAttribute(media.linkUrl)}" ${gallery.openLinksNewTab?'target="_blank" rel="noopener noreferrer"':''}>${img}</a>`;return `<figure class="vsn-gallery-item-wrap vsn-content-item" style="margin:0;min-width:0;">${body}${gallery.showCaptions&&media.caption?`<figcaption style="font-size:12px;margin-top:6px;color:#666;">${escapeHtml(media.caption)}</figcaption>`:""}</figure>`;};
+    const item=(media)=>{const img=`<img class="vsn-gallery-item vsn-content-media" src="${escapeAttribute(media.url)}" alt="${escapeAttribute(media.alt||"")}" loading="lazy" style="width:100%;${ratio!=="auto"?`aspect-ratio:${ratio};`:""}object-fit:${escapeAttribute(gallery.objectFit)};object-position:${escapeAttribute(gallery.objectPosition)};border-radius:${toCssSize(styles?.image?.borderRadius,"10px")};display:block;">`;let body=img;if(gallery.clickAction==="lightbox")body=`<a href="${escapeAttribute(media.url)}" data-vsn-lightbox="1" data-vsn-lightbox-src="${escapeAttribute(media.url)}" data-vsn-lightbox-alt="${escapeAttribute(media.alt||"")}">${img}</a>`;else if(gallery.clickAction==="link"&&media.linkUrl)body=`<a href="${escapeAttribute(media.linkUrl)}" ${gallery.openLinksNewTab?'target="_blank" rel="noopener noreferrer"':''}>${img}</a>`;return `<figure class="vsn-gallery-item-wrap vsn-content-item" style="margin:0;min-width:0;">${body}${gallery.showCaptions&&media.caption?`<figcaption style="font-size:12px;margin-top:6px;color:#666;">${escapeHtml(media.caption)}</figcaption>`:""}</figure>`;};
     const common=`--vsn-gallery-cols-desktop:${gallery.columnsDesktop};--vsn-gallery-cols-tablet:${gallery.columnsTablet};--vsn-gallery-cols-mobile:${gallery.columnsMobile};--vsn-gallery-gap:${gallery.gap}px;--vsn-gallery-row-gap:${gallery.rowGap}px;`;
     if(gallery.layout==="masonry")return `<div data-vsn-id="${id}" class="vsn-gallery-grid is-masonry" style="${common}column-count:var(--vsn-gallery-cols-desktop);column-gap:var(--vsn-gallery-gap);">${gallery.galleryItems.map((media,index)=>`<div style="break-inside:avoid;margin-bottom:var(--vsn-gallery-row-gap);">${item(media,index)}</div>`).join("")}</div>`;
     if(gallery.layout==="justified")return `<div data-vsn-id="${id}" class="vsn-gallery-grid is-justified" style="${common}display:flex;flex-wrap:wrap;gap:var(--vsn-gallery-row-gap) var(--vsn-gallery-gap);">${gallery.galleryItems.map((media,index)=>`<div style="flex:1 1 calc(${100/gallery.columnsDesktop}% - var(--vsn-gallery-gap));min-width:120px;">${item(media,index)}</div>`).join("")}</div>`;
@@ -2094,7 +2081,7 @@ function renderContentIconSvg(name = "star") {
 	return `<svg class="vsn-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
 }
 
-function renderIconWidget(node, props, styles) {
+function renderIconWidget(node, props) {
 	const label = String(props.label || props.alt || "").trim();
 	return `<span data-vsn-id="${escapeAttribute(node.id || "")}" class="vsn-icon-widget"${label ? ` role="img" aria-label="${escapeAttribute(label)}"` : ' aria-hidden="true"'} style="display:inline-flex;align-items:center;justify-content:center;">${renderContentIconSvg(props.name || "star")}</span>`;
 }
@@ -2145,39 +2132,6 @@ function renderNodeCore(
 			typeof node.styles === "object"
 			? node.styles
 			: {};
-
-	const existingSettings =
-		node.settings &&
-			typeof node.settings === "object"
-			? node.settings
-			: {};
-
-	const settings = {
-		...existingSettings,
-		...props,
-
-		content: {
-			...(
-				existingSettings.content &&
-					typeof existingSettings.content ===
-					"object"
-					? existingSettings.content
-					: {}
-			),
-			...props,
-		},
-
-		style: {
-			...(
-				existingSettings.style &&
-					typeof existingSettings.style ===
-					"object"
-					? existingSettings.style
-					: {}
-			),
-			...styles,
-		},
-	};
 
 	const children = Array.isArray(
 		node.children,
@@ -2445,10 +2399,7 @@ function applyDynamicSource(node, renderContext) {
 
 function conditionRuleMatches(rule = {}, ctx = {}) {
 	const name = rule.rule || "always";
-	const product = ctx?.product || {};
-	const collection = ctx?.collection || {};
 	const customer = ctx?.customer || {};
-	const value = String(rule.value || "").toLowerCase();
 	if (name === "always") return true;
 	if (name === "logged-in") return customer.loggedIn === true;
 	if (name === "logged-out") return customer.loggedIn !== true;
@@ -2618,7 +2569,7 @@ function renderProductVariantSelector(node, props, styles, renderContext) {
 	return `<label data-vsn-id="${escapeAttribute(node.id || "")}" class="vsn-product-variant-wrap" style="display:grid;gap:${toCssSize(props.gap,"6px")};">${props.showLabel===false?"":`<span>${escapeHtml(props.label || "Variant")}</span>`}<select class="vsn-product-variant-selector" style="min-height:${toCssSize(props.height,"44px")};border:1px solid ${escapeAttribute(props.borderColor || "#d9d9d9")};border-radius:${radius};padding:8px 10px;background:${escapeAttribute(props.backgroundColor || "#fff")};color:${escapeAttribute(props.textColor || "#1a1a1a")};">${options || '<option value="">Default</option>'}</select></label>`;
 }
 
-function renderProductQuantity(node, props, styles) {
+function renderProductQuantity(node, props) {
 	const min=Math.max(1,Number(props.min||1)); const max=Math.max(min,Number(props.max||99)); const step=Math.max(1,Number(props.step||1)); return `<label data-vsn-id="${escapeAttribute(node.id || "")}" class="vsn-product-quantity-wrap" style="display:grid;gap:6px;">${props.showLabel===false?"":`<span>${escapeHtml(props.label || "Quantity")}</span>`}<input class="vsn-product-quantity" type="number" min="${escapeAttribute(min)}" max="${escapeAttribute(max)}" step="${escapeAttribute(step)}" value="${escapeAttribute(min)}" style="width:${toCssSize(props.width,"110px")};min-height:${toCssSize(props.height,"44px")};border:1px solid ${escapeAttribute(props.borderColor || "#d9d9d9")};border-radius:${toCssSize(props.borderRadius,"8px")};padding:8px 10px;"></label>`;
 }
 
@@ -2709,7 +2660,6 @@ function renderContainer(
 
 	// buildNodeStyle() already flattens the current styles.size contract and legacy flat sizing.
 	const width = cssSize(style.width, "100%");
-	const height = cssSize(style.height, "auto");
 
 	const minHeight = cssSize(
 		style.minHeight,

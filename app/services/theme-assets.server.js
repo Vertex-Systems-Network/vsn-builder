@@ -40,7 +40,7 @@ function globalStyles(nodes = [], designTokens = {}) {
 }
 
 function safeComment(value = "") {
-  return String(value || "").replace(/[\r\n*\/]+/g, " ").slice(0, 160);
+  return String(value || "").replace(/[\r\n*/]+/g, " ").slice(0, 160);
 }
 
 function cssQuote(value = "") {
@@ -516,7 +516,7 @@ export async function restoreTemplateThemeAssets({ admin, session, db, pageId, s
     const stale = normalizeAssetFilenames(staleFiles).filter((name) => !requiredNames.has(name));
     let staleCleanup = [];
     if (stale.length) {
-      try { staleCleanup = (await deleteThemeFiles(admin, theme.id, stale)).files; } catch {}
+      try { staleCleanup = (await deleteThemeFiles(admin, theme.id, stale)).files; } catch { /* best-effort */ }
     }
     return { success: true, files: written.files, jobId: written.jobId, staleDeletedFiles: staleCleanup, entry, themeId: theme.id };
   } catch (error) {

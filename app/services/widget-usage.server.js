@@ -13,7 +13,7 @@ export async function enrichWidgetSettingsWithUsage(db, shop, settings) {
   for (const page of pages) {
     for (const raw of [page.contentJson, page.publishedJson]) {
       if (!raw) continue;
-      try { collectNodeTypes(JSON.parse(raw), used); } catch {}
+      try { collectNodeTypes(JSON.parse(raw), used); } catch { /* best-effort */ }
     }
   }
   const widgets = (base.widgets || []).map((widget) => ({ ...widget, used: used.has(widget.id) }));

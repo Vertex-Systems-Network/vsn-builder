@@ -71,7 +71,7 @@ const FILE_FRAGMENT = `
   ... on Video { preview { image { url width height } } }
 `;
 
-export async function createShopifyMediaFile(admin, { stagedUrl, filename, alt = "Stock media", contentType = "FILE" } = {}) {
+export async function createShopifyMediaFile(admin, { stagedUrl, alt = "Stock media", contentType = "FILE" } = {}) {
   // stagedUploadsCreate already owns the filename. Shopify staged resource URLs do not carry a file extension,
   // so sending filename again to fileCreate can trigger MISMATCHED_FILENAME_AND_ORIGINAL_SOURCE.
   const response = await admin.graphql(`#graphql
@@ -86,7 +86,7 @@ export async function createShopifyMediaFile(admin, { stagedUrl, filename, alt =
   return normalizeFileNode(file);
 }
 
-export async function updateShopifyMediaFile(admin, { fileId, stagedUrl, filename, alt = "Stock media" } = {}) {
+export async function updateShopifyMediaFile(admin, { fileId, stagedUrl, alt = "Stock media" } = {}) {
   const statusResponse = await admin.graphql(`#graphql
     query VsnStockMediaFileStatus($id:ID!){ node(id:$id){ ... on GenericFile{id fileStatus} ... on Video{id fileStatus} ... on MediaImage{id fileStatus} } }
   `, { variables: { id: fileId } });

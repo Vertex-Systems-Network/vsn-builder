@@ -236,7 +236,7 @@ function fileNode(file) {
   return { id: file?.id || "", fileStatus: file?.fileStatus || "PROCESSING", alt: file?.alt || "", url: file?.image?.url || file?.preview?.image?.url || "", width: file?.image?.width || 0, height: file?.image?.height || 0 };
 }
 
-async function createShopifyFile(admin, stagedUrl, result, filename) {
+async function createShopifyFile(admin, stagedUrl, result) {
   const response = await admin.graphql(`#graphql
     mutation VsnStockFileCreate($files:[FileCreateInput!]!){ fileCreate(files:$files){ files{id fileStatus alt ... on MediaImage{image{url width height}}} userErrors{field message code} } }
   `, { variables: { files: [{ originalSource: stagedUrl, alt: result.alt || result.title || "Stock image", contentType: "IMAGE", duplicateResolutionMode: "APPEND_UUID" }] } });
@@ -245,7 +245,7 @@ async function createShopifyFile(admin, stagedUrl, result, filename) {
   const file = payload.files?.[0]; if (!file?.id) throw new Error("Shopify did not create the stock image file."); return fileNode(file);
 }
 
-async function updateShopifyFile(admin, fileId, stagedUrl, result, filename) {
+async function updateShopifyFile(admin, fileId, stagedUrl, result) {
   const statusResponse = await admin.graphql(`#graphql
     query VsnStockFileStatus($id:ID!){node(id:$id){... on MediaImage{id fileStatus}}}`, { variables: { id: fileId } });
   const statusJson = await statusResponse.json(); const status = statusJson.data?.node?.fileStatus;

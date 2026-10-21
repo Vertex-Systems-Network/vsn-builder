@@ -94,6 +94,7 @@ async function securedReadResponse(result) {
   let length=0;
   const deadline=Date.now()+MAX_READ_RESPONSE_MS;
   try {
+    // eslint-disable-next-line no-constant-condition -- intentional bounded loop
     while(true) {
       const remaining=deadline-Date.now();
       if(remaining<=0)throw new RangeError("GET response timed out");
@@ -112,10 +113,10 @@ async function securedReadResponse(result) {
     }
   }catch(error) {
     // Never block the SDK/Neon cleanup waiting on a hostile source's cancel().
-    try{void reader.cancel().catch(()=>{})}catch{}
+    try{void reader.cancel().catch(()=>{})}catch{ /* best-effort */ }
     throw error;
   }finally{
-    try{reader.releaseLock()}catch{}
+    try{reader.releaseLock()}catch{ /* best-effort */ }
   }
   const bytes=new Uint8Array(length);
   let offset=0;
@@ -151,6 +152,7 @@ async function securedMutationResponse(result) {
   let length=0;
   const deadline=Date.now()+MAX_MUTATION_RESPONSE_READ_MS;
   try {
+    // eslint-disable-next-line no-constant-condition -- intentional bounded loop
     while(true) {
       const remaining=deadline-Date.now();
       if(remaining<=0)throw new RangeError("Admin mutation response read deadline exceeded");
@@ -180,7 +182,7 @@ async function securedMutationResponse(result) {
     // to roll back; a late rejection stays handled.
     try{void reader.cancel().catch(()=>{})}catch{ /* preserve original failure */ }
     throw error;
-  }finally{try{reader.releaseLock()}catch{}}
+  }finally{try{reader.releaseLock()}catch{ /* best-effort */ }}
   const bytes=new Uint8Array(length);
   let offset=0;
   for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}

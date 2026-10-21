@@ -7,6 +7,7 @@ import { assertTrustedMutationRequest } from "../utils/request-security.server.j
 
 function clean(row, omit = []) { const copy = { ...row }; for (const key of omit) delete copy[key]; return copy; }
 function serializeFont(row) { const copy = clean(row, ["shop"]); return { ...copy, fileDataBase64: Buffer.from(row.fileData || []).toString("base64"), fileData: undefined }; }
+// eslint-disable-next-line no-unused-vars -- omitted from rest
 function reviveFont(row, shop) { const { fileDataBase64, fileData, ...rest } = row || {}; return { ...rest, shop, fileData: Buffer.from(String(fileDataBase64 || ""), "base64") }; }
 function publicIntegration(row) { const copy = clean(row, ["shop", "secretJson"]); return { ...copy, secretJson: "{}", secretsOmitted: true }; }
 
@@ -124,6 +125,7 @@ export async function action({ request }) {
     for (const row of payload.assets?.customFonts || []) await tx.builderCustomFont.create({ data: reviveFont(row, session.shop) });
     for (const row of payload.assets?.svgAssets || []) await tx.builderSvgAsset.create({ data: { ...row, shop: session.shop } });
     for (const row of payload.forms?.configs || []) await tx.builderFormConfig.create({ data: { ...row, shop: session.shop } });
+    // eslint-disable-next-line no-unused-vars -- omitted from rest
     for (const row of payload.forms?.integrations || []) { const { secretsOmitted, ...safe } = row || {}; await tx.builderIntegration.create({ data: { ...safe, shop: session.shop, secretJson: "{}" } }); }
     for (const row of payload.phase13?.brandKits || []) await tx.builderBrandKit.create({ data: { ...row, shop: session.shop } });
     for (const row of payload.motion?.presets || []) await tx.builderMotionPreset.create({ data: { ...row, shop: session.shop } });

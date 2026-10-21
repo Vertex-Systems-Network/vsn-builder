@@ -149,7 +149,7 @@ export async function scanUpload({ file, shop, submissionId }) {
       maxResponseBytes: 64 * 1024,
     });
     let data = {};
-    try { data = JSON.parse(res.body || "{}"); } catch {}
+    try { data = JSON.parse(res.body || "{}"); } catch { /* best-effort */ }
     return { status: res.ok && data?.clean !== false ? "clean" : "blocked", message: data?.message || `Scanner HTTP ${res.status}` };
   } catch (error) { return { status: "error", message: error instanceof Error ? error.message : "Scan failed" }; }
 }

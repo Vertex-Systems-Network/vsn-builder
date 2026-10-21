@@ -4,7 +4,7 @@ function notifySession(status, detail = "") {
   if (typeof window === "undefined") return;
   try {
     window.dispatchEvent(new CustomEvent("vsn:session-status", { detail: { status, detail } }));
-  } catch {}
+  } catch { /* best-effort */ }
 }
 
 export async function getFreshShopifyIdToken() {

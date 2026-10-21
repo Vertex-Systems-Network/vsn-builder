@@ -155,7 +155,7 @@ export async function syncDefaultLibrary(db, shop) {
 
 export function serializeLibraryItem(item) {
   let content = null;
-  try { content = JSON.parse(item.contentJson || "null"); } catch {}
+  try { content = JSON.parse(item.contentJson || "null"); } catch { /* best-effort */ }
   return {
     ...item,
     content,

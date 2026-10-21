@@ -37,7 +37,7 @@ export async function resolveReusableSections({ database, shop, elements, locale
 		return [item.id, localized.elements];
 	}));
 	const map = new Map(localizedSections);
-	const componentItems = libraryItems.map((item) => { let content = null; try { content = JSON.parse(item.contentJson || "null"); } catch {} return { ...item, content }; });
+	const componentItems = libraryItems.map((item) => { let content = null; try { content = JSON.parse(item.contentJson || "null"); } catch { /* best-effort */ } return { ...item, content }; });
 	const libraryMap = new Map(componentItems.map((item) => [item.id, item]));
 	const resolveNodes = (nodes, stack = new Set()) => (Array.isArray(nodes) ? nodes : []).map((node) => {
 		if (!node || typeof node !== "object") return node;

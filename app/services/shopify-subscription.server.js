@@ -1,5 +1,5 @@
 import { isLocalBillingSimulation } from "../config/local-billing-simulation.js";
-import { getShopifyPlanHandleMap, normalizePricingHandle, normalizeShopDomain, resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
+import { normalizePricingHandle, normalizeShopDomain, resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
 
 const API_VERSION_RE=/^2026-(07|10)$|^unstable$/;
 const ORG_RE=/^[A-Za-z0-9_-]{1,120}$/;

@@ -6,7 +6,6 @@ import { PrismaClient } from "../../generated/prisma-edge/client.ts";
 import manifests from "../../config/deployment/environments.json" with { type: "json" };
 import { inspectHostedNeonUrlPair } from "./neon-target-policy.js";
 
-const own=(record,name)=>Object.prototype.hasOwnProperty.call(record||{},name);
 export function inspectWorkerNeonEnvironment(env) {
   const issues=[];
   const tier=String(env?.APP_ENV||"");
