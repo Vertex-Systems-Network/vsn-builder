@@ -128,6 +128,8 @@ const required = [
   "scripts/p16r-storefront-node-behavior-audit.mjs",
   "app/storefront/productWidgets.js",
   "scripts/p16s-storefront-product-widgets-audit.mjs",
+  "app/storefront/contentWidgets.js",
+  "scripts/p16t-storefront-content-widgets-audit.mjs",
   ".ai/RUNNER_BENCHMARK.md",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
