@@ -92,7 +92,7 @@ await check("Anchored popover repositions on nested scroll",()=>assert.ok(toolki
 await check("Portal popovers detect dark mode outside dashboard DOM tree",()=>assert.ok(toolkit.includes('dataset?.vsnTheme === "dark"')&&css.includes(".vsn-anchored-popover.is-dark")));
 
 await check("Sidebar Pages menu is merchant-facing Templates",()=>assert.ok(sidebar.includes("id: 'pages', label: 'Templates'")));
-await check("Dashboard primary Pages navigation is merchant-facing Templates",()=>assert.ok(home.includes('<PanelsTopLeft size={15}/> Templates</button>')));
+await check("Dashboard primary Pages navigation is merchant-facing Templates",()=>assert.ok(home.includes("onClick={()=>onNavigate('pages')}>Templates</s-button>")));
 await check("Command palette navigation is merchant-facing Templates",()=>assert.ok(read("app/components/dashboard/AppCommandPalette.jsx").includes("['pages','Templates'")));
 await check("Duplicate VSN Builder sidebar brand text is removed",()=>assert.doesNotMatch(sidebar,/VSN Builder<\/|>VSN Builder</));
 await check("VSN Builder brand appears immediately before search in topbar",()=>{assert.ok(topNav.indexOf("vsn-topbar-brand")>=0);assert.ok(topNav.indexOf("vsn-topbar-brand")<topNav.indexOf("vsn-pages-search")||topNav.indexOf("vsn-topbar-brand")<topNav.indexOf("Search VSN Builder"))});
@@ -102,8 +102,8 @@ await check("Profile dropdown has Shopify sign-out guidance with icon",()=>asser
 await check("Custom profile dropdown contains no Manage App entry",()=>assert.doesNotMatch(topNav,/Manage App|Manage app/));
 
 await check("Profile uninstall requires typed consent",()=>assert.ok(topNav.includes("requireText:'UNINSTALL'")&&topNav.includes("app-uninstall")));
-await check("Settings uninstall requires typed consent",()=>assert.ok(settings.includes("requireText:'UNINSTALL'")&&settings.includes("vsn-settings-danger-card")));
-await check("Settings uninstall uses danger action styling",()=>assert.ok(settings.includes("vsn-danger-action")&&settings.includes("Danger zone")));
+await check("Settings uninstall requires typed consent",()=>assert.ok(settings.includes("requireText:'UNINSTALL'")&&settings.includes('heading="Danger zone"')));
+await check("Settings uninstall uses danger action styling",()=>assert.ok(settings.includes('tone="critical"')&&settings.includes("Danger zone")));
 await check("Server uninstall is owner-only",()=>assert.ok(dashboardActions.includes("if (!isBuilderOwner(session))")));
 await check("Server uninstall uses Shopify appUninstall mutation",()=>assert.ok(dashboardActions.includes("mutation VsnAppUninstall")&&dashboardActions.includes("appUninstall")));
 await check("Server uninstall redirects out to Shopify admin",()=>assert.ok(dashboardActions.includes("https://admin.shopify.com/store/")));

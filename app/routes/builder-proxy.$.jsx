@@ -9,7 +9,6 @@ import { normalizeSliderProps } from "../builder/sliderWidget.js";
 import { isNestedSliderType, normalizeNestedSliderProps } from "../builder/nestedCarouselWidget.js";
 import { normalizeStructuredItems } from "../builder/structuredItems.js";
 import { applyDynamicBindings } from "../builder/dynamicBindings.js";
-import { evaluateCommerceConditionRule } from "../builder/commerceConditions.js";
 import { normalizeContextImageProps, contextImageUrl, contextImageAlt } from "../builder/contextMediaWidget.js";
 import { normalizeGridProps, gridImageRatio } from "../builder/dataGridWidget.js";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
@@ -55,6 +54,7 @@ import {
 } from "../storefront/designTokens.js";
 import { vsnFontRuntime } from "../storefront/fontRuntime.js";
 import { buildCustomJsBundle } from "../storefront/customJsBundle.js";
+import { serverConditionMatches } from "../storefront/serverConditions.js";
 import { htmlResponse, javascriptResponse, jsonResponse } from "../storefront/responses.server.js";
 import {
 	clampProductPageSize,
@@ -2395,32 +2395,6 @@ function applyDynamicSource(node, renderContext) {
 		else props.text = String(value);
 	}
 	return { ...node, props };
-}
-
-function conditionRuleMatches(rule = {}, ctx = {}) {
-	const name = rule.rule || "always";
-	const customer = ctx?.customer || {};
-	if (name === "always") return true;
-	if (name === "logged-in") return customer.loggedIn === true;
-	if (name === "logged-out") return customer.loggedIn !== true;
-	const commerceMatch = evaluateCommerceConditionRule(name, rule, ctx); if (commerceMatch !== null) return commerceMatch;
-	if (name === "date-after") return !rule.value || Date.now() >= new Date(rule.value).getTime();
-	if (name === "date-before") return !rule.value || Date.now() <= new Date(rule.value).getTime();
-	// Device, query, market and language are browser-dependent and are finalized by the theme renderer.
-	return true;
-}
-
-function serverConditionMatches(node, ctx) {
-	const c = node?.conditions;
-	if (!c?.enabled) return true;
-	if (Array.isArray(c.groups) && c.groups.length) {
-		const groupResults = c.groups.map((group) => {
-			const results = (group.rules || []).map((rule) => conditionRuleMatches(rule, ctx));
-			return String(group.operator || "AND").toUpperCase() === "OR" ? results.some(Boolean) : results.every(Boolean);
-		});
-		return String(c.operator || "AND").toUpperCase() === "OR" ? groupResults.some(Boolean) : groupResults.every(Boolean);
-	}
-	return conditionRuleMatches(c, ctx);
 }
 
 function injectNodeBehavior(html, node) {

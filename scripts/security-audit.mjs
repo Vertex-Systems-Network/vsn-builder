@@ -560,6 +560,14 @@ if(!storefrontProxy.includes('from "../storefront/customJsBundle.js"'))fail("P1.
 if(storefrontProxy.includes('from "../builder/customCode.js"'))fail("P1.6n builder proxy must not retain direct custom-code collection/validation ownership");
 if(storefrontProxy.includes("function buildCustomJsBundle("))fail("P1.6n builder proxy retained extracted custom-JS helper");
 if(!storefrontProxy.includes('if (enterpriseSettings.safeMode) return javascriptResponse("/* VSN Safe Mode: custom JavaScript disabled. */");'))fail("P1.6n safe-mode custom-JS gate missing");
+const storefrontServerConditions=fs.readFileSync(path.join(root,"app/storefront/serverConditions.js"),"utf8");
+if(!storefrontServerConditions.includes('from "../builder/commerceConditions.js"'))fail("P1.6o server-conditions boundary must delegate commerce rules");
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontServerConditions.includes(forbidden))fail(`P1.6o server-conditions boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/serverConditions.js"'))fail("P1.6o builder proxy must consume extracted server-conditions boundary");
+if(storefrontProxy.includes("function serverConditionMatches(")||storefrontProxy.includes("function conditionRuleMatches("))fail("P1.6o builder proxy retained extracted server-conditions helpers");
+if(!storefrontProxy.includes('if (!serverConditionMatches(node, renderContext)) return "";'))fail("P1.6o server-side condition gate missing from renderNode");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);

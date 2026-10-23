@@ -1,14 +1,14 @@
 import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useEffect, useMemo, useState } from "react";
 import { useFetcher, useLoaderData } from "react-router";
-import { Code2, Play, Save, Star, Trash2, RotateCcw, Copy, ShieldAlert } from "lucide-react";
+import { Play, Save, Star, Trash2, RotateCcw, Copy, ShieldAlert } from "lucide-react";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { builderActor, getBuilderRole, getRoleActionAccess, isBuilderOwner } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction, canAccessBuilderSystem, getBuilderRoleAccess } from "../utils/builder-permissions.server.js";
 import { describeGraphqlOperation, executeDeveloperGraphql, loadDeveloperGraphqlStudio, mutateDeveloperQuery, saveDeveloperQuery } from "../services/developer-graphql.server.js";
 import { loadGlobalCodeStudio, mutateGlobalCode, saveGlobalCode } from "../services/global-code.server.js";
-import { VsnButton, VsnCard, VsnCodeEditor, VsnEmpty, VsnInput, VsnNotice, VsnPage, VsnSearchInput, VsnSelect, VsnTabs } from "../components/ui/VsnToolkit";
+import { VsnButton, VsnCard, VsnCodeEditor, VsnEmpty, VsnInput, VsnNotice, VsnSearchInput, VsnSelect, VsnTabs } from "../components/ui/VsnToolkit";
 import { useVsnConfirm } from "../components/ui/VsnConfirmProvider";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { formatDate } from "../utils/format-date.js";
@@ -206,8 +206,9 @@ export default function DeveloperStudio() {
   const [tab,setTab]=useState(tabs[0]?.value||"graphql");
   // eslint-disable-next-line react-hooks/exhaustive-deps -- tabs is rebuilt every render from the listed permission flags
   useEffect(()=>{if(!tabs.some((item)=>item.value===tab)&&tabs[0])setTab(tabs[0].value);},[tab,data.permissions.graphql.readQueries,data.permissions.globalCode.view]);
-  return <VsnPage title="Developer Studio" subtitle="Shopify-aware GraphQL tooling and revisioned storefront code for development workflows." actions={tabs.length>1?<VsnTabs items={tabs} value={tab} onChange={setTab}/>:null}>
-    <div className="vsn-dev-banner"><Code2 size={17}/><div><strong>Developer Mode</strong><span>Queries use the current app installation and cannot exceed Shopify-granted scopes. VSN action permissions are also enforced on the server.</span></div></div>
+  return <s-page heading="Developer Studio"><s-stack direction="block" gap="base">
+    <s-stack direction="inline" justifyContent="space-between" alignItems="center" gap="base"><s-paragraph color="subdued">Shopify-aware GraphQL tooling and revisioned storefront code for development workflows.</s-paragraph>{tabs.length>1?<s-stack direction="inline" gap="small-200">{tabs.map((item)=><s-button key={item.value} variant={tab===item.value?"primary":"secondary"} onClick={()=>setTab(item.value)}>{item.label}</s-button>)}</s-stack>:null}</s-stack>
+    <s-banner tone="info" heading="Developer Mode">Queries use the current app installation and cannot exceed Shopify-granted scopes. VSN action permissions are also enforced on the server.</s-banner>
     {tab==="graphql"&&data.graphql?<GraphqlStudio data={data.graphql} permissions={data.permissions.graphql}/>:data.globalCode?<GlobalCodeStudio data={data.globalCode} permissions={data.permissions.globalCode}/>:null}
-  </VsnPage>;
+  </s-stack></s-page>;
 }

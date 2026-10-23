@@ -7,14 +7,14 @@ mode: environment_promotion
 task_key: development-staging-production-alignment
 owner_intent: "Align all AI work to the Development -> Staging -> Production promotion contract (.ai/ENVIRONMENT-PROMOTION.md) and remove known lint/security errors on the development baseline."
 base_branch: development
-working_branch: claude/focused-thompson-t0s1vi
+working_branch: claude/hopeful-lovelace-k2y7is
 pull_request: none
-last_verified_commit: b13331b
-last_verified_step: "Lint aligned to 0 errors (46 hook-deps warnings remain) and made blocking in CI; stock downloads validate every redirect hop; local lint, typecheck, qa, build and full qa:release PASS on claude/focused-thompson-t0s1vi."
+last_verified_commit: 8177b0a
+last_verified_step: "P1.6o server-conditions boundary ported to development; Polaris conversion of stock media, role manager, platform intelligence, developer studio and dashboard pages (home, widgets, settings, support, pricing, license, notifications, profile, changelog, localization, documentation). Local lint, typecheck, build PASS; 104/110 qa:release audits PASS, remaining 6 fail identically on development (local SQLite baseline not prepared in container)."
 in_flight_step: none
-next_exact_action: "Open PR into development; after exact-head CI is green, make lint blocking in CI. Staging promotion stays blocked until: development branch protected, Cloudflare vsn-builder-staging secrets/bindings/HTTPS set, Neon Staging migrated via protected workflow, T020 Worker merchant router serving /app (currently 503)."
+next_exact_action: "Open PR claude/hopeful-lovelace-k2y7is -> development and get exact-head CI green. Remaining Polaris work: About page (contains placeholder team/contact/stats needing owner-approved real content), dashboard shell (Sidebar/TopNav) and full-height editor panels (intentionally custom). Staging promotion stays blocked on owner-side items listed below."
 approval_needed_now: false
-updated_at: 2026-10-21
+updated_at: 2026-10-23
 ---
 
 ## Purpose
