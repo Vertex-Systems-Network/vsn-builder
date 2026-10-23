@@ -574,6 +574,15 @@ for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Re
 }
 if(!storefrontProxy.includes('from "../storefront/dynamicSource.js"'))fail("P1.6p builder proxy must consume extracted dynamic-source boundary");
 if(["formatMoney","readPath","applyDynamicSource"].some((name)=>storefrontProxy.includes(`function ${name}(`)))fail("P1.6p builder proxy retained extracted dynamic-source helpers");
+const storefrontSafeCss=fs.readFileSync(path.join(root,"app/storefront/safeCss.js"),"utf8");
+for(const marker of ['parsed.protocol === "https:"','.replaceAll("<", "&lt;")','.replaceAll(\'"\', "&quot;")','/^#[0-9a-f]{3,8}$/i']){
+  if(!storefrontSafeCss.includes(marker))fail(`P1.6q safe-CSS sanitizer regression detected: ${marker}`);
+}
+for(const forbidden of ["import ","db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","process.env"]){
+  if(storefrontSafeCss.includes(forbidden))fail(`P1.6q safe-CSS boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/safeCss.js"'))fail("P1.6q builder proxy must consume extracted safe-CSS boundary");
+if(["safeUrl","safeColor","escapeHtml","escapeAttribute","cssSize"].some((name)=>storefrontProxy.includes(`function ${name}(`)))fail("P1.6q builder proxy retained extracted sanitizer helpers");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);
