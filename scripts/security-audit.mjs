@@ -583,6 +583,13 @@ for(const forbidden of ["import ","db.","fetch(","graphql(","authenticate.","ses
 }
 if(!storefrontProxy.includes('from "../storefront/safeCss.js"'))fail("P1.6q builder proxy must consume extracted safe-CSS boundary");
 if(["safeUrl","safeColor","escapeHtml","escapeAttribute","cssSize"].some((name)=>storefrontProxy.includes(`function ${name}(`)))fail("P1.6q builder proxy retained extracted sanitizer helpers");
+const storefrontNodeBehavior=fs.readFileSync(path.join(root,"app/storefront/nodeBehavior.js"),"utf8");
+if(!storefrontNodeBehavior.includes('import { escapeAttribute } from "./safeCss.js";'))fail("P1.6r node-behavior boundary must escape attributes via the safe-CSS boundary");
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontNodeBehavior.includes(forbidden))fail(`P1.6r node-behavior boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/nodeBehavior.js"'))fail("P1.6r builder proxy must consume extracted node-behavior boundary");
+if(storefrontProxy.includes("function injectNodeBehavior("))fail("P1.6r builder proxy retained extracted node-behavior helper");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);
