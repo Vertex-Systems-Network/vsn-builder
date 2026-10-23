@@ -102,8 +102,8 @@ await check("Profile dropdown has Shopify sign-out guidance with icon",()=>asser
 await check("Custom profile dropdown contains no Manage App entry",()=>assert.doesNotMatch(topNav,/Manage App|Manage app/));
 
 await check("Profile uninstall requires typed consent",()=>assert.ok(topNav.includes("requireText:'UNINSTALL'")&&topNav.includes("app-uninstall")));
-await check("Settings uninstall requires typed consent",()=>assert.ok(settings.includes("requireText:'UNINSTALL'")&&settings.includes("vsn-settings-danger-card")));
-await check("Settings uninstall uses danger action styling",()=>assert.ok(settings.includes("vsn-danger-action")&&settings.includes("Danger zone")));
+await check("Settings uninstall requires typed consent",()=>assert.ok(settings.includes("requireText:'UNINSTALL'")&&settings.includes('heading="Danger zone"')));
+await check("Settings uninstall uses danger action styling",()=>assert.ok(settings.includes('tone="critical"')&&settings.includes("Danger zone")));
 await check("Server uninstall is owner-only",()=>assert.ok(dashboardActions.includes("if (!isBuilderOwner(session))")));
 await check("Server uninstall uses Shopify appUninstall mutation",()=>assert.ok(dashboardActions.includes("mutation VsnAppUninstall")&&dashboardActions.includes("appUninstall")));
 await check("Server uninstall redirects out to Shopify admin",()=>assert.ok(dashboardActions.includes("https://admin.shopify.com/store/")));
