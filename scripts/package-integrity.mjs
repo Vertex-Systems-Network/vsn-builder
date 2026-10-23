@@ -120,6 +120,8 @@ const required = [
   "scripts/p16n-storefront-custom-js-bundle-audit.mjs",
   "app/storefront/serverConditions.js",
   "scripts/p16o-storefront-server-conditions-audit.mjs",
+  "app/storefront/dynamicSource.js",
+  "scripts/p16p-storefront-dynamic-source-audit.mjs",
   ".ai/RUNNER_BENCHMARK.md",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
