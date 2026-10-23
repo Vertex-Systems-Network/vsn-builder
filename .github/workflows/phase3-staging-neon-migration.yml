@@ -21,14 +21,16 @@ jobs:
     timeout-minutes: 15
     env:
       APP_ENV: staging
-      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
-      SHOPIFY_BILLING_TEST_MODE: ${{ vars.SHOPIFY_BILLING_TEST_MODE }}
+      # Non-secret reviewed Staging identity, pinned like T014/T016 (no repo variables are configured).
+      NEON_PROJECT_ID: shiny-violet-61219572
+      SHOPIFY_BILLING_TEST_MODE: "true"
       GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
       STAGING_MIGRATION_APPROVED: ${{ inputs.confirmation == 'APPLY_EMPTY_BUILDER_STAGING_ONLY' && 'true' || 'false' }}
       # Public snapshot ID is immutable in reviewed source, then revalidated via
       # authenticated GET for source branch and current-default provenance.
       VSN_STAGING_BACKUP_EVIDENCE: snap-green-bar-b3m1btfb
-      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      # Read-only control-plane token; accept the common secret names for the same Staging-scoped Neon key.
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY || secrets.NEON_API_TOKEN || secrets.NEON_TOKEN }}
       # Same existing cloudflare-staging names independently tested by T016.
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
