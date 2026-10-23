@@ -92,7 +92,7 @@ await check("Anchored popover repositions on nested scroll",()=>assert.ok(toolki
 await check("Portal popovers detect dark mode outside dashboard DOM tree",()=>assert.ok(toolkit.includes('dataset?.vsnTheme === "dark"')&&css.includes(".vsn-anchored-popover.is-dark")));
 
 await check("Sidebar Pages menu is merchant-facing Templates",()=>assert.ok(sidebar.includes("id: 'pages', label: 'Templates'")));
-await check("Dashboard primary Pages navigation is merchant-facing Templates",()=>assert.ok(home.includes('<PanelsTopLeft size={15}/> Templates</button>')));
+await check("Dashboard primary Pages navigation is merchant-facing Templates",()=>assert.ok(home.includes("onClick={()=>onNavigate('pages')}>Templates</s-button>")));
 await check("Command palette navigation is merchant-facing Templates",()=>assert.ok(read("app/components/dashboard/AppCommandPalette.jsx").includes("['pages','Templates'")));
 await check("Duplicate VSN Builder sidebar brand text is removed",()=>assert.doesNotMatch(sidebar,/VSN Builder<\/|>VSN Builder</));
 await check("VSN Builder brand appears immediately before search in topbar",()=>{assert.ok(topNav.indexOf("vsn-topbar-brand")>=0);assert.ok(topNav.indexOf("vsn-topbar-brand")<topNav.indexOf("vsn-pages-search")||topNav.indexOf("vsn-topbar-brand")<topNav.indexOf("Search VSN Builder"))});
