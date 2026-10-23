@@ -103,7 +103,7 @@ export default function DashboardApp({ session, ownerInfo, widgetSettings, dashb
       case 'support': return <Support onNavigate={handleNavigate} darkMode={darkMode} onToast={addToast} tickets={tickets} onTicketsChange={setTickets} onNotificationCreated={(item) => setNotifications((current) => item && !current.some((row) => row.id === item.id) ? [item, ...current] : current)} userName={userFullName} initialTicketId={focusTarget?.type === 'ticket' ? focusTarget.ticketId : null} />;
       case 'changelog': return <Changelog darkMode={darkMode} releases={dashboard?.releases || []} currentVersion={dashboard?.appVersion} />;
       case 'notifications': return <Notifications darkMode={darkMode} notifications={notifications} onNotificationsChange={setNotifications} onNavigate={handleNavigate} />;
-      case 'about': return <About darkMode={darkMode} />;
+      case 'about': return <About version={dashboard?.appVersion} onNavigate={handleNavigate} />;
       case 'profile': return <Profile ownerImage={ownerImage} fullName={userFullName} emailAddress={emailAddress} shopUrl={session?.shop || ''} shopProfile={shopProfile} plan={dashboard?.plan} darkMode={darkMode} onToast={addToast} />;
       case 'home':
       default: return <Home userName={userName} version={dashboard?.appVersion} darkMode={darkMode} onNavigate={handleNavigate} activities={dashboard?.activities || []} releases={dashboard?.releases || []} summary={dashboard?.workspaceSummary || {}} plan={dashboard?.plan} planUsage={dashboard?.planUsage} dashboardPreferences={dashboard?.dashboardPreferences} />;
