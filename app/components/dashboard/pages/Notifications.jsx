@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useFetcher } from 'react-router';
 import { formatDate } from '../../../utils/format-date.js';
-import { Bell, Shield, CreditCard, Cpu, CheckCheck, X, LifeBuoy, ExternalLink } from 'lucide-react';
 
 const typeConfig = {
-  update: { icon: Bell, color: '#5C6AC4', bg: 'rgba(92,106,196,0.1)', label: 'Updates' },
-  security: { icon: Shield, color: '#DC2626', bg: 'rgba(220,38,38,0.1)', label: 'Security' },
-  billing: { icon: CreditCard, color: '#D97706', bg: 'rgba(217,119,6,0.1)', label: 'Billing' },
-  support: { icon: LifeBuoy, color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)', label: 'Support' },
-  system: { icon: Cpu, color: '#6B7280', bg: 'rgba(107,114,128,0.1)', label: 'System' },
+  update: { tone: 'info', label: 'Updates' },
+  security: { tone: 'critical', label: 'Security' },
+  billing: { tone: 'warning', label: 'Billing' },
+  support: { tone: 'neutral', label: 'Support' },
+  system: { tone: 'neutral', label: 'System' },
 };
 
 function ago(value, now) {
@@ -23,15 +22,12 @@ function ago(value, now) {
   return formatDate(value, 'date', '');
 }
 
-export default function Notifications({ darkMode, notifications = [], onNotificationsChange, onNavigate }) {
+export default function Notifications({ notifications = [], onNotificationsChange, onNavigate }) {
   const fetcher = useFetcher();
   const [now, setNow] = useState(null);
   useEffect(() => { setNow(Date.now()); const timer = window.setInterval(() => setNow(Date.now()), 60000); return () => window.clearInterval(timer); }, []);
   const [activeTab, setActiveTab] = useState('all');
   const [pending, setPending] = useState(null);
-  const text = darkMode ? '#F9FAFB' : '#1A1F36';
-  const muted = darkMode ? '#9CA3AF' : '#6B7280';
-  const card = { background: darkMode ? '#1A1F2E' : '#FFFFFF', borderRadius: 12, border: `1px solid ${darkMode ? '#2D3748' : '#E5E7EB'}` };
   const tabs = ['all', ...Object.keys(typeConfig)];
   const filtered = useMemo(() => notifications.filter((item) => activeTab === 'all' || item.type === activeTab), [notifications, activeTab]);
   const unreadCount = notifications.filter((item) => !item.readAt).length;
@@ -74,29 +70,26 @@ export default function Notifications({ darkMode, notifications = [], onNotifica
     window.location.assign(target);
   };
 
-  return <div className="page-fade" style={{ padding: '28px 32px', maxWidth: 960, margin: '0 auto' }}>
-    <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16 }}>
-      <div><h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: text }}>Notifications</h1><p style={{ margin: '4px 0 0', fontSize: 14, color: muted }}>{unreadCount} unread notification{unreadCount === 1 ? '' : 's'}.</p></div>
-      <button disabled={!unreadCount || fetcher.state !== 'idle'} onClick={() => submit('notification-read-all')} style={{ display: 'flex', alignItems: 'center', gap: 7, border: `1px solid ${darkMode ? '#2D3748' : '#E5E7EB'}`, borderRadius: 8, background: darkMode ? '#1A1F2E' : '#fff', color: text, padding: '8px 12px', fontSize: 12, fontWeight: 700, cursor: unreadCount ? 'pointer' : 'default', opacity: unreadCount ? 1 : .5 }}><CheckCheck size={14}/>Mark all read</button>
-    </div>
-
-    <div style={{ ...card, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', gap: 4, padding: 8, borderBottom: `1px solid ${darkMode ? '#2D3748' : '#E5E7EB'}`, overflowX: 'auto' }}>
-        {tabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: '7px 11px', border: 0, borderRadius: 7, cursor: 'pointer', background: activeTab === tab ? (darkMode ? '#252C3B' : '#F3F4F6') : 'transparent', color: activeTab === tab ? text : muted, fontSize: 12, fontWeight: 650, whiteSpace: 'nowrap' }}>{tab === 'all' ? 'All' : typeConfig[tab]?.label || tab}</button>)}
-      </div>
-
-      {filtered.length ? filtered.map((item, index) => {
-        const cfg = typeConfig[item.type] || typeConfig.system; const Icon = cfg.icon;
-        return <div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */ key={item.id} onClick={(event) => openNotificationTarget(item, event)} style={{ padding: '15px 18px', display: 'flex', gap: 13, cursor: item.href ? 'pointer' : 'default', background: !item.readAt ? (darkMode ? 'rgba(var(--vsn-accent-rgb),.035)' : '#FCFFF8') : 'transparent', borderBottom: index < filtered.length - 1 ? `1px solid ${darkMode ? '#222938' : '#F0F1F2'}` : 0 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: cfg.bg, color: cfg.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}><Icon size={16}/></div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><strong style={{ color: text, fontSize: 13.5 }}>{item.title}</strong>{!item.readAt ? <span style={{ width: 7, height: 7, background: 'var(--vsn-green)', borderRadius: '50%' }}/> : null}</div>
-            <p style={{ margin: '4px 0 0', fontSize: 12.5, lineHeight: 1.55, color: muted }}>{item.message}</p>
-            <div style={{ marginTop: 7, display: 'flex', gap: 8, alignItems: 'center', fontSize: 11, color: muted }}><span>{cfg.label}</span><span>·</span><span>{ago(item.createdAt, now)}</span>{item.href ? <><span>·</span><button type="button" onClick={(event) => openNotificationTarget(item, event)} style={{ display: 'inline-flex', gap: 4, alignItems: 'center', color: cfg.color, border: 0, background: 'transparent', padding: 0, font: 'inherit', fontWeight: 700, cursor: 'pointer' }}>Open <ExternalLink size={10}/></button></> : null}</div>
-          </div>
-          <button aria-label="Dismiss notification" onClick={(event) => { event.stopPropagation(); submit('notification-dismiss', item.id); }} disabled={fetcher.state !== 'idle'} style={{ width: 30, height: 30, border: 0, background: 'transparent', color: muted, cursor: 'pointer', display: 'grid', placeItems: 'center', borderRadius: 7 }}><X size={14}/></button>
-        </div>;
-      }) : <div style={{ padding: 48, textAlign: 'center' }}><Bell size={28} color={muted}/><div style={{ marginTop: 10, fontSize: 14, fontWeight: 700, color: text }}>No notifications</div><div style={{ marginTop: 4, fontSize: 12, color: muted }}>There is nothing in this category right now.</div></div>}
-    </div>
-  </div>;
+  return <s-page heading="Notifications">
+    <s-button slot="secondary-actions" icon="check" disabled={!unreadCount || fetcher.state !== 'idle'} onClick={() => submit('notification-read-all')}>Mark all read</s-button>
+    <s-stack direction="block" gap="base">
+      <s-paragraph color="subdued">{unreadCount} unread notification{unreadCount === 1 ? '' : 's'}.</s-paragraph>
+      <s-stack direction="inline" gap="small-200">{tabs.map((tab) => <s-button key={tab} variant={activeTab === tab ? 'primary' : 'secondary'} onClick={() => setActiveTab(tab)}>{tab === 'all' ? 'All' : typeConfig[tab]?.label || tab}</s-button>)}</s-stack>
+      <s-section padding="none">
+        {filtered.length ? <s-stack direction="block">{filtered.map((item, index) => {
+          const cfg = typeConfig[item.type] || typeConfig.system;
+          return <s-box key={item.id} padding="base" background={!item.readAt ? 'subdued' : 'transparent'} borderWidth={index < filtered.length - 1 ? 'none none base none' : 'none'}>
+            <s-stack direction="inline" justifyContent="space-between" alignItems="start" gap="base">
+              <s-stack direction="block" gap="small-100">
+                <s-stack direction="inline" gap="small-200" alignItems="center"><s-text type="strong">{item.title}</s-text>{!item.readAt ? <s-badge tone="success">New</s-badge> : null}</s-stack>
+                <s-text color="subdued">{item.message}</s-text>
+                <s-stack direction="inline" gap="small-200" alignItems="center"><s-badge tone={cfg.tone}>{cfg.label}</s-badge><s-text color="subdued">{ago(item.createdAt, now)}</s-text>{item.href ? <s-button variant="tertiary" icon="external" onClick={(event) => openNotificationTarget(item, event)}>Open</s-button> : null}</s-stack>
+              </s-stack>
+              <s-button variant="tertiary" icon="x" accessibilityLabel="Dismiss notification" disabled={fetcher.state !== 'idle'} onClick={(event) => { event.stopPropagation(); submit('notification-dismiss', item.id); }}/>
+            </s-stack>
+          </s-box>;
+        })}</s-stack> : <s-box padding="large"><s-stack direction="block" alignItems="center" gap="small-200"><s-heading>No notifications</s-heading><s-text color="subdued">There is nothing in this category right now.</s-text></s-stack></s-box>}
+      </s-section>
+    </s-stack>
+  </s-page>;
 }
