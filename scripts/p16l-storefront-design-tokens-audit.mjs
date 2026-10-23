@@ -168,7 +168,8 @@ ok(route.includes('from "../storefront/designTokens.js"'), "Builder proxy import
 const productWidgets = fs.readFileSync("app/storefront/productWidgets.js", "utf8");
 const contentWidgets = fs.readFileSync("app/storefront/contentWidgets.js", "utf8");
 const formWidgets = fs.readFileSync("app/storefront/formWidgets.js", "utf8");
-ok(((route + productWidgets + contentWidgets + formWidgets).match(/\btoCssSize\b/g) || []).length >= 50, "Builder proxy and extracted product/content/form widgets keep broad historical CSS-size usage through imported helper");
+const extendedWidgets = fs.readFileSync("app/storefront/extendedWidgets.js", "utf8");
+ok(((route + productWidgets + contentWidgets + formWidgets + extendedWidgets).match(/\btoCssSize\b/g) || []).length >= 50, "Builder proxy and extracted product/content/form/extended widgets keep broad historical CSS-size usage through imported helper");
 ok(productWidgets.includes('import { toCssSize } from "./designTokens.js";'), "Product widgets use the design-token CSS-size helper");
 equal((route.match(/mergeShopDesignTokens\(getGlobalStyles\(elements\), designTokens\)/g) || []).length, 2, "Fragment and document renderers keep both historical design-token merge calls");
 for (const duplicate of [
