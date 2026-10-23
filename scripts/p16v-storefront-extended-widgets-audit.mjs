@@ -42,7 +42,7 @@ ok(route.includes('from "../storefront/extendedWidgets.js"'), "Builder proxy imp
 for (const name of ["parseRows", "renderExtendedWidget"]) {
   ok(!route.includes(`function ${name}(`), `Builder proxy no longer owns ${name}`);
 }
-ok(route.includes("function renderPhase10Widget("), "Phase-10 widgets (which recurse through renderNode) stay in the route");
+ok(route.includes("renderPhase10Widget(node, props, styles, renderContext, renderNode)"), "Phase-10 widgets receive renderNode from the route for slider recursion");
 for (const forbidden of ["db.", "fetch(", "graphql(", "authenticate.", "session.", "Response(", "renderNode", "shopify.server", "process.env"]) {
   ok(!source.includes(forbidden), `Extended-widget boundary gained unrelated authority: ${forbidden}`);
 }

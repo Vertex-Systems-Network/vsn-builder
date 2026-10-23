@@ -90,7 +90,7 @@ check('W10 forms/commerce controls', has('app/components/editor/PropertiesPanel.
 check('W10 inventory low-stock parity', has('app/routes/app.builder.$id.jsx', 'inventoryQuantity') && has('app/storefront/productWidgets.js', 'lowStockText', 'lowThreshold', 'inventoryQuantity') && has('app/components/editor/Canvas.jsx', 'lowStockText', 'lowThreshold'));
 check('W11 content controls', has('app/components/editor/PropertiesPanel.jsx', 'Date format', '<Label>Singular</Label>', 'Previous article'));
 check('W12 customer/localization controls', has('app/components/editor/PropertiesPanel.jsx', 'Hide when customer is logged in', 'Country label', 'Dismissible'));
-check('W13 HTML/Liquid code contract', has('app/components/editor/PropertiesPanel.jsx', 'props.code') && has('app/routes/builder-proxy.$.jsx', 'props.code||props.html', 'props.code||props.liquid'));
+check('W13 HTML/Liquid code contract', has('app/components/editor/PropertiesPanel.jsx', 'props.code') && has('app/storefront/phase10Widgets.js', 'props.code||props.html', 'props.code||props.liquid'));
 check('W14 breadcrumbs showHome', has('app/components/editor/PropertiesPanel.jsx', 'showHome'));
 check('W14 product media thumbnail position', has('app/components/editor/PropertiesPanel.jsx', 'thumbnailPosition'));
 
