@@ -590,6 +590,12 @@ for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Re
 }
 if(!storefrontProxy.includes('from "../storefront/nodeBehavior.js"'))fail("P1.6r builder proxy must consume extracted node-behavior boundary");
 if(storefrontProxy.includes("function injectNodeBehavior("))fail("P1.6r builder proxy retained extracted node-behavior helper");
+const storefrontProductWidgets=fs.readFileSync(path.join(root,"app/storefront/productWidgets.js"),"utf8");
+if(!storefrontProductWidgets.includes('import { escapeAttribute, escapeHtml } from "./safeCss.js";'))fail("P1.6s product widgets must escape through the safe-CSS boundary");
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontProductWidgets.includes(forbidden))fail(`P1.6s product-widget boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/productWidgets.js"'))fail("P1.6s builder proxy must consume extracted product-widget boundary");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);
