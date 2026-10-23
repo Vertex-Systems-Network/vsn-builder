@@ -612,6 +612,14 @@ for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Re
   if(storefrontFormWidgets.includes(forbidden))fail(`P1.6u form-widget boundary gained unrelated authority: ${forbidden}`);
 }
 if(!storefrontProxy.includes('from "../storefront/formWidgets.js"'))fail("P1.6u builder proxy must consume extracted form-widget boundary");
+const storefrontExtendedWidgets=fs.readFileSync(path.join(root,"app/storefront/extendedWidgets.js"),"utf8");
+for(const marker of ['import { escapeAttribute, escapeHtml } from "./safeCss.js";',"sanitizeRichHtml(product.descriptionHtml)"]){
+  if(!storefrontExtendedWidgets.includes(marker))fail(`P1.6v extended-widget safety regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontExtendedWidgets.includes(forbidden))fail(`P1.6v extended-widget boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/extendedWidgets.js"'))fail("P1.6v builder proxy must consume extracted extended-widget boundary");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);

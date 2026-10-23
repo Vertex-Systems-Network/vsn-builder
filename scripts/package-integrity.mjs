@@ -132,6 +132,8 @@ const required = [
   "scripts/p16t-storefront-content-widgets-audit.mjs",
   "app/storefront/formWidgets.js",
   "scripts/p16u-storefront-form-widgets-audit.mjs",
+  "app/storefront/extendedWidgets.js",
+  "scripts/p16v-storefront-extended-widgets-audit.mjs",
   ".ai/RUNNER_BENCHMARK.md",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
