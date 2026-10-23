@@ -568,6 +568,12 @@ for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Re
 if(!storefrontProxy.includes('from "../storefront/serverConditions.js"'))fail("P1.6o builder proxy must consume extracted server-conditions boundary");
 if(storefrontProxy.includes("function serverConditionMatches(")||storefrontProxy.includes("function conditionRuleMatches("))fail("P1.6o builder proxy retained extracted server-conditions helpers");
 if(!storefrontProxy.includes('if (!serverConditionMatches(node, renderContext)) return "";'))fail("P1.6o server-side condition gate missing from renderNode");
+const storefrontDynamicSource=fs.readFileSync(path.join(root,"app/storefront/dynamicSource.js"),"utf8");
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontDynamicSource.includes(forbidden))fail(`P1.6p dynamic-source boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/dynamicSource.js"'))fail("P1.6p builder proxy must consume extracted dynamic-source boundary");
+if(["formatMoney","readPath","applyDynamicSource"].some((name)=>storefrontProxy.includes(`function ${name}(`)))fail("P1.6p builder proxy retained extracted dynamic-source helpers");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);
