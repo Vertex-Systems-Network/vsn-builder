@@ -118,6 +118,8 @@ const required = [
   "scripts/p16m-storefront-font-runtime-audit.mjs",
   "app/storefront/customJsBundle.js",
   "scripts/p16n-storefront-custom-js-bundle-audit.mjs",
+  "app/storefront/serverConditions.js",
+  "scripts/p16o-storefront-server-conditions-audit.mjs",
   ".ai/RUNNER_BENCHMARK.md",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",
