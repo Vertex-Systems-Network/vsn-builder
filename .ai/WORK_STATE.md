@@ -9,10 +9,10 @@ owner_intent: "Align all AI work to the Development -> Staging -> Production pro
 base_branch: development
 working_branch: claude/hopeful-lovelace-k2y7is
 pull_request: none
-last_verified_commit: 8177b0a
-last_verified_step: "P1.6o server-conditions boundary ported to development; Polaris conversion of stock media, role manager, platform intelligence, developer studio and dashboard pages (home, widgets, settings, support, pricing, license, notifications, profile, changelog, localization, documentation). Local lint, typecheck, build PASS; 104/110 qa:release audits PASS, remaining 6 fail identically on development (local SQLite baseline not prepared in container)."
+last_verified_commit: 510f490
+last_verified_step: "Staging promotion executed on 510f490: protected Neon migration run 40039297234 PASS, Staging Worker deploy run 40039390730 PASS, /healthz 200, /readyz and /app 503 by design (edge SSR/billing and Staging OAuth opt-in not enabled). Production untouched."
 in_flight_step: none
-next_exact_action: "Open PR claude/hopeful-lovelace-k2y7is -> development and get exact-head CI green. Remaining Polaris work: About page (contains placeholder team/contact/stats needing owner-approved real content), dashboard shell (Sidebar/TopNav) and full-height editor panels (intentionally custom). Staging promotion stays blocked on owner-side items listed below."
+next_exact_action: "Staging is the stopping tier. Next: T022/T023 real Shopify test-store install and Staging OAuth acceptance (owner installs the Staging app on a dev store), then T036 rollback/restore drill. Production requires explicit owner approval."
 approval_needed_now: false
 updated_at: 2026-10-23
 ---
