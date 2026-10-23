@@ -42,11 +42,18 @@ Required protected security/quality checks are **not** deferred. They still run 
 - Release QA intentionally runs with `continue-on-error` so diagnostics can upload; the separate enforcement step is the real merge gate. Benchmark/reporting must use the release-QA **outcome**, not only the displayed step conclusion.
 - Browser installation remains a late, comparatively expensive runner phase; preserve the post-Playwright high-severity dependency audit when benchmarking browser/toolchain caching.
 
+### 2026-10-23 / first runner optimization
+
+- Sample of 100 runs (2026-10-23 13:16–22:06 UTC): `VSN Production Confidence` was the largest consumer (13 runs, ~75 runner-minutes); each PR produced three `verify` runs (feature-branch push, pull_request, post-merge development push).
+- The feature-branch push run duplicated the pull_request run for identical code: protected-credential QA/E2E steps already require a protected `development`/`main` push, so it added no coverage.
+- Change: `ci.yml` push is limited to `development` and `main`; a `concurrency` group cancels superseded pull_request runs only. Protected-branch pushes are never cancelled, so every merged SHA keeps full evidence. `tests/ci-audit-gate-continuity.test.mjs` pins both properties. Expected saving: one ~6-minute `verify` run per PR push, plus superseded PR runs.
+- Rollback: restore unfiltered `push:` and remove the `concurrency` block.
+
 ## Deferred benchmark backlog
 
 1. Measure total runner minutes for one protected merge, including duplicate push + pull_request runs.
 2. Measure `npm ci` cold vs warm cache wall time and cache hit reliability.
-3. Benchmark eliminating duplicate push/PR verification for the same commit while preserving required status contexts.
+3. ~~Benchmark eliminating duplicate push/PR verification for the same commit while preserving required status contexts.~~ Done 2026-10-23 (see above).
 4. Benchmark splitting the monolithic verify job into dependency/security, build/release, performance, and E2E jobs.
 5. Benchmark Playwright browser cache reuse vs full `playwright install --with-deps`.
 6. Benchmark replacing temporary `npm install --no-save @playwright/test` with a locked CI toolchain/devDependency while preserving the post-install dependency-audit property.

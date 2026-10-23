@@ -50,3 +50,10 @@ test("external Shopify QA, browser installs and E2E cannot run with red audits",
     "steps.post_playwright_audit.outcome == 'success'",
   ]) assert.ok(guard.includes(requirement),"Missing browser release requirement: "+requirement);
 });
+test("verify runs once per PR head and keeps protected-branch push evidence",()=>{
+  assert.match(yaml,/\n  push:\n    branches: \[development, main\]\n  pull_request:\n/);
+  assert.match(yaml,/\nconcurrency:\n  group: ci-\$\{\{ github\.event_name \}\}-\$\{\{ github\.ref \}\}\n  cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}\n/);
+  for(const name of ["Run external phase-1 QA with protected credentials","Run external Playwright E2E with protected credentials"]){
+    assert.match(step(name),/github\.ref == 'refs\/heads\/development' \|\| github\.ref == 'refs\/heads\/main'/);
+  }
+});

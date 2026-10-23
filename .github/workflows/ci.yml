@@ -1,8 +1,16 @@
 name: VSN Production Confidence
 on:
+  # Feature-branch pushes duplicated the pull_request run for the same code;
+  # protected-credential QA/E2E only ever ran on development/main pushes.
   push:
+    branches: [development, main]
   pull_request:
   workflow_dispatch:
+# A newer commit on the same PR supersedes the older run; protected-branch
+# pushes are never cancelled so every merged SHA keeps its full evidence.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
