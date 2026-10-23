@@ -355,10 +355,12 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38988697490",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/304",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/305",
-        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/317"
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/317",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/353",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/40039297234"
       ],
       "acceptance": "Protected/manual-only reviewed Staging Neon neondb migration with sole default branch, pinned historical restore snapshot, verified pooled/direct connectivity, 2 exact Prisma SQL checksums, 52 exact Builder model tables plus _prisma_migrations (53 public tables), and real restore/rollback acceptance; no Production or Live modifications. R2 optional before first empty-data migration, mandatory durable recovery controls before merchant writes/release.",
-      "progress_note": "2026-10-18 T018 security PR #317 AI-reviewed 7/7 exact-head CI PASS plus 2 expected protected-only skips, merged protected development 2695b0f768216e9898b1609df125c58b8f71b595. Pinned reviewed SHA256 checksums for both 2026-10-13 Builder cloud SQL migration bytes, exact official GitHub repository and protected workflow_ref before any Prisma migrate deploy; synthetic altered-SQL and foreign workflow/repo cases fail. Prior PRs #304/#305 verified Prisma URL isolation, 52 exact model-table inventory, deterministic history ledger, real disposable PG18 transaction rehearsals. Original Staging Neon default branch br-square-mountain-b3ij6q2s ready, retained snapshot snap-green-bar-b3m1btfb, neondb 0 app tables. No manual workflow_dispatch due unavailable connector action; NO Staging DDL, direct Neon SQL or pooled/direct real migration acceptance. R2 backup optional for first empty migration; durable rollback acceptance remains pending; T018 IN_REVIEW. Production/Live untouched."
+      "progress_note": "2026-10-23: Protected Staging migration run 40039297234 PASS on development 510f490: preflight, authenticated Neon control-plane proof, 0-table readiness, prisma migrate deploy and post-migrate verification. Data restore drill not yet executed, so T018 stays IN_REVIEW."
     },
     {
       "id": "T019",
@@ -413,7 +415,7 @@
       "title": "Staging Worker deploy and stable HTTPS callback acceptance",
       "workstream": "Runtime",
       "priority": "P0",
-      "status": "todo",
+      "status": "in_review",
       "depends_on": [
         "T011",
         "T012",
@@ -423,8 +425,13 @@
         "T020"
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/161",
-      "evidence": [],
-      "acceptance": "Reviewed protected Staging SHA deployed; health/ready route and OAuth callback respond correctly; rollback is available"
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/353",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/40039297234",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/40039390730"
+      ],
+      "acceptance": "Reviewed protected Staging SHA deployed; health/ready route and OAuth callback respond correctly; rollback is available",
+      "progress_note": "2026-10-23: Protected Staging Worker deploy run 40039390730 PASS for development 510f490 after protected migration run 40039297234 PASS. /healthz 200 (tier staging, liveness true); /readyz 503 by design; /app 503 without verified Shopify session (Staging OAuth opt-in disabled). OAuth callback acceptance and rollback proof pending (T023/T036). Production untouched."
     },
     {
       "id": "T022",

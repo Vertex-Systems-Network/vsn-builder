@@ -15,9 +15,9 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.equal(result.summary.closed,19);
  assert.equal(result.summary.active,22);
  assert.equal(result.summary.verified,0);
- assert.equal(result.summary.in_review,6);
+ assert.equal(result.summary.in_review,7);
  assert.equal(result.summary.ready,0);
- assert.equal(result.summary.waiting,16);
+ assert.equal(result.summary.waiting,15);
  assert.deepEqual(plan.closed_task_ids,[...Array.from({length:13},(_,i)=>"T"+String(i+1).padStart(3,"0")),"T014","T016","T017","T026","T027","T032"]);
  assert(result.rows.every(t=>t.status!=="closed"),"closed work must never appear in active queue");
  assert.equal(result.closed_tasks.length,0,"closed evidence must not appear in default JSON output");
@@ -34,10 +34,11 @@ test("independent discovered Shopify app task moves to IN_REVIEW without unlocki
  const ready=new Set(rows.filter(r=>r.execution==="READY").map(r=>r.id));
  assert.deepEqual([...ready],[],"T018 R2 backup in review and no Prisma migration accepted");
  assert.equal(rows.find(r=>r.id==="T015").execution,"IN_REVIEW");
- for(const id of ["T021","T023","T025","T029","T031","T037","T038","T041"])
+ for(const id of ["T023","T025","T029","T031","T037","T038","T041"])
   assert.equal(rows.find(r=>r.id===id).execution,"WAITING",id);
  assert.equal(rows.some(r=>r.id==="T017"),false,"T017 pre-migration identity attestation permanently closed");
  assert.equal(rows.find(r=>r.id==="T018").execution,"IN_REVIEW");
+ assert.equal(rows.find(r=>r.id==="T021").execution,"IN_REVIEW","T021 Staging deploy executed; callback/rollback acceptance pending");
  assert.equal(rows.some(r=>r.id==="T012"),false,"Merged PR integration is FINAL CLOSED");
  assert.equal(rows.find(r=>r.id==="T019").execution,"IN_REVIEW");
  assert.equal(rows.find(r=>r.id==="T020").execution,"IN_REVIEW");
