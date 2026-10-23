@@ -45,7 +45,7 @@ const sidebar = read("app/components/editor/ElementsSidebar.jsx");
 assert.match(sidebar, /EditorRecoveryBoundary/);
 assert.match(sidebar, /selectedElement\?\.interactions/);
 
-const proxy = read("app/routes/builder-proxy.$.jsx");
+const proxy = read("app/routes/builder-proxy.$.jsx") + read("app/storefront/nodeBehavior.js");
 assert.match(proxy, /normalizeElementInteractions\(node\?\.interactions \|\| \{\}\)/);
 assert.match(proxy, /data-vsn-sticky-element="1"/);
 assert.match(proxy, /data-vsn-parallax="1"/);

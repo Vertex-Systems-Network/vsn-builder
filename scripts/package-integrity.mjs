@@ -124,6 +124,8 @@ const required = [
   "scripts/p16p-storefront-dynamic-source-audit.mjs",
   "app/storefront/safeCss.js",
   "scripts/p16q-storefront-safe-css-audit.mjs",
+  "app/storefront/nodeBehavior.js",
+  "scripts/p16r-storefront-node-behavior-audit.mjs",
   ".ai/RUNNER_BENCHMARK.md",
   "docs/developer/reference-fidelity.md",
   "docs/developer/ai-context-tools.md",

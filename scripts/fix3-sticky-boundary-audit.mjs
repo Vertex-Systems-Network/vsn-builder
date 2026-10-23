@@ -36,7 +36,7 @@ assert.match(canvas, /data-vsn-column-cell/);
 assert.match(canvas, /data-vsn-page-boundary/);
 assert.match(canvas, /stickyDiagnosticMessage/);
 
-const proxy = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8");
+const proxy = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8") + fs.readFileSync("app/storefront/nodeBehavior.js", "utf8");
 assert.match(proxy, /data-vsn-sticky-boundary/);
 assert.match(proxy, /data-vsn-sticky-end-offset/);
 assert.match(proxy, /vsn-column-cell/);
