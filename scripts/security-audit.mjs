@@ -596,6 +596,14 @@ for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Re
   if(storefrontProductWidgets.includes(forbidden))fail(`P1.6s product-widget boundary gained unrelated authority: ${forbidden}`);
 }
 if(!storefrontProxy.includes('from "../storefront/productWidgets.js"'))fail("P1.6s builder proxy must consume extracted product-widget boundary");
+const storefrontContentWidgets=fs.readFileSync(path.join(root,"app/storefront/contentWidgets.js"),"utf8");
+for(const marker of ['import { escapeAttribute, escapeHtml } from "./safeCss.js";',"script|style|iframe|object|embed|form","javascript:","sanitizeRichHtml(a.contentHtml)"]){
+  if(!storefrontContentWidgets.includes(marker))fail(`P1.6t content-widget sanitizer regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontContentWidgets.includes(forbidden))fail(`P1.6t content-widget boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/contentWidgets.js"'))fail("P1.6t builder proxy must consume extracted content-widget boundary");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);
