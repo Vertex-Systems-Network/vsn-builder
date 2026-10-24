@@ -15,22 +15,18 @@ export function renderStagingBillingRequired({shop,apiKey}={}) {
   if(!SHOP.test(String(shop||"")) || !KEY.test(String(apiKey||"")))
     throw new TypeError("Invalid Staging billing notice identity");
   const key=htmlText(apiKey,32);
-  const store=shop.slice(0,-".myshopify.com".length);
-  const pricingUrl="https://admin.shopify.com/store/"+encodeURIComponent(store)+
-    "/charges/vsn-builder-staging/pricing_plans";
   const markup='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
     '<meta name="viewport" content="width=device-width,initial-scale=1">'+
     '<meta name="shopify-api-key" content="'+key+'">'+
-    '<title>Plan verification required · VSN Builder</title>'+
+    '<title>Staging billing verification unavailable · VSN Builder</title>'+
     '<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>'+
     '<style>'+css+'</style></head><body><main><div class="eyebrow">VSN | Builder · Staging</div>'+
-    '<h1>Plan verification required</h1>'+
-    '<p>Shopify has not verified an active VSN Builder plan or trial for this store yet.</p>'+
-    '<section class="panel"><h2>Next step</h2>'+
-    '<p>Your store is connected, but the Builder dashboard and page data remain locked until Shopify confirms a plan or trial.</p>'+
-    '<p>Choose a plan on Shopify’s hosted page. Shopify marks eligible development-store plans as free to test.</p>'+
-    '<a class="button" target="_top" rel="noopener noreferrer" href="'+htmlText(pricingUrl,512)+'">Choose a Shopify test plan</a>'+
-    '<p class="notice">This screen does not activate a plan or make a charge. After Shopify returns, this app verifies the contract with the Partner API.</p></section>'+
+    '<h1>Billing verification unavailable</h1>'+
+    '<p>This Staging installation uses a separate internal Shopify app identity.</p>'+
+    '<section class="panel"><h2>Why page data is locked</h2>'+
+    '<p>Shopify’s Partner API can verify managed subscriptions only for public apps. A plan selected for this internal Staging app cannot authorize Builder page data.</p>'+
+    '<p>Use a test store installed through the public VSN Builder app to test the real subscription flow.</p>'+
+    '<p class="notice">This screen does not activate a plan or make a charge. No page data or edits are available in this Staging installation until billing can be verified.</p></section>'+
     '</main></body></html>';
   return new Response(markup,{status:200,headers:{
     "content-type":"text/html; charset=utf-8","cache-control":"no-store",

@@ -41,6 +41,18 @@ const matches=(stored,session,shop)=>{
     return false;
   return true;
 };
+// A public, no-data billing notice can survive a same-installation token
+// refresh. This exception never applies to page-data responses, mutations,
+// deleted/expired sessions, or an uninstall/reinstall generation change.
+const sameSessionIdentity=(stored,session,shop)=>{
+  if(!stored || stored.shop!==shop || stored.id!==session.id ||
+     stored.isOnline!==session.isOnline ||
+     typeof stored.accessToken!=="string" || !stored.accessToken ||
+     !validExpiry(stored.expires,Date.now()))return false;
+  if(session.isOnline && (stored.expires==null || session.expires==null))
+    return false;
+  return true;
+};
 
 // Throw within the Prisma transaction, rather than returning an HTTP error
 // as a successful transaction result. Prisma commits on normal return,
@@ -224,6 +236,7 @@ async function guardedAdminRequest(request,env,{
   let pageReadLease;
   let metadataLease;
   let contentLease;
+  let unverifiedPaidNotice=false;
   // Only a Response THROWN by the official authenticate.admin invocation
   // may be forwarded as Shopify reauthorization transport. A route callback
   // can itself throw Response.redirect()/Set-Cookie; that is never trusted.
@@ -343,9 +356,11 @@ async function guardedAdminRequest(request,env,{
         // the authenticated shop; page leases and Shopify admin are withheld.
         // It cannot soften the gate for API routes or mutations.
         if(!mutation && url.pathname==="/app" &&
-           typeof onUnverifiedPaidRead==="function")
+           typeof onUnverifiedPaidRead==="function"){
           response=await onUnverifiedPaidRead({shop});
-        else return denied(403);
+          unverifiedPaidNotice=response instanceof Response &&
+            response.status>=200 && response.status<300;
+        }else return denied(403);
       }else{
         // The Worker read routes must respect the SAME persisted staff and
         // collaborator permissions as Local/Dev /app/pages. A valid Shopify
@@ -399,6 +414,10 @@ async function guardedAdminRequest(request,env,{
       return denied(403);
     }
     if(!matches(latestSession,session,shop)){
+      if(unverifiedPaidNotice && sameSessionIdentity(latestSession,session,shop)){
+        logStagingDenial(env,"billing-notice-session-rotated");
+        return buffered;
+      }
       logStagingDenial(env,"session-changed-during-read");
       return denied(403);
     }

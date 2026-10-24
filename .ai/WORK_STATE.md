@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: environment_promotion
-task_key: T021-staging-secrets-from-github-environment
-owner_intent: "Fix Staging billing verification by deploying the reviewed Shopify Partner token binding from the protected GitHub staging environment."
+task_key: T020-staging-billing-notice-session-rotation
+owner_intent: "Make the Staging embedded app show its safe billing-required screen after a benign session-token refresh, while retaining all paid-data and mutation gates."
 base_branch: development
-working_branch: fix/staging-deploy-from-github-secrets
-pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/367
-last_verified_commit: c17e2752ac0fde942c0126c67054276eae8c95d2
-last_verified_step: "On PR #367, the Staging real Worker artifact dry run, CodeQL, Environment Isolation, Repository Integrity, and Production Confidence checks passed on c17e275. The protected T021 deployment run #14 for base SHA 3b9f953 failed before code publication because the staging Worker lacked SHOPIFY_PARTNER_API_TOKEN. The user-provided Cloudflare screenshot shows SHOPIFY_PARTNER_API_ACCESS_TOKEN configured under the Worker Production environment, not Staging. PR #367 now sources staging-only values from GitHub's cloudflare-staging environment and maps the token name; no new deploy has run."
-in_flight_step: "Complete exact-head checks and obtain required independent PR review for #367. After merge, run the protected T021 workflow and verify deployment plus hosted app behavior."
-next_exact_action: "Do not merge before required review. Once PR #367 is reviewed and exact-head CI is green, merge to development, dispatch T021 from protected development with typed confirmation, then verify deploy output, Staging health probes, billing log and Shopify app UI. Never reuse the Production Cloudflare secret."
+working_branch: fix/staging-billing-notice-session-rotation
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/368
+last_verified_commit: f5579c3d5308b4a276e9d861285d045e5f9c7699
+last_verified_step: "Node 22.18 validation passed: 30/30 targeted Worker tests, npm run typecheck, npm run qa, changed-file ESLint, npm run build and the Staging Wrangler dry-run bundle. The dry-run performed no deploy and used no provider credentials. git diff --check passed; development HEAD is still 4db70883b85d45d91fcc7daa362b28cb127e18d9."
+in_flight_step: "Inspect PR #368 exact-head CI and required review gates; do not deploy Staging yet."
+next_exact_action: "Inspect PR #368 exact-head CI and review requirements, then follow required review before merge. Staging deploy remains blocked by T018/T021 acceptance; the internal Staging app still cannot verify real Partner billing."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
@@ -93,7 +93,7 @@ Do not update it for every keystroke or trivial local edit.
 
 ## Current state
 
-**2026-10-25:** Active task is PR #367, which updates the protected T021 deploy workflow to source Staging secrets from the GitHub `cloudflare-staging` environment. The last exact deployment attempt failed before code publication because the Staging Worker lacked `SHOPIFY_PARTNER_API_TOKEN`; the screenshot provided by the owner showed `SHOPIFY_PARTNER_API_ACCESS_TOKEN` under the Worker’s Production environment. Staging remains blocked until PR #367 is reviewed, merged, and its protected deployment succeeds. Production remains locked.
+**2026-10-25:** Staging run #15 deployed `4db7088`; fresh tail #6 recorded billing-sync-failed, paid-plan-not-verified and session-changed-during-read before GET `/app` returned 403. The internal Staging app ID cannot use Shopify Partner API `activeSubscription`, which requires a public app. A safe no-data billing notice session-rotation fix is implemented and locally validated on Node 22.18 (30/30 Worker tests; typecheck, QA, lint, production build and Worker dry-run all pass). Paid page data and mutations remain gated. The patch is awaiting PR review and T018/T021 acceptance before any redeploy.
 
 Historical note (2026-09-18):
 
