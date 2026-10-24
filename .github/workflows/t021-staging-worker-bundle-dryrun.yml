@@ -12,7 +12,9 @@ on:
       - "app/services/**"
       - "prisma/cloud/**"
       - "tests/t021-staging-worker-bundle-policy.test.mjs"
+      - "tests/t021-staging-worker-observability.test.mjs"
       - ".github/workflows/t021-staging-worker-bundle-dryrun.yml"
+      - ".github/workflows/t021-staging-worker-deploy.yml"
 permissions:
   contents: read
 jobs:
@@ -51,7 +53,7 @@ jobs:
           test -x ./node_modules/.bin/wrangler
           git diff --exit-code -- package.json package-lock.json
       - name: Verify release artifact identity and encryption guard source contract
-        run: node --test tests/t021-staging-worker-bundle-policy.test.mjs
+        run: node --test tests/t021-staging-worker-bundle-policy.test.mjs tests/t021-staging-worker-observability.test.mjs
       - name: Generate compiled hosted Prisma Edge client without network or real DB
         env:
           DATABASE_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require

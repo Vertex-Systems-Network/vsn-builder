@@ -58,6 +58,25 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
           grep -q '"name": "vsn-builder-staging"' wrangler.staging.jsonc
           ./node_modules/.bin/wrangler deploy --config wrangler.staging.jsonc --keep-vars --message "development ${GITHUB_SHA}"
+      - name: Enforce and verify Shopify query-string redaction
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +x
+          response=$(curl -fsS --max-time 30 -X PATCH \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/vsn-builder-staging/script-settings" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"observability":{"redact_query_string":true}}')
+          printf '%s' "$response" | jq -e '
+            .success == true and
+            .result.observability.redact_query_string == true and
+            .result.observability.logs.enabled == true and
+            .result.observability.traces.enabled == true and
+            .result.observability.issues.enabled == true
+          ' >/dev/null
+          echo "PASS: Staging logs, traces and Issues persist; request query strings are redacted"
       - name: Confirm no dependency or config drift
         if: always()
         run: git diff --exit-code -- package.json package-lock.json wrangler.staging.jsonc wrangler.production.jsonc
