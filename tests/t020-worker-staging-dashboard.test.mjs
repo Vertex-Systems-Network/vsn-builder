@@ -27,9 +27,10 @@ const summary={total:2,draft:1,published:1,recent:[
   {...page,updatedAt:"2026-10-15T12:00:00.000Z"},
 ]};
 const request=(hint=shop)=>new Request(origin+"/app?shop="+encodeURIComponent(hint));
-function fixture({paid=true,roleAccessJson=null,expired=false,invalidPage=false,
+function fixture({paid=true,roleAccessJson=null,expired=false,rotateSessionAfterRead=false,invalidPage=false,
   error=false}={}) {
   const calls=[];
+  let sessionReads=0;
   const session={id,shop,isOnline:false,accessToken:"private-session-token"};
   const database={
     builderShopInstallation:{async findUnique({where}){
@@ -38,6 +39,9 @@ function fixture({paid=true,roleAccessJson=null,expired=false,invalidPage=false,
     }},
     session:{async findUnique({where}){
       calls.push({op:"session",where});
+      sessionReads++;
+      if(rotateSessionAfterRead && sessionReads>1)
+        return {...session,accessToken:"rotated-private-session-token"};
       return expired?{...session,expires:new Date("2000-01-01")}:session;
     }},
     builderSubscription:{async findUnique({where}){
@@ -155,8 +159,10 @@ test("unpaid Staging shops see only a billing notice, never merchant page data",
   assert.equal(res.status,200);
   assert.equal(res.headers.get("cache-control"),"no-store");
   const html=await res.text();
-  assert.match(html,/<h1>Plan verification required<\/h1>/);
-  assert.match(html,/Shopify has not verified an active VSN Builder plan or trial/);
+  assert.match(html,/<h1>Billing verification unavailable<\/h1>/);
+  assert.match(html,/Billing verification unavailable/);
+  assert.match(html,/separate internal Shopify app identity/);
+  assert.match(html,/Partner API can verify managed subscriptions only for public apps/);
   assert.match(html,/This screen does not activate a plan or make a charge/);
   assert.doesNotMatch(html,/Total pages|Shop landing|private-session-token/);
   assert.equal(f.calls.filter(c=>c.op==="count"||c.op==="recent").length,0);
@@ -164,8 +170,20 @@ test("unpaid Staging shops see only a billing notice, never merchant page data",
   assert.equal(f.calls.at(-1).op,"close");
 
   const standalone=await renderStagingBillingRequired({shop,apiKey:env.SHOPIFY_API_KEY}).text();
-  assert.match(standalone,/Plan verification required/);
+  assert.match(standalone,/Billing verification unavailable/);
   assert.throws(()=>renderStagingBillingRequired({shop,apiKey:"invalid"}));
+});
+
+test("unpaid Staging billing notice survives a same-installation token refresh without page data",async()=>{
+  const f=fixture({paid:false,rotateSessionAfterRead:true});
+  const res=await serve(f);
+  assert.equal(res.status,200);
+  const html=await res.text();
+  assert.match(html,/Billing verification unavailable/);
+  assert.doesNotMatch(html,/Total pages|Shop landing|private-session-token|rotated-private-session-token/);
+  assert.equal(f.calls.filter(c=>c.op==="count"||c.op==="recent").length,0);
+  assert.equal(f.calls.some(c=>c.op==="permission"),false);
+  assert.equal(f.calls.at(-1).op,"close");
 });
 
 test("denied RBAC, expired sessions and forged tenant query fail closed before page data",async()=>{
