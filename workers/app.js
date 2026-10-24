@@ -120,13 +120,15 @@ async function route(request,env) {
         "content-security-policy":"default-src 'none'; frame-ancestors 'none'",
       }});
     }
-    // Shopify opens the App URL origin. Staging forwards only a canonical
-    // *.myshopify.com shop to SDK-owned login; every other query is dropped.
+    // Shopify opens the App URL origin inside Admin. Forward the original
+    // signed launch query to the authenticated /app route so the official SDK
+    // can perform embedded token exchange and App Bridge reauthorization.
+    // /auth/login is only for standalone browser visits without a shop.
     if(url.pathname==="/" && request.method==="GET" && env.APP_ENV==="staging") {
       const shop=url.searchParams.get("shop");
-      const target=new URL("/auth/login",url.origin);
-      if(shop && /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop))target.searchParams.set("shop",shop);
-      return new Response(null,{status:302,headers:{...LOCKED,location:target.pathname+target.search}});
+      const embedded=shop && /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop);
+      const location=embedded?"/app"+url.search:"/auth/login";
+      return new Response(null,{status:302,headers:{...LOCKED,location}});
     }
     if(url.pathname==="/healthz" && request.method==="GET")
       return safeJson({service:"VSN Builder",tier:env.APP_ENV,liveness:true,merchantAppReady:false});

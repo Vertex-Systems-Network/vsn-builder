@@ -62,8 +62,8 @@ function fixture({paid=true,roleAccessJson=null,expired=false,invalidPage=false,
       },
     },
   };
-  const ctx={database,shopify:{authenticate:{admin:async()=>{
-    calls.push({op:"sdk"});return {session,admin:{}};
+  const ctx={database,shopify:{authenticate:{admin:async(request)=>{
+    calls.push({op:"sdk",url:new URL(request.url).search});return {session,admin:{}};
   }}},async close(){calls.push({op:"close"})}};
   return {calls,createSdkContext:async()=>ctx};
 }
@@ -119,6 +119,16 @@ test("official SDK and persisted paid staff scope grant only a read-only embedde
   });
   assert.equal(f.calls.at(-1).op,"close");
   assert(f.calls.every(c=>c.op!=="updateMany"&&c.op!=="deleteMany"));
+});
+
+test("embedded Shopify launch parameters reach SDK authentication unchanged",async()=>{
+  const f=fixture();
+  const requestWithLaunchParams=new Request(origin+
+    "/app?shop="+shop+"&host=admin-host&embedded=1&hmac=signed-launch&timestamp=1792861042");
+  const res=await serve(f,env,requestWithLaunchParams);
+  assert.equal(res.status,200);
+  assert.equal(f.calls.find(call=>call.op==="sdk")?.url,
+    "?shop=one.myshopify.com&host=admin-host&embedded=1&hmac=signed-launch&timestamp=1792861042");
 });
 
 test("all attacker-controlled title/template/status/shop characters are HTML escaped",async()=>{

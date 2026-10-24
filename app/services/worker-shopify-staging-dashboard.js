@@ -116,8 +116,9 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
      env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")return restricted();
   const url=new URL(request.url);
   if(url.pathname!=="/app" || request.method!=="GET")return restricted();
-  if([...url.searchParams.keys()].some(key=>key!=="shop") ||
-     url.searchParams.getAll("shop").length>1)return restricted(404);
+  // Shopify's first embedded launch carries signed App Bridge parameters in
+  // addition to shop. Keep them intact for authenticate.admin(); the shared
+  // admin gate rejects duplicate keys and the SDK validates authentication.
   return acceptWorkerShopifyAdminRequest(request,env,{
     ...(createSdkContext?{createSdkContext}:{}),
     enablePageSummary:true,
