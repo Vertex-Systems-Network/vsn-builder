@@ -32,7 +32,7 @@ test("separate hosted Worker manifests route to one gated source without secrets
     assert(!JSON.stringify(cfg.vars).match(/DATABASE_URL|DIRECT_URL|SHOPIFY_API_SECRET|SHOPIFY_PARTNER_API_TOKEN|NEON_API_KEY|CLOUDFLARE_API_TOKEN/i));
     if(tier==="staging"){
       assert.deepEqual([...cfg.secrets.required].sort(),[
-        "DATABASE_URL","SHOPIFY_API_KEY","SHOPIFY_API_SECRET",
+        "DATABASE_URL","SHOPIFY_API_KEY","SHOPIFY_API_SECRET","SHOPIFY_PARTNER_API_TOKEN",
       ].sort());
     }else{
       assert.equal(cfg.secrets,undefined,

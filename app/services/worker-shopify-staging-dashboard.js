@@ -6,36 +6,16 @@
 import { acceptWorkerShopifyAdminRequest } from "./worker-shopify-admin-gate.js";
 import { decorateVerifiedStagingEditorUi } from "./worker-shopify-staging-editor-html.js";
 
-const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const PAGE=/^[a-zA-Z0-9_-]{1,64}$/;
-const KEY=/^[a-f0-9]{32}$/i;
 const CSP="default-src 'none'; script-src https://cdn.shopify.com; "+
   "style-src 'unsafe-inline'; connect-src 'self' https://*.shopify.com; "+
   "img-src 'self' data:; object-src 'none'; base-uri 'none'; "+
   "form-action 'none'; frame-ancestors https://admin.shopify.com https://*.myshopify.com";
-export function renderStagingBillingRequired({shop,apiKey}={}) {
-  if(!SHOP.test(String(shop||"")) || !KEY.test(String(apiKey||"")))
-    throw new TypeError("Invalid Staging billing notice identity");
-  const key=htmlText(apiKey,32);
-  const markup='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
-    '<meta name="viewport" content="width=device-width,initial-scale=1">'+
-    '<meta name="shopify-api-key" content="'+key+'">'+
-    '<title>Plan verification required · VSN Builder</title>'+
-    '<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>'+
-    '<style>'+css+'</style></head><body><main><div class="eyebrow">VSN | Builder · Staging</div>'+
-    '<h1>Plan verification required</h1>'+
-    '<p>Shopify has not verified an active VSN Builder plan or trial for this store yet.</p>'+
-    '<section class="panel"><h2>Next step</h2>'+
-    '<p>Your store is connected, but the Builder dashboard and page data remain locked until Shopify confirms a plan or trial.</p>'+
-    '<p>Complete the Staging plan setup and approve the Shopify test-billing flow, then reopen this app.</p>'+
-    '<p class="notice">This screen does not activate a plan or make a charge.</p></section>'+
-    '</main></body></html>';
-  return new Response(markup,{status:200,headers:{
-    "content-type":"text/html; charset=utf-8","cache-control":"no-store",
-    "x-content-type-options":"nosniff","referrer-policy":"no-referrer",
-    "content-security-policy":CSP,
-  }});
-}
+import { renderStagingBillingRequired } from "./worker-shopify-staging-billing-notice.js";
+export { renderStagingBillingRequired };
+
+const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+const KEY=/^[a-f0-9]{32}$/i;
 const REPLACEMENTS=Object.freeze({
   "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;",
 });
@@ -69,6 +49,8 @@ const css=[
   "ul{list-style:none;padding:0;margin:0}",
   "li{display:flex;justify-content:space-between;align-items:center;gap:18px;border-top:1px solid #ededed;padding:14px 0}",
   "li:first-child{border-top:0}",
+  ".button{display:inline-flex;align-items:center;justify-content:center;margin-top:4px;padding:11px 16px;border-radius:9px;background:#202223;color:#fff;font-size:14px;font-weight:650;text-decoration:none}",
+  ".button:hover{background:#3b3d3f}",
   ".row-title{font-weight:650;overflow-wrap:anywhere}",
   "a.row-title{color:#164b84;text-decoration:underline;text-underline-offset:3px}",
   ".row-meta{font-size:13px;color:#61656a;margin-top:4px;overflow-wrap:anywhere}",
@@ -148,6 +130,7 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
     enablePageSummary:true,
     requireVerifiedPaidRead:true,
     requirePageViewPermission:true,
+    syncVerifiedPaidRead:true,
     onUnverifiedPaidRead:({shop})=>renderStagingBillingRequired({
       shop,apiKey:env.SHOPIFY_API_KEY,
     }),

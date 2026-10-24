@@ -4,17 +4,17 @@
 schema_version: 1
 status: active
 mode: environment_promotion
-task_key: development-staging-production-alignment
-owner_intent: "Align all AI work to the Development -> Staging -> Production promotion contract (.ai/ENVIRONMENT-PROMOTION.md) and remove known lint/security errors on the development baseline."
+task_key: T020-staging-worker-billing-verification
+owner_intent: "Keep the Staging Shopify app fail-closed while surfacing a safe test-plan path and verifying subscription state."
 base_branch: development
-working_branch: fix/staging-worker-observability
-pull_request: none
-last_verified_commit: cb83292
-last_verified_step: "Protected Staging deploy run 40115938983 succeeded on cb83292. Authenticated Shopify iframe request reached /app but returned 403; protected T023 Worker tail run 40116233555 recorded safe reason paid-plan-not-verified. Production untouched."
-in_flight_step: "Revise PR #363 to apply query-string redaction via the Cloudflare Script Settings API because Wrangler 4.151 rejects that field in wrangler config; verify on a fresh exact-head dry run."
-next_exact_action: "Complete exact-head CI on revised PR #363, merge when green, then use protected T021 deployment and verify the settings API response confirms persistent logs/traces/Issues plus query-string redaction. Resume T028/T029 verified billing lifecycle afterward; do not bypass the paid entitlement behind the current Shopify /app 403."
+working_branch: fix/staging-worker-billing-verification
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/366
+last_verified_commit: 629b376045df81cd2dfcd23d0d91149dc5e4c7a0
+last_verified_step: "All eight exact-head GitHub workflows, including the T021 real Staging Worker artifact dry run (no deploy), passed on 629b376. Shopify Staging bindings are reported configured by the owner but were not independently attested. No hosted Worker deployment or real Shopify OAuth/billing lifecycle was verified."
+in_flight_step: "Complete the repository-required exact-head review and confirm PR #366 can merge under current development branch rules."
+next_exact_action: "Do not merge or claim Staging acceptance until the required review is recorded. After a reviewed merge, use only the protected Staging workflow and verify real Shopify OAuth, Partner billing, hosted /app, and rollback evidence. Production remains untouched."
 approval_needed_now: false
-updated_at: 2026-10-24
+updated_at: 2026-10-25
 ---
 
 ## Purpose

@@ -36,13 +36,17 @@
   // Staging deploy. Secret VALUES remain only in cloudflare-staging/Cloudflare.
   // Never add DIRECT_URL, migrations credentials or any Live secret here.
   "secrets": {
-    "required": ["DATABASE_URL", "SHOPIFY_API_KEY", "SHOPIFY_API_SECRET"]
+    "required": ["DATABASE_URL", "SHOPIFY_API_KEY", "SHOPIFY_API_SECRET", "SHOPIFY_PARTNER_API_TOKEN"]
   },
   "vars": {
     "APP_ENV": "staging",
     "VSN_WORKER_NAME": "vsn-builder-staging",
     "NEON_PROJECT_ID": "shiny-violet-61219572",
     "SHOPIFY_BILLING_TEST_MODE": "true",
+    "SHOPIFY_APP_HANDLE": "vsn-builder-staging",
+    "SHOPIFY_PARTNER_ORGANIZATION_ID": "4859256",
+    "SHOPIFY_PARTNER_API_VERSION": "2026-07",
+    "VSN_STAGING_BILLING_SYNC_ENABLED": "true",
     // T023: owner-directed Staging-only activation of SDK OAuth and the
     // dashboard and the draft editor. Draft saves are Staging-only; Production never sets these.
     "VSN_STAGING_OAUTH_ENABLED": "true",

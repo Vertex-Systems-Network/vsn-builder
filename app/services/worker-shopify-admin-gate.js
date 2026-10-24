@@ -10,6 +10,7 @@ import { createVerifiedMerchantPageSummaryLease } from "./worker-shopify-page-su
 import { createVerifiedMerchantPageMetadataLease } from "./worker-shopify-page-metadata.js";
 import { createVerifiedMerchantPageContentLease } from "./worker-shopify-page-content.js";
 import { hasVerifiedWorkerPaidReadAccess } from "./worker-shopify-paid-read.js";
+import { syncStagingShopifySubscription } from "./worker-shopify-subscription-sync.js";
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
@@ -196,7 +197,7 @@ async function guardedAdminRequest(request,env,{
   createSdkContext=createWorkerShopifySdkContext,onAuthenticated,
   enablePageSummary=false,enablePageMetadata=false,enablePageContent=false,
   requireVerifiedPaidRead=false,requirePageViewPermission=false,
-  onUnverifiedPaidRead,
+  syncVerifiedPaidRead=false,onUnverifiedPaidRead,
 }={},mutation=false) {
   if(!(request instanceof Request))return denied(400);
   if(request.method!==(mutation?"POST":"GET"))return denied(405);
@@ -319,6 +320,18 @@ async function guardedAdminRequest(request,env,{
       // callers remembering separate billing/RBAC flags when new routes are
       // added: selecting either reader automatically enforces both guards.
       const needsPageAuthority=enablePageSummary || enablePageMetadata || enablePageContent;
+      // Only the explicit Staging /app shell may refresh this mirror. A
+      // returned plan_handle merely forces a fresh server-to-server Partner
+      // lookup; it never grants entitlement by itself.
+      if(!mutation&&url.pathname==="/app"&&requireVerifiedPaidRead&&
+         syncVerifiedPaidRead){
+        const synced=await syncStagingShopifySubscription({
+          database:context.database,admin:authenticated.admin,shop,env,
+          force:url.searchParams.has("plan_handle"),
+        });
+        if(!synced.ok)logStagingDenial(env,
+          synced.reason==="not-configured"?"billing-sync-not-configured":"billing-sync-failed");
+      }
       // No Free plan: do not hand any Builder page-data capability to an
       // authenticated but unpaid merchant, even on hosted Staging.
       // This is fail-closed and does not trust NODE_ENV or query parameters.
