@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {renderStagingBillingRequired} from "../app/services/worker-shopify-staging-dashboard.js";
+import {renderStagingBillingRequired} from "../app/services/worker-shopify-staging-billing-notice.js";
 
 test("Staging unpaid app shell links to the authenticated shop's Shopify pricing page",async()=>{
   const response=renderStagingBillingRequired({
