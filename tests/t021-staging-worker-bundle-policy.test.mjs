@@ -30,10 +30,10 @@ test("exact staging identity requires three pre-existing encrypted secrets by NA
    "SHOPIFY_DEVELOPMENT_CLIENT_ID"]){
    assert(!staging.secrets.required.includes(name),name);
  }
- for(const flag of ["VSN_STAGING_OAUTH_ENABLED",
-   "VSN_STAGING_DASHBOARD_ENABLED","VSN_STAGING_DRAFT_SAVE_ENABLED"]){
-   assert.equal(staging.vars[flag],undefined,"all merchant activation remains off");
- }
+ // T023: Staging OAuth and read-only dashboard are activated; writes stay off.
+ assert.equal(staging.vars.VSN_STAGING_OAUTH_ENABLED,"true");
+ assert.equal(staging.vars.VSN_STAGING_DASHBOARD_ENABLED,"true");
+ assert.equal(staging.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined,"draft saves remain off");
 });
 test("production Worker config and no-public-URL policy are independent of staging build",()=>{
  assert.equal(production.name,"vsn-builder-production");
