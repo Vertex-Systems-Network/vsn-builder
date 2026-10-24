@@ -4,17 +4,17 @@
 schema_version: 1
 status: active
 mode: environment_promotion
-task_key: development-staging-production-alignment
-owner_intent: "Align all AI work to the Development -> Staging -> Production promotion contract (.ai/ENVIRONMENT-PROMOTION.md) and remove known lint/security errors on the development baseline."
+task_key: T020-staging-worker-billing-verification
+owner_intent: "Make the Staging embedded app guide its developer to Shopify's no-charge test plans and refresh the trusted Partner-verified subscription mirror without weakening paid access."
 base_branch: development
-working_branch: fix/staging-worker-observability
+working_branch: fix/staging-worker-billing-verification
 pull_request: none
-last_verified_commit: cb83292
-last_verified_step: "Protected Staging deploy run 40115938983 succeeded on cb83292. Authenticated Shopify iframe request reached /app but returned 403; protected T023 Worker tail run 40116233555 recorded safe reason paid-plan-not-verified. Production untouched."
-in_flight_step: "Revise PR #363 to apply query-string redaction via the Cloudflare Script Settings API because Wrangler 4.151 rejects that field in wrangler config; verify on a fresh exact-head dry run."
-next_exact_action: "Complete exact-head CI on revised PR #363, merge when green, then use protected T021 deployment and verify the settings API response confirms persistent logs/traces/Issues plus query-string redaction. Resume T028/T029 verified billing lifecycle afterward; do not bypass the paid entitlement behind the current Shopify /app 403."
+last_verified_commit: b2415be7447916be1ee4478d5eaf73b26eac2b84
+last_verified_step: "PR #363 observability and PR #365 nonblank billing notice are merged to development. Partner Dashboard now has four saved Staging App Pricing draft plans. Monthly plan selection page visibly shows $0 test pricing and 10-day trials. Worker gate still only reads the persisted subscription mirror; no billing sync route exists in workers/app.js or worker-shopify-admin-gate.js."
+in_flight_step: "Implement the Staging-only Shopify Partner API subscription sync and hosted pricing CTA with tests, preserving the verified paid-plan gate; open a PR to development and stop before any subscription approval or production action."
+next_exact_action: "Inspect current Worker config and billing sync contracts, implement and test the Staging-only sync plus no-data billing CTA, then open an exact-head PR. Verify Staging deploy prerequisites and Partner API credential binding before promotion."
 approval_needed_now: false
-updated_at: 2026-10-24
+updated_at: 2026-10-25
 ---
 
 ## Purpose
