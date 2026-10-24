@@ -1,6 +1,7 @@
 // Stage-only Shopify SDK login screen. Never initiate OAuth ourselves.
 // The official shopifyApp.login(request) validates the merchant and generates
 // its state, redirects and cookies. NO hand-built OAuth state or HMAC.
+import { logStagingFailure } from "./worker-diagnostics.js";
 import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
@@ -83,7 +84,8 @@ export async function handleVerifiedStagingShopifyLogin(request,env,{
   // Official API returns LoginError | never; an unexpected successful
   // value is NOT proof of authentication and must never become a redirect.
   return blocked();
- }catch{
+ }catch(error){
+  logStagingFailure(env,"auth-login",error);
   // Dependency/bootstrap errors are never trusted redirect transports.
   return blocked();
  }finally{

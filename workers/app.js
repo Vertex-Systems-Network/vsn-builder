@@ -67,6 +67,16 @@ async function databaseHealth(request,env) {
 
 export default {
   async fetch(request,env) {
+    const response=await route(request,env);
+    // Staging-only breadcrumb for `wrangler tail`: path and status, no query.
+    if(env?.APP_ENV==="staging" && response?.status>=400){
+      try{console.warn(JSON.stringify({vsn_req:new URL(request.url).pathname.slice(0,128),method:request.method,status:response.status}))}catch{/* never affect responses */}
+    }
+    return response;
+  },
+};
+async function route(request,env) {
+  {
     if(!(request instanceof Request) || !tierIdentity(env))return locked();
     const url=new URL(request.url);
     if(url.search && ["/healthz","/readyz","/__vsn/database-health"].includes(url.pathname))return locked(404);
@@ -222,5 +232,5 @@ export default {
     if(url.pathname==="/app" || url.pathname.startsWith("/app/") ||
        url.pathname.startsWith("/auth/"))return locked();
     return locked(404);
-  },
-};
+  }
+}
