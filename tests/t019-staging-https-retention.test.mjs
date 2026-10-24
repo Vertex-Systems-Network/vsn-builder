@@ -16,9 +16,9 @@ test("Staging HTTPS workers.dev survives approved Wrangler deploys; preview URLs
   assert.equal(stage.vars.APP_ENV,"staging");
   assert.equal(stage.vars.VSN_WORKER_NAME,"vsn-builder-staging");
   assert.equal(stage.vars.SHOPIFY_BILLING_TEST_MODE,"true");
-  // A public HTTPS URL is transport, not authority to open OAuth or writes.
-  assert.equal(stage.vars.VSN_STAGING_OAUTH_ENABLED,undefined);
-  assert.equal(stage.vars.VSN_STAGING_DASHBOARD_ENABLED,undefined);
+  // T023 activates Staging-only SDK OAuth and the read-only dashboard; writes stay off.
+  assert.equal(stage.vars.VSN_STAGING_OAUTH_ENABLED,"true");
+  assert.equal(stage.vars.VSN_STAGING_DASHBOARD_ENABLED,"true");
   assert.equal(stage.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined);
 });
 

@@ -22,6 +22,10 @@
     "APP_ENV": "staging",
     "VSN_WORKER_NAME": "vsn-builder-staging",
     "NEON_PROJECT_ID": "shiny-violet-61219572",
-    "SHOPIFY_BILLING_TEST_MODE": "true"
+    "SHOPIFY_BILLING_TEST_MODE": "true",
+    // T023: owner-directed Staging-only activation of SDK OAuth and the
+    // read-only dashboard. Draft saves stay off; Production never sets these.
+    "VSN_STAGING_OAUTH_ENABLED": "true",
+    "VSN_STAGING_DASHBOARD_ENABLED": "true"
   }
 }
