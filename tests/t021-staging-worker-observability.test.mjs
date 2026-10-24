@@ -18,6 +18,8 @@ test("Stored Staging telemetry redacts Shopify query credentials", () => {
   assert.doesNotMatch(staging, /"redact_query_string"\s*:/);
   assert.match(deploy, /workers\/scripts\/vsn-builder-staging\/script-settings/);
   assert.match(deploy, /"redact_query_string":true/);
+  assert.match(deploy, /"logs":\{"enabled":true,"invocation_logs":true,"head_sampling_rate":1,"persist":true\}/);
+  assert.match(deploy, /"traces":\{"enabled":true,"head_sampling_rate":1,"persist":true\}/);
   assert.match(deploy, /\.result\.observability\.redact_query_string == true/);
   assert.match(deploy, /\.result\.observability\.logs\.enabled == true/);
   assert.match(deploy, /\.result\.observability\.traces\.enabled == true/);
