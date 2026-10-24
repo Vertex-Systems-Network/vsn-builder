@@ -11,8 +11,8 @@ working_branch: fix/staging-worker-observability
 pull_request: none
 last_verified_commit: cb83292
 last_verified_step: "Protected Staging deploy run 40115938983 succeeded on cb83292. Authenticated Shopify iframe request reached /app but returned 403; protected T023 Worker tail run 40116233555 recorded safe reason paid-plan-not-verified. Production untouched."
-in_flight_step: "Commit the validated Staging observability config and open a PR to development; then complete exact-head CI and verify via protected deployment."
-next_exact_action: "After the observability PR passes exact-head CI and is merged, deploy that exact development SHA to Staging and verify persistent Cloudflare logs/traces/Issues after deployment. Then resume T028/T029 verified billing lifecycle; do not bypass the paid entitlement behind the current Shopify /app 403."
+in_flight_step: "Revise PR #363 to apply query-string redaction via the Cloudflare Script Settings API because Wrangler 4.151 rejects that field in wrangler config; verify on a fresh exact-head dry run."
+next_exact_action: "Complete exact-head CI on revised PR #363, merge when green, then use protected T021 deployment and verify the settings API response confirms persistent logs/traces/Issues plus query-string redaction. Resume T028/T029 verified billing lifecycle afterward; do not bypass the paid entitlement behind the current Shopify /app 403."
 approval_needed_now: false
 updated_at: 2026-10-24
 ---

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 const staging = readFileSync(new URL("../wrangler.staging.jsonc", import.meta.url), "utf8");
 const production = readFileSync(new URL("../wrangler.production.jsonc", import.meta.url), "utf8");
+const deploy = readFileSync(new URL("../.github/workflows/t021-staging-worker-deploy.yml", import.meta.url), "utf8");
 
 test("Staging observability is explicitly persisted and survives every config deploy", () => {
   assert.match(staging, /"observability"\s*:\s*\{/);
@@ -14,8 +15,13 @@ test("Staging observability is explicitly persisted and survives every config de
 });
 
 test("Stored Staging telemetry redacts Shopify query credentials", () => {
-  assert.match(staging, /"logs"\s*:\s*\{[\s\S]*?"redact_query_string"\s*:\s*true/);
-  assert.match(staging, /"traces"\s*:\s*\{[\s\S]*?"redact_query_string"\s*:\s*true/);
+  assert.doesNotMatch(staging, /"redact_query_string"\s*:/);
+  assert.match(deploy, /workers\/scripts\/vsn-builder-staging\/script-settings/);
+  assert.match(deploy, /"redact_query_string":true/);
+  assert.match(deploy, /\.result\.observability\.redact_query_string == true/);
+  assert.match(deploy, /\.result\.observability\.logs\.enabled == true/);
+  assert.match(deploy, /\.result\.observability\.traces\.enabled == true/);
+  assert.match(deploy, /\.result\.observability\.issues\.enabled == true/);
 });
 
 test("Staging observability settings are not copied into Production", () => {
