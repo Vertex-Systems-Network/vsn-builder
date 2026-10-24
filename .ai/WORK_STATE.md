@@ -8,11 +8,11 @@ task_key: T020-staging-billing-notice-session-rotation
 owner_intent: "Make the Staging embedded app show its safe billing-required screen after a benign session-token refresh, while retaining all paid-data and mutation gates."
 base_branch: development
 working_branch: fix/staging-billing-notice-session-rotation
-pull_request: none
-last_verified_commit: 4db70883b85d45d91fcc7daa362b28cb127e18d9
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/368
+last_verified_commit: f5579c3d5308b4a276e9d861285d045e5f9c7699
 last_verified_step: "Node 22.18 validation passed: 30/30 targeted Worker tests, npm run typecheck, npm run qa, changed-file ESLint, npm run build and the Staging Wrangler dry-run bundle. The dry-run performed no deploy and used no provider credentials. git diff --check passed; development HEAD is still 4db70883b85d45d91fcc7daa362b28cb127e18d9."
-in_flight_step: "Commit the safe billing-notice session-rotation fix and open a PR to development; do not deploy Staging yet."
-next_exact_action: "Push the feature branch, open a PR linked to Issue #161, inspect exact-head CI/review requirements, and update the issue with the fresh staging evidence. Staging deploy is blocked by the required T018/T021 acceptance gates."
+in_flight_step: "Inspect PR #368 exact-head CI and required review gates; do not deploy Staging yet."
+next_exact_action: "Inspect PR #368 exact-head CI and review requirements, then follow required review before merge. Staging deploy remains blocked by T018/T021 acceptance; the internal Staging app still cannot verify real Partner billing."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
