@@ -3,7 +3,7 @@
 # Staging identity supplied only by the cloudflare-staging GitHub Environment.
 client_id = "__SHOPIFY_STAGING_CLIENT_ID__"
 name = "VSN | Builder (Staging)"
-application_url = "https://vsn-builder-staging.example.invalid"
+application_url = "https://vsn-builder-staging.vertexsystemsnetwork.workers.dev"
 embedded = true
 
 [access_scopes]
@@ -100,7 +100,7 @@ api_version = "2026-07"
   compliance_topics = [ "shop/redact" ]
 
 [auth]
-redirect_urls = [ "https://vsn-builder-staging.example.invalid/auth/callback" ]
+redirect_urls = [ "https://vsn-builder-staging.vertexsystemsnetwork.workers.dev/auth/callback" ]
 
 [build]
 automatically_update_urls_on_dev = false

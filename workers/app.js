@@ -83,6 +83,14 @@ export default {
         "content-security-policy":"default-src 'none'; frame-ancestors 'none'",
       }});
     }
+    // Shopify opens the App URL origin. Staging forwards only a canonical
+    // *.myshopify.com shop to SDK-owned login; every other query is dropped.
+    if(url.pathname==="/" && request.method==="GET" && env.APP_ENV==="staging") {
+      const shop=url.searchParams.get("shop");
+      const target=new URL("/auth/login",url.origin);
+      if(shop && /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop))target.searchParams.set("shop",shop);
+      return new Response(null,{status:302,headers:{...LOCKED,location:target.pathname+target.search}});
+    }
     if(url.pathname==="/healthz" && request.method==="GET")
       return safeJson({service:"VSN Builder",tier:env.APP_ENV,liveness:true,merchantAppReady:false});
     if(url.pathname==="/readyz" && request.method==="GET")
