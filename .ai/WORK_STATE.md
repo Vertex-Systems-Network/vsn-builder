@@ -7,14 +7,14 @@ mode: environment_promotion
 task_key: development-staging-production-alignment
 owner_intent: "Align all AI work to the Development -> Staging -> Production promotion contract (.ai/ENVIRONMENT-PROMOTION.md) and remove known lint/security errors on the development baseline."
 base_branch: development
-working_branch: claude/hopeful-lovelace-k2y7is
+working_branch: fix/staging-worker-observability
 pull_request: none
-last_verified_commit: 510f490
-last_verified_step: "Staging promotion executed on 510f490: protected Neon migration run 40039297234 PASS, Staging Worker deploy run 40039390730 PASS, /healthz 200, /readyz and /app 503 by design (edge SSR/billing and Staging OAuth opt-in not enabled). Production untouched."
-in_flight_step: none
-next_exact_action: "Staging is the stopping tier. Next: T022/T023 real Shopify test-store install and Staging OAuth acceptance (owner installs the Staging app on a dev store), then T036 rollback/restore drill. Production requires explicit owner approval."
+last_verified_commit: cb83292
+last_verified_step: "Protected Staging deploy run 40115938983 succeeded on cb83292. Authenticated Shopify iframe request reached /app but returned 403; protected T023 Worker tail run 40116233555 recorded safe reason paid-plan-not-verified. Production untouched."
+in_flight_step: "Commit the validated Staging observability config and open a PR to development; then complete exact-head CI and verify via protected deployment."
+next_exact_action: "After the observability PR passes exact-head CI and is merged, deploy that exact development SHA to Staging and verify persistent Cloudflare logs/traces/Issues after deployment. Then resume T028/T029 verified billing lifecycle; do not bypass the paid entitlement behind the current Shopify /app 403."
 approval_needed_now: false
-updated_at: 2026-10-23
+updated_at: 2026-10-24
 ---
 
 ## Purpose
