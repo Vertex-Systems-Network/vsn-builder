@@ -65,6 +65,33 @@ async function databaseHealth(request,env) {
   }
 }
 
+// Report readiness only when Staging's configured Shopify SDK boundary and
+// persistent Neon session schema are actually available. This is a protected,
+// read-only check; it does not authenticate a merchant or inspect their data.
+async function merchantReadiness(request,env) {
+  if(env?.APP_ENV!=="staging" ||
+     env?.VSN_STAGING_OAUTH_ENABLED!=="true" ||
+     env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")return locked();
+  const database=await databaseHealth(request,env);
+  if(database.status!==200)return locked();
+  try {
+    const proof=await database.json();
+    if(proof?.database!=="healthy" || proof?.schemaVerified!==true)
+      return locked();
+  }catch {
+    return locked();
+  }
+  return safeJson({
+    service:"VSN Builder",
+    tier:"staging",
+    merchantAppReady:true,
+    shopifyOauthReady:true,
+    persistentSessionsReady:true,
+    merchantRoutesReady:true,
+  });
+}
+
+
 export default {
   async fetch(request,env) {
     const response=await route(request,env);
@@ -104,9 +131,7 @@ async function route(request,env) {
     if(url.pathname==="/healthz" && request.method==="GET")
       return safeJson({service:"VSN Builder",tier:env.APP_ENV,liveness:true,merchantAppReady:false});
     if(url.pathname==="/readyz" && request.method==="GET")
-      // Shopify React Router SSR and billing remain unimplemented at the edge.
-      // Return 503, never claim readiness from merely having a database.
-      return locked();
+      return merchantReadiness(request,env);
     if(url.pathname==="/__vsn/database-health" && request.method==="GET")
       return databaseHealth(request,env);
     // Stage-only real Shopify App Bridge overview. Every request reuses the
@@ -123,8 +148,16 @@ async function route(request,env) {
     if(/^\/auth\/(?!login(?:\/|$))[a-z0-9-]{1,64}$/.test(url.pathname) &&
        request.method==="GET")
       return handleVerifiedStagingShopifyAuth(request,env);
-    if(url.pathname==="/app" && request.method==="GET")
+    if(url.pathname==="/app" && request.method==="GET") {
+      // Readiness probes and direct browser visits without a Shopify shop
+      // hint should start at the SDK-owned login screen. Embedded requests
+      // with a shop continue through normal official SDK authentication.
+      if(!url.searchParams.has("shop") &&
+         inspectWorkerShopifyConfiguration(request,env).ready &&
+         inspectWorkerNeonEnvironment(env).ready)
+        return new Response(null,{status:302,headers:{...LOCKED,location:"/auth/login"}});
       return handleVerifiedStagingMerchantDashboard(request,env);
+    }
     if(url.pathname==="/app/__vsn/verified-session" && request.method==="GET") {
       // A real Shopify SDK and durable Neon installation/session authorization
       // must succeed before returning any authenticated information.
