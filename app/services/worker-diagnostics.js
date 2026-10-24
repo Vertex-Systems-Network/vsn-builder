@@ -22,3 +22,13 @@ export function logStagingFailure(env,stage,error){
     }));
   }catch{/* diagnostics must never affect responses */}
 }
+
+// Fixed authorization outcomes are useful for diagnosing a blank embedded
+// app, but must never include a shop, session, query value or database row.
+export function logStagingDenial(env,reason){
+  if(env?.APP_ENV!=="staging")return;
+  const code=/^[a-z0-9-]{1,48}$/.test(String(reason||""))?
+    String(reason):"other";
+  try{console.warn(JSON.stringify({vsn_diag:"admin-denial",reason:code}))}
+  catch{/* diagnostics must never affect responses */}
+}
