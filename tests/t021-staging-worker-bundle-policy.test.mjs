@@ -11,7 +11,7 @@ const production=config("wrangler.production.jsonc");
 const workflow=readFileSync(".github/workflows/t021-staging-worker-bundle-dryrun.yml","utf8");
 const required=["DATABASE_URL","SHOPIFY_API_KEY","SHOPIFY_API_SECRET","SHOPIFY_PARTNER_API_TOKEN"];
 
-test("exact staging identity requires three pre-existing encrypted secrets by NAME only",()=>{
+test("exact staging identity requires four pre-existing encrypted secrets by NAME only",()=>{
  assert.equal(staging.name,"vsn-builder-staging");
  assert.equal(staging.main,"./workers/app.js");
  assert.equal(staging.vars.APP_ENV,"staging");
@@ -25,7 +25,7 @@ test("exact staging identity requires three pre-existing encrypted secrets by NA
  assert.equal(staging.workers_dev,true);
  assert.equal(staging.preview_urls,false);
  assert.deepEqual([...staging.secrets.required].sort(),[...required].sort());
- assert.equal(new Set(staging.secrets.required).size,3);
+ assert.equal(new Set(staging.secrets.required).size,4);
  for(const name of required) {
    assert.equal(Object.hasOwn(staging.vars,name),false,
      "secret values or sentinel values must not be in plaintext vars");
