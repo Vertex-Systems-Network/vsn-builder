@@ -24,8 +24,9 @@
     "NEON_PROJECT_ID": "shiny-violet-61219572",
     "SHOPIFY_BILLING_TEST_MODE": "true",
     // T023: owner-directed Staging-only activation of SDK OAuth and the
-    // read-only dashboard. Draft saves stay off; Production never sets these.
+    // dashboard and the draft editor. Draft saves are Staging-only; Production never sets these.
     "VSN_STAGING_OAUTH_ENABLED": "true",
-    "VSN_STAGING_DASHBOARD_ENABLED": "true"
+    "VSN_STAGING_DASHBOARD_ENABLED": "true",
+    "VSN_STAGING_DRAFT_SAVE_ENABLED": "true"
   }
 }

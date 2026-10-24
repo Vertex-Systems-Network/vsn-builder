@@ -1,6 +1,6 @@
 // VSN Builder hosted Worker entry — gated Staging integration boundary.
 // This is NOT the React Router merchant UI and is not authorized for Live.
-// Staging draft-save is gated OFF; no billing, public editor or Shopify review.
+// Draft save is explicitly enabled only on Staging; no billing or Shopify review.
 import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
 import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
 import { isVerifiedWorkerSchemaMetadata } from "../app/services/worker-schema-metadata-health.js";

@@ -16,10 +16,10 @@ test("Staging HTTPS workers.dev survives approved Wrangler deploys; preview URLs
   assert.equal(stage.vars.APP_ENV,"staging");
   assert.equal(stage.vars.VSN_WORKER_NAME,"vsn-builder-staging");
   assert.equal(stage.vars.SHOPIFY_BILLING_TEST_MODE,"true");
-  // T023 activates Staging-only SDK OAuth and the read-only dashboard; writes stay off.
+  // T023 activates Staging-only OAuth, dashboard and draft editor. Production stays disabled.
   assert.equal(stage.vars.VSN_STAGING_OAUTH_ENABLED,"true");
   assert.equal(stage.vars.VSN_STAGING_DASHBOARD_ENABLED,"true");
-  assert.equal(stage.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined);
+  assert.equal(stage.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,"true");
 });
 
 test("Live remains non-public and cannot inherit Staging bindings",()=>{
@@ -31,9 +31,10 @@ test("Live remains non-public and cannot inherit Staging bindings",()=>{
   assert.equal(live.vars.SHOPIFY_BILLING_TEST_MODE,"false");
   assert.equal(live.vars.VSN_WORKER_NAME,"vsn-builder-production");
   assert.notEqual(live.vars.NEON_PROJECT_ID,stage.vars.NEON_PROJECT_ID);
+  assert.equal(live.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined);
 });
 
-test("Exposed Staging HTTPS without reviewed migration cannot serve merchant routes",async()=>{
+test("Staging routes stay closed without bound secrets and verified Shopify sessions",async()=>{
   const origin="https://vsn-builder-staging.vertexsystemsnetwork.workers.dev";
   const env={...stage.vars};
   const health=await worker.fetch(new Request(origin+"/healthz"),env);

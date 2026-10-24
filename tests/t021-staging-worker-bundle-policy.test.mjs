@@ -30,10 +30,10 @@ test("exact staging identity requires three pre-existing encrypted secrets by NA
    "SHOPIFY_DEVELOPMENT_CLIENT_ID"]){
    assert(!staging.secrets.required.includes(name),name);
  }
- // T023: Staging OAuth and read-only dashboard are activated; writes stay off.
+ // T023: Staging OAuth, dashboard and draft editor are explicitly activated.
  assert.equal(staging.vars.VSN_STAGING_OAUTH_ENABLED,"true");
  assert.equal(staging.vars.VSN_STAGING_DASHBOARD_ENABLED,"true");
- assert.equal(staging.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined,"draft saves remain off");
+ assert.equal(staging.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,"true");
 });
 test("production Worker config and no-public-URL policy are independent of staging build",()=>{
  assert.equal(production.name,"vsn-builder-production");
@@ -42,6 +42,7 @@ test("production Worker config and no-public-URL policy are independent of stagi
  assert.equal(production.vars.APP_ENV,"production");
  assert.equal(production.vars.VSN_WORKER_NAME,"vsn-builder-production");
  assert.notEqual(production.vars.NEON_PROJECT_ID,staging.vars.NEON_PROJECT_ID);
+ assert.equal(production.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined,"draft save must remain disabled in production");
 });
 test("T021 PR workflow is credentials-free, real Staging bundle dry-run only",()=>{
  assert.match(workflow,/pull_request:/);

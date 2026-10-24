@@ -23,7 +23,7 @@ test("separate hosted Worker manifests route to one gated source without secrets
     assert.equal(cfg.workers_dev,tier==="staging");
     assert.equal(cfg.vars.VSN_STAGING_OAUTH_ENABLED,tier==="staging"?"true":undefined);
     assert.equal(cfg.vars.VSN_STAGING_DASHBOARD_ENABLED,tier==="staging"?"true":undefined);
-    assert.equal(cfg.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined);
+    assert.equal(cfg.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,tier==="staging"?"true":undefined);
     assert.equal(cfg.preview_urls,false);
     assert.equal(cfg.vars.SHOPIFY_BILLING_TEST_MODE,tier==="staging"?"true":"false");
     // Cloudflare Wrangler 4 supports declaring REQUIRED secret NAMES, not
