@@ -17,6 +17,9 @@ export function renderStagingBillingRequired({shop,apiKey}={}) {
   if(!SHOP.test(String(shop||"")) || !KEY.test(String(apiKey||"")))
     throw new TypeError("Invalid Staging billing notice identity");
   const key=htmlText(apiKey,32);
+  const store=shop.slice(0,-".myshopify.com".length);
+  const pricingUrl="https://admin.shopify.com/store/"+encodeURIComponent(store)+
+    "/charges/vsn-builder-staging/pricing_plans";
   const markup='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
     '<meta name="viewport" content="width=device-width,initial-scale=1">'+
     '<meta name="shopify-api-key" content="'+key+'">'+
@@ -27,8 +30,9 @@ export function renderStagingBillingRequired({shop,apiKey}={}) {
     '<p>Shopify has not verified an active VSN Builder plan or trial for this store yet.</p>'+
     '<section class="panel"><h2>Next step</h2>'+
     '<p>Your store is connected, but the Builder dashboard and page data remain locked until Shopify confirms a plan or trial.</p>'+
-    '<p>Complete the Staging plan setup and approve the Shopify test-billing flow, then reopen this app.</p>'+
-    '<p class="notice">This screen does not activate a plan or make a charge.</p></section>'+
+    '<p>Choose a plan on Shopify’s hosted page. Shopify marks eligible development-store plans as free to test.</p>'+
+    '<a class="button" target="_top" rel="noopener noreferrer" href="'+htmlText(pricingUrl,512)+'">Choose a Shopify test plan</a>'+
+    '<p class="notice">This screen does not activate a plan or make a charge. After Shopify returns, this app verifies the contract with the Partner API.</p></section>'+
     '</main></body></html>';
   return new Response(markup,{status:200,headers:{
     "content-type":"text/html; charset=utf-8","cache-control":"no-store",
@@ -69,6 +73,8 @@ const css=[
   "ul{list-style:none;padding:0;margin:0}",
   "li{display:flex;justify-content:space-between;align-items:center;gap:18px;border-top:1px solid #ededed;padding:14px 0}",
   "li:first-child{border-top:0}",
+  ".button{display:inline-flex;align-items:center;justify-content:center;margin-top:4px;padding:11px 16px;border-radius:9px;background:#202223;color:#fff;font-size:14px;font-weight:650;text-decoration:none}",
+  ".button:hover{background:#3b3d3f}",
   ".row-title{font-weight:650;overflow-wrap:anywhere}",
   "a.row-title{color:#164b84;text-decoration:underline;text-underline-offset:3px}",
   ".row-meta{font-size:13px;color:#61656a;margin-top:4px;overflow-wrap:anywhere}",
@@ -148,6 +154,7 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
     enablePageSummary:true,
     requireVerifiedPaidRead:true,
     requirePageViewPermission:true,
+    syncVerifiedPaidRead:true,
     onUnverifiedPaidRead:({shop})=>renderStagingBillingRequired({
       shop,apiKey:env.SHOPIFY_API_KEY,
     }),
