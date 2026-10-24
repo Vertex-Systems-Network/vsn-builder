@@ -1,6 +1,7 @@
 // Staging-only, SDK-owned Shopify authentication completion boundary.
 // No hand-rolled OAuth, HMAC, token decoding, cookie issuance or billing.
 // Deliberately OFF by default and NEVER authorized in Production.
+import { logStagingFailure } from "./worker-diagnostics.js";
 import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
@@ -104,7 +105,8 @@ export async function handleVerifiedStagingShopifyAuth(request,env,{
     return new Response(response.body,{
       status:response.status,statusText:response.statusText,headers,
     });
-  }catch{
+  }catch(error){
+    logStagingFailure(env,"auth-callback",error);
     // Fail closed on Response-shaped errors from non-SDK dependencies.
     return denied();
   }finally{

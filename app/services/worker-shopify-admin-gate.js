@@ -2,6 +2,7 @@
 // The official Shopify React Router SDK authenticates every request.
 // Mutations must hold the merchant's installation row lock across their entire
 // database transaction; a previous GET-time session check is insufficient.
+import { logStagingFailure } from "./worker-diagnostics.js";
 import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
@@ -376,6 +377,7 @@ async function guardedAdminRequest(request,env,{
     // DB helpers may also THROW Response but must never forge SDK cookies
     // or navigation, even if their response looks like a real Shopify 302.
     if(error instanceof Response && error===sdkThrownResponse)return error;
+    logStagingFailure(env,"admin-gate",error);
     return denied(503);
   } finally {
     // A leaked callback cannot query after this request's context is closed.
