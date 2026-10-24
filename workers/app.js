@@ -152,7 +152,9 @@ async function route(request,env) {
       // Readiness probes and direct browser visits without a Shopify shop
       // hint should start at the SDK-owned login screen. Embedded requests
       // with a shop continue through normal official SDK authentication.
-      if(!url.searchParams.has("shop"))
+      if(!url.searchParams.has("shop") &&
+         inspectWorkerShopifyConfiguration(request,env).ready &&
+         inspectWorkerNeonEnvironment(env).ready)
         return new Response(null,{status:302,headers:{...LOCKED,location:"/auth/login"}});
       return handleVerifiedStagingMerchantDashboard(request,env);
     }
