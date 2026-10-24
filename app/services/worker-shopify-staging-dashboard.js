@@ -11,7 +11,8 @@ const CSP="default-src 'none'; script-src https://cdn.shopify.com; "+
   "style-src 'unsafe-inline'; connect-src 'self' https://*.shopify.com; "+
   "img-src 'self' data:; object-src 'none'; base-uri 'none'; "+
   "form-action 'none'; frame-ancestors https://admin.shopify.com https://*.myshopify.com";
-export { renderStagingBillingRequired } from "./worker-shopify-staging-billing-notice.js";
+import { renderStagingBillingRequired } from "./worker-shopify-staging-billing-notice.js";
+export { renderStagingBillingRequired };
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const KEY=/^[a-f0-9]{32}$/i;
