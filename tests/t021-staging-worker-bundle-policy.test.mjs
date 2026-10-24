@@ -9,7 +9,7 @@ function config(path){
 const staging=config("wrangler.staging.jsonc");
 const production=config("wrangler.production.jsonc");
 const workflow=readFileSync(".github/workflows/t021-staging-worker-bundle-dryrun.yml","utf8");
-const required=["DATABASE_URL","SHOPIFY_API_KEY","SHOPIFY_API_SECRET"];
+const required=["DATABASE_URL","SHOPIFY_API_KEY","SHOPIFY_API_SECRET","SHOPIFY_PARTNER_API_TOKEN"];
 
 test("exact staging identity requires three pre-existing encrypted secrets by NAME only",()=>{
  assert.equal(staging.name,"vsn-builder-staging");
@@ -18,6 +18,10 @@ test("exact staging identity requires three pre-existing encrypted secrets by NA
  assert.equal(staging.vars.VSN_WORKER_NAME,"vsn-builder-staging");
  assert.equal(staging.vars.NEON_PROJECT_ID,"shiny-violet-61219572");
  assert.equal(staging.vars.SHOPIFY_BILLING_TEST_MODE,"true");
+ assert.equal(staging.vars.SHOPIFY_APP_HANDLE,"vsn-builder-staging");
+ assert.equal(staging.vars.SHOPIFY_PARTNER_ORGANIZATION_ID,"4859256");
+ assert.equal(staging.vars.SHOPIFY_PARTNER_API_VERSION,"2026-07");
+ assert.equal(staging.vars.VSN_STAGING_BILLING_SYNC_ENABLED,"true");
  assert.equal(staging.workers_dev,true);
  assert.equal(staging.preview_urls,false);
  assert.deepEqual([...staging.secrets.required].sort(),[...required].sort());
