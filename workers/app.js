@@ -13,6 +13,7 @@ import { handleVerifiedStagingShopifyAuth } from "../app/services/worker-shopify
 import { handleVerifiedStagingShopifyLogin } from "../app/services/worker-shopify-staging-login.js";
 import { acceptWorkerShopifyUninstallWebhook, normalizeWorkerWebhookFailure } from "../app/services/worker-shopify-webhook-gate.js";
 import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
+import { logStagingRequest } from "../app/services/worker-diagnostics.js";
 
 const LOCKED = Object.freeze({
   "cache-control": "no-store",
@@ -95,10 +96,8 @@ async function merchantReadiness(request,env) {
 export default {
   async fetch(request,env) {
     const response=await route(request,env);
-    // Staging-only breadcrumb for `wrangler tail`: path and status, no query.
-    if(env?.APP_ENV==="staging" && response?.status>=400){
-      try{console.warn(JSON.stringify({vsn_req:new URL(request.url).pathname.slice(0,128),method:request.method,status:response.status}))}catch{/* never affect responses */}
-    }
+    // Staging-only safe response breadcrumbs; signed launch query is omitted.
+    logStagingRequest(env,request,response);
     return response;
   },
 };

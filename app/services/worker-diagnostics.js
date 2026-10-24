@@ -32,3 +32,24 @@ export function logStagingDenial(env,reason){
   try{console.warn(JSON.stringify({vsn_diag:"admin-denial",reason:code}))}
   catch{/* diagnostics must never affect responses */}
 }
+
+// Request breadcrumbs expose only fixed app/OAuth route paths and response
+// metadata. Never log the signed Shopify query, redirect destination, headers,
+// cookies, request body, or response body.
+export function logStagingRequest(env,request,response){
+  if(env?.APP_ENV!=="staging" || !(request instanceof Request) ||
+     !(response instanceof Response))return;
+  try{
+    const pathname=new URL(request.url).pathname;
+    const appRoute=pathname==="/" || pathname==="/app" ||
+      pathname==="/auth/login" || pathname==="/auth/callback";
+    if(!appRoute && response.status<400)return;
+    console.warn(JSON.stringify({
+      vsn_req:pathname.slice(0,128),method:request.method,status:response.status,
+      ...(appRoute?{
+        contentType:(response.headers.get("content-type")||"").slice(0,80),
+        hasLocation:response.headers.has("location"),
+      }:{}),
+    }));
+  }catch{/* diagnostics never affect app responses */}
+}

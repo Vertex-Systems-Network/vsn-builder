@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: environment_promotion
-task_key: T020-staging-billing-notice-session-rotation
-owner_intent: "Make the Staging embedded app show its safe billing-required screen after a benign session-token refresh, while retaining all paid-data and mutation gates."
+task_key: T020-staging-embedded-app-rendering-diagnostic
+owner_intent: "Make the Staging embedded app render its safe billing-required screen, while retaining all paid-data and mutation gates."
 base_branch: development
-working_branch: fix/staging-billing-notice-session-rotation
-pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/368
-last_verified_commit: f5579c3d5308b4a276e9d861285d045e5f9c7699
-last_verified_step: "Node 22.18 validation passed: 30/30 targeted Worker tests, npm run typecheck, npm run qa, changed-file ESLint, npm run build and the Staging Wrangler dry-run bundle. The dry-run performed no deploy and used no provider credentials. git diff --check passed; development HEAD is still 4db70883b85d45d91fcc7daa362b28cb127e18d9."
-in_flight_step: "Inspect PR #368 exact-head CI and required review gates; do not deploy Staging yet."
-next_exact_action: "Inspect PR #368 exact-head CI and review requirements, then follow required review before merge. Staging deploy remains blocked by T018/T021 acceptance; the internal Staging app still cannot verify real Partner billing."
+working_branch: fix/staging-app-frame-diagnostics
+pull_request: none
+last_verified_commit: b2836a8dd38014b2c77a02c93658e5d9dc0bac95
+last_verified_step: "Added Staging-only app/OAuth response breadcrumbs; Node 22.18 ran 16/16 targeted tests, typecheck, QA, changed-file ESLint and production build successfully. No secret or signed-query data is logged."
+in_flight_step: "Commit the verified diagnostics, push the feature branch, and open a PR to development linked to Issue #161."
+next_exact_action: "Inspect required exact-head CI/review gates on the PR; after merge, deploy only through protected T021 and use T023 while reproducing Shopify Admin launch."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
@@ -93,7 +93,7 @@ Do not update it for every keystroke or trivial local edit.
 
 ## Current state
 
-**2026-10-25:** Staging run #15 deployed `4db7088`; fresh tail #6 recorded billing-sync-failed, paid-plan-not-verified and session-changed-during-read before GET `/app` returned 403. The internal Staging app ID cannot use Shopify Partner API `activeSubscription`, which requires a public app. A safe no-data billing notice session-rotation fix is implemented and locally validated on Node 22.18 (30/30 Worker tests; typecheck, QA, lint, production build and Worker dry-run all pass). Paid page data and mutations remain gated. The patch is awaiting PR review and T018/T021 acceptance before any redeploy.
+**2026-10-25:** PR #368 is merged at `b2836a8` and protected T021 run #16 deployed it. `/healthz` and `/readyz` returned 200 and unauthenticated `/app` returned 302. After a real Shopify Admin launch, the frame still showed `about:blank`; the protected T023 tail saw billing-sync-failed, paid-plan-not-verified and billing-notice-session-rotated, but no HTTP status for successful responses. The internal Staging app ID cannot use Partner API `activeSubscription`; paid page data and mutations remain gated. Current step adds safe successful `/app` response telemetry so the next live tail can tell whether the Worker returned HTML or reauthorization.
 
 Historical note (2026-09-18):
 
