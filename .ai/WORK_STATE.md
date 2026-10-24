@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: environment_promotion
-task_key: T020-staging-worker-billing-verification
-owner_intent: "Keep the Staging Shopify app fail-closed while surfacing a safe test-plan path and verifying subscription state."
+task_key: T021-staging-secrets-from-github-environment
+owner_intent: "Fix Staging billing verification by deploying the reviewed Shopify Partner token binding from the protected GitHub staging environment."
 base_branch: development
-working_branch: fix/staging-worker-billing-verification
-pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/366
-last_verified_commit: 629b376045df81cd2dfcd23d0d91149dc5e4c7a0
-last_verified_step: "All eight exact-head GitHub workflows, including the T021 real Staging Worker artifact dry run (no deploy), passed on 629b376. Shopify Staging bindings are reported configured by the owner but were not independently attested. No hosted Worker deployment or real Shopify OAuth/billing lifecycle was verified."
-in_flight_step: "Complete the repository-required exact-head review and confirm PR #366 can merge under current development branch rules."
-next_exact_action: "Do not merge or claim Staging acceptance until the required review is recorded. After a reviewed merge, use only the protected Staging workflow and verify real Shopify OAuth, Partner billing, hosted /app, and rollback evidence. Production remains untouched."
+working_branch: fix/staging-deploy-from-github-secrets
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/367
+last_verified_commit: c17e2752ac0fde942c0126c67054276eae8c95d2
+last_verified_step: "On PR #367, the Staging real Worker artifact dry run, CodeQL, Environment Isolation, Repository Integrity, and Production Confidence checks passed on c17e275. The protected T021 deployment run #14 for base SHA 3b9f953 failed before code publication because the staging Worker lacked SHOPIFY_PARTNER_API_TOKEN. The user-provided Cloudflare screenshot shows SHOPIFY_PARTNER_API_ACCESS_TOKEN configured under the Worker Production environment, not Staging. PR #367 now sources staging-only values from GitHub's cloudflare-staging environment and maps the token name; no new deploy has run."
+in_flight_step: "Complete exact-head checks and obtain required independent PR review for #367. After merge, run the protected T021 workflow and verify deployment plus hosted app behavior."
+next_exact_action: "Do not merge before required review. Once PR #367 is reviewed and exact-head CI is green, merge to development, dispatch T021 from protected development with typed confirmation, then verify deploy output, Staging health probes, billing log and Shopify app UI. Never reuse the Production Cloudflare secret."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
@@ -93,7 +93,7 @@ Do not update it for every keystroke or trivial local edit.
 
 ## Current state
 
-**2026-10-21:** Active development happens on `development` (TASKS.md is the canonical task board: 19 closed / 22 active of 41). All changes follow `.ai/ENVIRONMENT-PROMOTION.md`. Current tier status: Development = working; Staging = BLOCKED (Worker 503 for /app and /auth, 0 Worker secrets/bindings, Neon Staging 0 app tables, `development` unprotected); Production = LOCKED until a Staging-certified SHA and owner approval exist.
+**2026-10-25:** Active task is PR #367, which updates the protected T021 deploy workflow to source Staging secrets from the GitHub `cloudflare-staging` environment. The last exact deployment attempt failed before code publication because the Staging Worker lacked `SHOPIFY_PARTNER_API_TOKEN`; the screenshot provided by the owner showed `SHOPIFY_PARTNER_API_ACCESS_TOKEN` under the Worker’s Production environment. Staging remains blocked until PR #367 is reviewed, merged, and its protected deployment succeeds. Production remains locked.
 
 Historical note (2026-09-18):
 

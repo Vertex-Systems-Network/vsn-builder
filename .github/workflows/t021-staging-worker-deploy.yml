@@ -1,7 +1,8 @@
 name: T021 Staging Worker Deploy — Protected Manual Only
 # Deploys the EXACT protected development SHA to the Staging Worker
 # (vsn-builder-staging) only. Never runs on PRs, forks, main or Production.
-# Secret VALUES stay in the cloudflare-staging environment / Worker bindings.
+# Secret values are sourced from the protected cloudflare-staging GitHub environment
+# and passed to the Staging Worker through an ephemeral runner-only secrets file.
 on:
   workflow_dispatch:
     inputs:
@@ -53,11 +54,34 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STAGING_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STAGING_SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+          STAGING_SHOPIFY_API_SECRET: ${{ secrets.SHOPIFY_API_SECRET }}
+          STAGING_SHOPIFY_PARTNER_API_ACCESS_TOKEN: ${{ secrets.SHOPIFY_PARTNER_API_ACCESS_TOKEN }}
         run: |
           set +x
           test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          secret_file="$RUNNER_TEMP/vsn-staging-secrets.json"
+          umask 077
+          trap 'rm -f "$secret_file"' EXIT
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const secrets = {
+            DATABASE_URL: process.env.STAGING_DATABASE_URL,
+            SHOPIFY_API_KEY: process.env.STAGING_SHOPIFY_API_KEY,
+            SHOPIFY_API_SECRET: process.env.STAGING_SHOPIFY_API_SECRET,
+            SHOPIFY_PARTNER_API_TOKEN: process.env.STAGING_SHOPIFY_PARTNER_API_ACCESS_TOKEN,
+          };
+          const missing = Object.entries(secrets).filter(([, value]) => !value).map(([name]) => name);
+          if (missing.length) {
+            console.error("Missing required GitHub cloudflare-staging environment secrets: " + missing.join(", "));
+            process.exit(1);
+          }
+          writeFileSync(join(process.env.RUNNER_TEMP, "vsn-staging-secrets.json"), JSON.stringify(secrets), { mode: 0o600 });
+          NODE
           grep -q '"name": "vsn-builder-staging"' wrangler.staging.jsonc
-          ./node_modules/.bin/wrangler deploy --config wrangler.staging.jsonc --keep-vars --message "development ${GITHUB_SHA}"
+          ./node_modules/.bin/wrangler deploy --config wrangler.staging.jsonc --keep-vars --secrets-file "$secret_file" --message "development ${GITHUB_SHA}"
       - name: Enforce and verify Shopify query-string redaction
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
