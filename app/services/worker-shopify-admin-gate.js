@@ -196,6 +196,7 @@ async function guardedAdminRequest(request,env,{
   createSdkContext=createWorkerShopifySdkContext,onAuthenticated,
   enablePageSummary=false,enablePageMetadata=false,enablePageContent=false,
   requireVerifiedPaidRead=false,requirePageViewPermission=false,
+  onUnverifiedPaidRead,
 }={},mutation=false) {
   if(!(request instanceof Request))return denied(400);
   if(request.method!==(mutation?"POST":"GET"))return denied(405);
@@ -324,35 +325,43 @@ async function guardedAdminRequest(request,env,{
       if((needsPageAuthority || requireVerifiedPaidRead) &&
          !await hasVerifiedWorkerPaidReadAccess(context.database,shop)){
         logStagingDenial(env,"paid-plan-not-verified");
-        return denied(403);
+        // One Staging app-shell route may render a non-data billing notice so
+        // the embedded app never appears blank. This callback receives only
+        // the authenticated shop; page leases and Shopify admin are withheld.
+        // It cannot soften the gate for API routes or mutations.
+        if(!mutation && url.pathname==="/app" &&
+           typeof onUnverifiedPaidRead==="function")
+          response=await onUnverifiedPaidRead({shop});
+        else return denied(403);
+      }else{
+        // The Worker read routes must respect the SAME persisted staff and
+        // collaborator permissions as Local/Dev /app/pages. A valid Shopify
+        // token and paid subscription do not grant every staff user visibility.
+        if((needsPageAuthority || requirePageViewPermission) &&
+           !await canAccessBuilderAction(context.database,session,"pages","view"))
+        {
+          logStagingDenial(env,"pages-view-permission-denied");
+          return denied(403);
+        }
+        // A narrowly scoped read-only page capability is optional. Create it
+        // ONLY after official Shopify auth, persisted session and installation
+        // verification; no raw Prisma handle reaches the route callback.
+        if(enablePageSummary){
+          pageReadLease=createVerifiedMerchantPageSummaryLease(context.database,shop);
+        }
+        if(enablePageMetadata){
+          metadataLease=createVerifiedMerchantPageMetadataLease(context.database,shop);
+        }
+        if(enablePageContent){
+          contentLease=createVerifiedMerchantPageContentLease(context.database,shop);
+        }
+        response=await onAuthenticated({
+          request,shop,session,admin:authenticated.admin,
+          ...(pageReadLease?{pageSummary:pageReadLease.load}:{}),
+          ...(metadataLease?{pageMetadata:metadataLease.get}:{}),
+          ...(contentLease?{pageContent:contentLease.get}:{}),
+        });
       }
-      // The Worker read routes must respect the SAME persisted staff and
-      // collaborator permissions as Local/Dev /app/pages. A valid Shopify
-      // token and paid subscription do not grant every staff user visibility.
-      if((needsPageAuthority || requirePageViewPermission) &&
-         !await canAccessBuilderAction(context.database,session,"pages","view"))
-      {
-        logStagingDenial(env,"pages-view-permission-denied");
-        return denied(403);
-      }
-      // A narrowly scoped read-only page capability is optional. Create it
-      // ONLY after official Shopify auth, persisted session and installation
-      // verification; no raw Prisma handle reaches the route callback.
-      if(enablePageSummary){
-        pageReadLease=createVerifiedMerchantPageSummaryLease(context.database,shop);
-      }
-      if(enablePageMetadata){
-        metadataLease=createVerifiedMerchantPageMetadataLease(context.database,shop);
-      }
-      if(enablePageContent){
-        contentLease=createVerifiedMerchantPageContentLease(context.database,shop);
-      }
-      response=await onAuthenticated({
-        request,shop,session,admin:authenticated.admin,
-        ...(pageReadLease?{pageSummary:pageReadLease.load}:{}),
-        ...(metadataLease?{pageMetadata:metadataLease.get}:{}),
-        ...(contentLease?{pageContent:contentLease.get}:{}),
-      });
     }
     if(!(response instanceof Response))return denied(503);
     // POST responses were already secured inside the still-open transaction.

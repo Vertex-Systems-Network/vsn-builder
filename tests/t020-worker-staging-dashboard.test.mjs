@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {
   handleVerifiedStagingMerchantDashboard,
+  renderStagingBillingRequired,
   renderVerifiedStagingMerchantDashboard,
 } from "../app/services/worker-shopify-staging-dashboard.js";
 import {SHOPIFY_EXPECTED_SCOPES} from "../app/config/shopifyIntegration.js";
@@ -148,8 +149,27 @@ test("all attacker-controlled title/template/status/shop characters are HTML esc
   assert.match(html,/draft&quot; onclick=&quot;evil\(\)/);
 });
 
-test("unpaid, denied RBAC, expired sessions and forged tenant query fail closed before page data",async()=>{
-  for(const options of [{paid:false},
+test("unpaid Staging shops see only a billing notice, never merchant page data",async()=>{
+  const f=fixture({paid:false});
+  const res=await serve(f);
+  assert.equal(res.status,200);
+  assert.equal(res.headers.get("cache-control"),"no-store");
+  const html=await res.text();
+  assert.match(html,/<h1>Plan verification required<\/h1>/);
+  assert.match(html,/Shopify has not verified an active VSN Builder plan or trial/);
+  assert.match(html,/This screen does not activate a plan or make a charge/);
+  assert.doesNotMatch(html,/Total pages|Shop landing|private-session-token/);
+  assert.equal(f.calls.filter(c=>c.op==="count"||c.op==="recent").length,0);
+  assert.equal(f.calls.some(c=>c.op==="permission"),false);
+  assert.equal(f.calls.at(-1).op,"close");
+
+  const standalone=await renderStagingBillingRequired({shop,apiKey:env.SHOPIFY_API_KEY}).text();
+  assert.match(standalone,/Plan verification required/);
+  assert.throws(()=>renderStagingBillingRequired({shop,apiKey:"invalid"}));
+});
+
+test("denied RBAC, expired sessions and forged tenant query fail closed before page data",async()=>{
+  for(const options of [
     {roleAccessJson:JSON.stringify({editor:false})},
     {expired:true},
   ]){

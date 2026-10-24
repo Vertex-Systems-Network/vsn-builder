@@ -1,7 +1,8 @@
 // A REAL read-only Shopify App Bridge page for the verified Staging Worker.
 // Deliberately NOT a full React Router editor and never enabled for Live.
-// The official SDK, persisted Neon session, verified paid plan and pages/view
-// RBAC must all authorize the request before any merchant data is rendered.
+// The official SDK and persisted Neon session authorize the shell. Merchant
+// page data still requires a verified paid plan and pages/view RBAC. An
+// unpaid Staging store receives only a no-data billing notice.
 import { acceptWorkerShopifyAdminRequest } from "./worker-shopify-admin-gate.js";
 import { decorateVerifiedStagingEditorUi } from "./worker-shopify-staging-editor-html.js";
 
@@ -12,6 +13,29 @@ const CSP="default-src 'none'; script-src https://cdn.shopify.com; "+
   "style-src 'unsafe-inline'; connect-src 'self' https://*.shopify.com; "+
   "img-src 'self' data:; object-src 'none'; base-uri 'none'; "+
   "form-action 'none'; frame-ancestors https://admin.shopify.com https://*.myshopify.com";
+export function renderStagingBillingRequired({shop,apiKey}={}) {
+  if(!SHOP.test(String(shop||"")) || !KEY.test(String(apiKey||"")))
+    throw new TypeError("Invalid Staging billing notice identity");
+  const key=htmlText(apiKey,32);
+  const markup='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
+    '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<meta name="shopify-api-key" content="'+key+'">'+
+    '<title>Plan verification required · VSN Builder</title>'+
+    '<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>'+
+    '<style>'+css+'</style></head><body><main><div class="eyebrow">VSN | Builder · Staging</div>'+
+    '<h1>Plan verification required</h1>'+
+    '<p>Shopify has not verified an active VSN Builder plan or trial for this store yet.</p>'+
+    '<section class="panel"><h2>Next step</h2>'+
+    '<p>Your store is connected, but the Builder dashboard and page data remain locked until Shopify confirms a plan or trial.</p>'+
+    '<p>Complete the Staging plan setup and approve the Shopify test-billing flow, then reopen this app.</p>'+
+    '<p class="notice">This screen does not activate a plan or make a charge.</p></section>'+
+    '</main></body></html>';
+  return new Response(markup,{status:200,headers:{
+    "content-type":"text/html; charset=utf-8","cache-control":"no-store",
+    "x-content-type-options":"nosniff","referrer-policy":"no-referrer",
+    "content-security-policy":CSP,
+  }});
+}
 const REPLACEMENTS=Object.freeze({
   "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;",
 });
@@ -124,6 +148,9 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
     enablePageSummary:true,
     requireVerifiedPaidRead:true,
     requirePageViewPermission:true,
+    onUnverifiedPaidRead:({shop})=>renderStagingBillingRequired({
+      shop,apiKey:env.SHOPIFY_API_KEY,
+    }),
     onAuthenticated:async({shop,pageSummary})=>{
       const summary=await pageSummary();
       const html=renderVerifiedStagingMerchantDashboard({
