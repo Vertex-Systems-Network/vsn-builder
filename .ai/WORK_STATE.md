@@ -8,13 +8,13 @@ task_key: T020-staging-worker-billing-verification
 owner_intent: "Make the Staging embedded app guide its developer to Shopify's no-charge test plans and refresh the trusted Partner-verified subscription mirror without weakening paid access."
 base_branch: development
 working_branch: fix/staging-worker-billing-verification
-pull_request: none
-last_verified_commit: b2415be7447916be1ee4478d5eaf73b26eac2b84
-last_verified_step: "PR #363 observability and PR #365 nonblank billing notice are merged to development. Partner Dashboard now has four saved Staging App Pricing draft plans. Monthly plan selection page visibly shows $0 test pricing and 10-day trials. Worker gate still only reads the persisted subscription mirror; no billing sync route exists in workers/app.js or worker-shopify-admin-gate.js."
-in_flight_step: "Implement the Staging-only Shopify Partner API subscription sync and hosted pricing CTA with tests, preserving the verified paid-plan gate; open a PR to development and stop before any subscription approval or production action."
-next_exact_action: "Inspect current Worker config and billing sync contracts, implement and test the Staging-only sync plus no-data billing CTA, then open an exact-head PR. Verify Staging deploy prerequisites and Partner API credential binding before promotion."
+pull_request: pending
+last_verified_commit: 714d04c15d91dff57585205c00e427835d7733a6
+last_verified_step: "Feature branch includes a Staging-only Partner API sync with exact shop identity checks, a hosted Shopify plan CTA, no-charge development-test wording, and synthetic regression tests. Source reads confirm the Production config is untouched. CI and hosted deployment are not yet verified."
+in_flight_step: "Open the PR to development and inspect all exact-head CI and review results."
+next_exact_action: "Open PR for fix/staging-worker-billing-verification, wait for its required checks, fix any failures, and only then evaluate protected Staging deployment. The new SHOPIFY_PARTNER_API_TOKEN binding must exist in cloudflare-staging before deploy."
 approval_needed_now: false
-updated_at: 2026-10-25
+updated_at: 2026-10-24
 ---
 
 ## Purpose
