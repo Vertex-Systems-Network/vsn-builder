@@ -5,10 +5,10 @@ import worker from "../workers/app.js";
 const env={APP_ENV:"staging",VSN_WORKER_NAME:"vsn-builder-staging",NEON_PROJECT_ID:"shiny-violet-61219572",SHOPIFY_BILLING_TEST_MODE:"true"};
 const base="https://vsn-builder-staging.vertexsystemsnetwork.workers.dev/";
 
-test("Staging App URL origin forwards a canonical shop to SDK-owned login only",async()=>{
+test("Staging embedded App URL forwards the signed launch query to authenticated app",async()=>{
   const res=await worker.fetch(new Request(base+"?shop=demo-store.myshopify.com&host=abc&hmac=x&embedded=1"),env);
   assert.equal(res.status,302);
-  assert.equal(res.headers.get("location"),"/auth/login?shop=demo-store.myshopify.com");
+  assert.equal(res.headers.get("location"),"/app?shop=demo-store.myshopify.com&host=abc&hmac=x&embedded=1");
   assert.equal(res.headers.get("cache-control"),"no-store");
 });
 test("Staging root drops non-canonical shops and never redirects off-origin",async()=>{
