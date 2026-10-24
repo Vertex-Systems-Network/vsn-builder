@@ -1,7 +1,7 @@
 // Shopify App Pricing verification for the protected Staging Worker.
 // Credentials and tier identity are passed through Cloudflare bindings; this
 // module never reads process.env, logs Partner payloads, or trusts URL claims.
-const SHOP=/^[a-z0-9][a-z0-9-]*\\.myshopify\\.com$/;
+const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const ORG=/^[A-Za-z0-9_-]{1,120}$/;
 const VERSION=/^2026-(07|10)$|^unstable$/;
 const HANDLES=new Set(["starter","sliver","gold","platinum"]);
@@ -71,7 +71,10 @@ async function partnerState({config,appId,shopId,shop,fetchImpl,now}){
   const event=newestEvent(json.data.events?.edges);
   const activeShop=text(active?.shop?.myshopifyDomain).toLowerCase();
   const eventShop=text(event?.shop?.myshopifyDomain).toLowerCase();
-  if((activeShop&&activeShop!==shop)||(eventShop&&eventShop!==shop))
+  const activeShopId=text(active?.shop?.id);
+  const eventShopId=text(event?.shop?.id);
+  if((activeShop&&activeShop!==shop)||(eventShop&&eventShop!==shop)||
+     (activeShopId&&activeShopId!==shopId)||(eventShopId&&eventShopId!==shopId))
     throw new Error("Shopify Partner API returned a different store");
 
   const activePlan=active?planFromHandles(active.items):null;
