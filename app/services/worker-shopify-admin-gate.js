@@ -2,7 +2,7 @@
 // The official Shopify React Router SDK authenticates every request.
 // Mutations must hold the merchant's installation row lock across their entire
 // database transaction; a previous GET-time session check is insufficient.
-import { logStagingFailure } from "./worker-diagnostics.js";
+import { logStagingFailure, logStagingDenial } from "./worker-diagnostics.js";
 import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuration.js";
 import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
@@ -254,11 +254,17 @@ async function guardedAdminRequest(request,env,{
       where:{shop}
     });
     if(!lifecycle || !isDate(lifecycle.installedAt) ||
-       lifecycle.uninstalledAt!==null)return denied(403);
+       lifecycle.uninstalledAt!==null){
+      logStagingDenial(env,"installation-not-active");
+      return denied(403);
+    }
     const stored=await context.database.session.findUnique({
       where:{id:session.id}
     });
-    if(!matches(stored,session,shop))return denied(403);
+    if(!matches(stored,session,shop)){
+      logStagingDenial(env,"persisted-session-mismatch");
+      return denied(403);
+    }
 
     let response;
     if(mutation) {
@@ -316,13 +322,19 @@ async function guardedAdminRequest(request,env,{
       // authenticated but unpaid merchant, even on hosted Staging.
       // This is fail-closed and does not trust NODE_ENV or query parameters.
       if((needsPageAuthority || requireVerifiedPaidRead) &&
-         !await hasVerifiedWorkerPaidReadAccess(context.database,shop))return denied(403);
+         !await hasVerifiedWorkerPaidReadAccess(context.database,shop)){
+        logStagingDenial(env,"paid-plan-not-verified");
+        return denied(403);
+      }
       // The Worker read routes must respect the SAME persisted staff and
       // collaborator permissions as Local/Dev /app/pages. A valid Shopify
       // token and paid subscription do not grant every staff user visibility.
       if((needsPageAuthority || requirePageViewPermission) &&
          !await canAccessBuilderAction(context.database,session,"pages","view"))
+      {
+        logStagingDenial(env,"pages-view-permission-denied");
         return denied(403);
+      }
       // A narrowly scoped read-only page capability is optional. Create it
       // ONLY after official Shopify auth, persisted session and installation
       // verification; no raw Prisma handle reaches the route callback.
@@ -360,8 +372,14 @@ async function guardedAdminRequest(request,env,{
     if(!latestInstall || latestInstall.shop!==shop ||
        !isDate(latestInstall.installedAt) ||
        latestInstall.installedAt.getTime()!==lifecycle.installedAt.getTime() ||
-       latestInstall.uninstalledAt!==null ||
-       !matches(latestSession,session,shop))return denied(403);
+       latestInstall.uninstalledAt!==null){
+      logStagingDenial(env,"installation-changed-during-read");
+      return denied(403);
+    }
+    if(!matches(latestSession,session,shop)){
+      logStagingDenial(env,"session-changed-during-read");
+      return denied(403);
+    }
     return buffered;
   } catch(error) {
     if(error instanceof RollbackResponse){
