@@ -5,7 +5,7 @@ const CSP="default-src 'none'; script-src https://cdn.shopify.com; "+
   "style-src 'unsafe-inline'; connect-src 'self' https://*.shopify.com; "+
   "img-src 'self' data:; object-src 'none'; base-uri 'none'; "+
   "form-action 'none'; frame-ancestors https://admin.shopify.com https://*.myshopify.com";
-const REPLACEMENTS=Object.freeze({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" });
+const css=":root{color-scheme:light;font-family:system-ui,sans-serif;color:#202223;background:#f6f6f7}body{margin:0}main{max-width:760px;margin:48px auto;padding:24px}h1{font-size:28px}p{color:#61656a;line-height:1.55}.eyebrow{color:#316b11;font-size:12px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}.panel{background:#fff;border:1px solid #dde0e3;border-radius:14px;padding:20px}.button{display:inline-flex;margin-top:4px;padding:11px 16px;border-radius:9px;background:#202223;color:#fff;font-size:14px;font-weight:650;text-decoration:none}.notice{font-size:13px;margin-top:18px}";\nconst REPLACEMENTS=Object.freeze({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" });
 function htmlText(value,max=256) {
   if(typeof value!=="string" || value.length>max) throw new TypeError("Invalid merchant dashboard text");
   return value.replace(/[&<>"']/g,letter=>REPLACEMENTS[letter]);
