@@ -68,12 +68,17 @@ jobs:
             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/vsn-builder-staging/script-settings" \
             -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
             -H "Content-Type: application/json" \
-            --data '{"observability":{"redact_query_string":true}}')
+            --data '{"observability":{"enabled":true,"redact_query_string":true,"logs":{"enabled":true,"invocation_logs":true,"head_sampling_rate":1,"persist":true},"traces":{"enabled":true,"head_sampling_rate":1,"persist":true},"issues":{"enabled":true}}}')
+          printf '%s' "$response" | jq -r '"Cloudflare returned: success=" + (.success|tostring) + ", observability=" + ((.result.observability.enabled // false)|tostring) + ", redact_query_string=" + ((.result.observability.redact_query_string // false)|tostring) + ", logs=" + ((.result.observability.logs.enabled // false)|tostring) + ", traces=" + ((.result.observability.traces.enabled // false)|tostring) + ", issues=" + ((.result.observability.issues.enabled // false)|tostring)'
           printf '%s' "$response" | jq -e '
             .success == true and
+            .result.observability.enabled == true and
             .result.observability.redact_query_string == true and
             .result.observability.logs.enabled == true and
+            .result.observability.logs.invocation_logs == true and
+            .result.observability.logs.persist == true and
             .result.observability.traces.enabled == true and
+            .result.observability.traces.persist == true and
             .result.observability.issues.enabled == true
           ' >/dev/null
           echo "PASS: Staging logs, traces and Issues persist; request query strings are redacted"
