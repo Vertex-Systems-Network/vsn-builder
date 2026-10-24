@@ -5,16 +5,16 @@ schema_version: 1
 status: active
 mode: environment_promotion
 task_key: T020-staging-worker-billing-verification
-owner_intent: "Make the Staging embedded app guide its developer to Shopify's no-charge test plans and refresh the trusted Partner-verified subscription mirror without weakening paid access."
+owner_intent: "Keep the Staging Shopify app fail-closed while surfacing a safe test-plan path and verifying subscription state."
 base_branch: development
 working_branch: fix/staging-worker-billing-verification
-pull_request: pending
-last_verified_commit: 714d04c15d91dff57585205c00e427835d7733a6
-last_verified_step: "Feature branch includes a Staging-only Partner API sync with exact shop identity checks, a hosted Shopify plan CTA, no-charge development-test wording, and synthetic regression tests. Source reads confirm the Production config is untouched. CI and hosted deployment are not yet verified."
-in_flight_step: "Open the PR to development and inspect all exact-head CI and review results."
-next_exact_action: "Open PR for fix/staging-worker-billing-verification, wait for its required checks, fix any failures, and only then evaluate protected Staging deployment. The new SHOPIFY_PARTNER_API_TOKEN binding must exist in cloudflare-staging before deploy."
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/366
+last_verified_commit: 629b376045df81cd2dfcd23d0d91149dc5e4c7a0
+last_verified_step: "All eight exact-head GitHub workflows, including the T021 real Staging Worker artifact dry run (no deploy), passed on 629b376. Shopify Staging bindings are reported configured by the owner but were not independently attested. No hosted Worker deployment or real Shopify OAuth/billing lifecycle was verified."
+in_flight_step: "Complete the repository-required exact-head review and confirm PR #366 can merge under current development branch rules."
+next_exact_action: "Do not merge or claim Staging acceptance until the required review is recorded. After a reviewed merge, use only the protected Staging workflow and verify real Shopify OAuth, Partner billing, hosted /app, and rollback evidence. Production remains untouched."
 approval_needed_now: false
-updated_at: 2026-10-24
+updated_at: 2026-10-25
 ---
 
 ## Purpose
