@@ -8,11 +8,11 @@ task_key: T020-staging-embedded-app-rendering-diagnostic
 owner_intent: "Make the Staging embedded app render its safe billing-required screen, while retaining all paid-data and mutation gates."
 base_branch: development
 working_branch: fix/staging-app-frame-diagnostics
-pull_request: none
-last_verified_commit: b2836a8dd38014b2c77a02c93658e5d9dc0bac95
-last_verified_step: "Added Staging-only app/OAuth response breadcrumbs; Node 22.18 ran 16/16 targeted tests, typecheck, QA, changed-file ESLint and production build successfully. No secret or signed-query data is logged."
-in_flight_step: "Commit the verified diagnostics, push the feature branch, and open a PR to development linked to Issue #161."
-next_exact_action: "Inspect required exact-head CI/review gates on the PR; after merge, deploy only through protected T021 and use T023 while reproducing Shopify Admin launch."
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/369
+last_verified_commit: 72ae70da016122c530af30b4133d608199ad2348
+last_verified_step: "PR #369 is open from current development SHA b2836a8. Node 22.18 ran 16/16 targeted tests, typecheck, QA, changed-file ESLint and production build successfully. Safe app/OAuth response diagnostics never log signed queries or redirect URLs."
+in_flight_step: "Wait for and inspect exact-head CI and review requirements on PR #369."
+next_exact_action: "After all required PR checks/review pass, merge under repository rules; then run protected T021 for that exact development SHA and use T023 during a Shopify Admin launch."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
@@ -93,7 +93,7 @@ Do not update it for every keystroke or trivial local edit.
 
 ## Current state
 
-**2026-10-25:** PR #368 is merged at `b2836a8` and protected T021 run #16 deployed it. `/healthz` and `/readyz` returned 200 and unauthenticated `/app` returned 302. After a real Shopify Admin launch, the frame still showed `about:blank`; the protected T023 tail saw billing-sync-failed, paid-plan-not-verified and billing-notice-session-rotated, but no HTTP status for successful responses. The internal Staging app ID cannot use Partner API `activeSubscription`; paid page data and mutations remain gated. Current step adds safe successful `/app` response telemetry so the next live tail can tell whether the Worker returned HTML or reauthorization.
+**2026-10-25:** PR #368 merged at `b2836a8`; protected T021 run #16 deployed it. `/healthz` and `/readyz` returned 200 and unauthenticated `/app` returned 302. A real Shopify Admin launch still showed `about:blank`; T023 run #7 saw billing-sync-failed, paid-plan-not-verified and billing-notice-session-rotated, but no successful HTTP status. PR #369 adds safe app/OAuth response metadata so the next live tail can distinguish HTML from reauthorization. The internal Staging app cannot verify Partner `activeSubscription`; paid page data and mutations remain gated.
 
 Historical note (2026-09-18):
 
