@@ -47,7 +47,7 @@ async function databaseHealth(request,env) {
     // Inspect fixed PostgreSQL/Prisma metadata only; never query merchant rows.
     const [metrics,records]=await Promise.all([
       prisma.$queryRawUnsafe(
-        "SELECT current_database() AS database, "+
+        "SELECT current_database()::text AS database, "+
         "(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') AS tables, "+
         "(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('Session','BuilderPage','BuilderSubscription','BuilderShopInstallation')) AS essential_tables"
       ),
