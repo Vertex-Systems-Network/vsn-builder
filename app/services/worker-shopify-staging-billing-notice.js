@@ -1,5 +1,5 @@
 // Pure, dependency-free rendering for the unpaid Staging billing screen.
-const SHOP=/^[a-z0-9][a-z0-9-]*\\.myshopify\\.com$/;
+const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const KEY=/^[a-f0-9]{32}$/i;
 const CSP="default-src 'none'; script-src https://cdn.shopify.com; "+
   "style-src 'unsafe-inline'; connect-src 'self' https://*.shopify.com; "+
