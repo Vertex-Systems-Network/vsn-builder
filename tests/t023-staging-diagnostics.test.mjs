@@ -33,7 +33,7 @@ test("Staging app breadcrumbs report status and content type without signed quer
   try{
     logStagingRequest({APP_ENV:"production"},new Request("https://worker.test/app?token=secret"),new Response("",{status:200}));
     logStagingRequest({APP_ENV:"staging"},new Request("https://worker.test/app?token=secret"),new Response("",{
-      status:200,headers:{"content-type":"text/html; charset=utf-8",location:"https://accounts.shopify.com/lookup?token=secret"},
+      status:200,headers:{"content-type":"text/html; charset=utf-8",location:"redirect-target-secret"},
     }));
     logStagingRequest({APP_ENV:"staging"},new Request("https://worker.test/other?token=secret"),new Response("",{status:200}));
     logStagingRequest({APP_ENV:"staging"},new Request("https://worker.test/other?token=secret"),new Response("",{status:403}));
@@ -45,7 +45,7 @@ test("Staging app breadcrumbs report status and content type without signed quer
   });
   assert.deepEqual(JSON.parse(seen[1]),{vsn_req:"/other",method:"GET",status:403});
   assert(!seen.join(" ").includes("secret"));
-  assert(!seen.join(" ").includes("accounts.shopify.com"));
+  assert(!seen.join(" ").includes("redirect-target-secret"));
 });
 test("log tail workflow is manual, protected, Staging-only and read-only",()=>{
   const wf=readFileSync(".github/workflows/t023-staging-worker-tail.yml","utf8");

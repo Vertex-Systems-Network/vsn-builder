@@ -9,10 +9,10 @@ owner_intent: "Make the Staging embedded app render its safe billing-required sc
 base_branch: development
 working_branch: fix/staging-app-frame-diagnostics
 pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/369
-last_verified_commit: 72ae70da016122c530af30b4133d608199ad2348
-last_verified_step: "PR #369 is open from current development SHA b2836a8. Node 22.18 ran 16/16 targeted tests, typecheck, QA, changed-file ESLint and production build successfully. Safe app/OAuth response diagnostics never log signed queries or redirect URLs."
-in_flight_step: "Wait for and inspect exact-head CI and review requirements on PR #369."
-next_exact_action: "After all required PR checks/review pass, merge under repository rules; then run protected T021 for that exact development SHA and use T023 during a Shopify Admin launch."
+last_verified_commit: 74ab8690d3aaaa448c5876016dc8edcafd81d927
+last_verified_step: "Replaced the URL substring fixture with a non-URL sentinel; Node 22.18 targeted Worker tests pass 16/16 and changed-file ESLint passes."
+in_flight_step: "Commit the CodeQL fixture adjustment and updated cursor to PR #369; inspect the new exact-head checks."
+next_exact_action: "Resolve the CodeQL review thread only after the updated CodeQL check passes; then merge under repository rules and proceed through protected T021/T023."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
