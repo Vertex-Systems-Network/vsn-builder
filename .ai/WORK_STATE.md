@@ -10,9 +10,9 @@ base_branch: development
 working_branch: fix/staging-shopify-worker-adapter
 pull_request: none (implementation branch; PR not yet created)
 last_verified_commit: c313d17f234dd876271fcdcada51f91702f7844a
-last_verified_step: "Current development head c313d17 is verified; PR #374 and follow-up diagnostic PRs #379–#381 are merged. Live Staging still reports admin-identity-shape-root-error-code; Metafields loads in the same Staging Admin."
-in_flight_step: "Add the Shopify React Router runtime adapter import to the Staging Worker entry, then open a PR and inspect exact-head CI."
-next_exact_action: "Verify the deployed worker includes the adapter change through protected CI/merge/deploy gates; if Admin GraphQL still fails, expose only a bounded SDK code diagnostic."
+last_verified_step: "On branch fix/staging-shopify-worker-adapter, workers/app.js now initializes the official Shopify React Router Node adapter before Worker SDK imports; Metafields uses the same adapter bootstrap and is loading in Staging Admin. Local tests not run."
+in_flight_step: "Open a PR for the adapter bootstrap change and inspect exact-head CI."
+next_exact_action: "After PR checks/review, use protected Staging gates only; inspect live Admin GraphQL identity and billing result on the deployed exact SHA."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
