@@ -190,7 +190,7 @@ export async function syncStagingShopifySubscription({
       step+"-"+(error?.name==="TimeoutError"?"timeout":
         error instanceof SyntaxError?"bad-json":
         error instanceof TypeError?"type-error":
-        /^P\\d{4}$/.test(String(error?.code||""))?error.code.toLowerCase():"error");
+        /^P\d{4}$/.test(String(error?.code||""))?error.code.toLowerCase():"error");
     return {ok:false,reason:"partner-verification-failed",stage,row:existing||null};
   }
 }
