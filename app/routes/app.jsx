@@ -15,6 +15,7 @@ import AppRuntimeBoundary from "../components/ui/AppRuntimeBoundary";
 import AppCommandPalette from "../components/dashboard/AppCommandPalette";
 import { getWidgetDefinitions } from "../services/widget-settings.server.js";
 import { getPlan } from "../utils/plan.server.js";
+import { syncShopifySubscription } from "../services/shopify-subscription.server.js";
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { getLocalMarketplaceCatalogCount } from "../services/marketplace.server.js";
 import { builtinMotionPresets } from "../services/motion-library.server.js";
@@ -89,7 +90,8 @@ function loadShellOwner(session) {
 }
 
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
+  await syncShopifySubscription({ db, admin, shop:session.shop }).catch(() => null);
   const builderRole = getBuilderRole(session);
   const roleAccess = await getBuilderRoleAccess(db, session.shop);
   const builderAccess = builderRole === "admin" || roleAccess[builderRole] === true;
