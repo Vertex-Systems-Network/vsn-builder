@@ -309,14 +309,15 @@ export async function syncStagingShopifySubscription({
     // The legacy stage can come from this catch's fallback even when the SDK
     // exception itself has no code. Shape only that otherwise-opaque identity
     // failure; preserve explicit identity and downstream diagnostics.
+    const errorCode=String(error?.code||"");
     const legacyIdentityFallback=step==="admin-identity"&&!status&&!graphqlErrorCode&&!hasGraphqlError&&
-      (!error?.code||error.code==="admin-identity-error");
+      (!errorCode||errorCode==="admin-identity-error"||!/^[a-z0-9-]{1,32}$/.test(errorCode));
     const shape=legacyIdentityFallback?errorShape(error):null;
     const stage=status?step+"-http-"+status:
       graphqlErrorCode?step+"-gql-"+graphqlErrorCode:
       hasGraphqlError?step+"-gql-error":
       shape?step+"-shape-"+shape:
-      /^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:
+      /^[a-z0-9-]{1,32}$/.test(errorCode)?errorCode:
       step+"-"+(error?.name==="TimeoutError"?"timeout":
         error instanceof SyntaxError?"bad-json":
         error instanceof TypeError?"type-error":
