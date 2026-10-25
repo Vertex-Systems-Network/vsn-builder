@@ -8,11 +8,11 @@ task_key: T030-staging-shopify-worker-runtime-adapter
 owner_intent: "Fix the Staging Admin GraphQL identity failure by initializing Shopify SDK runtime adapter in the Cloudflare Worker entry, matching the working Metafields app bootstrap."
 base_branch: development
 working_branch: fix/staging-shopify-worker-adapter
-pull_request: none (implementation branch; PR not yet created)
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/382
 last_verified_commit: c313d17f234dd876271fcdcada51f91702f7844a
 last_verified_step: "On branch fix/staging-shopify-worker-adapter, workers/app.js now initializes the official Shopify React Router Node adapter before Worker SDK imports; Metafields uses the same adapter bootstrap and is loading in Staging Admin. Local tests not run."
-in_flight_step: "Open a PR for the adapter bootstrap change and inspect exact-head CI."
-next_exact_action: "After PR checks/review, use protected Staging gates only; inspect live Admin GraphQL identity and billing result on the deployed exact SHA."
+in_flight_step: "Inspect exact-head CI and required review on PR #382."
+next_exact_action: "After required exact-head CI/review and merge, promote only through protected Staging workflows; recheck Admin GraphQL identity and billing on the deployed SHA."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
