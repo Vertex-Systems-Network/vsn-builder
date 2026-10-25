@@ -8,11 +8,11 @@ task_key: T020-staging-full-react-router-app
 owner_intent: "Make the full VSN Builder React Router app load in Shopify Staging Admin and verify it on the hosted Staging Worker."
 base_branch: development
 working_branch: fix/staging-full-react-router-entry
-pull_request: none
-last_verified_commit: ad57b68bef54e54481294ae6a88719521b943a0d
-last_verified_step: "Added an authenticated Staging Plans & License route and safe Shopify-hosted pricing links to the limited dashboard/unpaid billing notice; 14 focused dashboard/plan tests and ESLint passed."
-in_flight_step: "Wire the full React Router graph to the Cloudflare Staging Worker with per-request official Shopify SDK/Neon context, Web Streams SSR and static assets; update the protected T021 build/deploy pipeline."
-next_exact_action: "Run native Cloudflare build and complete relevant CI on the exact branch, inspect every failing check, and only then open a PR into development."
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/384
+last_verified_commit: 6611e87eeeff59ece978d48b573e86f57dee278e
+last_verified_step: "PR #384's exact head passed the full Staging React Router Worker build and Wrangler dry-run, T020 Worker compatibility, Chromium acceptance, security audit, CodeQL, repository integrity, and environment isolation. Local ESLint and focused tests also passed."
+in_flight_step: "Merge PR #384 after confirming all exact-head required CI remains green, then run the protected manual T021 Staging deployment and verify the full app in Shopify Admin."
+next_exact_action: "Confirm PR #384 exact-head checks and review status, merge into protected development, run the typed-confirmation T021 deploy, then verify /app and plan discovery in Shopify Admin."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
@@ -93,9 +93,7 @@ Do not update it for every keystroke or trivial local edit.
 
 ## Current state
 
-**2026-10-25:** The SDK version alignment PR #383 was merged to protected `development` at `ad57b68bef54e54481294ae6a88719521b943a0d`, passed protected CI, and was deployed through the protected T021 Staging workflow. The real Shopify Admin launch now renders an HTTP 200 HTML page and the billing notice is gone, but it is the explicitly limited Staging dashboard, not the full Builder. The deployed `/app` route in `workers/app.js` directly returns `handleVerifiedStagingMerchantDashboard`; the full React Router app is not wired into the hosted Worker.
-
-The full route graph currently imports Node-backed `app/shopify.server.js` and `app/db.server.js`; the Cloudflare Vite/Workerd workflows are CI-only compatibility proofs and substitute isolated test boundaries. The production Staging manifest still points at `workers/app.js`. T020's real Cloudflare Shopify/Neon route adapter is therefore the next implementation unit. Preserve official SDK authentication, tenant/paid/RBAC checks, and existing route behavior; do not claim full-app readiness from the current dashboard or CI-only build. Production remains untouched.
+**2026-10-25:** PR #384, `fix/staging-full-react-router-entry`, wires the real React Router Builder route graph to the Cloudflare Staging Worker through request-scoped official Shopify SDK and Neon Prisma adapters. It preserves the isolated health/legacy endpoints, adds a Staging Plans & License page and links to Shopify-hosted pricing, and updates the protected T021 build/deploy flow. The exact PR head `6611e87eeeff59ece978d48b573e86f57dee278e` passed all eight CI workflows, including the real Staging Worker build plus Wrangler dry-run. The PR is not yet merged or deployed; verify that exact head's checks again before merge. After deployment, verify the Admin `/app` full route graph and Plans link. Production remains untouched.
 
 Historical note (2026-09-18):
 
