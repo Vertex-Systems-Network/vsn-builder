@@ -53,17 +53,49 @@ function identityValue(json,shop){
 // The Shopify SDK throws a Response for HTTP errors and a GraphqlQueryError
 // carrying Shopify's fixed extensions.code (e.g. ACCESS_DENIED) for GraphQL
 // errors. Only that short code is reported, never the message or payload.
+function errorChain(error){
+  const queue=[error],seen=new Set(),chain=[];
+  while(queue.length&&chain.length<8){
+    const current=queue.shift();
+    if(!current||typeof current!=="object"||seen.has(current))continue;
+    seen.add(current);
+    chain.push(current);
+    for(const key of ["cause","originalError","error","response","body"])
+      if(current[key]&&typeof current[key]==="object")queue.push(current[key]);
+  }
+  return chain;
+}
 function gqlCode(error){
-  const errors=error?.body?.errors?.graphQLErrors||error?.body?.errors||error?.response?.errors;
-  const list=Array.isArray(errors)?errors:Array.isArray(errors?.graphQLErrors)?errors.graphQLErrors:[];
-  const code=String(list[0]?.extensions?.code||"").toLowerCase().replace(/_/g,"-");
-  return /^[a-z0-9-]{1,20}$/.test(code)?code:null;
+  for(const current of errorChain(error)){
+    const errors=current?.body?.errors?.graphQLErrors||
+      current?.body?.errors||current?.response?.errors||
+      current?.errors?.graphQLErrors||current?.errors;
+    const list=Array.isArray(errors)?errors:Array.isArray(errors?.graphQLErrors)?errors.graphQLErrors:[];
+    const code=String(list[0]?.extensions?.code||"").toLowerCase().replace(/_/g,"-");
+    if(/^[a-z0-9-]{1,20}$/.test(code))return code;
+  }
+  return null;
+}
+function httpStatus(error){
+  for(const current of errorChain(error)){
+    const status=Number(current?.status??current?.statusCode);
+    if(Number.isInteger(status)&&status>=400&&status<=599)return status;
+  }
+  return 0;
 }
 async function graphql(admin,query,variables){
   const response=await admin.graphql(query,variables?{variables}:undefined);
   const json=await response.json();
-  if(!response.ok||json?.errors?.length||!json?.data)
-    throw Object.assign(new Error("Shopify Admin identity query failed"),{code:"admin-identity-failed"});
+  if(!response.ok)
+    throw Object.assign(new Error("Shopify Admin identity query failed"),{status:Number(response.status)||0});
+  if(json?.errors?.length)
+    throw Object.assign(new Error("Shopify Admin identity query failed"),{
+      name:"GraphqlQueryError",body:{errors:json.errors},
+    });
+  if(!json?.data)
+    throw Object.assign(new Error("Shopify Admin identity query returned no data"),{
+      name:"GraphqlQueryError",body:{errors:[]},
+    });
   return json;
 }
 async function partnerState({config,appId,shopId,shop,fetchImpl,now}){
@@ -183,9 +215,10 @@ export async function syncStagingShopifySubscription({
     const graphqlErrorCode=gqlCode(error);
     // Preserve transport/GraphQL detail before a generic SDK or app error.code.
     // Shopify can attach the old "admin-identity-error" code to its wrapper.
-    const stage=error instanceof Response?step+"-http-"+(Number(error.status)||0):
+    const status=httpStatus(error)||(error instanceof Response?Number(error.status)||0:0);
+    const stage=status?step+"-http-"+status:
       graphqlErrorCode?step+"-gql-"+graphqlErrorCode:
-      error?.name==="GraphqlQueryError"?step+"-gql-error":
+      errorChain(error).some(item=>item?.name==="GraphqlQueryError")?step+"-gql-error":
       /^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:
       step+"-"+(error?.name==="TimeoutError"?"timeout":
         error instanceof SyntaxError?"bad-json":
