@@ -10,6 +10,17 @@ import { syncShopifySubscription, getShopifySubscriptionSyncPublicConfig } from 
 import { getEntitlementSnapshot, serializeEntitlementSnapshot } from "../services/entitlements.server.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 
+function planUsageFromSnapshot(snapshot, plan) {
+  const quotas=snapshot?.quotas||{};
+  return {
+    pages:{used:quotas.pages?.used||0,limit:Number(plan.maxPages)},
+    templates:{used:quotas.marketplaceInstalls?.used||0,limit:Number(plan.templateQuota)},
+    ai:{used:quotas.aiGenerations?.used||0,limit:Number(plan.aiMonthly),resetAt:quotas.aiGenerations?.resetAt||null},
+    experiments:{used:quotas.croExperiments?.used||0,limit:Number(plan.croExperiments)},
+    team:{used:quotas.collaborationSeats?.used||1,limit:Number(plan.teamMembers),window:"assigned seats"},
+  };
+}
+
 export async function loader({request}){
   const{admin,session}=await authenticate.admin(request);
   if(!(await canAccessBuilderAction(db,session,"billing","view"))) throw new Response("Your VSN role does not have permission to view Plans & License.",{status:403});
@@ -22,7 +33,7 @@ export async function loader({request}){
     current:serializePlan(current),
     plans:PLAN_ORDER.map((key)=>COMMERCIAL_PLANS[key]),
     featureRows:PLAN_FEATURE_ROWS.map((row)=>({key:row.key,label:row.label})),
-    usage:await getPlanUsage(db,session.shop,current),
+    usage:planUsageFromSnapshot(entitlementSnapshot,current),
     entitlements:serializeEntitlementSnapshot(entitlementSnapshot),
     billingUrl:pricing.pricingUrl,
     pricing,
