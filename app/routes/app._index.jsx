@@ -4,7 +4,7 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import DashboardApp from "../components/dashboard/DashboardApp";
 import { getWidgetDefinitions, loadWidgetSettings, summarizeWidgets } from "../services/widget-settings.server";
-import { serializePlan } from "../utils/plan.server.js";
+import { getPlan, serializePlan } from "../utils/plan.server.js";
 import { VSN_RELEASES } from "../data/releases.js";
 import { ensureDashboardNotifications, listDashboardNotifications } from "../services/dashboard-notifications.server.js";
 import { loadDashboardActivity } from "../services/dashboard-activity.server.js";
@@ -172,17 +172,17 @@ export async function loader({ request }) {
     const pricingReturn = readShopifyAppPricingReturn(request, session.shop);
     const syncResult = await syncShopifySubscription({ db, admin, shop:session.shop, force: Boolean(pricingReturn?.pendingVerification) })
       .catch((error)=>({ok:false,error:error instanceof Error?error.message:String(error)}));
-    const entitlementSnapshot = await getEntitlementSnapshot(db, session.shop);
+    // Pricing displays the current contract and verification state; it does not
+    // need the dashboard's full feature matrix or five separate usage queries.
+    const plan = await getPlan(db, session.shop);
     const pricing = getShopifyAppPricingConfig(session.shop);
-    const plan = entitlementSnapshot.plan;
     return {
       session,
       ownerInfo,
       widgetSettings:defaultWidgets(),
       dashboard:{
         plan:serializePlan(plan),
-        planUsage:planUsageFromSnapshot(entitlementSnapshot, plan),
-        entitlements:serializeEntitlementSnapshot(entitlementSnapshot),
+        entitlements:{source:plan.entitlementSource,verified:Boolean(plan.entitlementVerified),developerMode:Boolean(plan.developerMode)},
         billingUrl:pricing.pricingUrl,
         shopifyPricing:pricing,
         pricingReturn,
