@@ -2,15 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {renderStagingBillingRequired} from "../app/services/worker-shopify-staging-billing-notice.js";
 
-test("Staging unpaid app shell explains internal-app billing verification limits",async()=>{
+test("Staging unverified app shell explains private test-plan requirements",async()=>{
   const response=renderStagingBillingRequired({
     shop:"staging-oath3rth.myshopify.com",
     apiKey:"a".repeat(32),
   });
   assert.equal(response.status,200);
   const html=await response.text();
-  assert.match(html,/separate internal Shopify app identity/);
-  assert.match(html,/Partner API can verify managed subscriptions only for public apps/);
+  assert.match(html,/shopify-test/);
+  assert.match(html,/works only for stores allowed in the Partner Dashboard/);
   assert.doesNotMatch(html,/pricing_plans|Choose a Shopify test plan|target="_top"/);
   assert.match(html,/does not activate a plan or make a charge/);
 });

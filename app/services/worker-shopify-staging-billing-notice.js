@@ -1,4 +1,4 @@
-// Pure, dependency-free rendering for the unpaid Staging billing screen.
+// Pure, dependency-free rendering for the unverified Staging billing screen.
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const KEY=/^[a-f0-9]{32}$/i;
 const CSP="default-src 'none'; script-src https://cdn.shopify.com; "+
@@ -22,11 +22,10 @@ export function renderStagingBillingRequired({shop,apiKey}={}) {
     '<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>'+
     '<style>'+css+'</style></head><body><main><div class="eyebrow">VSN | Builder · Staging</div>'+
     '<h1>Billing verification unavailable</h1>'+
-    '<p>This Staging installation uses a separate internal Shopify app identity.</p>'+
     '<section class="panel"><h2>Why page data is locked</h2>'+
-    '<p>Shopify’s Partner API can verify managed subscriptions only for public apps. A plan selected for this internal Staging app cannot authorize Builder page data.</p>'+
-    '<p>Use a test store installed through the public VSN Builder app to test the real subscription flow.</p>'+
-    '<p class="notice">This screen does not activate a plan or make a charge. No page data or edits are available in this Staging installation until billing can be verified.</p></section>'+
+    '<p>Builder page data stays locked until Shopify App Pricing confirms an active plan for this store.</p>'+
+    '<p>The private <strong>shopify-test</strong> plan is a $0 test plan and works only for stores allowed in the Partner Dashboard. Confirm the plan is active and this Staging store still has access.</p>'+
+    '<p class="notice">This notice does not activate a plan or make a charge. The Staging app remains read-only; editing and publishing are disabled.</p></section>'+
     '</main></body></html>';
   return new Response(markup,{status:200,headers:{
     "content-type":"text/html; charset=utf-8","cache-control":"no-store",

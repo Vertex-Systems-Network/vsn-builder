@@ -2,7 +2,9 @@
 // commercial contract as merchant mutation routes. No "developer mode"
 // bypass is allowed on an externally hosted Staging/Production Worker.
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
-const PLAN_HANDLES=new Set(["starter","sliver","gold","platinum"]);
+// shopify-test is a store-allowlisted private $0 plan for Staging read-only
+// verification; no commercial entitlement or mutation is granted by it.
+const PLAN_HANDLES=new Set(["starter","sliver","gold","platinum","shopify-test"]);
 const ALLOWED_STATES=new Set(["active","trialing","canceling"]);
 const MAX_MIRROR_AGE_MS=24*60*60*1000;
 const FUTURE_CLOCK_SKEW_MS=5*60*1000;

@@ -11,7 +11,8 @@ const env={
   SHOPIFY_PARTNER_API_TOKEN:"synthetic-partner-token",
   SHOPIFY_PARTNER_API_VERSION:"2026-07",
 };
-function setup({active=true,handle="starter",existing=null,identityShop=shop}={}){
+function setup({active=true,handle="starter",existing=null,identityShop=shop,
+  trialEndsAt="2026-11-04T12:00:00.000Z"}={}){
   const calls=[];
   const rows={current:existing};
   const database={builderSubscription:{
@@ -31,7 +32,7 @@ function setup({active=true,handle="starter",existing=null,identityShop=shop}={}
       activeSubscription:active?{
         shop:{id:"gid://shopify/Shop/123",myshopifyDomain:shop},
         billingPeriod:"EVERY_30_DAYS",cancelAtEndOfCycle:false,
-        trialEndsAt:"2026-11-04T12:00:00.000Z",
+        trialEndsAt,
         currentBillingCycle:{startTime:"2026-10-25T12:00:00.000Z",endTime:"2026-11-24T12:00:00.000Z"},
         items:[{handle}],pendingUpdate:null,legacySubscriptionId:null,
       }:null,
@@ -54,6 +55,16 @@ test("Partner-verified trial is persisted with canonical plan handle and zero ra
   assert.deepEqual(JSON.parse(result.row.snapshotJson),{source:"shopify-partner-api",verified:true});
   assert.equal(fx.calls.filter(call=>call[0]==="partner").length,1);
   assert.match(fx.calls.find(call=>call[0]==="partner")[2].headers["x-shopify-access-token"],/synthetic/);
+});
+
+test("allowlisted private $0 test plan is verified for the Staging shell",async()=>{
+  const fx=setup({active:true,handle:"shopify-test",trialEndsAt:null});
+  const result=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,fetchImpl:fx.fetchImpl});
+  assert.equal(result.ok,true);
+  assert.equal(result.verified,true);
+  assert.equal(result.row.planKey,"shopify-test");
+  assert.equal(result.row.planHandle,"shopify-test");
+  assert.equal(result.row.status,"active");
 });
 
 test("a returned plan handle forces a new Partner lookup even when the mirror is cached",async()=>{
