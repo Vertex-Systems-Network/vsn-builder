@@ -75,7 +75,7 @@ async function responseJson(response){
     if(!reader)return null;
     const chunks=[];
     let size=0;
-    while(true){
+    while(size<=65536){
       const {done,value}=await reader.read();
       if(done)break;
       size+=value.byteLength;
