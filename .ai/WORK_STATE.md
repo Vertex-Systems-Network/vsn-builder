@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: T030-staging-shopify-worker-runtime-adapter
-owner_intent: "Fix the Staging Admin GraphQL identity failure by initializing Shopify SDK runtime adapter in the Cloudflare Worker entry, matching the working Metafields app bootstrap."
+task_key: T020-staging-full-react-router-app
+owner_intent: "Make the full VSN Builder React Router app load in Shopify Staging Admin and verify it on the hosted Staging Worker."
 base_branch: development
-working_branch: fix/staging-shopify-worker-adapter
-pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/382
-last_verified_commit: c313d17f234dd876271fcdcada51f91702f7844a
-last_verified_step: "On branch fix/staging-shopify-worker-adapter, workers/app.js now initializes the official Shopify React Router Node adapter before Worker SDK imports; Metafields uses the same adapter bootstrap and is loading in Staging Admin. Local tests not run."
-in_flight_step: "Inspect exact-head CI and required review on PR #382."
-next_exact_action: "After required exact-head CI/review and merge, promote only through protected Staging workflows; recheck Admin GraphQL identity and billing on the deployed SHA."
+working_branch: fix/staging-full-react-router-entry
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/384
+last_verified_commit: 6611e87eeeff59ece978d48b573e86f57dee278e
+last_verified_step: "PR #384's exact head passed the full Staging React Router Worker build and Wrangler dry-run, T020 Worker compatibility, Chromium acceptance, security audit, CodeQL, repository integrity, and environment isolation. Local ESLint and focused tests also passed."
+in_flight_step: "Merge PR #384 after confirming all exact-head required CI remains green, then run the protected manual T021 Staging deployment and verify the full app in Shopify Admin."
+next_exact_action: "Confirm PR #384 exact-head checks and review status, merge into protected development, run the typed-confirmation T021 deploy, then verify /app and plan discovery in Shopify Admin."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
@@ -93,7 +93,7 @@ Do not update it for every keystroke or trivial local edit.
 
 ## Current state
 
-**2026-10-25:** PR #368 merged at `b2836a8`; protected T021 run #16 deployed it. `/healthz` and `/readyz` returned 200 and unauthenticated `/app` returned 302. A real Shopify Admin launch still showed `about:blank`; T023 run #7 saw billing-sync-failed, paid-plan-not-verified and billing-notice-session-rotated, but no successful HTTP status. PR #369 adds safe app/OAuth response metadata so the next live tail can distinguish HTML from reauthorization. The internal Staging app cannot verify Partner `activeSubscription`; paid page data and mutations remain gated.
+**2026-10-25:** PR #384, `fix/staging-full-react-router-entry`, wires the real React Router Builder route graph to the Cloudflare Staging Worker through request-scoped official Shopify SDK and Neon Prisma adapters. It preserves the isolated health/legacy endpoints, adds a Staging Plans & License page and links to Shopify-hosted pricing, and updates the protected T021 build/deploy flow. The exact PR head `6611e87eeeff59ece978d48b573e86f57dee278e` passed all eight CI workflows, including the real Staging Worker build plus Wrangler dry-run. The PR is not yet merged or deployed; verify that exact head's checks again before merge. After deployment, verify the Admin `/app` full route graph and Plans link. Production remains untouched.
 
 Historical note (2026-09-18):
 

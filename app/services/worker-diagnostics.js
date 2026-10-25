@@ -41,7 +41,7 @@ export function logStagingRequest(env,request,response){
      !(response instanceof Response))return;
   try{
     const pathname=new URL(request.url).pathname;
-    const appRoute=pathname==="/" || pathname==="/app" ||
+    const appRoute=pathname==="/" || pathname==="/app" || pathname.startsWith("/app/") ||
       pathname==="/auth/login" || pathname==="/auth/callback";
     if(!appRoute && response.status<400)return;
     console.warn(JSON.stringify({

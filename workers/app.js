@@ -10,6 +10,7 @@ import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-dr
 import { handleVerifiedWorkerPageCreate } from "../app/services/worker-shopify-page-create.js";
 import { STAGING_EDITOR_UI_SCRIPT } from "./staging-editor-ui.js";
 import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
+import { handleVerifiedStagingPlanPage } from "../app/services/worker-shopify-staging-plans.js";
 import { handleVerifiedStagingShopifyAuth } from "../app/services/worker-shopify-staging-auth.js";
 import { handleVerifiedStagingShopifyLogin } from "../app/services/worker-shopify-staging-login.js";
 import { acceptWorkerShopifyUninstallWebhook, normalizeWorkerWebhookFailure } from "../app/services/worker-shopify-webhook-gate.js";
@@ -136,6 +137,10 @@ async function route(request,env) {
       return merchantReadiness(request,env);
     if(url.pathname==="/__vsn/database-health" && request.method==="GET")
       return databaseHealth(request,env);
+    // Billing comparison must remain reachable after install even when Shopify
+    // has not yet confirmed a paid plan. The hosted pricing page owns checkout.
+    if(url.pathname==="/app/plans")
+      return handleVerifiedStagingPlanPage(request,env);
     // Stage-only real Shopify App Bridge overview. Every request reuses the
     // official SDK + verified session + Partner-paid + pages/view gates.
     // Production and unconfigured Staging always return 503.

@@ -12,7 +12,7 @@ test("separate hosted Worker manifests route to one gated source without secrets
     ["production","vsn-builder-production","nameless-violet-68750490"],
   ]){
     const cfg=parseJsonc(`wrangler.${tier}.jsonc`);
-    assert.equal(cfg.main,"./workers/app.js");
+    assert.equal(cfg.main,tier==="staging"?"./workers/staging-full-app.js":"./workers/app.js");
     assert.equal(cfg.name,workerName);
     assert.equal(cfg.vars.APP_ENV,tier);
     assert.equal(cfg.vars.VSN_WORKER_NAME,workerName);
@@ -24,6 +24,7 @@ test("separate hosted Worker manifests route to one gated source without secrets
     assert.equal(cfg.vars.VSN_STAGING_OAUTH_ENABLED,tier==="staging"?"true":undefined);
     assert.equal(cfg.vars.VSN_STAGING_DASHBOARD_ENABLED,tier==="staging"?"true":undefined);
     assert.equal(cfg.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,tier==="staging"?"true":undefined);
+    assert.equal(cfg.vars.VSN_STAGING_REACT_ROUTER_ENABLED,tier==="staging"?"true":undefined);
     assert.equal(cfg.preview_urls,false);
     assert.equal(cfg.vars.SHOPIFY_BILLING_TEST_MODE,tier==="staging"?"true":"false");
     // Cloudflare Wrangler 4 supports declaring REQUIRED secret NAMES, not
