@@ -101,8 +101,13 @@ const declarations = [];
 const operations = [];
 for (const item of entries) {
   const doc = parse(item.document);
-  const isPartner = item.file === "app/services/shopify-subscription.server.js"
-    && doc.definitions.some((d) => d.name?.value === "VsnSubscriptionState");
+  const isPartner = (
+    item.file === "app/services/shopify-subscription.server.js"
+      && doc.definitions.some((d) => d.name?.value === "VsnSubscriptionState")
+  ) || (
+    item.file === "app/services/worker-shopify-subscription-sync.js"
+      && doc.definitions.some((d) => d.name?.value === "VsnStagingSubscription")
+  );
   if (isPartner) {
     exclusions.push({ file: item.file, operation: "VsnSubscriptionState", reason: "Shopify Partner API, not Admin API" });
     continue;
