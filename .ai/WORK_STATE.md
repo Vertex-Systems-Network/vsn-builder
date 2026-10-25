@@ -4,17 +4,17 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: T020-staging-full-react-router-app
+task_key: T020-staging-worker-cpu-limit
 owner_intent: "Make the full VSN Builder React Router app load in Shopify Staging Admin and verify it on the hosted Staging Worker."
 base_branch: development
-working_branch: fix/staging-full-react-router-entry
-pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/384
-last_verified_commit: 6611e87eeeff59ece978d48b573e86f57dee278e
-last_verified_step: "PR #384's exact head passed the full Staging React Router Worker build and Wrangler dry-run, T020 Worker compatibility, Chromium acceptance, security audit, CodeQL, repository integrity, and environment isolation. Local ESLint and focused tests also passed."
-in_flight_step: "Merge PR #384 after confirming all exact-head required CI remains green, then run the protected manual T021 Staging deployment and verify the full app in Shopify Admin."
-next_exact_action: "Confirm PR #384 exact-head checks and review status, merge into protected development, run the typed-confirmation T021 deploy, then verify /app and plan discovery in Shopify Admin."
+working_branch: fix/staging-worker-cpu-budget
+pull_request: none
+last_verified_commit: 45e9d41b342721f3ccce8a10f81512d1d90c9a6a
+last_verified_step: "Protected T021 run #34 deployed SHA 45e9d41 to Staging. Shopify Admin loaded the full Builder once, but navigation/reload intermittently returned 503 or refused connection; protected T023 run #21 recorded outcome exceededCpu. CPU-budget and granular persistence diagnostics changes pass 17 focused tests, ESLint, typecheck, npm run qa and git diff checks."
+in_flight_step: "Commit the Staging CPU-budget and session-shape diagnostic changes, open a PR into development and complete exact-head CI."
+next_exact_action: "Push branch fix/staging-worker-cpu-budget, open a PR into development, wait for all required checks, merge if green, then deploy that exact protected development SHA through T021 and verify Dashboard → Plans & License and navigation in Shopify Admin."
 approval_needed_now: false
-updated_at: 2026-10-25
+updated_at: 2026-10-26
 ---
 
 ## Purpose
@@ -93,7 +93,7 @@ Do not update it for every keystroke or trivial local edit.
 
 ## Current state
 
-**2026-10-25:** PR #384, `fix/staging-full-react-router-entry`, wires the real React Router Builder route graph to the Cloudflare Staging Worker through request-scoped official Shopify SDK and Neon Prisma adapters. It preserves the isolated health/legacy endpoints, adds a Staging Plans & License page and links to Shopify-hosted pricing, and updates the protected T021 build/deploy flow. The exact PR head `6611e87eeeff59ece978d48b573e86f57dee278e` passed all eight CI workflows, including the real Staging Worker build plus Wrangler dry-run. The PR is not yet merged or deployed; verify that exact head's checks again before merge. After deployment, verify the Admin `/app` full route graph and Plans link. Production remains untouched.
+**2026-10-26:** PR #384 wired the full React Router app to the Staging Worker; PR #385 repaired the protected deploy config guard; PR #386 added safe session persistence reason codes. All three are merged to protected `development`, and T021 run #34 deployed `45e9d41b342721f3ccce8a10f81512d1d90c9a6a` to Staging. Live Shopify Admin showed the full navigation and plan catalog, but repeat opens/navigation failed intermittently. Protected T023 run #21 recorded Cloudflare invocation outcome `exceededCpu`, which is the current blocker. Production remains untouched.
 
 Historical note (2026-09-18):
 

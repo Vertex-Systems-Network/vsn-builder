@@ -6,7 +6,10 @@
 // DOES NOT verify OAuth, sign tokens, expose secrets or deploy any Worker.
 const SHOP=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
 const BLOCK_REASONS=new Set([
-  "invalid-session-shape","invalid-clock","transaction-unavailable",
+  "invalid-session-shop","invalid-session-id","invalid-session-online-flag",
+  "invalid-session-storage-adapter","invalid-session-transaction",
+  "invalid-session-access-token","offline-session-id-mismatch",
+  "online-session-id-offline-format","invalid-clock","transaction-unavailable",
   "installation-model-unavailable","active-generation-missing",
   "offline-generation-read-failed","offline-session-read-failed",
   "orphaned-session-needs-install-migration","installation-generation-closed",
@@ -26,13 +29,22 @@ const isDate=(v)=>v instanceof Date&&Number.isFinite(v.getTime());
 export async function persistWorkerShopifySessionWithGeneration(session,db,{
   SessionStorage,clock=()=>new Date(),
 }={}) {
-  if(!SHOP.test(String(session?.shop||"")) || typeof session?.id!=="string" ||
-     typeof session?.isOnline!=="boolean" || typeof SessionStorage!=="function" ||
-     typeof db?.$transaction!=="function" ||
-     typeof session?.accessToken!=="string" || !session.accessToken ||
-     (!session.isOnline && session.id!==`offline_${session.shop}`) ||
-     (session.isOnline && session.id.startsWith("offline_")))
-    throw blocked("invalid-session-shape");
+  if(!SHOP.test(String(session?.shop||"")))
+    throw blocked("invalid-session-shop");
+  if(typeof session?.id!=="string" || !session.id)
+    throw blocked("invalid-session-id");
+  if(typeof session?.isOnline!=="boolean")
+    throw blocked("invalid-session-online-flag");
+  if(typeof SessionStorage!=="function")
+    throw blocked("invalid-session-storage-adapter");
+  if(typeof db?.$transaction!=="function")
+    throw blocked("invalid-session-transaction");
+  if(typeof session?.accessToken!=="string" || !session.accessToken)
+    throw blocked("invalid-session-access-token");
+  if(!session.isOnline && session.id!==`offline_${session.shop}`)
+    throw blocked("offline-session-id-mismatch");
+  if(session.isOnline && session.id.startsWith("offline_"))
+    throw blocked("online-session-id-offline-format");
   const now=clock();
   if(!isDate(now))throw blocked("invalid-clock");
   let failurePoint="transaction-operation-failed";
