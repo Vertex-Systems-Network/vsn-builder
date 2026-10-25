@@ -198,3 +198,13 @@ test("opaque SDK identity errors expose only a bounded wrapper shape",async()=>{
   assert.equal(result.stage.includes("private"),false);
   assert.equal(fx.calls.some(([op])=>op==="partner"||op==="upsert"),false);
 });
+
+
+test("fallback Admin identity errors expose a bounded shape even without an SDK code",async()=>{
+  const fx=setup();
+  fx.admin.graphql=async()=>{throw new Error("private error text");};
+  const result=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,fetchImpl:fx.fetchImpl});
+  assert.match(result.stage,/^admin-identity-shape-/);
+  assert.equal(result.stage.includes("private"),false);
+  assert.equal(fx.calls.some(([op])=>op==="partner"||op==="upsert"),false);
+});
