@@ -170,7 +170,7 @@ export async function loader({ request }) {
     if (!(await canAccessBuilderAction(db, session, "billing", "view")))
       throw new Response("Your VSN role does not have permission to view Plans & License.", { status:403 });
     const pricingReturn = readShopifyAppPricingReturn(request, session.shop);
-    const syncResult = await syncShopifySubscription({ db, admin, shop:session.shop, force:Boolean(pricingReturn?.pendingVerification) })
+    const syncResult = await syncShopifySubscription({ db, admin, shop:session.shop, force: Boolean(pricingReturn?.pendingVerification) })
       .catch((error)=>({ok:false,error:error instanceof Error?error.message:String(error)}));
     const entitlementSnapshot = await getEntitlementSnapshot(db, session.shop);
     const pricing = getShopifyAppPricingConfig(session.shop);
