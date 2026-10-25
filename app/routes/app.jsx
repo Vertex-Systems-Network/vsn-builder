@@ -82,7 +82,7 @@ function loadShellOwner(session) {
     firstName: associated?.first_name || associated?.firstName || "",
     lastName: associated?.last_name || associated?.lastName || "",
     name: [associated?.first_name || associated?.firstName, associated?.last_name || associated?.lastName].filter(Boolean).join(" "),
-    email: associated?.email || session?.email || "",
+    email: associated?.email || associated?.contact_email || associated?.contactEmail || session?.email || "",
     avatar: null,
     shopName: "",
   };
