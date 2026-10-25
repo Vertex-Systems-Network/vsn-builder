@@ -91,6 +91,10 @@ async function responseJson(response){
     return parseJson(new TextDecoder().decode(bytes));
   }catch{return null}
 }
+const SAFE_SHOPIFY_SDK_CODES=new Set([
+  "ACCESS_DENIED","UNAUTHORIZED","FORBIDDEN","INTERNAL_SERVER_ERROR",
+  "THROTTLED","MAX_COST_EXCEEDED","SHOP_INACTIVE","SHOP_NOT_FOUND",
+]);
 async function gqlCode(error){
   const queue=[error],seen=new Set();
   let visited=0;
@@ -104,6 +108,8 @@ async function gqlCode(error){
     }
     const body=parseJson(current.body)||current.body;
     if(body&&typeof body==="object"&&body!==current.body)queue.push(body);
+    const sdkCode=String(current?.code||"").toUpperCase();
+    if(SAFE_SHOPIFY_SDK_CODES.has(sdkCode))return sdkCode.toLowerCase().replace(/_/g,"-");
     const code=String(current?.extensions?.code||"").toLowerCase().replace(/_/g,"-");
     if(/^[a-z0-9-]{1,20}$/.test(code))return code;
     for(const key of ["cause","originalError","error","response","body","errors",

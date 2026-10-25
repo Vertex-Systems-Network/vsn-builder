@@ -220,3 +220,14 @@ test("malformed SDK error codes use a bounded identity shape",async()=>{
   assert.equal(result.stage.includes("private"),false);
   assert.equal(fx.calls.some(([op])=>op==="partner"||op==="upsert"),false);
 });
+
+
+test("allowlisted top-level Shopify SDK codes become fixed diagnostics",async()=>{
+  const fx=setup();
+  fx.admin.graphql=async()=>{throw Object.assign(new Error("private error text"),{
+    code:"ACCESS_DENIED",
+  });};
+  const result=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,fetchImpl:fx.fetchImpl});
+  assert.equal(result.stage,"admin-identity-gql-access-denied");
+  assert.equal(fx.calls.some(([op])=>op==="partner"||op==="upsert"),false);
+});
