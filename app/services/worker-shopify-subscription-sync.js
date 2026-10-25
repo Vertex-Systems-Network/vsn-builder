@@ -138,6 +138,7 @@ export async function syncStagingShopifySubscription({
   const age=existing?.verifiedAt instanceof Date?now.getTime()-existing.verifiedAt.getTime():Infinity;
   if(!force&&existing?.provider==="shopify-app-pricing"&&age>=0&&age<CACHE_TTL_MS)
     return {ok:true,skipped:true,row:existing};
+  let step="admin-identity";
   try{
     const identityJson=await graphql(admin,`#graphql
       query VsnStagingBillingIdentity {
@@ -145,6 +146,7 @@ export async function syncStagingShopifySubscription({
         shop { id myshopifyDomain }
       }`);
     const {appId,shopId}=identityValue(identityJson,normalizedShop);
+    step="partner";
     const state=await partnerState({config,appId,shopId,shop:normalizedShop,fetchImpl,now});
     const data={
       planKey:state.planKey,status:state.status,provider:"shopify-app-pricing",
@@ -160,6 +162,7 @@ export async function syncStagingShopifySubscription({
       snapshotJson:JSON.stringify({source:"shopify-partner-api",verified:true}),
       trialEndsAt:state.trialEndsAt,
     };
+    step="mirror-write";
     const row=await database.builderSubscription.upsert({
       where:{shop:normalizedShop},
       create:{shop:normalizedShop,startedAt:now,...data},
@@ -168,7 +171,11 @@ export async function syncStagingShopifySubscription({
     return {ok:true,verified:true,row};
   }catch(error){
     // Fixed, credential-free stage codes only; never the Partner payload.
-    const stage=/^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:"unexpected";
+    const stage=/^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:
+      step+"-"+(error?.name==="TimeoutError"?"timeout":
+        error instanceof SyntaxError?"bad-json":
+        error instanceof TypeError?"type-error":
+        /^P\d{4}$/.test(String(error?.code||""))?error.code.toLowerCase():"error");
     return {ok:false,reason:"partner-verification-failed",stage,row:existing||null};
   }
 }
