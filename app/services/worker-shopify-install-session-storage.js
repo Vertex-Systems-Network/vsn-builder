@@ -5,9 +5,19 @@
 // The SDK must authenticate OAuth before invoking storeSession. This adapter
 // DOES NOT verify OAuth, sign tokens, expose secrets or deploy any Worker.
 const SHOP=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
-const blocked=()=>{
-  const error=new Error("Worker Shopify installation/session persistence unavailable");
+const BLOCK_REASONS=new Set([
+  "invalid-session-shape","invalid-clock","transaction-unavailable",
+  "installation-model-unavailable","active-generation-missing",
+  "offline-generation-read-failed","offline-session-read-failed",
+  "orphaned-session-needs-install-migration","installation-generation-closed",
+  "installation-generation-write-invalid","session-storage-not-ready",
+  "session-storage-write-rejected","transaction-operation-failed",
+]);
+const blocked=(reason="transaction-operation-failed")=>{
+  const safeReason=BLOCK_REASONS.has(reason)?reason:"transaction-operation-failed";
+  const error=new Error(`Worker Shopify installation/session persistence unavailable (${safeReason})`);
   error.code="VSN_WORKER_INSTALL_SESSION_BLOCKED";
+  error.safeReason=safeReason;
   return error;
 };
 const options={connectionRetries:1,connectionRetryIntervalMs:0};
@@ -22,10 +32,12 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
      typeof session?.accessToken!=="string" || !session.accessToken ||
      (!session.isOnline && session.id!==`offline_${session.shop}`) ||
      (session.isOnline && session.id.startsWith("offline_")))
-    throw blocked();
+    throw blocked("invalid-session-shape");
   const now=clock();
-  if(!isDate(now))throw blocked();
+  if(!isDate(now))throw blocked("invalid-clock");
+  let failurePoint="transaction-operation-failed";
   try {
+    failurePoint="transaction-unavailable";
     return await db.$transaction(async(tx)=>{
       const lifecycle=tx?.builderShopInstallation;
       if(typeof lifecycle?.upsert!=="function" ||
@@ -34,26 +46,33 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
          typeof tx?.session?.findUnique!=="function" ||
          typeof tx?.session?.upsert!=="function" ||
          typeof tx?.session?.count!=="function")
-        throw blocked();
+        throw blocked("installation-model-unavailable");
 
       if(session.isOnline){
         // Lock the active installation row before saving a user session.
         // An uninstall transaction cannot race between this claim and write.
+        failurePoint="active-generation-missing";
         const active=await lifecycle.updateMany({
           where:{shop:session.shop,uninstalledAt:null},
           data:{updatedAt:now},
         });
-        if(active?.count!==1)throw blocked();
+        if(active?.count!==1)throw blocked("active-generation-missing");
       }else{
         // A no-op update deliberately locks this exact shop row; the uninstall
         // fence also updates the same row before Session.deleteMany.
         // A normal SDK refresh is not proof of a new Shopify installation.
         // In particular, an old token must NEVER resurrect sessions after
         // APP_UNINSTALLED or silently migrate an existing orphaned session.
+        failurePoint="offline-generation-read-failed";
         const previousInstall=await lifecycle.findUnique({where:{shop:session.shop}});
+        failurePoint="offline-session-read-failed";
         const prior=await tx.session.findUnique({where:{id:session.id}});
-        if((!previousInstall && prior) || previousInstall?.uninstalledAt!==null &&
-           previousInstall?.uninstalledAt!==undefined)throw blocked();
+        if(!previousInstall && prior)
+          throw blocked("orphaned-session-needs-install-migration");
+        if(previousInstall?.uninstalledAt!==null &&
+           previousInstall?.uninstalledAt!==undefined)
+          throw blocked("installation-generation-closed");
+        failurePoint="installation-generation-write-invalid";
         const installation=await lifecycle.upsert({
           where:{shop:session.shop},
           create:{
@@ -65,25 +84,27 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
         // upsert acquires the shop row lock. It is the authoritative state:
         // an uninstall may have committed between findUnique and upsert.
         if(!isDate(installation?.installedAt) ||
-           installation.uninstalledAt!==null)throw blocked();
+           installation.uninstalledAt!==null)throw blocked("installation-generation-write-invalid");
         // Same-token refresh and token rotation both belong to the *current*
         // installation. Do NOT advance installedAt just because a token
         // changed; reinstallation requires a separate authenticated flow.
         // The real Shopify SDK still serializes the token via storeSession.
       }
+      failurePoint="session-storage-not-ready";
       const inside=new SessionStorage(tx,options);
       // The official Prisma adapter starts an asynchronous session-table
       // readiness probe in its constructor. Await the PUBLIC isReady() API
       // while the transaction is still alive, including paths where a
       // subclass/driver rejects storeSession before ensureReady().
       if(typeof inside.isReady!=="function" ||
-         await inside.isReady()!==true)throw blocked();
-      if(await inside.storeSession(session)!==true)throw blocked();
+         await inside.isReady()!==true)throw blocked("session-storage-not-ready");
+      failurePoint="session-storage-write-rejected";
+      if(await inside.storeSession(session)!==true)throw blocked("session-storage-write-rejected");
       return true;
     });
-  }catch{
+  }catch(error){
     // Never send driver errors, DB connection strings or access tokens to SDK.
-    throw blocked();
+    throw blocked(error?.safeReason||failurePoint);
   }
 }
 
