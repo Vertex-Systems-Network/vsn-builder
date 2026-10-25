@@ -100,6 +100,7 @@ test("mismatched authenticated Shopify identity fails closed without writing a m
   const result=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,fetchImpl:fx.fetchImpl});
   assert.equal(result.ok,false);
   assert.equal(result.reason,"partner-verification-failed");
+  assert.equal(result.stage,"identity-mismatch");
   assert.equal(fx.calls.some(call=>call[0]==="upsert"),false);
 });
 
@@ -112,4 +113,13 @@ test("unknown or absent contract never creates a paid entitlement",async()=>{
     assert.equal(result.row.planHandle,null);
     assert.equal(result.row.status,"inactive");
   }
+});
+
+test("Partner HTTP failure reports only a fixed diagnostic stage",async()=>{
+  const fx=setup();
+  const result=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,
+    fetchImpl:async()=>new Response("secret body",{status:401})});
+  assert.equal(result.ok,false);
+  assert.equal(result.stage,"partner-http-401");
+  assert.equal(fx.calls.some(([op])=>op==="upsert"),false);
 });

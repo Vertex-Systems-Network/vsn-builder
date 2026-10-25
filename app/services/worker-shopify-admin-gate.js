@@ -343,7 +343,10 @@ async function guardedAdminRequest(request,env,{
           force:url.searchParams.has("plan_handle"),
         });
         if(!synced.ok)logStagingDenial(env,
-          synced.reason==="not-configured"?"billing-sync-not-configured":"billing-sync-failed");
+          synced.reason==="not-configured"?"billing-sync-not-configured":
+            "billing-sync-"+(synced.stage||"failed"));
+        else if(synced.verified)logStagingDenial(env,
+          "billing-sync-"+String(synced.row?.status||"unknown").slice(0,16));
       }
       // No Free plan: do not hand any Builder page-data capability to an
       // authenticated but unpaid merchant, even on hosted Staging.
