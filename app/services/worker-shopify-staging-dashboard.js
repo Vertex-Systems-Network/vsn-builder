@@ -131,8 +131,8 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
     requireVerifiedPaidRead:true,
     requirePageViewPermission:true,
     syncVerifiedPaidRead:true,
-    onUnverifiedPaidRead:({shop})=>renderStagingBillingRequired({
-      shop,apiKey:env.SHOPIFY_API_KEY,
+    onUnverifiedPaidRead:({shop,billingCode})=>renderStagingBillingRequired({
+      shop,apiKey:env.SHOPIFY_API_KEY,billingCode,
     }),
     onAuthenticated:async({shop,pageSummary})=>{
       const summary=await pageSummary();
