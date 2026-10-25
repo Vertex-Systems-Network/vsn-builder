@@ -91,7 +91,7 @@ jobs:
           }
           writeFileSync(join(process.env.RUNNER_TEMP, "vsn-staging-secrets.json"), JSON.stringify(secrets), { mode: 0o600 });
           NODE
-          grep -q '"name": "vsn-builder-staging"' dist/server/wrangler.json
+          jq -e '.name == "vsn-builder-staging"' dist/server/wrangler.json >/dev/null
           ./node_modules/.bin/wrangler deploy --config dist/server/wrangler.json --keep-vars --secrets-file "$secret_file" --message "development ${GITHUB_SHA}"
       - name: Enforce and verify Shopify query-string redaction
         env:
