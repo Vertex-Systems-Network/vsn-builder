@@ -65,14 +65,67 @@ function errorChain(error){
   }
   return chain;
 }
-function gqlCode(error){
-  for(const current of errorChain(error)){
+function parseJson(value){
+  if(typeof value!=="string"||value.length>65536)return null;
+  try{return JSON.parse(value)}catch{return null}
+}
+async function responseJson(response){
+  try{
+    const reader=response.clone().body?.getReader();
+    if(!reader)return null;
+    const chunks=[];
+    let size=0;
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      size+=value.byteLength;
+      if(size>65536){
+        try{void reader.cancel().catch(()=>{})}catch{/* bounded diagnostic only */}
+        return null;
+      }
+      chunks.push(value);
+    }
+    const bytes=new Uint8Array(size);
+    let offset=0;
+    for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+    return parseJson(new TextDecoder().decode(bytes));
+  }catch{return null}
+}
+async function gqlCode(error){
+  const queue=[error],seen=new Set();
+  let visited=0;
+  while(queue.length&&visited<32){
+    const current=queue.shift();
+    if(!current||typeof current!=="object"||seen.has(current))continue;
+    seen.add(current);visited++;
+    if(current instanceof Response){
+      const parsed=await responseJson(current);
+      if(parsed)queue.push(parsed);
+    }
+    const body=parseJson(current.body)||current.body;
+    if(body&&typeof body==="object"&&body!==current.body)queue.push(body);
+    const code=String(current?.extensions?.code||"").toLowerCase().replace(/_/g,"-");
+    if(/^[a-z0-9-]{1,20}$/.test(code))return code;
+    for(const key of ["cause","originalError","error","response","body","errors",
+      "graphQLErrors","graphqlErrors","extensions","data"]){
+      let value;
+      try{value=current[key]}catch{continue}
+      if(Array.isArray(value))queue.push(...value.slice(0,16));
+      else if(value&&typeof value==="object")queue.push(value);
+      else if(key==="body"&&typeof value==="string"){
+        const parsed=parseJson(value);
+        if(parsed)queue.push(parsed);
+      }
+    }
     const errors=current?.body?.errors?.graphQLErrors||
       current?.body?.errors||current?.response?.errors||
       current?.errors?.graphQLErrors||current?.errors;
-    const list=Array.isArray(errors)?errors:Array.isArray(errors?.graphQLErrors)?errors.graphQLErrors:[];
-    const code=String(list[0]?.extensions?.code||"").toLowerCase().replace(/_/g,"-");
-    if(/^[a-z0-9-]{1,20}$/.test(code))return code;
+    const list=Array.isArray(errors)?errors:
+      Array.isArray(errors?.graphQLErrors)?errors.graphQLErrors:[];
+    for(const item of list){
+      const candidate=String(item?.extensions?.code||"").toLowerCase().replace(/_/g,"-");
+      if(/^[a-z0-9-]{1,20}$/.test(candidate))return candidate;
+    }
   }
   return null;
 }
@@ -212,7 +265,7 @@ export async function syncStagingShopifySubscription({
     return {ok:true,verified:true,row};
   }catch(error){
     // Fixed, credential-free stage codes only; never the Partner payload.
-    const graphqlErrorCode=gqlCode(error);
+    const graphqlErrorCode=await gqlCode(error);
     // Preserve transport/GraphQL detail before a generic SDK or app error.code.
     // Shopify can attach the old "admin-identity-error" code to its wrapper.
     const status=httpStatus(error)||(error instanceof Response?Number(error.status)||0:0);
