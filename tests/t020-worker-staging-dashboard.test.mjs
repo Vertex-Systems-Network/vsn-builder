@@ -161,9 +161,9 @@ test("unpaid Staging shops see only a billing notice, never merchant page data",
   const html=await res.text();
   assert.match(html,/<h1>Billing verification unavailable<\/h1>/);
   assert.match(html,/Billing verification unavailable/);
-  assert.match(html,/separate internal Shopify app identity/);
-  assert.match(html,/Partner API can verify managed subscriptions only for public apps/);
-  assert.match(html,/This screen does not activate a plan or make a charge/);
+  assert.match(html,/shopify-test/);
+  assert.match(html,/works only for stores allowed in the Partner Dashboard/);
+  assert.match(html,/This notice does not activate a plan or make a charge/);
   assert.doesNotMatch(html,/Total pages|Shop landing|private-session-token/);
   assert.equal(f.calls.filter(c=>c.op==="count"||c.op==="recent").length,0);
   assert.equal(f.calls.some(c=>c.op==="permission"),false);

@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: environment_promotion
-task_key: T020-staging-embedded-app-rendering-diagnostic
-owner_intent: "Make the Staging embedded app render its safe billing-required screen, while retaining all paid-data and mutation gates."
+task_key: T029-staging-private-test-plan-verification
+owner_intent: "Allow the explicitly authorized Shopify private $0 test plan to verify the read-only Staging app shell, without granting commercial-plan or mutation access."
 base_branch: development
-working_branch: fix/staging-app-frame-diagnostics
-pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/369
-last_verified_commit: 74ab8690d3aaaa448c5876016dc8edcafd81d927
-last_verified_step: "Replaced the URL substring fixture with a non-URL sentinel; Node 22.18 targeted Worker tests pass 16/16 and changed-file ESLint passes."
-in_flight_step: "Commit the CodeQL fixture adjustment and updated cursor to PR #369; inspect the new exact-head checks."
-next_exact_action: "Resolve the CodeQL review thread only after the updated CodeQL check passes; then merge under repository rules and proceed through protected T021/T023."
+working_branch: fix/staging-private-test-plan
+pull_request: none
+last_verified_commit: e394de679b0f15af51bf93795cc3dd3016c74f02
+last_verified_step: "Added Staging-only shopify-test verification and read-only allowlist, corrected the misleading notice, and added regression coverage. Focused Worker tests pass 26/26; changed-file ESLint, npm run typecheck, npm run qa, and git diff --check pass."
+in_flight_step: "Commit the verified Tier 1 change and publish its feature branch for a development PR."
+next_exact_action: "Open the development PR, inspect exact-head CI/review, and keep Staging deploy blocked until T018/T021/T023 dependencies are certified through protected workflows."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---

@@ -63,8 +63,8 @@ async function getPaidPage(f){
   });
 }
 
-test("only four exact paid handles on a fresh verified Partner mirror permit read",async()=>{
-  for(const plan of ["starter","sliver","gold","platinum"]){
+test("four commercial plans and the private test plan permit verified read-only access",async()=>{
+  for(const plan of ["starter","sliver","gold","platinum","shopify-test"]){
     const f=fixture(paid({planKey:plan,planHandle:plan}));
     const res=await getPaidPage(f);
     assert.equal(res.status,200,plan);

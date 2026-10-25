@@ -4,7 +4,9 @@
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const ORG=/^[A-Za-z0-9_-]{1,120}$/;
 const VERSION=/^2026-(07|10)$|^unstable$/;
-const HANDLES=new Set(["starter","sliver","gold","platinum"]);
+// The allowlisted private $0 Shopify test plan exists only to validate the
+// protected Staging billing flow. It is not a commercial entitlement tier.
+const HANDLES=new Set(["starter","sliver","gold","platinum","shopify-test"]);
 const CACHE_TTL_MS=5*60*1000;
 const QUERY=`query VsnStagingSubscription($appId: ID!, $shopId: ID!, $occurredAtMin: DateTime!) {
   activeSubscription(appId:$appId,shopId:$shopId) {
