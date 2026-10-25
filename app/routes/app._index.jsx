@@ -4,7 +4,7 @@ import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import DashboardApp from "../components/dashboard/DashboardApp";
 import { getWidgetDefinitions, loadWidgetSettings, summarizeWidgets } from "../services/widget-settings.server";
-import { getPlanUsage, serializePlan } from "../utils/plan.server.js";
+import { serializePlan } from "../utils/plan.server.js";
 import { VSN_RELEASES } from "../data/releases.js";
 import { ensureDashboardNotifications, listDashboardNotifications } from "../services/dashboard-notifications.server.js";
 import { loadDashboardActivity } from "../services/dashboard-activity.server.js";
@@ -25,8 +25,9 @@ import { getEntitlementSnapshot, serializeEntitlementSnapshot } from "../service
 import { loadStockProviderPublicSettings } from "../services/stock-image-integrations.server.js";
 import { loadStockApiUsageSummary } from "../services/stock-api-usage.server.js";
 import { loadGoogleMapsSettings } from "../services/google-platform.server.js";
+import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 
-async function loadOwnerInfo(admin, session) {
+function loadOwnerInfo(session) {
   const associated = session?.onlineAccessInfo?.associated_user || session?.onlineAccessInfo?.associatedUser || null;
   const fallback = {
     firstName: associated?.first_name || associated?.firstName || "",
@@ -37,41 +38,7 @@ async function loadOwnerInfo(admin, session) {
     shopName: "", shopEmail: "", myshopifyDomain: session?.shop || "", primaryDomain: null,
     currencyCode: "", ianaTimezone: "", primaryLocale: "",
   };
-  try {
-    const response = await admin.graphql(`#graphql
-      query GetStoreProfile {
-        shop {
-          name
-          email
-          contactEmail
-          myshopifyDomain
-          currencyCode
-          ianaTimezone
-          primaryDomain { url host }
-        }
-      }
-    `);
-    const result = await response.json();
-    if (result.errors?.length) {
-      console.warn("VSN store profile query warning:", result.errors.map((row)=>row.message).join("; "));
-      return fallback;
-    }
-    const shop = result.data?.shop || {};
-    return {
-      ...fallback,
-      email: fallback.email || shop.contactEmail || shop.email || "",
-      shopName: shop.name || "",
-      shopEmail: shop.contactEmail || shop.email || "",
-      myshopifyDomain: shop.myshopifyDomain || session?.shop || "",
-      primaryDomain: shop.primaryDomain || null,
-      currencyCode: shop.currencyCode || "",
-      ianaTimezone: shop.ianaTimezone || "",
-      primaryLocale: "",
-    };
-  } catch (error) {
-    console.warn("VSN owner query failed; using authenticated staff fallback:", error instanceof Error ? error.message : error);
-    return fallback;
-  }
+  return fallback;
 }
 
 function serializeTicket(ticket) {
@@ -93,6 +60,17 @@ function serializeTicket(ticket) {
       body: message.body,
       createdAt: message.createdAt.toISOString(),
     })),
+  };
+}
+
+function planUsageFromSnapshot(snapshot, plan) {
+  const quotas = snapshot?.quotas || {};
+  return {
+    pages: { used: quotas.pages?.used || 0, limit: Number(plan.maxPages) },
+    templates: { used: quotas.marketplaceInstalls?.used || 0, limit: Number(plan.templateQuota) },
+    ai: { used: quotas.aiGenerations?.used || 0, limit: Number(plan.aiMonthly), resetAt: quotas.aiGenerations?.resetAt || null },
+    experiments: { used: quotas.croExperiments?.used || 0, limit: Number(plan.croExperiments) },
+    team: { used: quotas.collaborationSeats?.used || 1, limit: Number(plan.teamMembers), window: "assigned seats" },
   };
 }
 
@@ -119,7 +97,7 @@ async function loadDashboardData(session, request, syncResult = null) {
     try { localization = await listLocalizationDashboard(db, { shop: session.shop }); }
     catch (error) { console.warn("VSN localization dashboard warning:", error instanceof Error ? error.message : error); }
   }
-  const planUsage = await getPlanUsage(db, session.shop, plan);
+  const planUsage = planUsageFromSnapshot(entitlementSnapshot, plan);
   const PAGE_TEMPLATES = ["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element", "header", "footer", "section"];
   const [pageCount, draftCount, publishedCount, recentPages, campaignCount, floatingCount, activeExperiments, unreadSubmissions, healthErrors, builderAccess] = await Promise.all([
     db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { notIn: PAGE_TEMPLATES } } }),
@@ -184,14 +162,45 @@ async function loadDashboardData(session, request, syncResult = null) {
 
 export async function loader({ request }) {
   const { admin, session } = await authenticate.admin(request);
+  const view = new URL(request.url).searchParams.get("view") || "home";
+  const ownerInfo = loadOwnerInfo(session);
+  const defaultWidgets = () => summarizeWidgets(getWidgetDefinitions());
+
+  if (view === "pricing" || view === "license") {
+    if (!(await canAccessBuilderAction(db, session, "billing", "view")))
+      throw new Response("Your VSN role does not have permission to view Plans & License.", { status:403 });
+    const pricingReturn = readShopifyAppPricingReturn(request, session.shop);
+    const syncResult = await syncShopifySubscription({ db, admin, shop:session.shop, force:Boolean(pricingReturn?.pendingVerification) })
+      .catch((error)=>({ok:false,error:error instanceof Error?error.message:String(error)}));
+    const entitlementSnapshot = await getEntitlementSnapshot(db, session.shop);
+    const pricing = getShopifyAppPricingConfig(session.shop);
+    const plan = entitlementSnapshot.plan;
+    return {
+      session,
+      ownerInfo,
+      widgetSettings:defaultWidgets(),
+      dashboard:{
+        plan:serializePlan(plan),
+        planUsage:planUsageFromSnapshot(entitlementSnapshot, plan),
+        entitlements:serializeEntitlementSnapshot(entitlementSnapshot),
+        billingUrl:pricing.pricingUrl,
+        shopifyPricing:pricing,
+        pricingReturn,
+        subscriptionSync:{config:getShopifySubscriptionSyncPublicConfig(),result:syncResult?{ok:syncResult.ok,verified:Boolean(syncResult.verified),skipped:Boolean(syncResult.skipped),reason:syncResult.reason||null,error:syncResult.error||null}:null},
+      },
+    };
+  }
+
   const pricingReturn = readShopifyAppPricingReturn(request, session.shop);
-  const syncResult = await syncShopifySubscription({ db, admin, shop: session.shop, force: Boolean(pricingReturn?.pendingVerification) }).catch((error)=>({ok:false,error:error instanceof Error?error.message:String(error)}));
-  const [ownerInfo, rawWidgetSettings, dashboard] = await Promise.all([
-    loadOwnerInfo(admin, session),
-    loadWidgetSettings(admin).catch((error) => {
+  const syncResult = pricingReturn?.pendingVerification
+    ? await syncShopifySubscription({ db, admin, shop:session.shop, force:true })
+      .catch((error)=>({ok:false,error:error instanceof Error?error.message:String(error)}))
+    : null;
+  const [rawWidgetSettings, dashboard] = await Promise.all([
+    view === "widgets" ? loadWidgetSettings(admin).catch((error) => {
       console.error("VSN dashboard widget loader failed:", error);
       return summarizeWidgets(getWidgetDefinitions());
-    }),
+    }) : Promise.resolve(defaultWidgets()),
     loadDashboardData(session, request, syncResult),
   ]);
   const widgetSettings = await enrichWidgetSettingsWithUsage(db, session.shop, rawWidgetSettings);
