@@ -14,10 +14,11 @@ test("staging deploy is manual-only from protected development with typed confir
 });
 
 test("staging deploy targets only the Staging worker config and never Production", () => {
-  assert.match(yaml, /wrangler deploy --config wrangler\.staging\.jsonc --keep-vars --secrets-file/);
+  assert.match(yaml, /react-router build --config vite\.staging-cloudflare\.config\.js/);
+  assert.match(yaml, /wrangler deploy --config dist\/server\/wrangler\.json --keep-vars --secrets-file/);
   assert.doesNotMatch(yaml, /--config wrangler\.production\.jsonc/);
   assert.doesNotMatch(yaml, /environment: (cloudflare-)?production/i);
-  assert.match(yaml, /grep -q '"name": "vsn-builder-staging"' wrangler\.staging\.jsonc/);
+  assert.match(yaml, /grep -q '"name": "vsn-builder-staging"' dist\/server\/wrangler\.json/);
   assert.doesNotMatch(yaml, /DIRECT_URL: \$\{\{ secrets/);
   assert.doesNotMatch(yaml, /NEON_API_KEY|migrate deploy|db push/);
 });

@@ -21,6 +21,7 @@ on:
       - "tests/t020-worker-neon-schema-ledger-health.test.mjs"
       - "tests/t020-worker-merchant-page-summary.test.mjs"
       - "tests/t020-worker-staging-dashboard.test.mjs"
+      - "tests/t020-worker-staging-plans.test.mjs"
       - "tests/t020-worker-staging-page-inspection.test.mjs"
       - "tests/t020-staging-shopify-auth-callback.test.mjs"
       - "tests/t020-staging-shopify-sdk-login.test.mjs"
@@ -117,7 +118,7 @@ jobs:
       - name: Verify read-only page data stays scoped to persisted merchant session
         run: node --test tests/t020-worker-merchant-page-summary.test.mjs
       - name: Exercise Staging-only Shopify App Bridge dashboard with verified paid staff auth
-        run: node --test tests/t020-worker-staging-dashboard.test.mjs
+        run: node --test tests/t020-worker-staging-dashboard.test.mjs tests/t020-worker-staging-plans.test.mjs
       - name: Verify linked Shopify merchant read-only page inspection and preview HTML safety
         run: node --test tests/t020-worker-staging-page-inspection.test.mjs
       - name: Verify official Shopify SDK Staging auth callback and persisted online session proof

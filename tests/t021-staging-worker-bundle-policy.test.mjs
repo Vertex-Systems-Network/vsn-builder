@@ -13,7 +13,7 @@ const required=["DATABASE_URL","SHOPIFY_API_KEY","SHOPIFY_API_SECRET","SHOPIFY_P
 
 test("exact staging identity requires four pre-existing encrypted secrets by NAME only",()=>{
  assert.equal(staging.name,"vsn-builder-staging");
- assert.equal(staging.main,"./workers/app.js");
+ assert.equal(staging.main,"./workers/staging-full-app.js");
  assert.equal(staging.vars.APP_ENV,"staging");
  assert.equal(staging.vars.VSN_WORKER_NAME,"vsn-builder-staging");
  assert.equal(staging.vars.NEON_PROJECT_ID,"shiny-violet-61219572");
@@ -38,6 +38,7 @@ test("exact staging identity requires four pre-existing encrypted secrets by NAM
  assert.equal(staging.vars.VSN_STAGING_OAUTH_ENABLED,"true");
  assert.equal(staging.vars.VSN_STAGING_DASHBOARD_ENABLED,"true");
  assert.equal(staging.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,"true");
+ assert.equal(staging.vars.VSN_STAGING_REACT_ROUTER_ENABLED,"true");
 });
 test("production Worker config and no-public-URL policy are independent of staging build",()=>{
  assert.equal(production.name,"vsn-builder-production");
@@ -58,7 +59,8 @@ test("T021 PR workflow is credentials-free, real Staging bundle dry-run only",()
  assert.match(workflow,/npm ci/);
  assert.match(workflow,/@cloudflare\/vite-plugin@1\.64\.0/);
  assert.match(workflow,/prisma generate --schema prisma\/cloud\/schema\.prisma/);
- assert.match(workflow,/wrangler deploy --config wrangler\.staging\.jsonc --dry-run --outdir/);
+ assert.match(workflow,/react-router build --config vite\.staging-cloudflare\.config\.js/);
+ assert.match(workflow,/wrangler deploy --config dist\/server\/wrangler\.json --dry-run --outdir/);
  assert.match(workflow,/--keep-vars/);
  assert.doesNotMatch(workflow,/environment:\s*cloudflare-staging/);
  assert.doesNotMatch(workflow,/\$\{\{\s*secrets\./);

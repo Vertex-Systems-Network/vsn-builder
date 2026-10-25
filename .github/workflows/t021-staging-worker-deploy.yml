@@ -50,6 +50,17 @@ jobs:
           DATABASE_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
           DIRECT_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
         run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Build the full Shopify React Router Staging Worker
+        env:
+          VSN_STAGING_FULL_APP_BUILD: "1"
+          DATABASE_URL: postgresql://build:unused@localhost:5432/build?sslmode=require
+          DIRECT_URL: postgresql://build:unused@localhost:5432/build?sslmode=require
+        run: |
+          ./node_modules/.bin/react-router build --config vite.staging-cloudflare.config.js
+          test -s dist/server/index.js
+          test -s dist/server/wrangler.json
+          test -d dist/client/assets
+          test -d dist/server/assets
       - name: Deploy exact SHA to the Staging Worker only
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -80,8 +91,8 @@ jobs:
           }
           writeFileSync(join(process.env.RUNNER_TEMP, "vsn-staging-secrets.json"), JSON.stringify(secrets), { mode: 0o600 });
           NODE
-          grep -q '"name": "vsn-builder-staging"' wrangler.staging.jsonc
-          ./node_modules/.bin/wrangler deploy --config wrangler.staging.jsonc --keep-vars --secrets-file "$secret_file" --message "development ${GITHUB_SHA}"
+          grep -q '"name": "vsn-builder-staging"' dist/server/wrangler.json
+          ./node_modules/.bin/wrangler deploy --config dist/server/wrangler.json --keep-vars --secrets-file "$secret_file" --message "development ${GITHUB_SHA}"
       - name: Enforce and verify Shopify query-string redaction
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

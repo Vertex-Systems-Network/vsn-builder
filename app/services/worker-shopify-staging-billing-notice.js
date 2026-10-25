@@ -12,9 +12,16 @@ function htmlText(value,max=256) {
   return value.replace(/[&<>"']/g,letter=>REPLACEMENTS[letter]);
 }
 const CODE=/^[a-z0-9-]{1,40}$/;
-export function renderStagingBillingRequired({shop,apiKey,billingCode}={}) {
+export function renderStagingBillingRequired({shop,apiKey,billingCode,pricingUrl}={}) {
   if(!SHOP.test(String(shop||"")) || !KEY.test(String(apiKey||"")))
     throw new TypeError("Invalid Staging billing notice identity");
+  let safePricingUrl="";
+  try {
+    const parsed=new URL(String(pricingUrl||""));
+    if(parsed.protocol==="https:" && parsed.hostname==="admin.shopify.com" &&
+       /^\/store\/[a-z0-9][a-z0-9-]*\/charges\/[a-z0-9][a-z0-9_-]*\/pricing_plans$/.test(parsed.pathname) &&
+       !parsed.search && !parsed.hash)safePricingUrl=parsed.toString();
+  }catch{ /* missing/untrusted configuration does not create a billing link */ }
   const key=htmlText(apiKey,32);
   const markup='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
     '<meta name="viewport" content="width=device-width,initial-scale=1">'+
@@ -28,6 +35,7 @@ export function renderStagingBillingRequired({shop,apiKey,billingCode}={}) {
     '<p>The private <strong>shopify-test</strong> plan is a $0 test plan and works only for stores allowed in the Partner Dashboard. Confirm the plan is active and this Staging store still has access.</p>'+
     (CODE.test(String(billingCode||""))?
       '<p class="notice">Diagnostic code: <code>'+billingCode+'</code></p>':"")+
+    (safePricingUrl?'<p><a class="button" target="_top" rel="noopener noreferrer" href="'+htmlText(safePricingUrl,512)+'">Review plans in Shopify</a> · <a href="/app/plans?shop='+encodeURIComponent(shop)+'">Compare plan features</a></p>':"")+
     '<p class="notice">This notice does not activate a plan or make a charge. The Staging app remains read-only; editing and publishing are disabled.</p></section>'+
     '</main></body></html>';
   return new Response(markup,{status:200,headers:{

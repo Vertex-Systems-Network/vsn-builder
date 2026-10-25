@@ -73,4 +73,5 @@ test("Cloudflare output directory must be opt-in; Node build defaults to build",
   assert.equal(evalConfig({VSN_CLOUDFLARE_NATIVE_CI:"0"}),"build");
   assert.equal(evalConfig({CI:"false",VSN_CLOUDFLARE_NATIVE_CI:"1"}),"build");
   assert.equal(evalConfig({APP_ENV:"staging",VSN_CLOUDFLARE_NATIVE_CI:"1"}),"build");
+  assert.equal(evalConfig({APP_ENV:"staging",VSN_STAGING_FULL_APP_BUILD:"1"}),"dist");
 });
