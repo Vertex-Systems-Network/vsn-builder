@@ -305,10 +305,16 @@ export async function syncStagingShopifySubscription({
     // Keep diagnostic metadata structural only. Never serialize error messages,
     // GraphQL payloads, tokens, request URLs, or merchant values.
     const status=httpStatus(error)||(error instanceof Response?Number(error.status)||0:0);
-    const shape=String(error?.code||"")==="admin-identity-error"?errorShape(error):null;
+    const hasGraphqlError=errorChain(error).some(item=>item?.name==="GraphqlQueryError");
+    // The legacy stage can come from this catch's fallback even when the SDK
+    // exception itself has no code. Shape only that otherwise-opaque identity
+    // failure; preserve explicit identity and downstream diagnostics.
+    const legacyIdentityFallback=step==="admin-identity"&&!status&&!graphqlErrorCode&&!hasGraphqlError&&
+      (!error?.code||error.code==="admin-identity-error");
+    const shape=legacyIdentityFallback?errorShape(error):null;
     const stage=status?step+"-http-"+status:
       graphqlErrorCode?step+"-gql-"+graphqlErrorCode:
-      errorChain(error).some(item=>item?.name==="GraphqlQueryError")?step+"-gql-error":
+      hasGraphqlError?step+"-gql-error":
       shape?step+"-shape-"+shape:
       /^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:
       step+"-"+(error?.name==="TimeoutError"?"timeout":
