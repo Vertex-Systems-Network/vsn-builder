@@ -311,7 +311,7 @@ export async function syncStagingShopifySubscription({
     // failure; preserve explicit identity and downstream diagnostics.
     const errorCode=String(error?.code||"");
     const legacyIdentityFallback=step==="admin-identity"&&!status&&!graphqlErrorCode&&!hasGraphqlError&&
-      (!errorCode||errorCode==="admin-identity-error"||! /^[a-z0-9-]{1,32}$/.test(errorCode));
+      (!errorCode||errorCode==="admin-identity-error"||!/^[a-z0-9-]{1,32}$/.test(errorCode));
     const shape=legacyIdentityFallback?errorShape(error):null;
     const stage=status?step+"-http-"+status:
       graphqlErrorCode?step+"-gql-"+graphqlErrorCode:
