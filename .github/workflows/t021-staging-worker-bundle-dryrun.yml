@@ -71,6 +71,9 @@ jobs:
           DIRECT_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
         run: npx prisma generate --schema prisma/cloud/schema.prisma
       - name: Build the full Staging React Router Worker and static assets, never deploy
+        env:
+          APP_ENV: staging
+          VSN_STAGING_FULL_APP_BUILD: "1"
         run: |
           ./node_modules/.bin/react-router build --config vite.staging-cloudflare.config.js
           test -s dist/server/index.js

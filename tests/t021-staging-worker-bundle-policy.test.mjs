@@ -55,6 +55,7 @@ test("T021 PR workflow is credentials-free, real Staging bundle dry-run only",()
  assert.match(workflow,/CI: "true"/);
  assert.match(workflow,/NODE_ENV: test/);
  assert.match(workflow,/APP_ENV: development/);
+ assert.match(workflow,/APP_ENV: staging\s+VSN_STAGING_FULL_APP_BUILD: "1"/);
  assert.match(workflow,/WRANGLER_SEND_METRICS: "false"/);
  assert.match(workflow,/npm ci/);
  assert.match(workflow,/@cloudflare\/vite-plugin@1\.64\.0/);
