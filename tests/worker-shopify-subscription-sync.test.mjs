@@ -134,3 +134,15 @@ test("uncoded failures report the failing step without payload",async()=>{
   const write=await syncStagingShopifySubscription({database:fy.database,admin:fy.admin,shop,env,now,fetchImpl:fy.fetchImpl});
   assert.equal(write.stage,"mirror-write-p2022");
 });
+
+test("Shopify SDK HTTP and GraphQL failures report a fixed status or code",async()=>{
+  const fx=setup();
+  fx.admin.graphql=async()=>{throw new Response("{}",{status:401});};
+  const http=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,fetchImpl:fx.fetchImpl});
+  assert.equal(http.stage,"admin-identity-http-401");
+  const fy=setup();
+  fy.admin.graphql=async()=>{throw Object.assign(new Error("GraphQL Client: denied"),
+    {name:"GraphqlQueryError",body:{errors:{graphQLErrors:[{message:"secret",extensions:{code:"ACCESS_DENIED"}}]}}});};
+  const gql=await syncStagingShopifySubscription({database:fy.database,admin:fy.admin,shop,env,now,fetchImpl:fy.fetchImpl});
+  assert.equal(gql.stage,"admin-identity-gql-access-denied");
+});

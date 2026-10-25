@@ -50,6 +50,15 @@ function identityValue(json,shop){
     throw Object.assign(new Error("Partner billing identity could not be verified"),{code:"identity-mismatch"});
   return {appId,shopId};
 }
+// The Shopify SDK throws a Response for HTTP errors and a GraphqlQueryError
+// carrying Shopify's fixed extensions.code (e.g. ACCESS_DENIED) for GraphQL
+// errors. Only that short code is reported, never the message or payload.
+function gqlCode(error){
+  const errors=error?.body?.errors?.graphQLErrors||error?.body?.errors||error?.response?.errors;
+  const list=Array.isArray(errors)?errors:Array.isArray(errors?.graphQLErrors)?errors.graphQLErrors:[];
+  const code=String(list[0]?.extensions?.code||"").toLowerCase().replace(/_/g,"-");
+  return /^[a-z0-9-]{1,20}$/.test(code)?code:null;
+}
 async function graphql(admin,query,variables){
   const response=await admin.graphql(query,variables?{variables}:undefined);
   const json=await response.json();
@@ -172,7 +181,9 @@ export async function syncStagingShopifySubscription({
   }catch(error){
     // Fixed, credential-free stage codes only; never the Partner payload.
     const stage=/^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:
-      step+"-"+(error?.name==="TimeoutError"?"timeout":
+      step+"-"+(error instanceof Response?"http-"+(Number(error.status)||0):
+        gqlCode(error)?"gql-"+gqlCode(error):
+        error?.name==="TimeoutError"?"timeout":
         error instanceof SyntaxError?"bad-json":
         error instanceof TypeError?"type-error":
         /^P\d{4}$/.test(String(error?.code||""))?error.code.toLowerCase():"error");
