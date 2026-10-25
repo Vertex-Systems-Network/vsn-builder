@@ -3,16 +3,16 @@
 ---
 schema_version: 1
 status: active
-mode: environment_promotion
-task_key: T029-staging-private-test-plan-verification
-owner_intent: "Allow the explicitly authorized Shopify private $0 test plan to verify the read-only Staging app shell, without granting commercial-plan or mutation access."
+mode: implementation
+task_key: T030-staging-shopify-worker-runtime-adapter
+owner_intent: "Fix the Staging Admin GraphQL identity failure by initializing Shopify SDK runtime adapter in the Cloudflare Worker entry, matching the working Metafields app bootstrap."
 base_branch: development
-working_branch: fix/staging-private-test-plan
-pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/370
-last_verified_commit: c2dcfbc962c5ce163473deae12e77d54b2fcc8f2
-last_verified_step: "PR #370 is open against development. Focused Worker tests pass 26/26; changed-file ESLint, npm run typecheck, npm run qa, and git diff --check pass."
-in_flight_step: "Wait for and inspect PR #370 exact-head checks and required review."
-next_exact_action: "After required checks/review, follow PR branch rules. Do not invoke Staging deployment until T018/T021/T023 prerequisites are certified through protected workflows."
+working_branch: fix/staging-shopify-worker-adapter
+pull_request: none (implementation branch; PR not yet created)
+last_verified_commit: c313d17f234dd876271fcdcada51f91702f7844a
+last_verified_step: "Current development head c313d17 is verified; PR #374 and follow-up diagnostic PRs #379–#381 are merged. Live Staging still reports admin-identity-shape-root-error-code; Metafields loads in the same Staging Admin."
+in_flight_step: "Add the Shopify React Router runtime adapter import to the Staging Worker entry, then open a PR and inspect exact-head CI."
+next_exact_action: "Verify the deployed worker includes the adapter change through protected CI/merge/deploy gates; if Admin GraphQL still fails, expose only a bounded SDK code diagnostic."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
