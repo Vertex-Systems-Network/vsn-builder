@@ -8,11 +8,11 @@ task_key: T029-staging-private-test-plan-verification
 owner_intent: "Allow the explicitly authorized Shopify private $0 test plan to verify the read-only Staging app shell, without granting commercial-plan or mutation access."
 base_branch: development
 working_branch: fix/staging-private-test-plan
-pull_request: none
-last_verified_commit: e394de679b0f15af51bf93795cc3dd3016c74f02
-last_verified_step: "Added Staging-only shopify-test verification and read-only allowlist, corrected the misleading notice, and added regression coverage. Focused Worker tests pass 26/26; changed-file ESLint, npm run typecheck, npm run qa, and git diff --check pass."
-in_flight_step: "Commit the verified Tier 1 change and publish its feature branch for a development PR."
-next_exact_action: "Open the development PR, inspect exact-head CI/review, and keep Staging deploy blocked until T018/T021/T023 dependencies are certified through protected workflows."
+pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/370
+last_verified_commit: c2dcfbc962c5ce163473deae12e77d54b2fcc8f2
+last_verified_step: "PR #370 is open against development. Focused Worker tests pass 26/26; changed-file ESLint, npm run typecheck, npm run qa, and git diff --check pass."
+in_flight_step: "Wait for and inspect PR #370 exact-head checks and required review."
+next_exact_action: "After required checks/review, follow PR branch rules. Do not invoke Staging deployment until T018/T021/T023 prerequisites are certified through protected workflows."
 approval_needed_now: false
 updated_at: 2026-10-25
 ---
