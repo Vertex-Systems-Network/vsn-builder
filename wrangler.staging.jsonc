@@ -6,12 +6,9 @@
   "main": "./workers/staging-full-app.js",
   "compatibility_date": "2026-10-13",
   "compatibility_flags": ["nodejs_compat"],
-  // Full React Router SSR exceeds the 10 ms Free-plan default under real
-  // Shopify identity, dashboard and billing loaders. Keep this 1-second
-  // execution ceiling confined to the low-traffic Staging Worker.
-  "limits": {
-    "cpu_ms": 1000
-  },
+  // The Staging Cloudflare account uses the Free plan, which rejects custom
+  // CPU limits. Keep this manifest deployable and keep dashboard/billing
+  // loaders bounded so they fit the plan's default request budget.
   "workers_dev": true,
   "preview_urls": false,
   "send_metrics": false,

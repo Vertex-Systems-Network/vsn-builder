@@ -22,8 +22,8 @@ test("exact staging identity requires four pre-existing encrypted secrets by NAM
  assert.equal(staging.vars.SHOPIFY_PARTNER_ORGANIZATION_ID,"4859256");
  assert.equal(staging.vars.SHOPIFY_PARTNER_API_VERSION,"2026-07");
  assert.equal(staging.vars.VSN_STAGING_BILLING_SYNC_ENABLED,"true");
- assert.equal(staging.limits.cpu_ms,1000,
-   "real Staging React Router SSR needs headroom above the 10 ms Free-plan CPU default");
+ assert.equal(staging.limits,undefined,
+   "custom CPU limits are rejected on the Staging Cloudflare Free plan");
  assert.equal(staging.workers_dev,true);
  assert.equal(staging.preview_urls,false);
  assert.deepEqual([...staging.secrets.required].sort(),[...required].sort());
@@ -49,7 +49,7 @@ test("production Worker config and no-public-URL policy are independent of stagi
  assert.equal(production.vars.APP_ENV,"production");
  assert.equal(production.vars.VSN_WORKER_NAME,"vsn-builder-production");
  assert.equal(production.limits,undefined,
-   "Staging CPU headroom must not change Production Worker limits");
+   "Production Worker limits remain independently configured");
  assert.notEqual(production.vars.NEON_PROJECT_ID,staging.vars.NEON_PROJECT_ID);
  assert.equal(production.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined,"draft save must remain disabled in production");
 });

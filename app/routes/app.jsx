@@ -19,7 +19,7 @@ import { syncShopifySubscription } from "../services/shopify-subscription.server
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { getLocalMarketplaceCatalogCount } from "../services/marketplace.server.js";
 import { builtinMotionPresets } from "../services/motion-library.server.js";
-import { inspectThemeEmbedStatus } from "../services/theme-embed-status.server.js";
+import { themeEmbedActivationUrl } from "../services/theme-embed-status.server.js";
 import { VSN_BASELINE } from "../config/baseline.js";
 import { resolveBuilderBranding, VSN_BUILDER_DISPLAY_VERSION } from "../config/environment-branding.js";
 import { normalizeUiColorScheme, normalizeUiHex, resolveUiTheme } from "../config/ui-theme.js";
@@ -77,46 +77,28 @@ function activeNavigationId(location) {
   return direct?.[0] || "home";
 }
 
-async function loadShellOwner(admin, session) {
+function loadShellOwner(session) {
   const associated = session?.onlineAccessInfo?.associated_user || session?.onlineAccessInfo?.associatedUser || null;
-  const fallback = {
+  return {
     firstName: associated?.first_name || associated?.firstName || "",
     lastName: associated?.last_name || associated?.lastName || "",
     name: [associated?.first_name || associated?.firstName, associated?.last_name || associated?.lastName].filter(Boolean).join(" "),
-    email: associated?.email || session?.email || "",
+    email: associated?.email || associated?.contact_email || associated?.contactEmail || session?.email || "",
     avatar: null,
     shopName: "",
   };
-  try {
-    const response = await admin.graphql(`#graphql
-      query VsnShellShop {
-        shop { name email contactEmail }
-      }
-    `);
-    const result = await response.json();
-    if (result.errors?.length) {
-      console.warn("VSN shell shop lookup GraphQL warning:", result.errors.map((row)=>row.message).join("; "));
-      return fallback;
-    }
-    const shop = result.data?.shop || {};
-    return { ...fallback, email: fallback.email || shop.contactEmail || shop.email || "", shopName: shop.name || "" };
-  } catch (error) {
-    console.warn("VSN shell owner lookup warning:", error instanceof Error ? error.message : error);
-    return fallback;
-  }
 }
 
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
-  await syncShopifySubscription({ db, admin, shop: session.shop }).catch(() => null);
+  await syncShopifySubscription({ db, admin, shop:session.shop }).catch(() => null);
   const builderRole = getBuilderRole(session);
   const roleAccess = await getBuilderRoleAccess(db, session.shop);
   const builderAccess = builderRole === "admin" || roleAccess[builderRole] === true;
   const systemAccess = getRoleSystemAccess(roleAccess, builderRole);
   const actionAccess = getRoleActionAccess(roleAccess, builderRole);
   const WORKSPACE_ONLY_TEMPLATES = ["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"];
-  const [ownerInfo, notificationCount, plan, pageCount, libraryCount, brandKitCount, motionCount, fontCount, svgCount, stockImageCount, stockVideoCount, stockAudioCount, campaignCount, emailTemplateCount, floatingCount, experimentCount, themeEmbed] = await Promise.all([
-    loadShellOwner(admin, session),
+  const [notificationCount, plan, pageCount, libraryCount, brandKitCount, motionCount, fontCount, svgCount, stockImageCount, stockVideoCount, stockAudioCount, campaignCount, emailTemplateCount, floatingCount, experimentCount] = await Promise.all([
     db.builderNotification.count({ where: { shop: session.shop, readAt: null, dismissedAt: null } }).catch(() => 0),
     getPlan(db, session.shop).catch(() => null),
     db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { notIn: WORKSPACE_ONLY_TEMPLATES } } }).catch(() => 0),
@@ -132,8 +114,9 @@ export const loader = async ({ request }) => {
     db.builderEmailTemplate.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
     db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: "floating-element" } }).catch(() => 0),
     db.builderExperiment.count({ where: { shop: session.shop } }).catch(() => 0),
-    inspectThemeEmbedStatus(admin, session).catch(() => ({status:"unknown",active:null,editorUrl:""})),
   ]);
+  const ownerInfo = loadShellOwner(session);
+  const themeEmbed = { status:"unknown", active:null, editorUrl:themeEmbedActivationUrl({shop:session.shop,apiKey:process.env.SHOPIFY_API_KEY||""}) };
   const featureFlags = getServerFeatureFlags();
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
