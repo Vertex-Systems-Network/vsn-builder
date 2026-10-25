@@ -123,3 +123,14 @@ test("Partner HTTP failure reports only a fixed diagnostic stage",async()=>{
   assert.equal(result.stage,"partner-http-401");
   assert.equal(fx.calls.some(([op])=>op==="upsert"),false);
 });
+
+test("uncoded failures report the failing step without payload",async()=>{
+  const fx=setup();
+  const network=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,
+    fetchImpl:async()=>{throw new TypeError("fetch failed");}});
+  assert.equal(network.stage,"partner-type-error");
+  const fy=setup();
+  fy.database.builderSubscription.upsert=async()=>{throw Object.assign(new Error("column missing"),{code:"P2022"});};
+  const write=await syncStagingShopifySubscription({database:fy.database,admin:fy.admin,shop,env,now,fetchImpl:fy.fetchImpl});
+  assert.equal(write.stage,"mirror-write-p2022");
+});
