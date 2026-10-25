@@ -145,4 +145,29 @@ test("Shopify SDK HTTP and GraphQL failures report a fixed status or code",async
     {name:"GraphqlQueryError",code:"admin-identity-error",body:{errors:{graphQLErrors:[{message:"secret",extensions:{code:"ACCESS_DENIED"}}]}}});};
   const gql=await syncStagingShopifySubscription({database:fy.database,admin:fy.admin,shop,env,now,fetchImpl:fy.fetchImpl});
   assert.equal(gql.stage,"admin-identity-gql-access-denied");
+
+  const fz=setup();
+  fz.admin.graphql=async()=>new Response(JSON.stringify({errors:[
+    {message:"secret",extensions:{code:"ACCESS_DENIED"}},
+  ]}),{status:200,headers:{"content-type":"application/json"}});
+  const returnedGql=await syncStagingShopifySubscription({database:fz.database,admin:fz.admin,shop,env,now,fetchImpl:fz.fetchImpl});
+  assert.equal(returnedGql.stage,"admin-identity-gql-access-denied");
+
+  const fw=setup();
+  fw.admin.graphql=async()=>{throw Object.assign(new Error("wrapped SDK error"),{
+    code:"admin-identity-error",
+    cause:Object.assign(new Error("denied"),{
+      name:"GraphqlQueryError",
+      body:{errors:[{extensions:{code:"ACCESS_DENIED"}}]},
+    }),
+  });};
+  const wrappedGql=await syncStagingShopifySubscription({database:fw.database,admin:fw.admin,shop,env,now,fetchImpl:fw.fetchImpl});
+  assert.equal(wrappedGql.stage,"admin-identity-gql-access-denied");
+
+  const fh=setup();
+  fh.admin.graphql=async()=>{throw Object.assign(new Error("wrapped SDK error"),{
+    code:"admin-identity-error",cause:new Response("secret",{status:403}),
+  });};
+  const wrappedHttp=await syncStagingShopifySubscription({database:fh.database,admin:fh.admin,shop,env,now,fetchImpl:fh.fetchImpl});
+  assert.equal(wrappedHttp.stage,"admin-identity-http-403");
 });
