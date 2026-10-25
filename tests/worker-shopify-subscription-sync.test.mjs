@@ -171,3 +171,17 @@ test("Shopify SDK HTTP and GraphQL failures report a fixed status or code",async
   const wrappedHttp=await syncStagingShopifySubscription({database:fh.database,admin:fh.admin,shop,env,now,fetchImpl:fh.fetchImpl});
   assert.equal(wrappedHttp.stage,"admin-identity-http-403");
 });
+
+
+test("wrapped Shopify SDK responses expose GraphQL codes without logging response bodies",async()=>{
+  const fx=setup();
+  fx.admin.graphql=async()=>{throw Object.assign(new Error("GraphQL Client: denied"),{
+    code:"admin-identity-error",
+    response:new Response(JSON.stringify({errors:[
+      {message:"private detail",extensions:{code:"ACCESS_DENIED"}},
+    ]}),{status:200,headers:{"content-type":"application/json"}}),
+  });};
+  const result=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,fetchImpl:fx.fetchImpl});
+  assert.equal(result.stage,"admin-identity-gql-access-denied");
+  assert.equal(fx.calls.some(([op])=>op==="partner"||op==="upsert"),false);
+});
