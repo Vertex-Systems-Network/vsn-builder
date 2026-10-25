@@ -129,6 +129,38 @@ async function gqlCode(error){
   }
   return null;
 }
+function errorShape(error){
+  const queue=[{value:error,label:"root"}],seen=new Set(),parts=[];
+  const nested=["cause","originalError","error","response","body","errors",
+    "graphQLErrors","graphqlErrors","extensions"];
+  while(queue.length&&seen.size<8){
+    const item=queue.shift();
+    const current=item?.value;
+    if(!current||typeof current!=="object"||seen.has(current))continue;
+    seen.add(current);
+    let type="object";
+    try{
+      type=current instanceof Response?"response":
+        String(current?.name||current?.constructor?.name||"object")
+          .toLowerCase().replace(/[^a-z0-9-]/g,"").slice(0,10)||"object";
+    }catch{/* keep safe fallback */}
+    const keys=Object.getOwnPropertyNames(current)
+      .filter(key=>/^(cause|originalError|error|response|body|errors|graphQLErrors|graphqlErrors|extensions|code|name|status|statusCode)$/.test(key))
+      .map(key=>key.toLowerCase().replace(/[^a-z0-9-]/g,"").slice(0,8))
+      .slice(0,3);
+    const status=Number(current?.status??current?.statusCode);
+    parts.push(item.label,type,...keys);
+    if(Number.isInteger(status)&&status>=100&&status<=599)parts.push("s"+status);
+    for(const key of nested){
+      let value;
+      try{value=current[key]}catch{continue}
+      if(Array.isArray(value)){
+        for(const child of value.slice(0,2))queue.push({value:child,label:key.slice(0,6)});
+      }else if(value&&typeof value==="object")queue.push({value,label:key.slice(0,6)});
+    }
+  }
+  return parts.join("-").slice(0,19).replace(/-+$/,"")||"opaque";
+}
 function httpStatus(error){
   for(const current of errorChain(error)){
     const status=Number(current?.status??current?.statusCode);
@@ -266,12 +298,14 @@ export async function syncStagingShopifySubscription({
   }catch(error){
     // Fixed, credential-free stage codes only; never the Partner payload.
     const graphqlErrorCode=await gqlCode(error);
-    // Preserve transport/GraphQL detail before a generic SDK or app error.code.
-    // Shopify can attach the old "admin-identity-error" code to its wrapper.
+    // Keep diagnostic metadata structural only. Never serialize error messages,
+    // GraphQL payloads, tokens, request URLs, or merchant values.
     const status=httpStatus(error)||(error instanceof Response?Number(error.status)||0:0);
+    const shape=String(error?.code||"")==="admin-identity-error"?errorShape(error):null;
     const stage=status?step+"-http-"+status:
       graphqlErrorCode?step+"-gql-"+graphqlErrorCode:
       errorChain(error).some(item=>item?.name==="GraphqlQueryError")?step+"-gql-error":
+      shape?step+"-shape-"+shape:
       /^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:
       step+"-"+(error?.name==="TimeoutError"?"timeout":
         error instanceof SyntaxError?"bad-json":
