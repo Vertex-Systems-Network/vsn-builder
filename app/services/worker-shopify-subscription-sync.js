@@ -151,7 +151,9 @@ function errorShape(error){
       .slice(0,2);
     const status=Number(current?.status??current?.statusCode);
     if(Number.isInteger(status)&&status>=100&&status<=599)observedStatus=status;
-    signatures.push(item.label+"-"+type+(keys.length?"-"+keys.join("-"):""));
+    const label=item.label==="response"?"resp":item.label.slice(0,5);
+    const compactType=type==="response"?"resp":type==="graphql"?"gql":type==="stream"?"stream":"error";
+    signatures.push(label+"-"+compactType+(keys.length?"-"+keys.join("-"):""));
     for(const key of nested){
       let value;
       try{value=current[key]}catch{continue}
