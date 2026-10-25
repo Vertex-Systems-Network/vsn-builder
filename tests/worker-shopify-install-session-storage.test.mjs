@@ -178,15 +178,19 @@ test("session failures are blocked without a valid transactional installation mo
   persistWorkerShopifySessionWithGeneration(data,bad,{SessionStorage:PrismaSessionStorage}),
   {code:"VSN_WORKER_INSTALL_SESSION_BLOCKED"}
  );
- for(const bad of [
-  {...data,id:"unverified-offline-id"},
-  {...data,shop:"invalid.example.net"},
-  {...data,accessToken:""},
-  {...data,isOnline:"no"},
-  {...online(),id:"offline_"+shop},
+ for(const [bad,safeReason] of [
+  [{...data,id:"unverified-offline-id"},"offline-session-id-mismatch"],
+  [{...data,shop:"invalid.example.net"},"invalid-session-shop"],
+  [{...data,accessToken:""},"invalid-session-access-token"],
+  [{...data,isOnline:"no"},"invalid-session-online-flag"],
+  [{...online(),id:"offline_"+shop},"online-session-id-offline-format"],
  ])await assert.rejects(
   persistWorkerShopifySessionWithGeneration(bad,database().client,{SessionStorage:PrismaSessionStorage}),
-  {code:"VSN_WORKER_INSTALL_SESSION_BLOCKED"}
+  error=>error.code==="VSN_WORKER_INSTALL_SESSION_BLOCKED"&&error.safeReason===safeReason
+ );
+ await assert.rejects(
+  persistWorkerShopifySessionWithGeneration(data,{...database().client,$transaction:null},{SessionStorage:PrismaSessionStorage}),
+  error=>error.code==="VSN_WORKER_INSTALL_SESSION_BLOCKED"&&error.safeReason==="invalid-session-transaction"
  );
 });
 test("SDK storage wrapper intercepts writes and delegates reads/deletes to official storage",async()=>{
