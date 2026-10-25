@@ -172,6 +172,10 @@ test("unpaid Staging shops see only a billing notice, never merchant page data",
   const standalone=await renderStagingBillingRequired({shop,apiKey:env.SHOPIFY_API_KEY}).text();
   assert.match(standalone,/Billing verification unavailable/);
   assert.throws(()=>renderStagingBillingRequired({shop,apiKey:"invalid"}));
+  const coded=await renderStagingBillingRequired({shop,apiKey:env.SHOPIFY_API_KEY,billingCode:"partner-http-401"}).text();
+  assert.match(coded,/Diagnostic code: <code>partner-http-401<\/code>/);
+  const unsafe=await renderStagingBillingRequired({shop,apiKey:env.SHOPIFY_API_KEY,billingCode:"<b>x</b>"}).text();
+  assert.doesNotMatch(unsafe,/Diagnostic code|<b>x/);
 });
 
 test("unpaid Staging billing notice survives a same-installation token refresh without page data",async()=>{

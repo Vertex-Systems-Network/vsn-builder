@@ -11,7 +11,8 @@ function htmlText(value,max=256) {
   if(typeof value!=="string" || value.length>max) throw new TypeError("Invalid merchant dashboard text");
   return value.replace(/[&<>"']/g,letter=>REPLACEMENTS[letter]);
 }
-export function renderStagingBillingRequired({shop,apiKey}={}) {
+const CODE=/^[a-z0-9-]{1,40}$/;
+export function renderStagingBillingRequired({shop,apiKey,billingCode}={}) {
   if(!SHOP.test(String(shop||"")) || !KEY.test(String(apiKey||"")))
     throw new TypeError("Invalid Staging billing notice identity");
   const key=htmlText(apiKey,32);
@@ -25,6 +26,8 @@ export function renderStagingBillingRequired({shop,apiKey}={}) {
     '<section class="panel"><h2>Why page data is locked</h2>'+
     '<p>Builder page data stays locked until Shopify App Pricing confirms an active plan for this store.</p>'+
     '<p>The private <strong>shopify-test</strong> plan is a $0 test plan and works only for stores allowed in the Partner Dashboard. Confirm the plan is active and this Staging store still has access.</p>'+
+    (CODE.test(String(billingCode||""))?
+      '<p class="notice">Diagnostic code: <code>'+billingCode+'</code></p>':"")+
     '<p class="notice">This notice does not activate a plan or make a charge. The Staging app remains read-only; editing and publishing are disabled.</p></section>'+
     '</main></body></html>';
   return new Response(markup,{status:200,headers:{

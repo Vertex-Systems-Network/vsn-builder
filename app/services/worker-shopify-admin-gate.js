@@ -336,6 +336,7 @@ async function guardedAdminRequest(request,env,{
       // Only the explicit Staging /app shell may refresh this mirror. A
       // returned plan_handle merely forces a fresh server-to-server Partner
       // lookup; it never grants entitlement by itself.
+      let billingCode="not-synced";
       if(!mutation&&url.pathname==="/app"&&requireVerifiedPaidRead&&
          syncVerifiedPaidRead){
         const synced=await syncStagingShopifySubscription({
@@ -347,6 +348,11 @@ async function guardedAdminRequest(request,env,{
             "billing-sync-"+(synced.stage||"failed"));
         else if(synced.verified)logStagingDenial(env,
           "billing-sync-"+String(synced.row?.status||"unknown").slice(0,16));
+        billingCode=synced.reason==="not-configured"?"sync-not-configured":
+          !synced.ok?(synced.stage||"sync-failed"):
+          synced.skipped?"cached-"+String(synced.row?.status||"unknown").slice(0,16):
+          ("plan-"+String(synced.row?.status||"unknown")+"-"+
+            String(synced.row?.planKey||"none")).slice(0,40);
       }
       // No Free plan: do not hand any Builder page-data capability to an
       // authenticated but unpaid merchant, even on hosted Staging.
@@ -360,7 +366,7 @@ async function guardedAdminRequest(request,env,{
         // It cannot soften the gate for API routes or mutations.
         if(!mutation && url.pathname==="/app" &&
            typeof onUnverifiedPaidRead==="function"){
-          response=await onUnverifiedPaidRead({shop});
+          response=await onUnverifiedPaidRead({shop,billingCode});
           unverifiedPaidNotice=response instanceof Response &&
             response.status>=200 && response.status<300;
         }else return denied(403);
