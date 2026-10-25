@@ -1,9 +1,13 @@
 // Read-only PostgreSQL schema health for the full hosted Worker route graph.
 // It validates known T018 migration metadata and required feature tables but
 // deliberately does not claim source-SQL checksum attestation.
-import { Prisma } from "../../generated/prisma-edge/client.ts";
 import { VSN_FEATURE_TABLES, VSN_HEALTH_TABLES } from "./database-feature-contract.js";
 import { BUILDER_WORKER_MIGRATIONS, isVerifiedWorkerSchemaMetadata } from "./worker-schema-metadata-health.js";
+
+// These identifiers are an internal, checked-in allowlist. Escape SQL string
+// literals explicitly so schema readiness does not depend on generated Prisma
+// output being present before the Worker build step runs.
+const trustedStringList=values=>values.map(value=>`'${String(value).replace(/'/g,"''")}'`).join(",");
 
 export { VSN_FEATURE_TABLES };
 export const VSN_EXPECTED_MIGRATION=BUILDER_WORKER_MIGRATIONS.at(-1);
@@ -27,9 +31,9 @@ export async function getRuntimeSchemaHealth(db){
   let metadataAvailable=false;
   try{
     const [tables,summaryRows,migrationRows]=await Promise.all([
-      db.$queryRaw(Prisma.sql`SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public' AND table_name IN (${Prisma.join(VSN_HEALTH_TABLES)})`),
-      db.$queryRaw(Prisma.sql`SELECT current_database()::text AS database,(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') AS tables,(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('Session','BuilderPage','BuilderSubscription','BuilderShopInstallation')) AS essential_tables`),
-      db.$queryRaw(Prisma.sql`SELECT migration_name,checksum,started_at,finished_at,rolled_back_at FROM public."_prisma_migrations" ORDER BY migration_name`),
+      db.$queryRawUnsafe(`SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public' AND table_name IN (${trustedStringList(VSN_HEALTH_TABLES)})`),
+      db.$queryRawUnsafe("SELECT current_database()::text AS database,(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') AS tables,(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('Session','BuilderPage','BuilderSubscription','BuilderShopInstallation')) AS essential_tables"),
+      db.$queryRawUnsafe('SELECT migration_name,checksum,started_at,finished_at,rolled_back_at FROM public."_prisma_migrations" ORDER BY migration_name'),
     ]);
     tableNames=new Set((Array.isArray(tables)?tables:[]).map(row=>String(row?.name||"")));
     summary=Array.isArray(summaryRows)?summaryRows[0]:null;

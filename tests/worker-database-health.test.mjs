@@ -9,8 +9,7 @@ import {VSN_HEALTH_TABLES} from "../app/services/database-feature-contract.js";
 
 const started=new Date("2026-10-13T00:00:00.000Z");
 function database({missing=[],badLedger=false}={}){
-  return {$queryRaw:async query=>{
-    const sql=typeof query.sql==="string"?query.sql:(query.strings||[]).join("?");
+  return {$queryRawUnsafe:async sql=>{
     if(sql.includes("information_schema.tables")&&sql.includes("table_name AS name"))
       return VSN_HEALTH_TABLES.filter(name=>!missing.includes(name)).map(name=>({name}));
     if(sql.includes("current_database()"))return [{database:"neondb",tables:54,essential_tables:4}];
