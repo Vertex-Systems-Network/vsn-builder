@@ -47,14 +47,14 @@ function identityValue(json,shop){
   const shopId=text(json?.data?.shop?.id);
   const domain=text(json?.data?.shop?.myshopifyDomain).toLowerCase();
   if(json?.errors?.length||!appId||!shopId||domain!==shop)
-    throw new Error("Partner billing identity could not be verified");
+    throw Object.assign(new Error("Partner billing identity could not be verified"),{code:"identity-mismatch"});
   return {appId,shopId};
 }
 async function graphql(admin,query,variables){
   const response=await admin.graphql(query,variables?{variables}:undefined);
   const json=await response.json();
   if(!response.ok||json?.errors?.length||!json?.data)
-    throw new Error("Shopify Admin identity query failed");
+    throw Object.assign(new Error("Shopify Admin identity query failed"),{code:"admin-identity-failed"});
   return json;
 }
 async function partnerState({config,appId,shopId,shop,fetchImpl,now}){
@@ -65,9 +65,11 @@ async function partnerState({config,appId,shopId,shop,fetchImpl,now}){
     body:JSON.stringify({query:QUERY,variables:{appId,shopId,occurredAtMin}}),
     signal:AbortSignal.timeout(8000),
   });
-  if(!response.ok)throw new Error("Shopify Partner API request failed");
+  if(!response.ok)throw Object.assign(new Error("Shopify Partner API request failed"),
+    {code:"partner-http-"+(Number(response.status)||0)});
   const json=await response.json();
-  if(json?.errors?.length||!json?.data)throw new Error("Shopify Partner API query failed");
+  if(json?.errors?.length||!json?.data)
+    throw Object.assign(new Error("Shopify Partner API query failed"),{code:"partner-graphql-error"});
 
   const active=json.data.activeSubscription||null;
   const event=newestEvent(json.data.events?.edges);
@@ -77,7 +79,7 @@ async function partnerState({config,appId,shopId,shop,fetchImpl,now}){
   const eventShopId=text(event?.shop?.id);
   if((activeShop&&activeShop!==shop)||(eventShop&&eventShop!==shop)||
      (activeShopId&&activeShopId!==shopId)||(eventShopId&&eventShopId!==shopId))
-    throw new Error("Shopify Partner API returned a different store");
+    throw Object.assign(new Error("Shopify Partner API returned a different store"),{code:"partner-store-mismatch"});
 
   const activePlan=active?planFromHandles(active.items):null;
   const eventHandle=text(event?.plan?.handle).toLowerCase();
@@ -165,6 +167,8 @@ export async function syncStagingShopifySubscription({
     });
     return {ok:true,verified:true,row};
   }catch(error){
-    return {ok:false,reason:"partner-verification-failed",row:existing||null};
+    // Fixed, credential-free stage codes only; never the Partner payload.
+    const stage=/^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:"unexpected";
+    return {ok:false,reason:"partner-verification-failed",stage,row:existing||null};
   }
 }
