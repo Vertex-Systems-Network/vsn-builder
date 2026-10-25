@@ -180,10 +180,14 @@ export async function syncStagingShopifySubscription({
     return {ok:true,verified:true,row};
   }catch(error){
     // Fixed, credential-free stage codes only; never the Partner payload.
-    const stage=/^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:
-      step+"-"+(error instanceof Response?"http-"+(Number(error.status)||0):
-        gqlCode(error)?"gql-"+gqlCode(error):
-        error?.name==="TimeoutError"?"timeout":
+    const graphqlErrorCode=gqlCode(error);
+    // Preserve transport/GraphQL detail before a generic SDK or app error.code.
+    // Shopify can attach the old "admin-identity-error" code to its wrapper.
+    const stage=error instanceof Response?step+"-http-"+(Number(error.status)||0):
+      graphqlErrorCode?step+"-gql-"+graphqlErrorCode:
+      error?.name==="GraphqlQueryError"?step+"-gql-error":
+      /^[a-z0-9-]{1,32}$/.test(String(error?.code||""))?error.code:
+      step+"-"+(error?.name==="TimeoutError"?"timeout":
         error instanceof SyntaxError?"bad-json":
         error instanceof TypeError?"type-error":
         /^P\d{4}$/.test(String(error?.code||""))?error.code.toLowerCase():"error");
