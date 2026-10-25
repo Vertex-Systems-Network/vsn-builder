@@ -1,3 +1,4 @@
+import "@shopify/shopify-app-react-router/adapters/node";
 // VSN Builder hosted Worker entry — gated Staging integration boundary.
 // This is NOT the React Router merchant UI and is not authorized for Live.
 // Draft save is explicitly enabled only on Staging; no billing or Shopify review.
