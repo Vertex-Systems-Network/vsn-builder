@@ -193,7 +193,7 @@ export async function loader({ request }) {
 
   const pricingReturn = readShopifyAppPricingReturn(request, session.shop);
   const syncResult = pricingReturn?.pendingVerification
-    ? await syncShopifySubscription({ db, admin, shop:session.shop, force:true })
+    ? await syncShopifySubscription({ db, admin, shop:session.shop, force:Boolean(pricingReturn?.pendingVerification) })
       .catch((error)=>({ok:false,error:error instanceof Error?error.message:String(error)}))
     : null;
   const [rawWidgetSettings, dashboard] = await Promise.all([
