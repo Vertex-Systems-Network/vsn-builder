@@ -4,8 +4,9 @@
 
 - Node `22.18.0` was obtained through the npm package registry. `runtime:verify`, `db:prepare` (37 migrations), `typecheck`, full `npm run qa` (428 files; Phase C 112/112), full ESLint, production build, Q4 audit (23/23), Q5.2 (44/44), Q5.5 (59/59), T011 static compatibility, and focused plan/billing/Worker tests (64/64) passed. Prisma Cloud/Worker/Workerd clients were generated before the Worker test run.
 - `npm run graphql-codegen` inventoried 95 GraphQL documents (89 parsed, 6 dynamic-interpolation documents left unvalidated), but the remote Shopify Admin `2026-10` schema fetch could not resolve `shopify.dev` (`EAI_AGAIN`). Exact schema/codegen validation remains outstanding.
-- The exact local source tree is committed as `e337eb3` and uploaded to the same named remote feature branch through GitHub. Draft PR is the next step to run remote schema validation and required exact-head CI. No merge or deployment has occurred.
+- The original source tree is committed locally and uploaded through GitHub; draft PR #392 is open at exact head `a648317f3952eab4958d5032064616ceac05a55f`. All 18 checks passed, including online Shopify 2026-10 codegen/schema typing and full Staging Worker dry-run. Focused review then found an additional unsupported Polaris grid value; its fix is being added and will trigger a fresh exact-head CI run. No merge or deployment has occurred.
 - Live Staging Admin recheck: Builder navigation loads; Plans & License refresh verifies the current Platinum trial (ends Nov 5, 2026); plan cards are still stacked and the deployed page lacks `.dashboard-pricing-grid`. The local responsive grid and fail-closed plan access changes are not live yet.
+- Review found one additional unsupported Polaris `@container` value in the Plans & License current-usage section. It is now replaced with a responsive CSS grid, and a regression test forbids `@container` grid usage on the plan page. Focused tests (11/11), touched-file ESLint, typecheck, QA, and production build pass after this follow-up; the update is being added to PR #392 before merge.
 
 ## 2026-10-26 Shopify API and billing requirement update (local, not promoted)
 

@@ -8,11 +8,11 @@ task_key: staging-plan-page-and-access-gate
 owner_intent: "Make the Plans & License entry clear and ensure shops without verified paid entitlements cannot navigate into Builder sections."
 base_branch: development
 working_branch: fix/staging-plan-handle-diagnostic
-pull_request: none
-last_verified_commit: e337eb3
+pull_request: 392
+last_verified_commit: 746a883
 last_verified_step: "Obtained Node 22.18.0 from the npm registry and passed runtime:verify, db:prepare (37 migrations), typecheck, npm run qa (428 files; Phase C 112/112), full ESLint, production build, focused billing/Worker suite (64/64 after generating the Prisma Edge client), Q4 23/23, Q5.2 44/44, Q5.5 59/59, T011 static compatibility and git diff --check. Live Staging Admin recheck shows full Builder navigation and successful billing refresh for the Platinum trial through Nov 5, 2026; plan cards still stack and `.dashboard-pricing-grid` is absent from deployed assets. `npm run graphql-codegen` parsed 89/95 GraphQL docs but its online Shopify 2026-10 schema fetch failed because `shopify.dev` DNS is unavailable from this workspace. The exact tested source tree is committed locally and uploaded to the remote feature branch; no PR or deploy yet."
-in_flight_step: "Open a draft PR for the uploaded feature branch so Shopify 2026-10 schema validation and exact-head CI can run in GitHub; keep merge and deployment gated on their results."
-next_exact_action: "Create draft PR into development, inspect all exact-head required CI including Shopify schema/codegen, resolve failures, then proceed only through the approved merge and T021 Staging deploy flow."
+in_flight_step: "Commit and upload the remaining Plans & License usage-grid fix and regression test to PR #392, then rerun exact-head CI."
+next_exact_action: "Update PR #392 with the verified Polaris usage-grid fix, wait for exact-head CI, then merge and execute the protected T021 Staging deployment flow."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---

@@ -23,9 +23,14 @@ test("both plan pages use the shared responsive pricing grid", () => {
   const pricingPage = readFileSync("app/components/dashboard/pages/Pricing.jsx", "utf8");
   const dedicatedPlansPage = readFileSync("app/routes/app.plans.jsx", "utf8");
   const styles = readFileSync("app/styles/dashboard.css", "utf8");
+  const planStyles = readFileSync("app/styles/dashboard-plans.css", "utf8");
   assert.match(pricingPage, /className="dashboard-pricing-grid"/);
   assert.match(dedicatedPlansPage, /className="dashboard-pricing-grid"/);
+  assert.match(dedicatedPlansPage, /className="dashboard-usage-grid"/);
+  assert.doesNotMatch(dedicatedPlansPage, /gridTemplateColumns="@container/);
   assert.match(styles, /\.dashboard-pricing-grid\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(planStyles, /\.dashboard-usage-grid\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
   assert.match(styles, /@media\(min-width:1400px\)\{\.dashboard-pricing-grid\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)\}\}/);
   assert.match(styles, /@media\(max-width:640px\).*\.dashboard-pricing-grid\{grid-template-columns:1fr!important\}/);
+  assert.match(planStyles, /@media\(max-width:640px\)\{\.dashboard-usage-grid\{grid-template-columns:1fr\}\}/);
 });
