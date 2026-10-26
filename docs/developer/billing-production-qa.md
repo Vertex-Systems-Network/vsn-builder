@@ -1,6 +1,6 @@
 # Billing Production Lifecycle QA — Paid-only Q5.5 contract
 
-The merchant-approved public tiers are **Starter ($30/mo), Sliver ($100/mo), Gold ($150/mo), Platinum ($350/mo or $3,000/year)**. Each has a **10-day Shopify-managed trial**. Exact Partner handles are `starter/sliver/gold/platinum`. There is no public Free plan.
+The current eight-tier catalog is **Starter ($30), Solo ($59), Silver ($100), Gold ($150), Business ($249), Platinum ($350 or $3,000/year), Agency ($599), and Scale ($999) per month**. Each has a **10-day Shopify-managed trial**. Handles match the lowercase plan names. The retired `sliver` handle remains a Silver compatibility alias. No Free plan is offered. Confirm all eight offers in Shopify Partner before live billing.
 
 ## Authority rules
 
@@ -10,11 +10,11 @@ The merchant-approved public tiers are **Starter ($30/mo), Sliver ($100/mo), Gol
 4. Pending cancellation retains the paid tier until the verified effective end, then transitions to `inactive`.
 5. Shopify pricing-return URL parameters remain untrusted.
 6. Historical local `core/pro/cro/agency` rows are migration aliases; remap and verify real Partner handles before using them.
-7. Sliver is the exact merchant-approved spelling and canonical Shopify plan ID `sliver`; it is not `silver`. Platinum handle is `platinum`, not historical `platenium`.
+7. Silver uses canonical key/handle `silver`; retired `sliver` and `platenium` Shopify handles normalize to Silver and Platinum respectively during verified subscription migration.
 
 ## Acceptance matrix
 
-Tests cover first install with no contract, verified Starter, Sliver, Gold, Platinum, trialing paid plan, Platinum yearly billing, upgrade/downgrade, cancellation scheduling/effective date, frozen/unfrozen, stale/unknown handles, Shopify shop identity mismatch, retryable 429/5xx errors, bounded retries and reinstall after session cleanup.
+QA covers first install with no contract, each verified paid tier, 10-day trial, Platinum yearly billing, upgrade/downgrade, cancellation scheduling/effective date, frozen/unfrozen, stale/unknown handles, Shopify shop identity mismatch, retryable 429/5xx errors, bounded retries and reinstall after session cleanup.
 
 The app-uninstalled lifecycle deletes VSN-owned merchant data and its local `BuilderSubscription` mirror. On reinstall it must re-query Shopify; a cached row is never commercial authority.
 

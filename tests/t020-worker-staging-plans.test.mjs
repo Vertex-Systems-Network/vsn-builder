@@ -46,18 +46,20 @@ test("the Staging pricing URL is generated only from a verified shop shape and s
     assert.equal(buildStagingPricingUrl(bad,"vsn-builder-staging"),null);
 });
 
-test("plan page lists all four plans and only links checkout to Shopify-hosted pricing",async()=>{
+test("plan page lists all eight plans, shows comparison and only links checkout to Shopify",async()=>{
   const response=renderStagingPlanPage({shop,apiKey,appHandle:"vsn-builder-staging"});
   assert.equal(response.status,200);
   assert.match(response.headers.get("content-security-policy"),/frame-ancestors https:\/\/admin\.shopify\.com/);
   const html=await response.text();
-  for(const plan of ["Starter","Sliver","Gold","Platinum"])
+  for(const plan of ["Starter","Solo","Silver","Gold","Business","Platinum","Agency","Scale"])
     assert.match(html,new RegExp(`<h2>${plan}<\\/h2>`));
+  assert.match(html,/Compare all 8 plans/);
   assert.match(html,/\$30\/month/);
+  assert.match(html,/\$59\/month/);
   assert.match(html,/\$100\/month/);
   assert.match(html,/\$150\/month/);
   assert.match(html,/\$350\/month · \$3000\/year/);
-  assert.equal((html.match(/https:\/\/admin\.shopify\.com\/store\/staging-oath3rth\/charges\/vsn-builder-staging\/pricing_plans/g)||[]).length,4);
+  assert.equal((html.match(/https:\/\/admin\.shopify\.com\/store\/staging-oath3rth\/charges\/vsn-builder-staging\/pricing_plans/g)||[]).length,8);
   assert.doesNotMatch(html,/private-token|accessToken|DATABASE_URL|SHOPIFY_API_SECRET/);
   assert.match(html,/Shopify confirms billing/);
   assert.match(html,/only after Shopify verifies the subscription/i);

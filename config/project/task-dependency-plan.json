@@ -13,8 +13,15 @@
       "trial_days": 10
     },
     {
-      "name": "Sliver",
-      "id": "sliver",
+      "name": "Solo",
+      "id": "solo",
+      "monthly_usd": 59,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
+      "name": "Silver",
+      "id": "silver",
       "monthly_usd": 100,
       "annual_usd": null,
       "trial_days": 10
@@ -27,10 +34,31 @@
       "trial_days": 10
     },
     {
+      "name": "Business",
+      "id": "business",
+      "monthly_usd": 249,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
       "name": "Platinum",
       "id": "platinum",
       "monthly_usd": 350,
       "annual_usd": 3000,
+      "trial_days": 10
+    },
+    {
+      "name": "Agency",
+      "id": "agency",
+      "monthly_usd": 599,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
+      "name": "Scale",
+      "id": "scale",
+      "monthly_usd": 999,
+      "annual_usd": null,
       "trial_days": 10
     }
   ],
@@ -542,7 +570,7 @@
     },
     {
       "id": "T028",
-      "title": "Create/verify exactly four public plans in Shopify Partner Dashboard",
+      "title": "Create/verify all eight paid plans in Shopify Partner Dashboard",
       "workstream": "Billing",
       "priority": "P0",
       "status": "todo",
@@ -551,7 +579,7 @@
       ],
       "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/164",
       "evidence": [],
-      "acceptance": "ONE Live listing; 4 exact canonical handles and prices; all with 10-day trial; Platinum annual 3000"
+      "acceptance": "ONE Live listing; verify eight exact canonical handles starter/solo/silver/gold/business/platinum/agency/scale, approved prices and 10-day trial; retain Platinum annual 3000"
     },
     {
       "id": "T029",
@@ -640,7 +668,7 @@
     },
     {
       "id": "T034",
-      "title": "AI/widgets/pages/seats quotas across Starter-Sliver-Gold-Platinum",
+      "title": "AI/widgets/pages/seats quotas across all eight paid plans",
       "workstream": "Merchant Features",
       "priority": "P1",
       "status": "todo",
@@ -747,7 +775,7 @@
         "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746201729",
         "https://github.com/Vertex-Systems-Network/vsn-builder/pull/283"
       ],
-      "acceptance": "One public Builder listing with compliant privacy/support/screenshots, four-plan details, test instructions",
+      "acceptance": "One public Builder listing with compliant privacy/support/screenshots, eight-plan details, test instructions",
       "progress_note": "2026-10-17 T040 screenshot ingestion source-contract hardened in PR #283 (all 4 exact-head CI PASS, merged as 1e555f82412269713bb0a11851d79695ea579144). Exactly five real private 1600×900 PNG source captures now required by the listing metadata validator; rejects absent files, symlinks, unsafe path traversal, invalid IHDR/decompression/CRC, mis-sized images, exact-content duplicate SHA256s, and reserved fake support email hostnames. Synthetic fixture image integrity/tampering/security tests and no-deploy listing gate PASS; temporary CI fixture images deleted and NEVER represented as merchant screenshots. This change does not make UI/screenshots authentic, does not certify external Partner/account/privacy/support or Shopify real E2E, and NEVER allows listing submission. Current manifest has ZERO real screenshots, no verified privacy/support and no external issuer. T040 stays IN_REVIEW. Existing single public app and four paid plan drafts retained; no new Shopify stores/Production changes."
     },
     {

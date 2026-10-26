@@ -63,8 +63,8 @@ async function getPaidPage(f){
   });
 }
 
-test("four commercial plans and the private test plan permit verified read-only access",async()=>{
-  for(const plan of ["starter","sliver","gold","platinum","shopify-test"]){
+test("eight commercial plans, the Silver legacy handle and private test plan permit verified read-only access",async()=>{
+  for(const plan of ["starter","solo","silver","sliver","gold","business","platinum","agency","scale","shopify-test"]){
     const f=fixture(paid({planKey:plan,planHandle:plan}));
     const res=await getPaidPage(f);
     assert.equal(res.status,200,plan);
@@ -83,7 +83,7 @@ test("unauthorized plans, missing row, spoofed provider and cross-tenant mirrors
   const variants=[null,
     paid({planKey:"free",planHandle:"free"}),
     paid({planKey:"starter",planHandle:"sliver"}),
-    paid({planKey:"platenium",planHandle:"platenium"}),
+    paid({planKey:"starter",planHandle:"platenium"}),
     paid({planKey:"starter",planHandle:"starter",provider:"local"}),
     paid({shop:"another.myshopify.com"}),
     paid({status:"frozen"}),paid({status:"canceled"}),

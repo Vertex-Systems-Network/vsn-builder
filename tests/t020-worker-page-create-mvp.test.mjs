@@ -96,9 +96,10 @@ test("verified paid owner can create blank draft with tenant-scoped unique handl
   ]);
 });
 
-test("plan page quotas mirror canonical four paid plans, not request supplied plan",async()=>{
+test("page quotas mirror all eight canonical paid plans, not request supplied plan",async()=>{
   for(const [plan,limit] of [
-    ["starter",5],["sliver",100],["gold",500],["platinum",5000],
+    ["starter",5],["solo",25],["silver",100],["gold",500],
+    ["business",1500],["platinum",5000],["agency",10000],["scale",25000],
   ]){
     const f=fixture({plan,used:limit-1});
     assert.equal((await serve(f)).status,201,plan+" last allowed page");

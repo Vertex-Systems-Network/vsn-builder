@@ -1,5 +1,7 @@
 import { COMMERCIAL_PLANS, PLAN_ORDER, quotaLabel } from '../../../config/commercialPlans.js';
 import { LicenseSummary } from './License.jsx';
+import PlanComparison from './PlanComparison.jsx';
+
 import '../../../styles/dashboard-pricing-grid.css';
 
 const faqs = [
@@ -10,7 +12,7 @@ const faqs = [
 
 function planFeatures(plan) {
   return [
-    `${quotaLabel(plan.maxPages)} builder pages/templates`,
+    `${quotaLabel(plan.maxPages)} saved builder pages`,
     `${quotaLabel(plan.templateQuota)} Marketplace installs`,
     `${quotaLabel(plan.aiMonthly)} AI generations / month`,
     `${quotaLabel(plan.croExperiments)} active CRO experiments`,
@@ -22,10 +24,10 @@ function planFeatures(plan) {
 }
 
 export default function Pricing({ currentPlan, entitlements, billingUrl, pricing, pricingReturn, subscriptionSync, shop, canManageBilling = false }) {
-  return <s-page heading="Starter, Sliver, Gold & Platinum">
+  return <s-page heading="8 paid plans for every stage">
     <s-stack direction="block" gap="base">
       <s-stack direction="block" gap="small-200">
-        <s-paragraph color="subdued">Your Shopify plans map directly to VSN entitlements. Every plan keeps the same visual widget library; capacity and advanced systems increase from Starter through Platinum.</s-paragraph>
+        <s-paragraph color="subdued">Your Shopify plan maps directly to VSN entitlements. Every plan keeps the same visual widget library; capacity and advanced systems increase from Starter through Scale.</s-paragraph>
         <s-text color="subdued">Prices, trials, billing periods, upgrades and downgrades are confirmed in Shopify Admin.</s-text>
       </s-stack>
 
@@ -37,7 +39,7 @@ export default function Pricing({ currentPlan, entitlements, billingUrl, pricing
         {PLAN_ORDER.map((key)=>{
           const plan = COMMERCIAL_PLANS[key];
           const active = currentPlan?.key === key;
-          const popular = key === 'sliver';
+          const popular = key === 'silver';
           const href = billingUrl || '';
           const shopifyHandle = pricing?.planHandles?.[key] || key;
           return <div className="dashboard-pricing-card" key={key}><s-section heading={plan.name}>
@@ -58,6 +60,8 @@ export default function Pricing({ currentPlan, entitlements, billingUrl, pricing
           </s-section></div>;
         })}
       </div>
+
+      <PlanComparison currentPlan={currentPlan} planHandles={pricing?.planHandles} />
 
       <s-banner tone="info" heading="Shopify App Pricing remains authoritative">VSN now links directly to Shopify’s hosted App Pricing page. It does not create Billing API subscriptions and it never treats a plan_handle query parameter as proof of an active contract.</s-banner>
 

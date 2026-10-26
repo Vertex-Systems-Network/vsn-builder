@@ -39,14 +39,16 @@ export function getShopifyPlanHandleMap() {
     const plan = COMMERCIAL_PLANS[key];
     const publicEnvName = `SHOPIFY_APP_PRICING_PLAN_${String(plan.publicKey || key).toUpperCase()}_HANDLE`;
     const legacyEnvName = `SHOPIFY_APP_PRICING_PLAN_${key.toUpperCase()}_HANDLE`;
-    // Sliver is the owner's exact commercial plan ID; SILVER is a legacy
-    // config alias only, never a fifth Shopify public plan.
-    const olderPublicEnvName = key === "sliver" ? "SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE" : "";
-    const olderInternalEnvName = ({starter:"CORE",sliver:"PRO",gold:"CRO",platinum:"AGENCY"})[key];
+    // Keep the retired `sliver` Shopify handle as an alias for Silver so
+    // existing verified contracts survive the key spelling correction.
+    const olderPublicEnvName = key === "silver" ? "SHOPIFY_APP_PRICING_PLAN_SLIVER_HANDLE" : "";
+    // AGENCY is now a public plan key, so it cannot double as the retired
+    // Platinum alias. Platinum keeps its exact canonical handle instead.
+    const olderInternalEnvName = ({starter:"CORE",silver:"PRO",gold:"CRO"})[key];
     const configured = normalizePricingHandle(process.env[publicEnvName]) ||
       (olderPublicEnvName && normalizePricingHandle(process.env[olderPublicEnvName])) ||
       normalizePricingHandle(process.env[legacyEnvName]) ||
-      normalizePricingHandle(process.env[`SHOPIFY_APP_PRICING_PLAN_${olderInternalEnvName}_HANDLE`]);
+      (olderInternalEnvName && normalizePricingHandle(process.env[`SHOPIFY_APP_PRICING_PLAN_${olderInternalEnvName}_HANDLE`]));
     return [key, configured || normalizePricingHandle(plan.shopifyHandle) || key];
   })));
 }
@@ -55,7 +57,11 @@ export function resolveInternalPlanKeyFromHandle(value, handleMap = getShopifyPl
   const handle = normalizePricingHandle(value);
   if (!handle) return null;
   const match = Object.entries(handleMap).find(([, configured]) => configured === handle);
-  return match ? normalizePlanKey(match[0]) : null;
+  if (match) return normalizePlanKey(match[0]);
+  // The retired `sliver` contract is a permanent read-only alias for Silver.
+  if (handle === "sliver") return "silver";
+  if (handle === "platenium") return "platinum";
+  return null;
 }
 
 function safePricingOverride(value) {

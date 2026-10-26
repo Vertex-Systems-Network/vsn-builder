@@ -98,6 +98,6 @@ const main=()=>{
   process.exitCode=1;
   return;
  }
- console.log("T040 listing draft and four paid plan metadata: PASS; external Shopify Partner/screenshot/privacy/support certification: NOT VERIFIED.");
+ console.log("T040 listing draft and eight paid plan metadata: PASS; external Shopify Partner/screenshot/privacy/support certification: NOT VERIFIED.");
 };
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1]))main();
