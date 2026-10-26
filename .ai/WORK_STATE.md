@@ -9,10 +9,10 @@ owner_intent: "Close the audited quota bypasses and race conditions for the eigh
 base_branch: development
 working_branch: codex/eight-plan-quota-hardening
 pull_request: 396
-last_verified_commit: 18e023e7f3fd8cc394a1c2b40fb9c762f84aa0b3
-last_verified_step: "PR #396 CI uncovered the app.pages.jsx line ceiling and a stale Milestone H audit that expected an inline Prisma transaction. The page route now uses the shared quota helper and passes codebase health (1,214/1,225 lines); the audit now verifies the shared transactional helper (39/39). Node 22.18.0 typecheck/QA, 27 focused tests, touched-file ESLint, and git diff --check pass."
+last_verified_commit: afe2882cc65473d6260dd23e454c63775f59a0fe
+last_verified_step: "PR #396 exact-head checks passed on afe2882cc65473d6260dd23e454c63775f59a0fe: Production Confidence, T020 Worker compatibility, T021 Staging artifact dry run, T026, CodeQL, repository integrity, and environment isolation. Local Node 22.18.0 typecheck/QA, 27 focused tests, Milestone H audit (39/39), codebase health, touched-file ESLint, and git diff --check pass. PR review is pending."
 in_flight_step: none
-next_exact_action: "Check all required CI on PR #396's current exact head c3148d048af855062ac810dda063ff0d8361ad1b. Address failures before review/merge; Staging remains gated on the protected workflow."
+next_exact_action: "Confirm exact-head CI remains green after this cursor update, then obtain the required PR #396 review before merge. Only a reviewed merge to protected development can enter the protected Staging workflow."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---
@@ -30,7 +30,7 @@ updated_at: 2026-10-27
 
 - Started from protected development SHA `efd6c9b7263e0fa50c2a84e253c1c4f741315483` on `codex/eight-plan-quota-hardening`.
 - Added transactional per-shop quota serialization and removed fail-open zero-usage fallbacks. Applied it to page creation, import (including imported section dependencies), duplication, restore, backup restore, onboarding demo seeding, campaigns, floating elements, Marketplace installs, CRO experiment creation/duplication/reactivation, AI generation reservations, and collaboration seats. Backup restore also checks page and marketplace-install capacity. Worker page creation uses the shared quota lock. Marketplace free-tier catalog items now require Starter rather than mapping the catalog label `free` to the inactive billing tier.
-- Initial exact-head CI found two gates: `app/routes/app.pages.jsx` exceeded the Milestone G line ceiling by three counted lines, and the Milestone H static audit expected an inline `db.$transaction` call in the import service. Both are corrected: create/duplicate use `createPageWithQuota`, and the audit verifies the shared `withShopQuotaLock` transaction helper. Milestone H passes 39/39 and codebase health passes at 1,214/1,225 lines. On Node 22.18.0, typecheck, QA (429 files; Phase C 112/112), focused billing/plan/Worker tests (27/27), touched-file ESLint, and `git diff --check` pass. The latest corrected exact-head CI, PR review/merge, and Staging promotion remain pending.
+- Initial exact-head CI found two gates: `app/routes/app.pages.jsx` exceeded the Milestone G line ceiling by three counted lines, and the Milestone H static audit expected an inline `db.$transaction` call in the import service. Both are corrected: create/duplicate use `createPageWithQuota`, and the audit verifies the shared `withShopQuotaLock` transaction helper. Milestone H passes 39/39 and codebase health passes at 1,214/1,225 lines. On Node 22.18.0, typecheck, QA (429 files; Phase C 112/112), focused billing/plan/Worker tests (27/27), touched-file ESLint, and `git diff --check` pass. Exact-head CI on `afe2882` passed all seven required workflows, including the T021 dry run. PR review is still required before merge; no Staging promotion has occurred.
 
 ## Purpose
 
