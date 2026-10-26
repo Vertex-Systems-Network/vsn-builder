@@ -9,10 +9,10 @@ owner_intent: "Use eight paid plan-name keys, enforce tier-specific feature and 
 base_branch: development
 working_branch: codex/eight-paid-plan-catalog
 pull_request: 394
-last_verified_commit: 9bf715bd7425262673af9fecd55acbc323703953
-last_verified_step: "PR #394 Q5.1 and Q5.3 audit corrections pass locally, and T021 dry-run is green. Production Confidence found Q5.5's docs audit expected canonical `platinum` in code formatting; docs are being aligned."
-in_flight_step: "Document the canonical Platinum handle in billing QA guidance and verify the Q5.5 audit locally."
-next_exact_action: "Complete the billing docs spelling correction, update PR #394 and wait for all exact-head CI and review. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
+last_verified_commit: fe753c4a7da04de25ca1b4a2b655a34414587f03
+last_verified_step: "PR #394 exact head fe753c4 passes Production Confidence, CodeQL, T020 Workerd compatibility, T021 Staging artifact dry-run, T040, T026, task graph, environment isolation and repository integrity."
+in_flight_step: none
+next_exact_action: "Obtain required PR review/merge. Then verify all eight exact offers in Shopify Partner and satisfy protected Staging snapshot/backup and T021 deployment gates before any Staging deploy."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
@@ -22,12 +22,9 @@ updated_at: 2026-10-26
 - Public plan keys and labels: Starter, Solo, Silver, Gold, Business, Platinum, Agency, Scale. No public Free plan; inactive stores receive no entitlement.
 - Updated the shared catalog, Partner-handle mapping/legacy aliases, server-side quotas, plan cards and comparison table, worker plan mirror, tests, audits, docs and task manifest.
 - Verification on supported Node 22.18.0: `npm run typecheck`, `npm run lint`, `npm run qa`, and 62 focused billing/entitlement tests passed. `git diff --check` passed. Shopify Partner plan publication/pricing is still a required external step; no hosted Staging result is claimed.
-- The local `git push` could not authenticate (`could not read Username for https://github.com`); the branch and PR were published through the connected GitHub integration instead.
-- PR #394 was subsequently published through the connected GitHub integration. Its T040 listing workflow caught that unexpected monthly price keys (for example retired `sliver`) were not rejected; that validation gap is now fixed.
-- The `sliver` extra-key issue is fixed in commit `a83a40d`. The next T020 run exposed a stale developer-simulation expectation; commit `d5029f9` changes it to canonical `silver` and the related local test passes.
-- The latest T021 dry-run and T040/T026/dependency/security/environment checks pass. Production Confidence found a final Q5.1 audit still expecting four legacy env names instead of all eight public names; that assertion is being corrected.
-- Q5.1 now passes 42/42 locally and the eight-key environment names are verified. Production Confidence then found the Q5.3 audit still asserting entitlement contract version 2; catalog migration correctly bumped it to 3, so the stale assertion is being updated.
-- Q5.3 now passes 51/51 locally and T021 dry-run passes. Production Confidence next found Q5.5 requiring canonical `platinum` spelling in the billing QA guide; adding that explicit key/handle description.
+- The local `git push` had no credentials; branch/PR updates were published through the connected GitHub integration.
+- CI exposed and the PR fixed three stale contract expectations: unknown monthly plan keys, legacy `sliver` normalized to canonical `silver`, and the Q5.1/Q5.3/Q5.5 audit assumptions. Latest exact PR head passed all observed workflows, including T021 artifact dry-run; no hosted Staging deployment has been run.
+- Shopify Partner publication and live billing verification for all eight offers remain pending; prices in code are proposed values until Partner configuration is verified.
 
 ## Purpose
 
