@@ -1,5 +1,6 @@
 import { COMMERCIAL_PLANS, PLAN_ORDER, quotaLabel } from '../../../config/commercialPlans.js';
 import { LicenseSummary } from './License.jsx';
+import '../../../styles/dashboard-pricing-grid.css';
 
 const faqs = [
   { q:'Are the displayed prices final?', a:'VSN displays the planned USD rates and 10-day trials. The merchant confirms the actual recurring price, trial and billing period on Shopify’s hosted App Pricing page.' },
@@ -39,7 +40,7 @@ export default function Pricing({ currentPlan, entitlements, billingUrl, pricing
           const popular = key === 'sliver';
           const href = billingUrl || '';
           const shopifyHandle = pricing?.planHandles?.[key] || key;
-          return <s-section key={key} heading={plan.name}>
+          return <div className="dashboard-pricing-card" key={key}><s-section heading={plan.name}>
             <s-stack direction="block" gap="small-200">
               {popular || active ? <s-stack direction="inline" gap="small-200">{popular ? <s-badge tone="info">★ Most Popular</s-badge> : null}{active ? <s-badge tone="success">Current</s-badge> : null}</s-stack> : null}
               <s-paragraph color="subdued">{plan.description}</s-paragraph>
@@ -54,7 +55,7 @@ export default function Pricing({ currentPlan, entitlements, billingUrl, pricing
               <s-divider/>
               <s-unordered-list>{planFeatures(plan).map((feature)=><s-list-item key={feature}>{feature}</s-list-item>)}</s-unordered-list>
             </s-stack>
-          </s-section>;
+          </s-section></div>;
         })}
       </div>
 
