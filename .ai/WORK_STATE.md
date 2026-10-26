@@ -9,10 +9,10 @@ owner_intent: "Make the Plans & License entry clear and ensure shops without ver
 base_branch: development
 working_branch: fix/staging-plan-handle-diagnostic
 pull_request: none
-last_verified_commit: 02ecff5a5dadcf1666ae7d73e8d959851820d827
-last_verified_step: "Audited official Shopify 2026-10 API notes against app operations, confirmed expiring offline tokens and Partner API activeSubscription billing flow already meet current requirements, and updated pinned Admin/Webhook/Partner API config, schema tooling, gates and docs to 2026-10. On Node 24.22.1, Q4 23/23, Q5.2 44/44, Q5.5 59/59, T011 static codegen wiring, 44 focused plan/billing tests, touched-file ESLint, TypeScript, npm run qa (428 files; Phase C 112/112), and production build passed. Reopened live Staging Admin on 2026-10-26: full Builder navigation works and Plans & License refresh says 'Shopify subscription status verified' for the Platinum trial through Nov 5, 2026; the previous Admin identity error is not reproducible. Plan cards remain stacked and deployed page does not include `.dashboard-pricing-grid`, confirming the local grid fix is not live. No Node 22 binary or cached Node 22 package is available; `npm run runtime:verify` rejects Node 24. Local fixes remain undeployed; no PR."
-in_flight_step: "Run typecheck, full QA, focused billing/worker tests, touched-file lint, build, and Shopify 2026-10 schema validation under Node 22.18.0."
-next_exact_action: "Complete the supported-runtime validation suite; repair any failures, then proceed through PR/merge/Staging deployment."
+last_verified_commit: e337eb3
+last_verified_step: "Obtained Node 22.18.0 from the npm registry and passed runtime:verify, db:prepare (37 migrations), typecheck, npm run qa (428 files; Phase C 112/112), full ESLint, production build, focused billing/Worker suite (64/64 after generating the Prisma Edge client), Q4 23/23, Q5.2 44/44, Q5.5 59/59, T011 static compatibility and git diff --check. Live Staging Admin recheck shows full Builder navigation and successful billing refresh for the Platinum trial through Nov 5, 2026; plan cards still stack and `.dashboard-pricing-grid` is absent from deployed assets. `npm run graphql-codegen` parsed 89/95 GraphQL docs but its online Shopify 2026-10 schema fetch failed because `shopify.dev` DNS is unavailable from this workspace. The exact tested source tree is committed locally and uploaded to the remote feature branch; no PR or deploy yet."
+in_flight_step: "Open a draft PR for the uploaded feature branch so Shopify 2026-10 schema validation and exact-head CI can run in GitHub; keep merge and deployment gated on their results."
+next_exact_action: "Create draft PR into development, inspect all exact-head required CI including Shopify schema/codegen, resolve failures, then proceed only through the approved merge and T021 Staging deploy flow."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---

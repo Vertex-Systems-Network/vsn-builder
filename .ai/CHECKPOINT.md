@@ -1,5 +1,12 @@
 # VSN Engineering Checkpoint
 
+## 2026-10-26 Node 22 release-gate rerun
+
+- Node `22.18.0` was obtained through the npm package registry. `runtime:verify`, `db:prepare` (37 migrations), `typecheck`, full `npm run qa` (428 files; Phase C 112/112), full ESLint, production build, Q4 audit (23/23), Q5.2 (44/44), Q5.5 (59/59), T011 static compatibility, and focused plan/billing/Worker tests (64/64) passed. Prisma Cloud/Worker/Workerd clients were generated before the Worker test run.
+- `npm run graphql-codegen` inventoried 95 GraphQL documents (89 parsed, 6 dynamic-interpolation documents left unvalidated), but the remote Shopify Admin `2026-10` schema fetch could not resolve `shopify.dev` (`EAI_AGAIN`). Exact schema/codegen validation remains outstanding.
+- The exact local source tree is committed as `e337eb3` and uploaded to the same named remote feature branch through GitHub. Draft PR is the next step to run remote schema validation and required exact-head CI. No merge or deployment has occurred.
+- Live Staging Admin recheck: Builder navigation loads; Plans & License refresh verifies the current Platinum trial (ends Nov 5, 2026); plan cards are still stacked and the deployed page lacks `.dashboard-pricing-grid`. The local responsive grid and fail-closed plan access changes are not live yet.
+
 ## 2026-10-26 Shopify API and billing requirement update (local, not promoted)
 
 - Updated current Admin/Webhook API contracts and Shopify App Pricing Partner API defaults to Shopify's latest stable API version, `2026-10`, across runtime, tier configs, schema tooling, deployment guards, tests, and operator docs. `2026-07` remains explicitly accepted for controlled rollback.
