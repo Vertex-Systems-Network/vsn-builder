@@ -27,7 +27,7 @@ const options={connectionRetries:1,connectionRetryIntervalMs:0};
 const isDate=(v)=>v instanceof Date&&Number.isFinite(v.getTime());
 
 export async function persistWorkerShopifySessionWithGeneration(session,db,{
-  SessionStorage,clock=()=>new Date(),
+  SessionStorage,clock=()=>new Date(),expectedAccessToken,
 }={}) {
   if(!SHOP.test(String(session?.shop||"")))
     throw blocked("invalid-session-shop");
@@ -39,7 +39,9 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
     throw blocked("invalid-session-storage-adapter");
   if(typeof db?.$transaction!=="function")
     throw blocked("invalid-session-transaction");
-  if(typeof session?.accessToken!=="string" || !session.accessToken)
+  const clearingAccessToken=session?.accessToken===undefined;
+  if(!clearingAccessToken &&
+     (typeof session?.accessToken!=="string" || !session.accessToken))
     throw blocked("invalid-session-access-token");
   if(!session.isOnline && session.id!==`offline_${session.shop}`)
     throw blocked("offline-session-id-mismatch");
@@ -60,6 +62,7 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
          typeof tx?.session?.count!=="function")
         throw blocked("installation-model-unavailable");
 
+      let priorSession;
       if(session.isOnline){
         // Lock the active installation row before saving a user session.
         // An uninstall transaction cannot race between this claim and write.
@@ -69,6 +72,8 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
           data:{updatedAt:now},
         });
         if(active?.count!==1)throw blocked("active-generation-missing");
+        failurePoint="offline-session-read-failed";
+        priorSession=await tx.session.findUnique({where:{id:session.id}});
       }else{
         // A no-op update deliberately locks this exact shop row; the uninstall
         // fence also updates the same row before Session.deleteMany.
@@ -78,8 +83,8 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
         failurePoint="offline-generation-read-failed";
         const previousInstall=await lifecycle.findUnique({where:{shop:session.shop}});
         failurePoint="offline-session-read-failed";
-        const prior=await tx.session.findUnique({where:{id:session.id}});
-        if(!previousInstall && prior)
+        priorSession=await tx.session.findUnique({where:{id:session.id}});
+        if(!previousInstall && priorSession)
           throw blocked("orphaned-session-needs-install-migration");
         if(previousInstall?.uninstalledAt!==null &&
            previousInstall?.uninstalledAt!==undefined)
@@ -102,6 +107,11 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
         // changed; reinstallation requires a separate authenticated flow.
         // The real Shopify SDK still serializes the token via storeSession.
       }
+      if(clearingAccessToken &&
+         (!priorSession || priorSession.shop!==session.shop ||
+          priorSession.isOnline!==session.isOnline ||
+          typeof expectedAccessToken!=="string" || !expectedAccessToken))
+        throw blocked("invalid-session-access-token");
       failurePoint="session-storage-not-ready";
       const inside=new SessionStorage(tx,options);
       // The official Prisma adapter starts an asynchronous session-table
@@ -111,6 +121,15 @@ export async function persistWorkerShopifySessionWithGeneration(session,db,{
       if(typeof inside.isReady!=="function" ||
          await inside.isReady()!==true)throw blocked("session-storage-not-ready");
       failurePoint="session-storage-write-rejected";
+      if(clearingAccessToken){
+        // Shopify calls storeSession after marking a rejected Admin API token
+        // undefined. Delete only the exact persisted token that this request
+        // loaded; a concurrent token refresh must win over stale invalidation.
+        if(priorSession.accessToken===expectedAccessToken &&
+           await inside.deleteSession(session.id)!==true)
+          throw blocked("session-storage-write-rejected");
+        return true;
+      }
       if(await inside.storeSession(session)!==true)throw blocked("session-storage-write-rejected");
       return true;
     });
@@ -166,10 +185,19 @@ export function createWorkerGenerationSessionStorage(database,baseStorage,{
       throw readBlocked();
     return database.session.findUnique({where:{id}});
   };
+  const loadedAccessTokens=new WeakMap();
   return {
-    storeSession:session=>persistWorkerShopifySessionWithGeneration(session,database,{
-      SessionStorage,clock,
-    }),
+    async storeSession(session){
+      const expectedAccessToken=loadedAccessTokens.get(session);
+      const result=await persistWorkerShopifySessionWithGeneration(session,database,{
+        SessionStorage,clock,expectedAccessToken,
+      });
+      if(typeof session?.accessToken==="string" && session.accessToken)
+        loadedAccessTokens.set(session,session.accessToken);
+      else if(session && typeof session==="object")
+        loadedAccessTokens.delete(session);
+      return result;
+    },
     // Keep official Shopify SDK serialization and database deletion, but
     // never expose credentials without EXACT before/after persistent token
     // and installation-generation checks around its asynchronous loader.
@@ -182,6 +210,7 @@ export function createWorkerGenerationSessionStorage(database,baseStorage,{
         if(generation===null)return undefined;
         const session=await baseStorage.loadSession(id);
         if(!session || !samePersisted(session,original))return undefined;
+        loadedAccessTokens.set(session,original.accessToken);
         const [latest,after]=await Promise.all([
           persisted(id),activeGeneration(original.shop),
         ]);
