@@ -4,18 +4,27 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: staging-plan-page-and-access-gate
-owner_intent: "Make the Plans & License entry clear and ensure shops without verified paid entitlements cannot navigate into Builder sections."
+task_key: eight-paid-plan-catalog
+owner_intent: "Use eight paid plan-name keys, enforce tier-specific feature and usage limits, and add an 8-plan comparison to the Plans page."
 base_branch: development
-working_branch: fix/staging-plan-handle-diagnostic
-pull_request: 392
-last_verified_commit: 746a883
-last_verified_step: "Obtained Node 22.18.0 from the npm registry and passed runtime:verify, db:prepare (37 migrations), typecheck, npm run qa (428 files; Phase C 112/112), full ESLint, production build, focused billing/Worker suite (64/64 after generating the Prisma Edge client), Q4 23/23, Q5.2 44/44, Q5.5 59/59, T011 static compatibility and git diff --check. Live Staging Admin recheck shows full Builder navigation and successful billing refresh for the Platinum trial through Nov 5, 2026; plan cards still stack and `.dashboard-pricing-grid` is absent from deployed assets. `npm run graphql-codegen` parsed 89/95 GraphQL docs but its online Shopify 2026-10 schema fetch failed because `shopify.dev` DNS is unavailable from this workspace. The exact tested source tree is committed locally and uploaded to the remote feature branch; no PR or deploy yet."
-in_flight_step: "Commit and upload the remaining Plans & License usage-grid fix and regression test to PR #392, then rerun exact-head CI."
-next_exact_action: "Update PR #392 with the verified Polaris usage-grid fix, wait for exact-head CI, then merge and execute the protected T021 Staging deployment flow."
+working_branch: codex/eight-paid-plan-catalog
+pull_request: 394
+last_verified_commit: fe753c4a7da04de25ca1b4a2b655a34414587f03
+last_verified_step: "PR #394 exact head fe753c4 passes Production Confidence, CodeQL, T020 Workerd compatibility, T021 Staging artifact dry-run, T040, T026, task graph, environment isolation and repository integrity."
+in_flight_step: none
+next_exact_action: "Obtain required PR review/merge. Then verify all eight exact offers in Shopify Partner and satisfy protected Staging snapshot/backup and T021 deployment gates before any Staging deploy."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
+
+## Eight paid plan catalog — 2026-10-26
+
+- Public plan keys and labels: Starter, Solo, Silver, Gold, Business, Platinum, Agency, Scale. No public Free plan; inactive stores receive no entitlement.
+- Updated the shared catalog, Partner-handle mapping/legacy aliases, server-side quotas, plan cards and comparison table, worker plan mirror, tests, audits, docs and task manifest.
+- Verification on supported Node 22.18.0: `npm run typecheck`, `npm run lint`, `npm run qa`, and 62 focused billing/entitlement tests passed. `git diff --check` passed. Shopify Partner plan publication/pricing is still a required external step; no hosted Staging result is claimed.
+- The local `git push` had no credentials; branch/PR updates were published through the connected GitHub integration.
+- CI exposed and the PR fixed three stale contract expectations: unknown monthly plan keys, legacy `sliver` normalized to canonical `silver`, and the Q5.1/Q5.3/Q5.5 audit assumptions. Latest exact PR head passed all observed workflows, including T021 artifact dry-run; no hosted Staging deployment has been run.
+- Shopify Partner publication and live billing verification for all eight offers remain pending; prices in code are proposed values until Partner configuration is verified.
 
 ## Purpose
 

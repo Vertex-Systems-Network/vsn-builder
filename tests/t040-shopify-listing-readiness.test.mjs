@@ -13,13 +13,13 @@ const syntheticImageInfo=path=>({
 });
 
 
-test("draft describes ONE public VSN Builder app, exactly four paid plans and trial",()=>{
+test("draft describes ONE public VSN Builder app, eight paid plans and trial",()=>{
  const result=inspectListingReadiness(fresh());
  assert.equal(result.validDraft,true);
  assert.equal(result.metadataComplete,false);
  assert.equal(result.externallyVerified,false);
- assert.deepEqual(original.commerce.plan_ids,["starter","sliver","gold","platinum"]);
- assert.deepEqual(original.commerce.monthly_usd,{starter:30,sliver:100,gold:150,platinum:350});
+ assert.deepEqual(original.commerce.plan_ids,["starter","solo","silver","gold","business","platinum","agency","scale"]);
+ assert.deepEqual(original.commerce.monthly_usd,{starter:30,solo:59,silver:100,gold:150,business:249,platinum:350,agency:599,scale:999});
  assert.equal(original.commerce.annual_usd.platinum,3000);
  assert.equal(original.commerce.trial_days,10);
  assert.equal(original.release.submission_allowed,false);

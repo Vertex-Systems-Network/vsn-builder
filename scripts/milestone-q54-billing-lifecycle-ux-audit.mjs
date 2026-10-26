@@ -40,9 +40,13 @@ const env=read(".env.example");
 const docs=read("docs/developer/billing-lifecycle.md");
 const noHandleEnv={
   SHOPIFY_APP_PRICING_PLAN_STARTER_HANDLE:undefined,
+  SHOPIFY_APP_PRICING_PLAN_SOLO_HANDLE:undefined,
+  SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE:undefined,
   SHOPIFY_APP_PRICING_PLAN_SLIVER_HANDLE:undefined,
   SHOPIFY_APP_PRICING_PLAN_GOLD_HANDLE:undefined,
+  SHOPIFY_APP_PRICING_PLAN_BUSINESS_HANDLE:undefined,
   SHOPIFY_APP_PRICING_PLAN_PLATINUM_HANDLE:undefined,
+  SHOPIFY_APP_PRICING_PLAN_SCALE_HANDLE:undefined,
   SHOPIFY_APP_PRICING_PLAN_CORE_HANDLE:undefined,
   SHOPIFY_APP_PRICING_PLAN_PRO_HANDLE:undefined,
   SHOPIFY_APP_PRICING_PLAN_CRO_HANDLE:undefined,
@@ -66,22 +70,21 @@ await check("Q5.4 milestone report is packaged",()=>assert.equal(exists("VSN_MIL
 await check("Q5.4 developer documentation is packaged",()=>assert.equal(exists("docs/developer/billing-lifecycle.md"),true));
 
 await check("Starter replaces historic Free tier",()=>{assert.equal(COMMERCIAL_PLANS.starter.name,"Starter");assert.equal(COMMERCIAL_PLANS.starter.publicKey,"starter")});
-await check("Sliver replaces historical Pro tier",()=>{assert.equal(COMMERCIAL_PLANS.sliver.name,"Sliver");assert.equal(COMMERCIAL_PLANS.sliver.publicKey,"sliver")});
+await check("Silver is the canonical plan key and preserves the Sliver alias",()=>{assert.equal(COMMERCIAL_PLANS.silver.name,"Silver");assert.equal(normalizePlanKey("sliver"),"silver")});
 await check("Internal cro tier is merchant-facing Gold",()=>{assert.equal(COMMERCIAL_PLANS.gold.name,"Gold");assert.equal(COMMERCIAL_PLANS.gold.publicKey,"gold")});
 await check("Internal agency tier is merchant-facing Platinum",()=>{assert.equal(COMMERCIAL_PLANS.platinum.name,"Platinum");assert.equal(COMMERCIAL_PLANS.platinum.publicKey,"platinum")});
-await check("Exact Shopify default handles preserve merchant keys",()=>withEnv(noHandleEnv,()=>assert.deepEqual(getShopifyPlanHandleMap(),{starter:"starter",sliver:"sliver",gold:"gold",platinum:"platinum"})));
+await check("Exact Shopify default handles preserve all eight merchant keys",()=>withEnv(noHandleEnv,()=>assert.deepEqual(getShopifyPlanHandleMap(),{starter:"starter",solo:"solo",silver:"silver",gold:"gold",business:"business",platinum:"platinum",agency:"agency",scale:"scale"})));
 await check("Free alias normalizes to core",()=>assert.equal(normalizePlanKey("free"),"inactive"));
-await check("Silver alias normalizes to pro",()=>assert.equal(normalizePlanKey("silver"),"sliver"));
-await check("Shopify sliver handle alias normalizes to pro",()=>assert.equal(normalizePlanKey("sliver"),"sliver"));
+await check("Silver canonical key and old Shopify sliver alias resolve to Silver",()=>assert.equal(normalizePlanKey("silver"),"silver")&&assert.equal(normalizePlanKey("sliver"),"silver"));
 await check("Gold alias normalizes to cro",()=>assert.equal(normalizePlanKey("gold"),"gold"));
 await check("Platinum alias normalizes to agency",()=>assert.equal(normalizePlanKey("platinum"),"platinum"));
 await check("Shopify platenium handle alias normalizes to agency",()=>assert.equal(normalizePlanKey("platenium"),"platinum"));
-await check("Public plan helper returns Silver",()=>assert.equal(publicPlanName("sliver"),"Sliver"));
+await check("Public plan helper returns Silver",()=>assert.equal(publicPlanName("sliver"),"Silver"));
 await check("Public plan key helper returns platinum",()=>assert.equal(publicPlanKey("platinum"),"platinum"));
-await check("Exact Silver Shopify key resolves to internal pro",()=>withEnv(currentHandleEnv,()=>assert.equal(resolveInternalPlanKeyFromHandle("sliver"),"sliver")));
+await check("Retired Sliver Shopify handle resolves to canonical Silver",()=>withEnv(currentHandleEnv,()=>assert.equal(resolveInternalPlanKeyFromHandle("sliver"),"silver")));
 await check("Exact Platinum Shopify key resolves to internal agency",()=>withEnv(currentHandleEnv,()=>assert.equal(resolveInternalPlanKeyFromHandle("platinum"),"platinum")));
-await check("Public plan env overrides legacy internal env",()=>withEnv({...currentHandleEnv,SHOPIFY_APP_PRICING_PLAN_SLIVER_HANDLE:"sliver",SHOPIFY_APP_PRICING_PLAN_PRO_HANDLE:"legacy-pro"},()=>assert.equal(getShopifyPlanHandleMap().sliver,"sliver")));
-await check("Legacy plan env remains fallback-compatible",()=>withEnv({...noHandleEnv,SHOPIFY_APP_PRICING_PLAN_PRO_HANDLE:"legacy-pro"},()=>assert.equal(getShopifyPlanHandleMap().sliver,"legacy-pro")));
+await check("Public Silver plan env overrides legacy Pro env",()=>withEnv({...currentHandleEnv,SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE:"silver",SHOPIFY_APP_PRICING_PLAN_SLIVER_HANDLE:"sliver",SHOPIFY_APP_PRICING_PLAN_PRO_HANDLE:"legacy-pro"},()=>assert.equal(getShopifyPlanHandleMap().silver,"silver")));
+await check("Legacy Pro handle remains fallback-compatible for Silver",()=>withEnv({...noHandleEnv,SHOPIFY_APP_PRICING_PLAN_PRO_HANDLE:"legacy-pro"},()=>assert.equal(getShopifyPlanHandleMap().silver,"legacy-pro")));
 
 await check("Active billing status has success tone",()=>assert.equal(BILLING_STATUS_META.active.tone,"success"));
 await check("Trial billing status is merchant-readable",()=>assert.equal(billingStatusMeta("trialing").label,"Trial"));
@@ -90,16 +93,16 @@ await check("Frozen state is critical",()=>assert.equal(billingStatusMeta("froze
 await check("30-day billing period is humanized",()=>assert.equal(humanBillingPeriod("EVERY_30_DAYS"),"Every 30 days"));
 await check("Annual billing period is humanized",()=>assert.equal(humanBillingPeriod("ANNUAL"),"Annual"));
 
-await check("Trial lifecycle exposes remaining days",()=>{const life=buildBillingLifecycle({key:"sliver",entitlementVerified:true,developerMode:false,subscription:{status:"trialing",verifiedAt:now.toISOString(),trialEndsAt:"2026-08-12T06:00:00.000Z",billingPeriod:"EVERY_30_DAYS"}},{now});assert.equal(life.currentName,"Sliver");assert.equal(life.statusLabel,"Trial");assert.equal(life.trialDaysRemaining,3)});
+await check("Silver trial lifecycle exposes remaining days",()=>{const life=buildBillingLifecycle({key:"silver",entitlementVerified:true,developerMode:false,subscription:{status:"trialing",verifiedAt:now.toISOString(),trialEndsAt:"2026-08-12T06:00:00.000Z",billingPeriod:"EVERY_30_DAYS"}},{now});assert.equal(life.currentName,"Silver");assert.equal(life.statusLabel,"Trial");assert.equal(life.trialDaysRemaining,3)});
 await check("Pending Gold change is classified as upgrade from Silver",()=>{const life=buildBillingLifecycle({key:"sliver",entitlementVerified:true,subscription:{status:"active",verifiedAt:now.toISOString(),pendingPlanKey:"gold",pendingPlanHandle:"gold"}},{now});assert.equal(life.pendingKind,"upgrade");assert.equal(life.pendingName,"Gold");assert.equal(life.pendingHandle,"gold")});
-await check("Pending Silver change is classified as downgrade from Gold",()=>{const life=buildBillingLifecycle({key:"gold",entitlementVerified:true,subscription:{status:"active",verifiedAt:now.toISOString(),pendingPlanKey:"sliver",pendingPlanHandle:"sliver"}},{now});assert.equal(life.pendingKind,"downgrade");assert.equal(life.pendingName,"Sliver")});
+await check("Pending Silver change is classified as downgrade from Gold",()=>{const life=buildBillingLifecycle({key:"gold",entitlementVerified:true,subscription:{status:"active",verifiedAt:now.toISOString(),pendingPlanKey:"sliver",pendingPlanHandle:"sliver"}},{now});assert.equal(life.pendingKind,"downgrade");assert.equal(life.pendingName,"Silver")});
 await check("Cancellation schedules no-access inactive state",()=>{const life=buildBillingLifecycle({key:"sliver",entitlementVerified:true,subscription:{status:"canceling",verifiedAt:now.toISOString(),cancelAtEndOfCycle:true,pendingPlanKey:"inactive",pendingPlanHandle:null,cancelEffectiveOn:"2026-08-31"}},{now});assert.equal(life.pendingKind,"cancellation");assert.equal(life.pendingName,"No active subscription")});
 await check("Billing-period-only pending change is retained",()=>{const life=buildBillingLifecycle({key:"sliver",entitlementVerified:true,subscription:{status:"active",verifiedAt:now.toISOString(),pendingPlanKey:"sliver",pendingBillingPeriod:"ANNUAL"}},{now});assert.equal(life.pendingKind,"plan-update");assert.equal(life.pendingBillingPeriodLabel,"Annual")});
 await check("Developer lifecycle is clearly simulation",()=>{const life=buildBillingLifecycle({key:"platinum",developerMode:true,subscription:{status:"active"}},{now});assert.equal(life.currentName,"Platinum");assert.equal(life.status,"local");assert.equal(life.statusLabel,"Developer simulation")});
 
 await check("Current Silver cache handle remains reusable",()=>withEnv(currentHandleEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"active",planKey:"sliver",planHandle:"sliver"}),true)));
 await check("Old Pro cache handle forces automatic re-verification",()=>withEnv(currentHandleEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"active",planKey:"pro",planHandle:"pro"}),false)));
-await check("Old Agency cache handle forces automatic re-verification",()=>withEnv(currentHandleEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"trialing",planKey:"agency",planHandle:"agency"}),false)));
+await check("Historical Agency key with old Platinum handle is re-verified",()=>withEnv(currentHandleEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"trialing",planKey:"agency",planHandle:"platinum"}),false)));
 await check("Canceled mirrors remain safely cache-compatible",()=>withEnv(currentHandleEnv,()=>assert.equal(subscriptionMirrorMatchesCurrentPlanHandles({status:"canceled",planKey:"inactive",planHandle:"legacy"}),true)));
 await check("Fresh-cache shortcut checks current handle mapping",()=>assert.ok(subscriptionService.includes("subscriptionMirrorIsFresh(existing,now)&&subscriptionMirrorMatchesCurrentPlanHandles(existing)")));
 
@@ -110,7 +113,7 @@ await check("Dashboard lifecycle shows pending upgrade/downgrade",()=>assert.ok(
 await check("Dashboard lifecycle shows scheduled cancellation",()=>assert.ok(licenseUi.includes("Cancellation scheduled")&&licenseUi.includes("cancelEffectiveOn")));
 await check("Billing manage CTA remains permission-restricted",()=>assert.ok(licenseUi.includes("canManageBilling")&&licenseUi.includes("Billing changes restricted")&&licenseUi.includes("Manage plan in Shopify")));
 await check("Dashboard passes sync diagnostics into pricing UI",()=>assert.ok(dashboardApp.includes("subscriptionSync={dashboard?.subscriptionSync}")));
-await check("Pricing page labels all four public plans",()=>assert.ok(pricingUi.includes("Starter, Sliver, Gold & Platinum")));
+await check("Pricing page shows all eight plans and feature comparison",()=>assert.ok(pricingUi.includes("8 paid plans")&&pricingUi.includes("PlanComparison")));
 await check("Standalone Plans route exposes lifecycle card",()=>assert.ok(plansRoute.includes("Shopify billing lifecycle")&&plansRoute.includes("buildBillingLifecycle")));
 await check("Standalone Plans route exposes manual refresh",()=>assert.ok(plansRoute.includes('intent==="billing-refresh"')&&plansRoute.includes("Refresh Shopify status")));
 await check("Standalone billing refresh requires billing view permission",()=>assert.ok(plansRoute.includes('canAccessBuilderAction(db,session,"billing","view")')));
@@ -122,7 +125,7 @@ await check("Shopify plan return remains untrusted",()=>assert.ok(pricingService
 await check("No legacy Billing API mutation was introduced",()=>assert.doesNotMatch(pricingService+subscriptionService+plansRoute+dashboardActions,/appSubscriptionCreate\s*\(|appSubscriptionCancel\s*\(/));
 
 await check("Environment documents exact Free handle",()=>assert.ok(env.includes("SHOPIFY_APP_PRICING_PLAN_STARTER_HANDLE=starter")));
-await check("Environment documents exact Silver handle spelling",()=>assert.ok(env.includes("SHOPIFY_APP_PRICING_PLAN_SLIVER_HANDLE=sliver")));
+await check("Environment documents canonical Silver handle",()=>assert.ok(env.includes("SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE=silver")));
 await check("Environment documents exact Gold handle",()=>assert.ok(env.includes("SHOPIFY_APP_PRICING_PLAN_GOLD_HANDLE=gold")));
 await check("Environment documents exact Platinum handle spelling",()=>assert.ok(env.includes("SHOPIFY_APP_PRICING_PLAN_PLATINUM_HANDLE=platinum")));
 await check("Developer docs explain stable internal IDs",()=>assert.ok(/canonical ID/i.test(docs)&&docs.includes("`starter`")&&docs.includes("`platinum`")));

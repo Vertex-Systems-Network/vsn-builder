@@ -25,9 +25,9 @@ test("canonical task board is valid, explicitly dependency-driven, and has 41 at
  assert.equal(withArchive.closed_tasks.length,19);
  assert(withArchive.closed_tasks.every(t=>["2026-10-15","2026-10-16","2026-10-17"].includes(t.closed_on)&&t.evidence.length>0));
  assert.equal(plan.public_shopify_apps,1);
- assert.deepEqual(plan.commercial_plans.map(p=>p.id),["starter","sliver","gold","platinum"]);
+ assert.deepEqual(plan.commercial_plans.map(p=>p.id),["starter","solo","silver","gold","business","platinum","agency","scale"]);
  assert(plan.commercial_plans.every(p=>p.trial_days===10));
- assert.equal(plan.commercial_plans[3].annual_usd,3000);
+ assert.equal(plan.commercial_plans[5].annual_usd,3000);
 });
 test("independent discovered Shopify app task moves to IN_REVIEW without unlocking release dependents",()=>{
  const {rows}=inspectTaskPlan(fresh());
@@ -144,7 +144,7 @@ test("verified and in-review evidence must be present and source-traceable",()=>
  find(c,"T005").evidence=["https://untrusted.example.org/done"];
  assert(inspectTaskPlan(c).errors.some(e=>e.includes("traceable same-repository")));
 });
-test("must remain ONE public Shopify app with exact four PAID prices and 10-day trials",()=>{
+test("must remain ONE public Shopify app with exact eight PAID prices and 10-day trials",()=>{
  const plan=fresh();
  plan.public_shopify_apps=3;
  assert(inspectTaskPlan(plan).errors.some(e=>e.includes("ONE public")));
@@ -155,7 +155,7 @@ test("must remain ONE public Shopify app with exact four PAID prices and 10-day 
   p=>p.commercial_plans[0].trial_days=7,
  ]){
   const p=fresh();mutation(p);
-  assert(inspectTaskPlan(p).errors.some(e=>e.includes("Four paid canonical")));
+  assert(inspectTaskPlan(p).errors.some(e=>e.includes("Eight paid canonical")));
  }
 });
 test("CLI prints actionable tasks and blocks unverified terminal acceptance",()=>{

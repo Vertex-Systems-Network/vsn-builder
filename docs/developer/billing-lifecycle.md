@@ -1,24 +1,32 @@
 # Billing Lifecycle UX — Paid-only Shopify App Pricing contract
 
-This document supersedes the historical Free / Silver / Gold / Platinum mapping in pre-October-2026 milestones.
+This document records the owner-directed eight-plan expansion from 2026-10-26. Earlier four-plan acceptance notes are historical; Shopify Partner publication remains a separate pending step.
 
 ## Public plans and exact Shopify IDs
 
 | Public plan | Canonical ID and Shopify handle | USD monthly | USD yearly | Trial |
 | --- | --- | ---: | ---: | --- |
 | Starter | `starter` | $30 | — | 10 days |
-| Sliver | `sliver` | $100 | — | 10 days |
+| Solo | `solo` | $59 | — | 10 days |
+| Silver | `silver` | $100 | — | 10 days |
 | Gold | `gold` | $150 | — | 10 days |
+| Business | `business` | $249 | — | 10 days |
 | Platinum | `platinum` | $350 | $3,000 | 10 days |
+| Agency | `agency` | $599 | — | 10 days |
+| Scale | `scale` | $999 | — | 10 days |
 
-The spelling **Sliver** is an explicit product-owner choice. All four plans are paid; there is no Free public plan. Their public plan IDs and display names match. Historical DB `core/pro/cro/agency` keys are read aliases for `starter/sliver/gold/platinum`; historical Shopify `free` never maps to paid Starter.
+All eight plans are paid; there is no Free public plan. Their public plan IDs and display names match. The previous Shopify `sliver` handle and historical DB IDs are accepted as migration aliases only; `free` never maps to paid Starter.
 
 ## Environment configuration
 
 - `SHOPIFY_APP_PRICING_PLAN_STARTER_HANDLE=starter`
-- `SHOPIFY_APP_PRICING_PLAN_SLIVER_HANDLE=sliver`
+- `SHOPIFY_APP_PRICING_PLAN_SOLO_HANDLE=solo`
+- `SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE=silver`
 - `SHOPIFY_APP_PRICING_PLAN_GOLD_HANDLE=gold`
+- `SHOPIFY_APP_PRICING_PLAN_BUSINESS_HANDLE=business`
 - `SHOPIFY_APP_PRICING_PLAN_PLATINUM_HANDLE=platinum`
+- `SHOPIFY_APP_PRICING_PLAN_AGENCY_HANDLE=agency`
+- `SHOPIFY_APP_PRICING_PLAN_SCALE_HANDLE=scale`
 
 Older SILVER, CORE, PRO, CRO and AGENCY environment overrides can still be read during migration, but **do not create an extra public plan**. Verify that Live Partner Dashboard uses the canonical handles before publication.
 

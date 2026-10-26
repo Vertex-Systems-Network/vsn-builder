@@ -1,4 +1,5 @@
 import { isLocalBillingSimulation } from "../config/local-billing-simulation.js";
+import { normalizePlanKey } from "../config/commercialPlans.js";
 import { normalizePricingHandle, normalizeShopDomain, resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
 
 const API_VERSION_RE=/^2026-(07|10)$|^unstable$/;
@@ -135,7 +136,7 @@ export async function fetchShopifySubscriptionState({appId,shopId,expectedShop,f
 }
 
 export function subscriptionMirrorIsFresh(row,now=new Date()){if(!row?.verifiedAt)return false;return now.getTime()-new Date(row.verifiedAt).getTime()<=getShopifySubscriptionSyncConfig().cacheTtlSeconds*1000;}
-export function subscriptionMirrorMatchesCurrentPlanHandles(row){if(!row)return false;const status=String(row.status||"").toLowerCase();if(["inactive","canceled","frozen"].includes(status))return true;const mapped=resolveInternalPlanKeyFromHandle(row.planHandle);return Boolean(mapped&&mapped===String(row.planKey||"").toLowerCase());}
+export function subscriptionMirrorMatchesCurrentPlanHandles(row){if(!row)return false;const status=String(row.status||"").toLowerCase();if(["inactive","canceled","frozen"].includes(status))return true;const mapped=resolveInternalPlanKeyFromHandle(row.planHandle);return Boolean(mapped&&mapped===normalizePlanKey(row.planKey));}
 export function subscriptionMirrorIsTrusted(row,now=new Date()){if(!row?.verifiedAt||row?.provider!=="shopify-app-pricing")return false;return now.getTime()-new Date(row.verifiedAt).getTime()<=getShopifySubscriptionSyncConfig().maxStaleSeconds*1000;}
 
 async function syncInner({db,admin,shop,force=false,fetchImpl=fetch,sleepImpl=wait,now=new Date()}){

@@ -68,13 +68,12 @@ export async function resolveEntitlementPlan(db, shop, { now = new Date() } = {}
     source = developerActive ? "developer-simulation" : configuredDefault ? "developer-default" : "developer-platinum-default";
     entitlementVerified = developerActive;
   } else if (verifiedPaidState) {
-    const candidate = normalizePlanKey(row.planKey);
-    // A verified subscription cannot convert an old Free or unknown handle
-    // into an authorized paid plan. Trust the actual handle, not only the row.
-    const validHandle = row?.planHandle && candidate !== "inactive";
-    const handleMatch = validHandle && resolveInternalPlanKeyFromHandle(row.planHandle) === candidate;
-    if (handleMatch) {
-      key = candidate;
+    // The Partner-verified Shopify handle is authoritative. The mirrored key
+    // may be a historical internal alias (for example `agency` -> the old
+    // Platinum handle), so it must not override the actual verified contract.
+    const handleKey = resolveInternalPlanKeyFromHandle(row?.planHandle);
+    if (handleKey && normalizePlanKey(row.planKey) !== "inactive") {
+      key = handleKey;
       source = "shopify-verified";
       entitlementVerified = true;
     } else {

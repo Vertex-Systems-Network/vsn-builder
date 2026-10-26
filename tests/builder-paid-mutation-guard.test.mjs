@@ -43,7 +43,7 @@ test("verified Shopify paid contract and 10-day trial can write",{concurrency:fa
  setProduction();
  try{
   const now=new Date();
-  for(const [key,status] of [["starter","active"],["sliver","trialing"],["gold","active"],["platinum","active"]]){
+  for(const [key,status] of [["starter","active"],["solo","active"],["silver","trialing"],["gold","active"],["business","active"],["platinum","active"],["agency","active"],["scale","active"]]){
    const row={provider:"shopify-app-pricing",status,planKey:key,planHandle:key,
      verifiedAt:now,trialEndsAt:status==="trialing"?new Date(now.getTime()+10*86400000):null};
    const response=await paidMutationDenied(dbWith(row),"paid.myshopify.com");

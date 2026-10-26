@@ -71,7 +71,7 @@ test("a returned plan handle forces a new Partner lookup even when the mirror is
   const cached={shop,provider:"shopify-app-pricing",planKey:"inactive",status:"inactive",verifiedAt:now};
   const fx=setup({active:true,handle:"sliver",existing:cached});
   const result=await syncStagingShopifySubscription({database:fx.database,admin:fx.admin,shop,env,now,fetchImpl:fx.fetchImpl,force:true});
-  assert.equal(result.row.planKey,"sliver");
+  assert.equal(result.row.planKey,"silver");
   assert.equal(fx.calls.filter(call=>call[0]==="partner").length,1);
 });
 

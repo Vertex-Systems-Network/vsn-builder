@@ -122,7 +122,7 @@ await check("React Router v8 future flags were not enabled blindly",()=>{const c
 
 await check("No Q6.1 Prisma migration was added",()=>assert.equal(fs.readdirSync("prisma/migrations").some((name)=>/q61|reusable_data_view|app_shell_qa/i.test(name)),false));
 await check("Paid-only Starter Shopify handle is starter, not Free",()=>{assert.ok(plans.includes('shopifyHandle: "starter"'));assert.ok(!plans.includes('shopifyHandle: "free"'))});
-await check("Exact Shopify Silver key remains sliver",()=>assert.ok(plans.includes('shopifyHandle: "sliver"')));
+await check("Exact Shopify Silver key matches its public name and retains legacy alias",()=>assert.ok(plans.includes('key: "silver", publicKey: "silver"')&&plans.includes('shopifyHandle: "silver"')&&plans.includes('sliver')));
 await check("Exact Shopify Gold handle remains gold",()=>assert.ok(plans.includes('shopifyHandle: "gold"')));
 await check("Exact Shopify Platinum handle uses corrected platinum spelling",()=>{assert.ok(plans.includes('shopifyHandle: "platinum"'));assert.ok(!plans.includes('shopifyHandle: "platenium"'))});
 await check("App route passes owner state to profile controls",()=>assert.ok(appRoute.includes("isOwner={isOwner}")));
