@@ -10,7 +10,7 @@ The current eight-tier catalog is **Starter ($30), Solo ($59), Silver ($100), Go
 4. Pending cancellation retains the paid tier until the verified effective end, then transitions to `inactive`.
 5. Shopify pricing-return URL parameters remain untrusted.
 6. Historical local `core/pro/cro/agency` rows are migration aliases; remap and verify real Partner handles before using them.
-7. Silver uses canonical key/handle `silver`; retired `sliver` and `platenium` Shopify handles normalize to Silver and Platinum respectively during verified subscription migration.
+7. Silver and Platinum use canonical keys/handles `silver` and `platinum`; retired `sliver` and `platenium` Shopify handles normalize to Silver and Platinum respectively during verified subscription migration.
 
 ## Acceptance matrix
 

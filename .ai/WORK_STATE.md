@@ -10,9 +10,9 @@ base_branch: development
 working_branch: codex/eight-paid-plan-catalog
 pull_request: 394
 last_verified_commit: 9bf715bd7425262673af9fecd55acbc323703953
-last_verified_step: "PR #394 Q5.1 handle audit and Q5.3 entitlement test corrections are locally passing; previous CI found Q5.3 still asserted entitlement version 2 after the catalog version was bumped to 3."
-in_flight_step: "Update the Q5.3 version assertion to 3 and verify the focused entitlement audits locally."
-next_exact_action: "Complete the Q5.3 contract-version audit correction, update PR #394, and wait for every exact-head CI check and review. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
+last_verified_step: "PR #394 Q5.1 and Q5.3 audit corrections pass locally, and T021 dry-run is green. Production Confidence found Q5.5's docs audit expected canonical `platinum` in code formatting; docs are being aligned."
+in_flight_step: "Document the canonical Platinum handle in billing QA guidance and verify the Q5.5 audit locally."
+next_exact_action: "Complete the billing docs spelling correction, update PR #394 and wait for all exact-head CI and review. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
@@ -27,6 +27,7 @@ updated_at: 2026-10-26
 - The `sliver` extra-key issue is fixed in commit `a83a40d`. The next T020 run exposed a stale developer-simulation expectation; commit `d5029f9` changes it to canonical `silver` and the related local test passes.
 - The latest T021 dry-run and T040/T026/dependency/security/environment checks pass. Production Confidence found a final Q5.1 audit still expecting four legacy env names instead of all eight public names; that assertion is being corrected.
 - Q5.1 now passes 42/42 locally and the eight-key environment names are verified. Production Confidence then found the Q5.3 audit still asserting entitlement contract version 2; catalog migration correctly bumped it to 3, so the stale assertion is being updated.
+- Q5.3 now passes 51/51 locally and T021 dry-run passes. Production Confidence next found Q5.5 requiring canonical `platinum` spelling in the billing QA guide; adding that explicit key/handle description.
 
 ## Purpose
 
