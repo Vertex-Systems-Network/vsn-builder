@@ -8,11 +8,11 @@ task_key: eight-plan-quota-hardening
 owner_intent: "Close the audited quota bypasses and race conditions for the eight paid plans."
 base_branch: development
 working_branch: codex/eight-plan-quota-hardening
-pull_request: null
-last_verified_commit: efd6c9b7263e0fa50c2a84e253c1c4f741315483
-last_verified_step: "Shared transactional quota enforcement is implemented across all audited write surfaces. Under Node 22.18.0, typecheck and repository QA pass (429 JS/JSX files; Phase C 112/112); touched-file ESLint passes; focused paid-plan/billing/worker tests pass 27/27; git diff --check passes."
+pull_request: 396
+last_verified_commit: 0d136ca0b7d467ab98aaf87248064c691dd55ed6
+last_verified_step: "PR #396 is open at exact head 0d136ca0b7d467ab98aaf87248064c691dd55ed6. Node 22.18.0 typecheck and repository QA pass (429 JS/JSX files; Phase C 112/112); touched-file ESLint passes; focused paid-plan/billing/worker tests pass 27/27; git diff --check passes. Exact-head CI is running."
 in_flight_step: none
-next_exact_action: "Publish the verified feature branch and open a PR into development. Wait for exact-head CI and required review before merge; Staging promotion remains gated on protected workflow and exact-head CI."
+next_exact_action: "Wait for all required checks on PR #396 exact head 0d136ca0b7d467ab98aaf87248064c691dd55ed6. Address any failures, then obtain required review/merge. Do not promote until the protected Staging workflow's entry gates pass."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---
