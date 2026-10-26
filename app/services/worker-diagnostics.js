@@ -36,6 +36,9 @@ export function logStagingDenial(env,reason){
 // Request breadcrumbs expose only fixed app/OAuth route paths and response
 // metadata. Never log the signed Shopify query, redirect destination, headers,
 // cookies, request body, or response body.
+function isExactFrameOrigin(token,expectedOrigin){
+  try{return new URL(token).origin===expectedOrigin}catch{return false}
+}
 export function logStagingRequest(env,request,response){
   if(env?.APP_ENV!=="staging" || !(request instanceof Request) ||
      !(response instanceof Response))return;
@@ -54,7 +57,7 @@ export function logStagingRequest(env,request,response){
         contentType:(response.headers.get("content-type")||"").slice(0,80),
         hasLocation:response.headers.has("location"),
         hasFrameAncestors:Boolean(ancestors),
-        allowsShopifyAdminFrame:frameTokens.includes("https://admin.shopify.com")||frameTokens.includes("*"),
+        allowsShopifyAdminFrame:frameTokens.some(token=>token==="*"||isExactFrameOrigin(token,"https://admin.shopify.com")),
         xFrameOptions:["deny","sameorigin"].includes(xfo)?xfo:"none-or-other",
       }:{}),
     }));
