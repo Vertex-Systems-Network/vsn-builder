@@ -9,10 +9,10 @@ owner_intent: "Use eight paid plan-name keys, enforce tier-specific feature and 
 base_branch: development
 working_branch: codex/eight-paid-plan-catalog
 pull_request: 394
-last_verified_commit: a3e0e6bea68e88b5c8a9faeafadf06096be2a723
-last_verified_step: "PR #394 is open with the eight-plan implementation; Node 22.18 typecheck, lint, QA and 62 focused tests pass. CI found an old sliver price-key audit gap, now being corrected."
-in_flight_step: "Reject unknown monthly plan-price keys and validate the exact PR source before pushing the correction."
-next_exact_action: "Complete the PR #394 plan metadata audit correction, then wait for all exact-head CI and review. Staging remains blocked until merge plus all eight Partner plans and protected Staging infrastructure/backup prerequisites pass."
+last_verified_commit: a83a40dd48386ea49a5cb25d84364205f6eb3797
+last_verified_step: "PR #394 includes the exact eight-key monthly price audit; 71 focused billing/listing tests, Node 22.18 lint and QA pass, with typecheck already passing on the implementation."
+in_flight_step: none
+next_exact_action: "Wait for exact-head CI and required review on PR #394. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
@@ -22,8 +22,9 @@ updated_at: 2026-10-26
 - Public plan keys and labels: Starter, Solo, Silver, Gold, Business, Platinum, Agency, Scale. No public Free plan; inactive stores receive no entitlement.
 - Updated the shared catalog, Partner-handle mapping/legacy aliases, server-side quotas, plan cards and comparison table, worker plan mirror, tests, audits, docs and task manifest.
 - Verification on supported Node 22.18.0: `npm run typecheck`, `npm run lint`, `npm run qa`, and 62 focused billing/entitlement tests passed. `git diff --check` passed. Shopify Partner plan publication/pricing is still a required external step; no hosted Staging result is claimed.
-- The local `git push` could not authenticate (`could not read Username for https://github.com`); no remote branch or PR was created. The connected GitHub API cannot create a commit from the local tree because those Git objects are not present in the remote repository.
-- PR #394 was subsequently published through the connected GitHub integration. Its T040 listing workflow caught that unexpected monthly price keys (for example retired `sliver`) were not rejected; this validation gap is being fixed on the PR before merge.
+- The local `git push` could not authenticate (`could not read Username for https://github.com`); the branch and PR were published through the connected GitHub integration instead.
+- PR #394 was subsequently published through the connected GitHub integration. Its T040 listing workflow caught that unexpected monthly price keys (for example retired `sliver`) were not rejected; that validation gap is now fixed.
+- The `sliver` extra-key issue is fixed and commit `a83a40d` updates PR #394. Local Node 22.18 T040 and billing tests plus lint/QA pass; exact-head CI has restarted for the fix commit.
 
 ## Purpose
 
