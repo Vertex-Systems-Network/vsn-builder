@@ -45,8 +45,8 @@ export function logStagingRequest(env,request,response){
       pathname==="/auth/login" || pathname==="/auth/callback";
     if(!appRoute && response.status<400)return;
     const csp=response.headers.get("content-security-policy")||"";
-    const ancestors=csp.match(/(?:^|;)\\s*frame-ancestors\\s+([^;]*)/i)?.[1]||"";
-    const frameTokens=ancestors.toLowerCase().split(/\\s+/);
+    const ancestors=csp.match(/(?:^|;)\s*frame-ancestors\s+([^;]*)/i)?.[1]||"";
+    const frameTokens=ancestors.toLowerCase().split(/\s+/);
     const xfo=(response.headers.get("x-frame-options")||"").toLowerCase();
     console.warn(JSON.stringify({
       vsn_req:pathname.slice(0,128),method:request.method,status:response.status,
@@ -55,7 +55,7 @@ export function logStagingRequest(env,request,response){
         hasLocation:response.headers.has("location"),
         hasFrameAncestors:Boolean(ancestors),
         allowsShopifyAdminFrame:frameTokens.includes("https://admin.shopify.com")||frameTokens.includes("*"),
-        allowsMyShopifyFrame:frameTokens.includes("https://*.myshopify.com")||frameTokens.some(token=>/^https:\\/\\/[^/]+\\.myshopify\\.com$/.test(token)),
+        allowsMyShopifyFrame:frameTokens.includes("https://*.myshopify.com")||frameTokens.some(token=>/^https:\/\/[^/]+\.myshopify\.com$/.test(token)),
         xFrameOptions:["deny","sameorigin"].includes(xfo)?xfo:"none-or-other",
       }:{}),
     }));
