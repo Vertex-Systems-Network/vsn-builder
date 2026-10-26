@@ -20,7 +20,7 @@ test("exact staging identity requires four pre-existing encrypted secrets by NAM
  assert.equal(staging.vars.SHOPIFY_BILLING_TEST_MODE,"true");
  assert.equal(staging.vars.SHOPIFY_APP_HANDLE,"vsn-builder-staging");
  assert.equal(staging.vars.SHOPIFY_PARTNER_ORGANIZATION_ID,"4859256");
- assert.equal(staging.vars.SHOPIFY_PARTNER_API_VERSION,"2026-07");
+ assert.equal(staging.vars.SHOPIFY_PARTNER_API_VERSION,"2026-10");
  assert.equal(staging.vars.VSN_STAGING_BILLING_SYNC_ENABLED,"true");
  assert.equal(staging.limits,undefined,
    "custom CPU limits are rejected on the Staging Cloudflare Free plan");

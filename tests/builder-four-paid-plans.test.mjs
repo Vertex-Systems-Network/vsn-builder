@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import process from "node:process";
 import {
   COMMERCIAL_PLANS, PLAN_ORDER, PAID_TRIAL_DAYS, UNSUBSCRIBED_PLAN,
   normalizePlanKey, planAtLeast, publicPlanName,
@@ -10,6 +11,7 @@ import {
 } from "../app/services/entitlements.server.js";
 import { getShopifyPlanHandleMap, resolveInternalPlanKeyFromHandle } from "../app/services/shopify-app-pricing.server.js";
 import { buildBillingLifecycle } from "../app/config/billingLifecycle.js";
+import { serializePlan } from "../app/utils/plan.server.js";
 
 const pricing = [
   ["starter",30,null],
@@ -85,6 +87,19 @@ test("production has no Starter access before Shopify charge approval",()=>inPro
  assert.equal(plan.key,"inactive");
  assert.equal(plan.maxPages,0);
  assert.equal(plan.entitlementVerified,false);
+ assert.equal(getFeatureDecisionFromPlan(plan,"forms").allowed,false);
+}));
+test("an unmapped Shopify plan handle stays visible but cannot grant paid access",()=>inProduction(async()=>{
+ const now=new Date();
+ const plan=await resolveEntitlementPlan(memoryDb({provider:"shopify-app-pricing",status:"canceling",
+  planKey:"inactive",planHandle:null,snapshotJson:JSON.stringify({diagnostics:{activePlanHandle:"vsn_starter_legacy",activePlanAmbiguous:false}}),verifiedAt:now,
+  cancelEffectiveOn:new Date(now.getTime()+30*86400000)}),"unknown-handle.myshopify.com",{now});
+ assert.equal(plan.key,"inactive");
+ assert.equal(plan.subscription.planHandle,null);
+ assert.equal(serializePlan(plan).unrecognizedPlanHandle,"vsn_starter_legacy");
+ assert.equal(plan.entitlementSource,"production-unrecognized-paid-contract");
+ assert.equal(plan.entitlementVerified,false);
+ assert.equal(plan.maxPages,0);
  assert.equal(getFeatureDecisionFromPlan(plan,"forms").allowed,false);
 }));
 test("a verified Shopify 10-day trial unlocks exactly its paid tier",()=>inProduction(async()=>{

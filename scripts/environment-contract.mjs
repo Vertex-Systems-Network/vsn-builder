@@ -43,7 +43,7 @@ for (const [tier, content] of Object.entries(configs)) {
   const metaPart = (value) => metaobjects(value).split("[webhooks]")[0];
   assert(metaPart(content) === metaPart(rootConfig), tier + " metaobject definitions drifted.");
   assert(content.includes('[app_proxy]') && content.includes('subpath = "vsn-builder"'), tier + " app proxy contract missing.");
-  assert(content.includes('api_version = "2026-07"'), tier + " API version drifted.");
+  assert(content.includes('api_version = "2026-10"'), tier + " API version drifted.");
   assert(parseBool(content, "automatically_update_urls_on_dev") === (tier === "local" ? "true" : "false"), tier + " dev URL automation policy is invalid.");
 }
 assert(exists("shopify.app.production.template.toml"), "Production template missing.");

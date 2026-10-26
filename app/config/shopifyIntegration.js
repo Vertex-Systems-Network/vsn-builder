@@ -1,4 +1,4 @@
-export const SHOPIFY_API_VERSION_HANDLE = "2026-07";
+export const SHOPIFY_API_VERSION_HANDLE = "2026-10";
 export const SHOPIFY_APP_PROXY = Object.freeze({
   url: "/builder-proxy",
   prefix: "apps",

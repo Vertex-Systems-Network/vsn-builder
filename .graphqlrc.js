@@ -4,7 +4,7 @@
 import fs from "node:fs";
 const projects={
   default:{
-    schema:"https://shopify.dev/admin-graphql-direct-proxy/2026-07",
+    schema:"https://shopify.dev/admin-graphql-direct-proxy/2026-10",
     documents:["./app/**/*.{js,jsx,ts,tsx}"],
     extensions:{vsn:{operationTypegen:"scripts/t011-graphql-typegen.mjs"}},
   },

@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: T020-staging-worker-cpu-limit
-owner_intent: "Make the full VSN Builder React Router app load in Shopify Staging Admin and verify it on the hosted Staging Worker."
+task_key: staging-plan-page-and-access-gate
+owner_intent: "Make the Plans & License entry clear and ensure shops without verified paid entitlements cannot navigate into Builder sections."
 base_branch: development
-working_branch: fix/staging-worker-cpu-budget
-pull_request: none
-last_verified_commit: 45e9d41b342721f3ccce8a10f81512d1d90c9a6a
-last_verified_step: "Protected T021 run #34 deployed SHA 45e9d41 to Staging. Shopify Admin loaded the full Builder once, but navigation/reload intermittently returned 503 or refused connection; protected T023 run #21 recorded outcome exceededCpu. CPU-budget and granular persistence diagnostics changes pass 17 focused tests, ESLint, typecheck, npm run qa and git diff checks."
-in_flight_step: "Commit the Staging CPU-budget and session-shape diagnostic changes, open a PR into development and complete exact-head CI."
-next_exact_action: "Push branch fix/staging-worker-cpu-budget, open a PR into development, wait for all required checks, merge if green, then deploy that exact protected development SHA through T021 and verify Dashboard → Plans & License and navigation in Shopify Admin."
+working_branch: fix/staging-plan-handle-diagnostic
+pull_request: 392
+last_verified_commit: 746a883
+last_verified_step: "Obtained Node 22.18.0 from the npm registry and passed runtime:verify, db:prepare (37 migrations), typecheck, npm run qa (428 files; Phase C 112/112), full ESLint, production build, focused billing/Worker suite (64/64 after generating the Prisma Edge client), Q4 23/23, Q5.2 44/44, Q5.5 59/59, T011 static compatibility and git diff --check. Live Staging Admin recheck shows full Builder navigation and successful billing refresh for the Platinum trial through Nov 5, 2026; plan cards still stack and `.dashboard-pricing-grid` is absent from deployed assets. `npm run graphql-codegen` parsed 89/95 GraphQL docs but its online Shopify 2026-10 schema fetch failed because `shopify.dev` DNS is unavailable from this workspace. The exact tested source tree is committed locally and uploaded to the remote feature branch; no PR or deploy yet."
+in_flight_step: "Commit and upload the remaining Plans & License usage-grid fix and regression test to PR #392, then rerun exact-head CI."
+next_exact_action: "Update PR #392 with the verified Polaris usage-grid fix, wait for exact-head CI, then merge and execute the protected T021 Staging deployment flow."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
@@ -94,6 +94,8 @@ Do not update it for every keystroke or trivial local edit.
 ## Current state
 
 **2026-10-26:** PR #384 wired the full React Router app to the Staging Worker; PR #385 repaired the protected deploy config guard; PR #386 added safe session persistence reason codes. All three are merged to protected `development`, and T021 run #34 deployed `45e9d41b342721f3ccce8a10f81512d1d90c9a6a` to Staging. Live Shopify Admin showed the full navigation and plan catalog, but repeat opens/navigation failed intermittently. Protected T023 run #21 recorded Cloudflare invocation outcome `exceededCpu`, which is the current blocker. Production remains untouched.
+
+**2026-10-26 billing follow-up:** PR #391 at `02ecff5a5dadcf1666ae7d73e8d959851820d827` is merged and its T021 run #39 passed. Live Staging now loads Dashboard and Plans & License; forced billing refresh says `Shopify subscription status verified.` The current subscription is `canceling` through 2026-11-24, while entitlements remain fail-closed with 0 pages and source `production-unrecognized-paid-contract`. Shopify hosted App Pricing confirms subscription expiration on 2026-11-24. A Tier-1 branch `fix/staging-plan-handle-diagnostic` now preserves one syntactically safe unmapped Partner API plan handle and surfaces it on Plans & License without granting access. Focused tests passed under Node 24, but the repository rejects Node 24; `npm ci` stopped at its runtime guard and ESLint/typecheck/full local QA are NOT VERIFIED. Continue only after supported Node 22.18+ is available; no PR or additional Staging deployment yet. Production untouched.
 
 Historical note (2026-09-18):
 

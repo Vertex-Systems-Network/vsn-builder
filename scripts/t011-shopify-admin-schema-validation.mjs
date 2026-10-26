@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { buildClientSchema, getIntrospectionQuery, parse, validate } from "graphql";
 
-const VERSION = "2026-07";
+const VERSION = "2026-10";
 const endpoint = `https://shopify.dev/admin-graphql-direct-proxy/${VERSION}`;
 const astReport = JSON.parse(readFileSync("t011-graphql-ast-report.json", "utf8"));
 const report = {

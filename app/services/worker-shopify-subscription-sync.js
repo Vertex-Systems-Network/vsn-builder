@@ -35,7 +35,7 @@ function planFromHandles(items){
 function validConfig(env){
   const org=text(env?.SHOPIFY_PARTNER_ORGANIZATION_ID);
   const token=text(env?.SHOPIFY_PARTNER_API_TOKEN);
-  const version=text(env?.SHOPIFY_PARTNER_API_VERSION||"2026-07");
+  const version=text(env?.SHOPIFY_PARTNER_API_VERSION||"2026-10");
   if(env?.APP_ENV!=="staging"||env?.VSN_WORKER_NAME!=="vsn-builder-staging"||
      env?.VSN_STAGING_BILLING_SYNC_ENABLED!=="true"||
      env?.SHOPIFY_BILLING_TEST_MODE!=="true"||

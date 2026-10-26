@@ -32,7 +32,7 @@ export default function Pricing({ currentPlan, entitlements, billingUrl, pricing
 
       {pricingReturn ? <s-banner tone={pricingReturn.shopMatches ? 'info' : 'critical'}>{pricingReturn.shopMatches ? <>Shopify returned <b>{pricingReturn.planHandle}</b>{pricingReturn.planKey?<> → {COMMERCIAL_PLANS[pricingReturn.planKey]?.name}</>:null}. This return signal is checked against the live Partner API contract before VSN changes entitlements.</> : <>The returned Shopify shop did not match this authenticated store, so the pricing signal was ignored.</>}</s-banner> : null}
 
-      <s-grid gridTemplateColumns="@container (inline-size > 1100px) repeat(4, 1fr), @container (inline-size > 600px) 1fr 1fr, 1fr" gap="base">
+      <div className="dashboard-pricing-grid">
         {PLAN_ORDER.map((key)=>{
           const plan = COMMERCIAL_PLANS[key];
           const active = currentPlan?.key === key;
@@ -56,7 +56,7 @@ export default function Pricing({ currentPlan, entitlements, billingUrl, pricing
             </s-stack>
           </s-section>;
         })}
-      </s-grid>
+      </div>
 
       <s-banner tone="info" heading="Shopify App Pricing remains authoritative">VSN now links directly to Shopify’s hosted App Pricing page. It does not create Billing API subscriptions and it never treats a plan_handle query parameter as proof of an active contract.</s-banner>
 

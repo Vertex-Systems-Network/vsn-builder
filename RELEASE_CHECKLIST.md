@@ -198,7 +198,7 @@
 - [ ] Set `SHOPIFY_PRODUCTION_CLIENT_ID`, or explicitly opt into the current app client ID.
 - [ ] Run `npm run config:production`.
 - [ ] Run `npm run release:production:check` and resolve every failure.
-- [ ] Confirm Admin/Webhook API `2026-07` is supported and System Health reports no API fall-forward.
+- [ ] Confirm Admin/Webhook API `2026-10` is supported and System Health reports no API fall-forward.
 - [ ] Confirm all required/compliance webhooks are declared and deployed.
 - [ ] Confirm the published theme app embed reports Theme Active.
 - [ ] Confirm app proxy remains `/apps/vsn-builder` for new installs; do not assume existing merchant-customized proxy paths changed.

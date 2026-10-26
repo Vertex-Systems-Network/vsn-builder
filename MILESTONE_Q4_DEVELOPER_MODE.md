@@ -6,5 +6,5 @@ Q.4 adds production configuration and validation without switching the current w
 - Production values are generated into a named `shopify.app.production.toml` only when the merchant/developer supplies a real production URL and production Client ID.
 - `deploy:production` explicitly targets `--config production`.
 - No production URL, billing activation or hosting credential is fabricated by the package.
-- API target is stable `2026-07`; System Health detects Shopify API fall-forward.
+- API target is stable `2026-10`; System Health detects Shopify API fall-forward.
 - App-proxy prefix/subpath remain `apps/vsn-builder`; existing installs can retain merchant-customized proxy paths.

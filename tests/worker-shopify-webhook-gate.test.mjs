@@ -24,7 +24,7 @@ const webhook=(data=payload,overrides={},method="POST")=>{
   method,headers:{
    "X-Shopify-Shop-Domain":"test-store.myshopify.com",
    "X-Shopify-Topic":"app/uninstalled",
-   "X-Shopify-API-Version":"2026-07",
+   "X-Shopify-API-Version":"2026-10",
    "X-Shopify-Webhook-Id":"signed-ci-123",
    "X-Shopify-Triggered-At":"2026-10-13T09:00:00.000000Z",
    "X-Shopify-Hmac-Sha256":hmac,

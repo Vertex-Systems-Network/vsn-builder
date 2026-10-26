@@ -46,10 +46,19 @@ export async function getPlanUsage(db, shop, plan = null) {
 
 export function serializePlan(plan) {
   if (!plan) return null;
+  let unrecognizedPlanHandle = null;
+  if (plan.entitlementSource === "production-unrecognized-paid-contract") {
+    try {
+      const diagnostics = JSON.parse(String(plan.subscription?.snapshotJson || "{}")).diagnostics;
+      const candidate = String(diagnostics?.activePlanHandle || "");
+      if (!diagnostics?.activePlanAmbiguous && /^[a-z0-9][a-z0-9_-]{0,79}$/i.test(candidate)) unrecognizedPlanHandle = candidate;
+    } catch { /* Ignore malformed diagnostic snapshots. */ }
+  }
   // eslint-disable-next-line no-unused-vars -- omitted from rest
   const { subscription, subscriptionMirrorTrusted, ...safe } = plan;
   return {
     ...safe,
+    unrecognizedPlanHandle,
     subscription: subscription ? {
       status: subscription.status,
       planKey: subscription.planKey,

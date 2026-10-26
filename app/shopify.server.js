@@ -11,7 +11,7 @@ import { SHOPIFY_API_VERSION_HANDLE } from "./config/shopifyIntegration.js";
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.July26,
+  apiVersion: ApiVersion.October26,
   scopes: process.env.SCOPES?.split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
@@ -29,7 +29,7 @@ const shopify = shopifyApp({
 });
 
 export default shopify;
-export const apiVersion = ApiVersion.July26;
+export const apiVersion = ApiVersion.October26;
 export const apiVersionHandle = SHOPIFY_API_VERSION_HANDLE;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;

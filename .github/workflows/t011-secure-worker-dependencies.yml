@@ -68,7 +68,7 @@ jobs:
           "
       - name: Verify audited standalone GraphQL codegen compatibility
         run: node scripts/t011-codegen-compatibility.mjs
-      - name: Verify Shopify Admin 2026-07 blog handle safety and preview contracts
+      - name: Verify Shopify Admin 2026-10 blog handle safety and preview contracts
         run: node --test tests/t011-shopify-admin-blog-preview.test.mjs
       - name: Confirm existing P16c storefront data and security regression tests
         run: node scripts/p16c-storefront-content-queries-audit.mjs
