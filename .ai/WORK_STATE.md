@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: T020-staging-worker-cpu-limit
-owner_intent: "Make the full VSN Builder React Router app load in Shopify Staging Admin and verify it on the hosted Staging Worker."
+task_key: staging-plan-page-and-access-gate
+owner_intent: "Make the Plans & License entry clear and ensure shops without verified paid entitlements cannot navigate into Builder sections."
 base_branch: development
-working_branch: fix/staging-worker-cpu-budget
+working_branch: fix/staging-plan-handle-diagnostic
 pull_request: none
-last_verified_commit: 45e9d41b342721f3ccce8a10f81512d1d90c9a6a
-last_verified_step: "Protected T021 run #34 deployed SHA 45e9d41 to Staging. Shopify Admin loaded the full Builder once, but navigation/reload intermittently returned 503 or refused connection; protected T023 run #21 recorded outcome exceededCpu. CPU-budget and granular persistence diagnostics changes pass 17 focused tests, ESLint, typecheck, npm run qa and git diff checks."
-in_flight_step: "Commit the Staging CPU-budget and session-shape diagnostic changes, open a PR into development and complete exact-head CI."
-next_exact_action: "Push branch fix/staging-worker-cpu-budget, open a PR into development, wait for all required checks, merge if green, then deploy that exact protected development SHA through T021 and verify Dashboard → Plans & License and navigation in Shopify Admin."
+last_verified_commit: 02ecff5a5dadcf1666ae7d73e8d959851820d827
+last_verified_step: "Audited official Shopify 2026-10 API notes against app operations, confirmed expiring offline tokens and Partner API activeSubscription billing flow already meet current requirements, and updated pinned Admin/Webhook/Partner API config, schema tooling, gates and docs to 2026-10. On Node 24.22.1, Q4 23/23, Q5.2 44/44, Q5.5 59/59, T011 static codegen wiring, 44 focused plan/billing tests, touched-file ESLint, TypeScript, npm run qa (428 files; Phase C 112/112), and production build passed. Reopened live Staging Admin on 2026-10-26: full Builder navigation works and Plans & License refresh says 'Shopify subscription status verified' for the Platinum trial through Nov 5, 2026; the previous Admin identity error is not reproducible. Plan cards remain stacked and deployed page does not include `.dashboard-pricing-grid`, confirming the local grid fix is not live. No Node 22 binary or cached Node 22 package is available; `npm run runtime:verify` rejects Node 24. Local fixes remain undeployed; no PR."
+in_flight_step: "Run typecheck, full QA, focused billing/worker tests, touched-file lint, build, and Shopify 2026-10 schema validation under Node 22.18.0."
+next_exact_action: "Complete the supported-runtime validation suite; repair any failures, then proceed through PR/merge/Staging deployment."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
@@ -94,6 +94,8 @@ Do not update it for every keystroke or trivial local edit.
 ## Current state
 
 **2026-10-26:** PR #384 wired the full React Router app to the Staging Worker; PR #385 repaired the protected deploy config guard; PR #386 added safe session persistence reason codes. All three are merged to protected `development`, and T021 run #34 deployed `45e9d41b342721f3ccce8a10f81512d1d90c9a6a` to Staging. Live Shopify Admin showed the full navigation and plan catalog, but repeat opens/navigation failed intermittently. Protected T023 run #21 recorded Cloudflare invocation outcome `exceededCpu`, which is the current blocker. Production remains untouched.
+
+**2026-10-26 billing follow-up:** PR #391 at `02ecff5a5dadcf1666ae7d73e8d959851820d827` is merged and its T021 run #39 passed. Live Staging now loads Dashboard and Plans & License; forced billing refresh says `Shopify subscription status verified.` The current subscription is `canceling` through 2026-11-24, while entitlements remain fail-closed with 0 pages and source `production-unrecognized-paid-contract`. Shopify hosted App Pricing confirms subscription expiration on 2026-11-24. A Tier-1 branch `fix/staging-plan-handle-diagnostic` now preserves one syntactically safe unmapped Partner API plan handle and surfaces it on Plans & License without granting access. Focused tests passed under Node 24, but the repository rejects Node 24; `npm ci` stopped at its runtime guard and ESLint/typecheck/full local QA are NOT VERIFIED. Continue only after supported Node 22.18+ is available; no PR or additional Staging deployment yet. Production untouched.
 
 Historical note (2026-09-18):
 

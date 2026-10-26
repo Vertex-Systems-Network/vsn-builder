@@ -1,5 +1,16 @@
 # VSN Engineering Checkpoint
 
+## 2026-10-26 Shopify API and billing requirement update (local, not promoted)
+
+- Updated current Admin/Webhook API contracts and Shopify App Pricing Partner API defaults to Shopify's latest stable API version, `2026-10`, across runtime, tier configs, schema tooling, deployment guards, tests, and operator docs. `2026-07` remains explicitly accepted for controlled rollback.
+- Audited Shopify's official 2026-10 release notes against checked-in operations. No affected draft-order discount, order tax mutation, customer segment/SMS consent, inventory adjustment, or POS extension operation was found. Product metafield reads are not metafield search filters.
+- Confirmed both the Node and Worker Shopify SDK configurations already enable `expiringOfflineAccessTokens`; Node and Worker session persistence schemas carry refresh-token fields.
+- Confirmed the billing flow already follows current Shopify App Pricing guidance: Partner API `activeSubscription` is the entitlement source, the hosted Shopify plan page handles approvals, and `plan_handle` is not trusted as proof of payment. `currentAppInstallation` remains used only to resolve the installation's Shopify app identity for Partner API lookup and in unrelated app-metafield functionality.
+- Local changes remain subject to the existing Node 22.18+ verification and protected Staging promotion gates; nothing has been deployed.
+- Diagnostic checks on Node 24.22.1: Q4 23/23, Q5.2 44/44, Q5.5 59/59, T011 static codegen wiring, and 44 focused billing/config/plan tests passed. `runtime:verify` correctly blocks unsupported Node 24. The combined focused run including `worker-shopify-webhook-gate.test.mjs` was blocked because `generated/prisma-edge/client.ts` is absent; schema generation requires the supported Node 22 setup. The remote 2026-10 Admin schema validator, PR, and Staging deployment have not run.
+- Follow-up diagnostic checks on Node 24.22.1: touched JS/JSX ESLint passed; TypeScript passed; `npm run qa` passed (428 files and Phase C 112/112); and the production build passed. These do not satisfy the Node 22.18+ promotion gate. No PR or Staging deployment has been created.
+- Live Staging recheck in Shopify Admin: full embedded Builder dashboard/navigation loads. Plans & License showed a successful “Shopify subscription status verified” refresh and a Platinum trial ending Nov 5, 2026; the previous Admin identity failure is not reproducible in this session. The page still stacks its plan cards and live console reports three Polaris invalid `@container` grid-template values. DOM confirms the deployed page has no `.dashboard-pricing-grid` class and five `<s-grid>` elements, so the local CSS-grid fix has not reached Staging. `/healthz` returned liveness true with `merchantAppReady:false` (by design for that endpoint); `/readyz` returned all Shopify OAuth/session/merchant-route readiness flags true. This live recheck does not certify the release or bypass the Node 22/PR/T021 promotion gates.
+
 **Date:** 2026-09-18  
 **Checkpoint status:** SECURITY/RUNTIME BASELINE VERIFIED / AI-NATIVE PLAN RECONCILED / DOCUMENTATION READY  
 **Base reviewed:** `main` @ `5edbece879d5eca0650fe34b96b07447ad6b5739`  
@@ -12,6 +23,13 @@
 - Correction: repository-wide ESLint was **not** passing; the CI lint step used `continue-on-error`. On `b13331b` it reported 4613 errors (4185 `react/prop-types`, the rest config globals and real code findings). Alignment work is in progress on `claude/focused-thompson-t0s1vi`.
 - Stock media downloads now validate every redirect hop before requesting it (previously followed redirects and validated only the final URL).
 - Staging and Production are not release-ready; see `WORK_STATE.md` for the exact blockers.
+
+## 2026-10-26 Billing UX follow-up (local, not promoted)
+
+- Live Staging console reported Polaris rejecting `@container` strings passed through `gridTemplateColumns`; the plan cards therefore fell back from their intended grid. Both plan views now use a shared explicit CSS grid (2 columns by default, 4 at wide viewport, 1 on mobile).
+- A local fail-closed route policy redirects unentitled shops to Plans & License and restricts the Builder sidebar/command palette. Unknown plan handles are preserved only in validated diagnostic metadata; the authoritative `planHandle` remains null, so an unmapped contract never grants access.
+- Focused tests (31/31), Q5.1–Q5.5 audits (all pass, including Q5.5 59/59), `npm run qa`, typecheck, touched-file ESLint and production build passed under Node 24.22.1. These are diagnostic results only: `npm run runtime:verify` correctly rejects Node 24; no supported Node 22.18+ runtime is installed.
+- The live Staging Plans navigation returned HTTP 503 in the inspected session. This branch has not been promoted; the live grid and route gate remain unverified. Production untouched.
 
 ## Completed and verified by repository inspection
 

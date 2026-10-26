@@ -73,7 +73,7 @@ name = "Product handle"
 type = "single_line_text_field"
 
 [webhooks]
-api_version = "2026-07"
+api_version = "2026-10"
 
   [[webhooks.subscriptions]]
   uri = "/webhooks/app/uninstalled"

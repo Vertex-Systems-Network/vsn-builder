@@ -41,12 +41,12 @@ if (appHandle) {
   else output = output.replace(/^name\s*=.*$/m, (line) => `${line}\nhandle = ${JSON.stringify(appHandle)}`);
 }
 output = output.replace(/^application_url\s*=.*$/m, `application_url = "${appUrl}"`);
-output = output.replace(/(^\[webhooks\][\s\S]*?^api_version\s*=\s*)"[^"]+"/m, `$1"2026-07"`);
+output = output.replace(/(^\[webhooks\][\s\S]*?^api_version\s*=\s*)"[^"]+"/m, `$1"2026-10"`);
 output = output.replace(/(^\[auth\][\s\S]*?^redirect_urls\s*=\s*)\[[^\]]*\]/m, `$1[ "${appUrl}/auth/callback" ]`);
 output = output.replace(/(^\[build\][\s\S]*?^automatically_update_urls_on_dev\s*=\s*)(true|false)/m, "$1false");
 
 if (output.includes('application_url = "https://example.com"')) fail("Failed to replace the development application_url.");
-if (!output.includes('api_version = "2026-07"')) fail("Production webhook API version must be 2026-07.");
+if (!output.includes('api_version = "2026-10"')) fail("Production webhook API version must be 2026-10.");
 if (!output.includes(`redirect_urls = [ "${appUrl}/auth/callback" ]`)) fail("Production OAuth callback could not be generated.");
 if (!output.includes('automatically_update_urls_on_dev = false')) fail("Production config must disable automatically_update_urls_on_dev.");
 

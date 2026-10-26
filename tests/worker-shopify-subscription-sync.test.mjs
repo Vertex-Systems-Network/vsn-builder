@@ -9,7 +9,7 @@ const env={
   SHOPIFY_BILLING_TEST_MODE:"true",VSN_STAGING_BILLING_SYNC_ENABLED:"true",
   SHOPIFY_PARTNER_ORGANIZATION_ID:"4859256",
   SHOPIFY_PARTNER_API_TOKEN:"synthetic-partner-token",
-  SHOPIFY_PARTNER_API_VERSION:"2026-07",
+  SHOPIFY_PARTNER_API_VERSION:"2026-10",
 };
 function setup({active=true,handle="starter",existing=null,identityShop=shop,
   trialEndsAt="2026-11-04T12:00:00.000Z"}={}){

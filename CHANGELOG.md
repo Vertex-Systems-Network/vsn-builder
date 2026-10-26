@@ -1,3 +1,10 @@
+## Unreleased — Shopify 2026-10 compatibility
+- Updated the pinned Shopify Admin and webhook API to the latest stable `2026-10` version across development, Staging, Production templates, runtime SDK configuration, schema validation, and operational gates.
+- Updated Shopify App Pricing Partner API defaults and the protected Staging Worker configuration to `2026-10` while retaining explicit support for `2026-07` during controlled rollback.
+- Audited the 2026-10 changelog against current Admin GraphQL operations; the app does not use the changed draft-order discount, order tax update, customer segment/SMS consent, inventory error, or POS extension contracts.
+- Confirmed public app expiring offline access tokens remain enabled in both Shopify SDK configurations; the SDK-managed token persistence/refresh flow remains in use.
+- Shopify App Pricing remains the billing authority through Partner API `activeSubscription`; `plan_handle` return parameters remain signals only, never entitlement proof.
+
 ## v2.5.107 — Q.6.4 Hydration, UI Theme, Maps & Form Security
 - Fixed Suspense hydration-time urgent state updates in the embedded app shell with React transitions and a non-Suspense default Home path.
 - Added VSN UI color schemes and a custom accent picker backed by shared CSS variables.

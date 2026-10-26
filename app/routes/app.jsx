@@ -1,4 +1,4 @@
-import { Outlet, useLoaderData, useLocation, useNavigate, useRouteError } from "react-router";
+import { Outlet, redirect, useLoaderData, useLocation, useNavigate, useRouteError } from "react-router";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
@@ -24,6 +24,7 @@ import { VSN_BASELINE } from "../config/baseline.js";
 import { resolveBuilderBranding, VSN_BUILDER_DISPLAY_VERSION } from "../config/environment-branding.js";
 import { normalizeUiColorScheme, normalizeUiHex, resolveUiTheme } from "../config/ui-theme.js";
 import { applyVsnSecurityHeaders } from "../utils/request-security.server.js";
+import { hasVerifiedBuilderPlan, isPlanlessBillingLocation } from "../utils/billing-route-gate.js";
 
 const NAV_TARGETS = Object.freeze({
   home: "/app",
@@ -92,15 +93,20 @@ function loadShellOwner(session) {
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   await syncShopifySubscription({ db, admin, shop:session.shop }).catch(() => null);
+  const plan = await getPlan(db, session.shop).catch(() => null);
+  const hasPaidPlan = hasVerifiedBuilderPlan(plan);
+  const currentUrl = new URL(request.url);
+  if (!hasPaidPlan && !isPlanlessBillingLocation(currentUrl)) {
+    throw redirect("/app?view=pricing");
+  }
   const builderRole = getBuilderRole(session);
   const roleAccess = await getBuilderRoleAccess(db, session.shop);
   const builderAccess = builderRole === "admin" || roleAccess[builderRole] === true;
   const systemAccess = getRoleSystemAccess(roleAccess, builderRole);
   const actionAccess = getRoleActionAccess(roleAccess, builderRole);
   const WORKSPACE_ONLY_TEMPLATES = ["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"];
-  const [notificationCount, plan, pageCount, libraryCount, brandKitCount, motionCount, fontCount, svgCount, stockImageCount, stockVideoCount, stockAudioCount, campaignCount, emailTemplateCount, floatingCount, experimentCount] = await Promise.all([
+  const shellCounts = hasPaidPlan ? await Promise.all([
     db.builderNotification.count({ where: { shop: session.shop, readAt: null, dismissedAt: null } }).catch(() => 0),
-    getPlan(db, session.shop).catch(() => null),
     db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { notIn: WORKSPACE_ONLY_TEMPLATES } } }).catch(() => 0),
     db.builderLibraryItem.count({ where: { shop: session.shop, deletedAt: null, source: "local" } }).catch(() => 0),
     db.builderBrandKit.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
@@ -114,7 +120,8 @@ export const loader = async ({ request }) => {
     db.builderEmailTemplate.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
     db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: "floating-element" } }).catch(() => 0),
     db.builderExperiment.count({ where: { shop: session.shop } }).catch(() => 0),
-  ]);
+  ]) : Array(14).fill(0);
+  const [notificationCount, pageCount, libraryCount, brandKitCount, motionCount, fontCount, svgCount, stockImageCount, stockVideoCount, stockAudioCount, campaignCount, emailTemplateCount, floatingCount, experimentCount] = shellCounts;
   const ownerInfo = loadShellOwner(session);
   const themeEmbed = { status:"unknown", active:null, editorUrl:themeEmbedActivationUrl({shop:session.shop,apiKey:process.env.SHOPIFY_API_KEY||""}) };
   const featureFlags = getServerFeatureFlags();
@@ -130,6 +137,7 @@ export const loader = async ({ request }) => {
     ownerInfo,
     notificationCount,
     planName: plan?.name || "No active subscription",
+    hasPaidPlan,
     widgetCount: getWidgetDefinitions().length,
     navigationCounts: {
       pages: pageCount,
@@ -156,14 +164,16 @@ export const loader = async ({ request }) => {
 export const action = handleDashboardAction;
 
 export function shouldRevalidate({ formMethod, currentUrl, nextUrl, defaultShouldRevalidate }) {
-  // The app shell is intentionally persistent. Child route/panel navigation must not
-  // refetch owner/plan/sidebar data and visually behave like a second application.
-  if (!formMethod && currentUrl?.pathname?.startsWith("/app") && nextUrl?.pathname?.startsWith("/app")) return false;
+  // Re-run the entitlement gate when merchants navigate; otherwise client-side
+  // transitions could keep the shell's previous paid-plan decision indefinitely.
+  if (!formMethod && currentUrl?.pathname?.startsWith("/app") && nextUrl?.pathname?.startsWith("/app")) {
+    return currentUrl.pathname !== nextUrl.pathname || currentUrl.search !== nextUrl.search;
+  }
   return defaultShouldRevalidate;
 }
 
 export default function App() {
-  const { apiKey, brand, displayVersion, builderAccess, builderRole, systemAccess, actionAccess, isOwner, ownerInfo, notificationCount, planName, widgetCount, navigationCounts, localizationEnabled, themeEmbed } = useLoaderData();
+  const { apiKey, brand, displayVersion, builderAccess, builderRole, systemAccess, actionAccess, isOwner, ownerInfo, notificationCount, planName, hasPaidPlan, widgetCount, navigationCounts, localizationEnabled, themeEmbed } = useLoaderData();
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -281,6 +291,7 @@ export default function App() {
         darkMode={darkMode}
         notificationCount={notificationCount}
         planName={planName}
+        hasPaidPlan={hasPaidPlan}
         localizationEnabled={localizationEnabled}
         builderAccess={builderAccess}
         isOwner={isOwner || builderRole === "admin"}
@@ -305,7 +316,7 @@ export default function App() {
           isOwner={isOwner}
         />
         <AppSessionGuard />
-        <AppCommandPalette onNavigate={navigateApp} darkMode={darkMode} onToggleDark={() => setThemePreference(darkMode ? "light" : "dark")} systemAccess={systemAccess} />
+        {hasPaidPlan ? <AppCommandPalette onNavigate={navigateApp} darkMode={darkMode} onToggleDark={() => setThemePreference(darkMode ? "light" : "dark")} systemAccess={systemAccess} /> : null}
         <main style={{ flex: 1, minHeight: 0, overflow: "auto", background }}>
           <AppRuntimeBoundary release={VSN_BASELINE.version}><Outlet context={{ darkMode, themePreference, setThemePreference, colorSchemePreference, customAccent, setColorSchemePreference, setCustomAccent, navigateApp, activePage, systemAccess, actionAccess, isOwner }} /></AppRuntimeBoundary>
         </main>

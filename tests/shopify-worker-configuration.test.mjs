@@ -128,7 +128,7 @@ test("Shopify SDK constructor needs persistent session storage and verified plat
    distribution:"app_store_test"
  });
  assert.equal(sdk.configured,true);
- assert.equal(received.apiVersion,"2026-07");
+ assert.equal(received.apiVersion,"2026-10");
  assert.equal(received.authPathPrefix,"/auth");
  assert.equal(received.useOnlineTokens,true);
  assert.equal(received.sessionStorage,fakeStorage);
