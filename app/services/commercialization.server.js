@@ -1,5 +1,6 @@
 import { getPlan, getPlanUsage, serializePlan } from "../utils/plan.server.js";
 import { getShopifyAppPricingConfig } from "./shopify-app-pricing.server.js";
+import { EntitlementDeniedError, getQuotaDecision, withShopQuotaLock } from "./entitlements.server.js";
 
 export const ONBOARDING_TRACKS = Object.freeze([
   Object.freeze({ key:"landing-page", label:"Landing Page", description:"Build a focused campaign or lead-generation page.", panel:"pages", template:"page", docs:"landing" }),
@@ -22,29 +23,39 @@ function demoContent(title, subtitle, cta="Explore") {
   ]}];
 }
 
-async function createDemoPage(db, shop, {title, template="page", isDefault=false, content}) {
-  const existing=await db.builderPage.findFirst({where:{shop,title,deletedAt:null}});
-  if(existing)return existing;
-  return db.builderPage.create({data:{shop,title,handle:await uniqueHandle(db,shop,title),template,isDefault,status:"draft",workflowStatus:"draft",contentJson:JSON.stringify(content||demoContent(title,"Editable VSN demo content. Nothing is published automatically.")),createdBy:"VSN setup"}});
-}
-
 export async function seedDemoWorkspace(db, shop, trackKey) {
   const track=ONBOARDING_TRACKS.find((row)=>row.key===trackKey)||ONBOARDING_TRACKS[0];
-  const created=[];
-  if(track.key==="landing-page") created.push(await createDemoPage(db,shop,{title:"VSN Demo — Landing Page",template:"page",content:demoContent("A focused landing page","Use this local draft to explore responsive controls, reusable sections and publishing.","Primary CTA")}));
-  if(track.key==="product-page") created.push(await createDemoPage(db,shop,{title:"VSN Demo — Default Product",template:"product",isDefault:true,content:demoContent("Product story, designed visually","Bind dynamic product widgets, media and conversion content in the editor.","Add to cart")}));
+  const specs=[];
+  if(track.key==="landing-page") specs.push({title:"VSN Demo — Landing Page",template:"page",content:demoContent("A focused landing page","Use this local draft to explore responsive controls, reusable sections and publishing.","Primary CTA")});
+  if(track.key==="product-page") specs.push({title:"VSN Demo — Default Product",template:"product",isDefault:true,content:demoContent("Product story, designed visually","Bind dynamic product widgets, media and conversion content in the editor.","Add to cart")});
   if(track.key==="full-theme") {
-    created.push(await createDemoPage(db,shop,{title:"VSN Demo — Home",template:"index",isDefault:true,content:demoContent("VSN sample storefront","A developer-safe starting point for a complete Shopify storefront.","Shop now")}));
-    created.push(await createDemoPage(db,shop,{title:"VSN Demo — Header",template:"header",isDefault:true,content:demoContent("Header","Replace this draft with navigation, logo and actions.","Menu")}));
-    created.push(await createDemoPage(db,shop,{title:"VSN Demo — Footer",template:"footer",isDefault:true,content:demoContent("Footer","Add newsletter, policies, navigation and trust content.","Subscribe")}));
-    created.push(await createDemoPage(db,shop,{title:"VSN Demo — Collection",template:"collection",isDefault:true,content:demoContent("Collection template","Use Loop / Query to render dynamic Shopify products.","Browse products")}));
-    created.push(await createDemoPage(db,shop,{title:"VSN Demo — Product",template:"product",isDefault:true,content:demoContent("Product template","Build one reusable product system instead of editing every product manually.","Add to cart")}));
+    specs.push({title:"VSN Demo — Home",template:"index",isDefault:true,content:demoContent("VSN sample storefront","A developer-safe starting point for a complete Shopify storefront.","Shop now")});
+    specs.push({title:"VSN Demo — Header",template:"header",isDefault:true,content:demoContent("Header","Replace this draft with navigation, logo and actions.","Menu")});
+    specs.push({title:"VSN Demo — Footer",template:"footer",isDefault:true,content:demoContent("Footer","Add newsletter, policies, navigation and trust content.","Subscribe")});
+    specs.push({title:"VSN Demo — Collection",template:"collection",isDefault:true,content:demoContent("Collection template","Use Loop / Query to render dynamic Shopify products.","Browse products")});
+    specs.push({title:"VSN Demo — Product",template:"product",isDefault:true,content:demoContent("Product template","Build one reusable product system instead of editing every product manually.","Add to cart")});
   }
   if(track.key==="cro-test") {
-    created.push(await createDemoPage(db,shop,{title:"VSN CRO Demo — Control",template:"page",content:demoContent("Control experience","Publish this draft, then use it as Variant A in CRO Experiments.","Start")}));
-    created.push(await createDemoPage(db,shop,{title:"VSN CRO Demo — Variation",template:"page",content:demoContent("Alternative experience","Publish this draft, then select it as the variation source.","Try variation")}));
+    specs.push({title:"VSN CRO Demo — Control",template:"page",content:demoContent("Control experience","Publish this draft, then use it as Variant A in CRO Experiments.","Start")});
+    specs.push({title:"VSN CRO Demo — Variation",template:"page",content:demoContent("Alternative experience","Publish this draft, then select it as the variation source.","Try variation")});
   }
-  if(track.key==="campaign") created.push(await createDemoPage(db,shop,{title:"VSN Demo — Campaign Popup",template:"popup",content:demoContent("A campaign popup","Configure trigger, targeting, frequency and schedule in Growth → Campaigns.","Get offer")}));
+  if(track.key==="campaign") specs.push({title:"VSN Demo — Campaign Popup",template:"popup",content:demoContent("A campaign popup","Configure trigger, targeting, frequency and schedule in Growth → Campaigns.","Get offer")});
+  const result=await withShopQuotaLock(db,shop,async(tx)=>{
+    const existing=await tx.builderPage.findMany({where:{shop,title:{in:specs.map((spec)=>spec.title)},deletedAt:null}});
+    const existingByTitle=new Map(existing.map((page)=>[page.title,page]));
+    const missing=specs.filter((spec)=>!existingByTitle.has(spec.title));
+    const quota=await getQuotaDecision(tx,shop,"pages",{extra:missing.length});
+    if(!quota.allowed)return{quota};
+    const created=[];
+    for(const spec of specs){
+      const prior=existingByTitle.get(spec.title);
+      if(prior){created.push(prior);continue;}
+      created.push(await tx.builderPage.create({data:{shop,title:spec.title,handle:await uniqueHandle(tx,shop,spec.title),template:spec.template,isDefault:spec.isDefault||false,status:"draft",workflowStatus:"draft",contentJson:JSON.stringify(spec.content||demoContent(spec.title,"Editable VSN demo content. Nothing is published automatically.")),createdBy:"VSN setup"}}));
+    }
+    return{created};
+  });
+  if(result.quota)throw new EntitlementDeniedError(result.quota.message,result.quota);
+  const created=result.created;
   return {track,created:created.map((row)=>({id:row.id,title:row.title,template:row.template}))};
 }
 

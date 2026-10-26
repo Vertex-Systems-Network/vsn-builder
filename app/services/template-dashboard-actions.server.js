@@ -1,6 +1,7 @@
 import db from "../db.server.js";
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 import { getBuilderRuntimeEntitlements } from "./builder-runtime-entitlements.server.js";
+import { getQuotaDecision, withShopQuotaLock } from "./entitlements.server.js";
 import { getBlockingPageLock } from "./collaboration.server.js";
 import { createShopifyPage, deleteShopifyPage, getShopifyPage, setShopifyPagePublished, updateShopifyPage } from "./shopify-pages.server.js";
 import { rebuildThemeAssets, restoreTemplateThemeAssets, trashTemplateThemeAssets } from "./theme-assets.server.js";
@@ -91,7 +92,14 @@ export async function handleBulkTemplateAction({ formData, admin, session, build
         if (conflict) { warnings.push(`${row.title}: cannot restore while "${conflict.title}" uses the same assignment.`); continue; }
       }
       const staleFiles = safeArray(row.trashedAssetsJson);
-      await db.builderPage.update({ where: { id: row.id }, data: { deletedAt: null } });
+      const restored = await withShopQuotaLock(db, session.shop, async (tx) => {
+        const quota = await getQuotaDecision(tx, session.shop, "pages");
+        if (!quota.allowed) return { quota };
+        const result = await tx.builderPage.updateMany({ where: { id: row.id, shop: session.shop, deletedAt: { not: null } }, data: { deletedAt: null } });
+        return { restored: result.count === 1 };
+      });
+      if (restored.quota) { warnings.push(`${row.title}: ${restored.quota.message}`); continue; }
+      if (!restored.restored) { warnings.push(`${row.title}: template changed while restoring; refresh and retry.`); continue; }
       if (row.shopifyPageId && row.status === "published") try { await setShopifyPagePublished({ admin, shopifyPageId: row.shopifyPageId, isPublished: true }); } catch (error) { warnings.push(`${row.title}: ${error instanceof Error ? error.message : "Shopify page could not be republished."}`); }
       const assetResult = await restoreTemplateThemeAssets({ admin, session, db, pageId: row.id, staleFiles });
       if (!assetResult.success && assetResult.error) warnings.push(`${row.title}: ${assetResult.error}`);

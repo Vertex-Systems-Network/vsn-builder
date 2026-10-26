@@ -20,7 +20,7 @@ export async function action({request}){
     const next=await saveState(session.shop,{...state,goal});return Response.json({ok:true,intent,state:next,progress:await onboardingStatus(db,session.shop,next),message:`${ONBOARDING_TRACKS.find((row)=>row.key===goal)?.label} workflow selected.`});
   }
   if(intent==="seed-demo"){
-    const goal=String(form.get("goal")||state.goal||ONBOARDING_TRACKS[0].key);const result=await seedDemoWorkspace(db,session.shop,goal);const next=await saveState(session.shop,{...state,goal,demoSeeded:true,demoSeededAt:new Date().toISOString()});
+    const goal=String(form.get("goal")||state.goal||ONBOARDING_TRACKS[0].key);let result;try{result=await seedDemoWorkspace(db,session.shop,goal)}catch(error){if(error?.status===403)return Response.json({ok:false,intent,error:error.message,code:error.code,entitlement:error.decision},{status:403});throw error}const next=await saveState(session.shop,{...state,goal,demoSeeded:true,demoSeededAt:new Date().toISOString()});
     await db.builderAuditLog.create({data:{shop:session.shop,action:"onboarding.demo_seeded",details:JSON.stringify({goal,created:result.created.map((row)=>row.id)})}}).catch(()=>{});
     return Response.json({ok:true,intent,state:next,progress:await onboardingStatus(db,session.shop,next),created:result.created,message:`Developer-safe demo workspace prepared for ${result.track.label}. Nothing was published to Shopify.`});
   }

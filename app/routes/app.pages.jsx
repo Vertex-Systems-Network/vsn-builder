@@ -12,7 +12,7 @@ import db from "../db.server.js";
 import { builderActor, getBuilderRole, getRoleActionAccess } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction, getBuilderRoleAccess } from "../utils/builder-permissions.server.js";
 import { finishObservation, startObservation } from "../utils/observability.server";
-import { getQuotaDecision } from "../services/entitlements.server.js";
+import { getQuotaDecision, withShopQuotaLock } from "../services/entitlements.server.js";
 import { handleBulkTemplateAction } from "../services/template-dashboard-actions.server.js";
 import {
 	deleteShopifyPage,
@@ -277,7 +277,7 @@ export async function action({ request }) {
 		try {
 			const result=await importPagePackage({db,shop:session.shop,payload,actor:builderActorName,role:builderRole});
 			return Response.json({success:true,intent:"import",pageId:result.created.id,message:`Page package imported as a draft${result.dependencies?` with ${result.dependencies} reusable section dependenc${result.dependencies===1?"y":"ies"}`:""}.`});
-		} catch (error) { return Response.json({success:false,error:error instanceof Error?error.message:"Page package import failed."},{status:400}); }
+		} catch (error) { return Response.json({success:false,error:error instanceof Error?error.message:"Page package import failed.",...(error?.code?{code:error.code}:{}),...(error?.decision?{entitlement:error.decision}:{})},{status:error?.status===403?403:400}); }
 	}
 
 	/*
@@ -390,8 +390,10 @@ export async function action({ request }) {
 			title: finalTitle,
 		});
 
-		const page =
-			await db.builderPage.create({
+		const created = await withShopQuotaLock(db, session.shop, async (tx) => {
+			const quota = await getQuotaDecision(tx, session.shop, "pages");
+			if (!quota.allowed) return { quota };
+			const page = await tx.builderPage.create({
 				data: {
 					shop: session.shop,
 					title: finalTitle,
@@ -413,8 +415,11 @@ export async function action({ request }) {
 					publishedJson: null,
 				},
 			});
+			return { page };
+		});
+		if (created.quota) return Response.json({ success:false,error:created.quota.message,code:created.quota.code,entitlement:created.quota },{status:403});
 
-		return Response.json({ success: true, intent: "create", pageId: page.id, existing: false });
+		return Response.json({ success: true, intent: "create", pageId: created.page.id, existing: false });
 	}
 
 
@@ -594,7 +599,14 @@ export async function action({ request }) {
 		}
 
 		const staleFiles = safeParseJson(existingPage.trashedAssetsJson, []);
-		await db.builderPage.update({ where: { id: existingPage.id }, data: { deletedAt: null } });
+		const restoreResult = await withShopQuotaLock(db, session.shop, async (tx) => {
+			const quota = await getQuotaDecision(tx, session.shop, "pages");
+			if (!quota.allowed) return { quota };
+			const page = await tx.builderPage.updateMany({ where: { id: existingPage.id, shop: session.shop, deletedAt: { not: null } }, data: { deletedAt: null } });
+			return { restored: page.count === 1 };
+		});
+		if (restoreResult.quota) return Response.json({success:false,intent:"restore",error:restoreResult.quota.message,code:restoreResult.quota.code,entitlement:restoreResult.quota},{status:403});
+		if (!restoreResult.restored) return Response.json({success:false,intent:"restore",error:"Template changed while it was being restored. Refresh and try again."},{status:409});
 		const warnings = [];
 		if (existingPage.shopifyPageId && existingPage.status === "published") {
 			try { await setShopifyPagePublished({ admin, shopifyPageId: existingPage.shopifyPageId, isPublished: true }); }
@@ -641,8 +653,10 @@ export async function action({ request }) {
 				title: duplicateTitle,
 			});
 
-		const duplicatedPage =
-			await db.builderPage.create({
+		const duplicateResult = await withShopQuotaLock(db, session.shop, async (tx) => {
+			const quota = await getQuotaDecision(tx, session.shop, "pages");
+			if (!quota.allowed) return { quota };
+			const duplicatedPage = await tx.builderPage.create({
 				data: {
 					shop: session.shop,
 					title: duplicateTitle,
@@ -663,6 +677,10 @@ export async function action({ request }) {
 					publishedJson: null,
 				},
 			});
+			return { page: duplicatedPage };
+		});
+		if (duplicateResult.quota) return Response.json({ success:false,error:duplicateResult.quota.message,code:duplicateResult.quota.code,entitlement:duplicateResult.quota },{status:403});
+		const duplicatedPage = duplicateResult.page;
 
 		try {
 			const translations = await db.builderPageTranslation.findMany({ where: { shop: session.shop, pageId: existingPage.id } });

@@ -4,7 +4,7 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import dbDefault from "../db.server.js";
 import { AI_ALLOWED_TYPES, normalizeAiPlan, aiPlanToVsnNodes, validateAiVsnOutput, scanAiAccessibility, scanAiResponsive, serializePageForAi, sanitizeAiContext } from "../builder/aiBuilder.js";
-import { getQuotaDecision } from "./entitlements.server.js";
+import { getQuotaDecision, withShopQuotaLock } from "./entitlements.server.js";
 import { COMMERCIAL_PLANS } from "../config/commercialPlans.js";
 import { resolveAiBehavior } from "../ai/behaviors.js";
 import { scoreReferencePlanFidelity } from "../ai/referenceFidelity.js";
@@ -186,47 +186,47 @@ async function callAiProvider({ execution, behavior, prompt, imageData, currentP
 }
 
 export async function reserveAiUsage({ db, shop, pageId, operation, execution }) {
-  let usageRow;
+  let reservation;
   try {
-    usageRow = await db.builderAiUsage.create({ data: {
-      shop,
-      pageId: pageId || null,
-      operation: String(operation || "section"),
-      provider: execution?.provider || null,
-      model: execution?.model || null,
-      behaviorVersion: execution?.behaviorVersion || null,
-      generationId: execution?.generationId || null,
-      status: "started",
-    } });
+    reservation = await withShopQuotaLock(db, shop, async (tx) => {
+      const now = new Date();
+      const usageRow = await tx.builderAiUsage.create({ data: {
+        shop,
+        pageId: pageId || null,
+        operation: String(operation || "section"),
+        provider: execution?.provider || null,
+        model: execution?.model || null,
+        behaviorVersion: execution?.behaviorVersion || null,
+        generationId: execution?.generationId || null,
+        status: "started",
+      } });
+      const recentReservation = new Date(now.getTime() - AI_RESERVATION_TTL_MS);
+      const used = await tx.builderAiUsage.count({
+        where: {
+          shop,
+          createdAt: { gte: monthStart(now) },
+          OR: [
+            { status: "completed" },
+            { status: "started", createdAt: { gte: recentReservation } },
+          ],
+        },
+      });
+      const decision = await getQuotaDecision(tx, shop, "aiGenerations", { used, extra: 0, now });
+      if (!decision.allowed) {
+        await tx.builderAiUsage.update({ where: { id: usageRow.id }, data: { status: "failed", error: String(decision.message || decision.code || "AI quota exceeded").slice(0, 1000), durationMs: 0 } });
+        return { decision };
+      }
+      return { usageRow };
+    });
   } catch {
     throw new Error("AI usage metering is unavailable; the request was not sent to the provider.");
   }
-  try {
-    const now = new Date();
-    const recentReservation = new Date(now.getTime() - AI_RESERVATION_TTL_MS);
-    const used = await db.builderAiUsage.count({
-      where: {
-        shop,
-        createdAt: { gte: monthStart(now) },
-        OR: [
-          { status: "completed" },
-          { status: "started", createdAt: { gte: recentReservation } },
-        ],
-      },
-    });
-    const decision = await getQuotaDecision(db, shop, "aiGenerations", { used, extra: 0, now });
-    if (!decision.allowed) {
-      await db.builderAiUsage.update({ where: { id: usageRow.id }, data: { status: "failed", error: String(decision.message || decision.code || "AI quota exceeded").slice(0, 1000), durationMs: 0 } }).catch(() => {});
-      const error = new Error(decision.message || "AI generation quota exceeded.");
-      error.code = decision.code;
-      throw error;
-    }
-    return usageRow;
-  } catch (error) {
-    if (error?.code?.startsWith?.("VSN_")) throw error;
-    await db.builderAiUsage.update({ where: { id: usageRow.id }, data: { status: "failed", error: String(error?.message || error).slice(0, 1000), durationMs: 0 } }).catch(() => {});
+  if (reservation.decision) {
+    const error = new Error(reservation.decision.message || "AI generation quota exceeded.");
+    error.code = reservation.decision.code;
     throw error;
   }
+  return reservation.usageRow;
 }
 
 export async function aiUsageStatus({ db = dbDefault, shop }) {

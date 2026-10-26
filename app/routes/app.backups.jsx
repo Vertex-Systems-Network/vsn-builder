@@ -2,7 +2,7 @@ import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
-import { getFeatureDecision } from "../services/entitlements.server.js";
+import { getFeatureDecision, getQuotaDecision } from "../services/entitlements.server.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 
 function clean(row, omit = []) { const copy = { ...row }; for (const key of omit) delete copy[key]; return copy; }
@@ -94,7 +94,16 @@ export async function action({ request }) {
   try { payload = JSON.parse(String(form.get("payload") || "{}")); }
   catch { return Response.json({ ok: false, error: "Invalid JSON backup." }, { status: 400 }); }
   if (payload.format !== "vsn-builder-backup" || !Array.isArray(payload.pages)) return Response.json({ ok: false, error: "Unsupported backup format." }, { status: 400 });
-  await db.$transaction(async (tx) => {
+  const activePageCount = payload.pages.filter((page) => page && typeof page === "object" && !page.deletedAt).length;
+  const restoreResult = await db.$transaction(async (tx) => {
+    // Lock the same per-shop row used by quota-sensitive page creation before
+    // checking the replacement set, so concurrent creates cannot overrun it.
+    await tx.builderShopSetting.upsert({ where: { shop: session.shop }, create: { shop: session.shop }, update: { updatedAt: new Date() } });
+    const pageQuota = await getQuotaDecision(tx, session.shop, "pages", { used: 0, extra: activePageCount });
+    if (!pageQuota.allowed) return { quota: pageQuota };
+    const marketplaceInstalls = Array.isArray(payload.phase13?.marketplaceInstalls) ? payload.phase13.marketplaceInstalls.length : 0;
+    const marketplaceQuota = await getQuotaDecision(tx, session.shop, "marketplaceInstalls", { used: 0, extra: marketplaceInstalls });
+    if (!marketplaceQuota.allowed) return { quota: marketplaceQuota };
     await tx.builderPageTranslation.deleteMany({ where: { shop: session.shop } }).catch(() => {});
     await tx.builderLocalizationConfig.deleteMany({ where: { shop: session.shop } }).catch(() => {});
     await tx.builderCustomFont.deleteMany({ where: { shop: session.shop } }).catch(() => {});
@@ -136,7 +145,9 @@ export async function action({ request }) {
     for (const row of payload.email?.templates || []) await tx.builderEmailTemplate.create({ data: { ...row, shop: session.shop } });
     for (const row of payload.phase13?.marketplaceFavorites || []) await tx.builderMarketplaceFavorite.create({ data: { ...row, shop: session.shop } });
     for (const row of payload.phase13?.marketplaceInstalls || []) await tx.builderMarketplaceInstall.create({ data: { ...row, shop: session.shop } });
+    return { restored: true };
   });
+  if (restoreResult.quota) return Response.json({ ok:false,error:restoreResult.quota.message,code:restoreResult.quota.code,entitlement:restoreResult.quota },{status:403});
   await db.builderBackup.create({ data: { shop: session.shop, label: "Restore completed", statsJson: JSON.stringify({ pages: payload.pages.length, translations: (payload.translations || []).length, customFonts: (payload.assets?.customFonts || []).length, svgAssets: (payload.assets?.svgAssets || []).length, formConfigs: (payload.forms?.configs || []).length, integrations: (payload.forms?.integrations || []).length, brandKits: (payload.phase13?.brandKits || []).length, marketplaceFavorites: (payload.phase13?.marketplaceFavorites || []).length, marketplaceInstalls: (payload.phase13?.marketplaceInstalls || []).length, motionPresets: (payload.motion?.presets || []).length, graphqlSavedQueries: (payload.developerStudio?.savedQueries || []).length, globalCode: (payload.developerStudio?.globalCode || []).length, wishlists: (payload.commerce?.wishlists || []).length, emailTemplates: (payload.email?.templates || []).length }) } });
   return Response.json({ ok: true, message: "Backup restored. Reload Pages." });
 }
