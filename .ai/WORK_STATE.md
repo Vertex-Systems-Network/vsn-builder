@@ -9,10 +9,10 @@ owner_intent: "Use eight paid plan-name keys, enforce tier-specific feature and 
 base_branch: development
 working_branch: codex/eight-paid-plan-catalog
 pull_request: 394
-last_verified_commit: a83a40dd48386ea49a5cb25d84364205f6eb3797
-last_verified_step: "PR #394 includes the exact eight-key monthly price audit; 71 focused billing/listing tests, Node 22.18 lint and QA pass, with typecheck already passing on the implementation."
-in_flight_step: none
-next_exact_action: "Wait for exact-head CI and required review on PR #394. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
+last_verified_commit: 9bf715bd7425262673af9fecd55acbc323703953
+last_verified_step: "PR #394 T040 listing audit is green after rejecting extra monthly price keys. T020 caught a stale developer-simulation assertion expecting legacy sliver instead of canonical silver; test is being updated."
+in_flight_step: "Align the legacy developer-default test with the canonical Silver key, run its test, and update PR #394."
+next_exact_action: "Finish the PR #394 Silver compatibility test correction, then wait for all exact-head CI and review. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
@@ -24,7 +24,7 @@ updated_at: 2026-10-26
 - Verification on supported Node 22.18.0: `npm run typecheck`, `npm run lint`, `npm run qa`, and 62 focused billing/entitlement tests passed. `git diff --check` passed. Shopify Partner plan publication/pricing is still a required external step; no hosted Staging result is claimed.
 - The local `git push` could not authenticate (`could not read Username for https://github.com`); the branch and PR were published through the connected GitHub integration instead.
 - PR #394 was subsequently published through the connected GitHub integration. Its T040 listing workflow caught that unexpected monthly price keys (for example retired `sliver`) were not rejected; that validation gap is now fixed.
-- The `sliver` extra-key issue is fixed and commit `a83a40d` updates PR #394. Local Node 22.18 T040 and billing tests plus lint/QA pass; exact-head CI has restarted for the fix commit.
+- The `sliver` extra-key issue is fixed in commit `a83a40d`. Current PR CI passes T040; T020 then exposed one test still expecting legacy `sliver` as the normalized developer default. The implementation correctly resolves that alias to canonical `silver`; the stale expectation is being corrected.
 
 ## Purpose
 
