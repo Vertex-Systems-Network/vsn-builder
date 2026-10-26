@@ -238,6 +238,24 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const activePage = activeNavigationId(location);
+  useEffect(() => {
+    if (focusedBuilder || embeddedPanel) return undefined;
+
+    const main = document.querySelector(".dashboard-root > div > main");
+    if (!main) return undefined;
+
+    const normalizePageWidths = () => {
+      main.querySelectorAll("s-page").forEach((page) => {
+        if (page.getAttribute("inlineSize") !== "large") page.setAttribute("inlineSize", "large");
+        page.dataset.vsnPageWidth = "template";
+      });
+    };
+
+    normalizePageWidths();
+    const observer = new MutationObserver(normalizePageWidths);
+    observer.observe(main, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [focusedBuilder, embeddedPanel, location.pathname, location.search]);
   const shellWidgetSettings = useMemo(() => ({ settings: { totalCount: widgetCount } }), [widgetCount]);
   const fullName = [ownerInfo?.firstName, ownerInfo?.lastName].filter(Boolean).join(" ") || ownerInfo?.name || "Store owner";
 
