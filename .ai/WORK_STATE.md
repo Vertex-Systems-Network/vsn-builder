@@ -11,8 +11,8 @@ working_branch: codex/eight-plan-quota-hardening
 pull_request: 396
 last_verified_commit: afe2882cc65473d6260dd23e454c63775f59a0fe
 last_verified_step: "PR #396 exact-head checks passed on afe2882cc65473d6260dd23e454c63775f59a0fe: Production Confidence, T020 Worker compatibility, T021 Staging artifact dry run, T026, CodeQL, repository integrity, and environment isolation. Local Node 22.18.0 typecheck/QA, 27 focused tests, Milestone H audit (39/39), codebase health, touched-file ESLint, and git diff --check pass. PR review is pending."
-in_flight_step: none
-next_exact_action: "Confirm exact-head CI remains green after this cursor update, then obtain the required PR #396 review before merge. Only a reviewed merge to protected development can enter the protected Staging workflow."
+in_flight_step: "Commit the owner-requested Solo/Business/Agency/Scale repricing into PR #396 and run exact-head CI"
+next_exact_action: "Review PR #396 exact-head CI for the pricing and quota update. Fix any failures; keep Shopify Partner publication and Staging promotion gated."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---
