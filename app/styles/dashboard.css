@@ -346,7 +346,8 @@ button,input,select,textarea { font-family:inherit; }
 /* v2.5.82 Q3 — use wide Shopify-admin workspaces efficiently on desktop while keeping readable gutters. */
 .dashboard-root .vsn-workspace-page-head,.dashboard-root .vsn-workspace-content{box-sizing:border-box;width:100%;max-width:1560px;padding-left:clamp(18px,2.1vw,34px);padding-right:clamp(18px,2.1vw,34px)}
 .dashboard-root .vsn-pages-inner{box-sizing:border-box;width:100%;max-width:1560px;padding-left:clamp(18px,2.1vw,34px);padding-right:clamp(18px,2.1vw,34px)}
-@media(min-width:1800px){.dashboard-root .vsn-workspace-page-head,.dashboard-root .vsn-workspace-content,.dashboard-root .vsn-pages-inner{max-width:1680px}}
+.dashboard-root s-page[data-vsn-page-width="template"]{box-sizing:border-box;width:100%;max-width:1560px;margin-inline:auto}
+@media(min-width:1800px){.dashboard-root .vsn-workspace-page-head,.dashboard-root .vsn-workspace-content,.dashboard-root .vsn-pages-inner,.dashboard-root s-page[data-vsn-page-width="template"]{max-width:1680px}}
 .vsn-dashboard-lazy-fallback{min-height:280px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--vsn-muted);font-size:12px}.vsn-dashboard-lazy-fallback strong{font-weight:650}.vsn-dashboard-lazy-fallback .vsn-tool-spinner{width:16px;height:16px;border:2px solid var(--vsn-green);border-top-color:transparent;border-radius:50%;animation:vsn-spin .7s linear infinite}
 .vsn-code-suggestions--portal.is-dark{background:#151b25!important;border-color:#374151!important}.vsn-code-suggestions--portal.is-dark button{color:#e5e7eb}.vsn-code-suggestions--portal.is-dark button:hover,.vsn-code-suggestions--portal.is-dark button.is-active{background:#22301c}.vsn-code-suggestions--portal.is-dark strong{color:#b9d980}.vsn-code-suggestions--portal.is-dark code{color:#a7b0bf}.vsn-code-suggestions--portal.is-dark .vsn-code-suggestions-empty{color:#94a3b8}
 
