@@ -12,7 +12,7 @@ import db from "../db.server.js";
 import { builderActor, getBuilderRole, getRoleActionAccess } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction, getBuilderRoleAccess } from "../utils/builder-permissions.server.js";
 import { finishObservation, startObservation } from "../utils/observability.server";
-import { getQuotaDecision, withShopQuotaLock } from "../services/entitlements.server.js";
+import { createPageWithQuota, getQuotaDecision, withShopQuotaLock } from "../services/entitlements.server.js";
 import { handleBulkTemplateAction } from "../services/template-dashboard-actions.server.js";
 import {
 	deleteShopifyPage,
@@ -390,32 +390,17 @@ export async function action({ request }) {
 			title: finalTitle,
 		});
 
-		const created = await withShopQuotaLock(db, session.shop, async (tx) => {
-			const quota = await getQuotaDecision(tx, session.shop, "pages");
-			if (!quota.allowed) return { quota };
-			const page = await tx.builderPage.create({
-				data: {
-					shop: session.shop,
-					title: finalTitle,
-					handle,
-					template,
-
-					resourceId:
-						["collection", "product", "blog", "article"].includes(template) ? resourceId : null,
-
-					resourceHandle:
-						["collection", "product", "blog", "article"].includes(template) ? resourceHandle : null,
-
-					isDefault,
-
-					status: "draft",
-					createdBy: builderActorName,
-					contentJson:
-						JSON.stringify([]),
-					publishedJson: null,
-				},
-			});
-			return { page };
+		const created = await createPageWithQuota(db, session.shop, {
+			title: finalTitle,
+			handle,
+			template,
+			resourceId: ["collection", "product", "blog", "article"].includes(template) ? resourceId : null,
+			resourceHandle: ["collection", "product", "blog", "article"].includes(template) ? resourceHandle : null,
+			isDefault,
+			status: "draft",
+			createdBy: builderActorName,
+			contentJson: JSON.stringify([]),
+			publishedJson: null,
 		});
 		if (created.quota) return Response.json({ success:false,error:created.quota.message,code:created.quota.code,entitlement:created.quota },{status:403});
 
@@ -653,31 +638,17 @@ export async function action({ request }) {
 				title: duplicateTitle,
 			});
 
-		const duplicateResult = await withShopQuotaLock(db, session.shop, async (tx) => {
-			const quota = await getQuotaDecision(tx, session.shop, "pages");
-			if (!quota.allowed) return { quota };
-			const duplicatedPage = await tx.builderPage.create({
-				data: {
-					shop: session.shop,
-					title: duplicateTitle,
-					handle: duplicateHandle,
-					template: existingPage.template || "page",
-					// A duplicate must never silently become another default template.
-					isDefault: false,
-					resourceId: existingPage.isDefault ? null : existingPage.resourceId,
-					resourceHandle: existingPage.isDefault ? null : existingPage.resourceHandle,
-					status: "draft",
-					createdBy: builderActorName,
-					templateImage: existingPage.templateImage || null,
-					seoScore: Number(existingPage.seoScore ?? 100),
-					pageCount: Number(existingPage.pageCount ?? 1),
-					contentJson:
-						existingPage.contentJson ||
-						JSON.stringify([]),
-					publishedJson: null,
-				},
-			});
-			return { page: duplicatedPage };
+		const duplicateResult = await createPageWithQuota(db, session.shop, {
+			title: duplicateTitle, handle: duplicateHandle,
+			template: existingPage.template || "page", isDefault: false,
+			resourceId: existingPage.isDefault ? null : existingPage.resourceId,
+			resourceHandle: existingPage.isDefault ? null : existingPage.resourceHandle,
+			status: "draft", createdBy: builderActorName,
+			templateImage: existingPage.templateImage || null,
+			seoScore: Number(existingPage.seoScore ?? 100),
+			pageCount: Number(existingPage.pageCount ?? 1),
+			contentJson: existingPage.contentJson || JSON.stringify([]),
+			publishedJson: null,
 		});
 		if (duplicateResult.quota) return Response.json({ success:false,error:duplicateResult.quota.message,code:duplicateResult.quota.code,entitlement:duplicateResult.quota },{status:403});
 		const duplicatedPage = duplicateResult.page;
