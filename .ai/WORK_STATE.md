@@ -9,10 +9,10 @@ owner_intent: "Close the audited quota bypasses and race conditions for the eigh
 base_branch: development
 working_branch: codex/eight-plan-quota-hardening
 pull_request: 396
-last_verified_commit: afe2882cc65473d6260dd23e454c63775f59a0fe
-last_verified_step: "PR #396 exact-head checks passed on afe2882cc65473d6260dd23e454c63775f59a0fe: Production Confidence, T020 Worker compatibility, T021 Staging artifact dry run, T026, CodeQL, repository integrity, and environment isolation. Local Node 22.18.0 typecheck/QA, 27 focused tests, Milestone H audit (39/39), codebase health, touched-file ESLint, and git diff --check pass. PR review is pending."
-in_flight_step: "Commit corrected test expectations for requested prices to PR #396 and recheck exact-head CI"
-next_exact_action: "Wait for PR #396 exact-head CI after correcting the stale price expectations; fix any further failures before requesting review."
+last_verified_commit: 0e1c2d2fc13e971416a7ec79d520c89278c634dd
+last_verified_step: "PR #396 exact-head CI passed 11/11 checks on 0e1c2d2fc13e971416a7ec79d520c89278c634dd, including listing-draft, verify, CodeQL, security, merchant Workerd bundle and T021 Staging artifact dry run. The first pricing-head CI found stale price expectations in three tests; those expectations were updated and the corrected exact head is green. Local JSON/source/docs consistency and git diff --check pass; local JavaScript checks are not run because only unsupported Node 24 is available. Shopify Partner pricing publication remains unverified."
+in_flight_step: none
+next_exact_action: "Obtain the required PR #396 review before merge. After a reviewed merge to protected development, run the protected Staging deployment and verify the hosted app and actual Shopify billing; the T021 dry run is not a deployment."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---
