@@ -55,7 +55,6 @@ export function logStagingRequest(env,request,response){
         hasLocation:response.headers.has("location"),
         hasFrameAncestors:Boolean(ancestors),
         allowsShopifyAdminFrame:frameTokens.includes("https://admin.shopify.com")||frameTokens.includes("*"),
-        allowsMyShopifyFrame:frameTokens.includes("https://*.myshopify.com")||frameTokens.some(token=>/^https:\/\/[^/]+\.myshopify\.com$/.test(token)),
         xFrameOptions:["deny","sameorigin"].includes(xfo)?xfo:"none-or-other",
       }:{}),
     }));
