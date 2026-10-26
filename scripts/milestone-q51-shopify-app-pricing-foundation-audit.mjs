@@ -70,7 +70,7 @@ check("Commercialization health uses new pricing config",()=>assert.ok(commercia
 
 check("Environment documents app handle",()=>assert.ok(env.includes("SHOPIFY_APP_HANDLE=")));
 check("Environment documents pricing URL override",()=>assert.ok(env.includes("SHOPIFY_APP_PRICING_URL=")));
-check("Environment documents public Shopify plan handles",()=>["STARTER","SLIVER","GOLD","PLATINUM"].forEach((key)=>assert.ok(env.includes(`SHOPIFY_APP_PRICING_PLAN_${key}_HANDLE=`))));
+check("Environment documents all eight canonical Shopify plan handles",()=>["STARTER","SOLO","SILVER","GOLD","BUSINESS","PLATINUM","AGENCY","SCALE"].forEach((key)=>assert.ok(env.includes(`SHOPIFY_APP_PRICING_PLAN_${key}_HANDLE=`))));
 check("Legacy managed pricing env is explicitly transitional",()=>assert.ok(env.includes("Legacy fallback only")&&env.includes("SHOPIFY_MANAGED_PRICING_URL=")));
 check("Production config can persist App Home handle",()=>assert.ok(prodConfig.includes("SHOPIFY_PRODUCTION_APP_HANDLE")&&prodConfig.includes("handle =")));
 check("Production runtime validates pricing when commercialization enabled",()=>assert.ok(prodRuntime.includes("commercializationEnabled")&&prodRuntime.includes("Shopify App Pricing is not configured")));

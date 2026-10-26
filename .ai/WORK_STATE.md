@@ -10,9 +10,9 @@ base_branch: development
 working_branch: codex/eight-paid-plan-catalog
 pull_request: 394
 last_verified_commit: 9bf715bd7425262673af9fecd55acbc323703953
-last_verified_step: "PR #394 T040 listing audit is green after rejecting extra monthly price keys. T020 caught a stale developer-simulation assertion expecting legacy sliver instead of canonical silver; test is being updated."
-in_flight_step: "Align the legacy developer-default test with the canonical Silver key, run its test, and update PR #394."
-next_exact_action: "Finish the PR #394 Silver compatibility test correction, then wait for all exact-head CI and review. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
+last_verified_step: "PR #394 T040, T021 dry-run, T026, dependency graph, security and environment checks pass. Production Confidence exposed one Q5.1 audit still expecting only four historical handle env names; update it to all eight canonical keys."
+in_flight_step: "Update the Q5.1 environment-handle audit to match the public eight-plan contract and verify it locally."
+next_exact_action: "Complete the Q5.1 audit correction, update PR #394, and wait for every exact-head CI check and review. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
@@ -24,7 +24,8 @@ updated_at: 2026-10-26
 - Verification on supported Node 22.18.0: `npm run typecheck`, `npm run lint`, `npm run qa`, and 62 focused billing/entitlement tests passed. `git diff --check` passed. Shopify Partner plan publication/pricing is still a required external step; no hosted Staging result is claimed.
 - The local `git push` could not authenticate (`could not read Username for https://github.com`); the branch and PR were published through the connected GitHub integration instead.
 - PR #394 was subsequently published through the connected GitHub integration. Its T040 listing workflow caught that unexpected monthly price keys (for example retired `sliver`) were not rejected; that validation gap is now fixed.
-- The `sliver` extra-key issue is fixed in commit `a83a40d`. Current PR CI passes T040; T020 then exposed one test still expecting legacy `sliver` as the normalized developer default. The implementation correctly resolves that alias to canonical `silver`; the stale expectation is being corrected.
+- The `sliver` extra-key issue is fixed in commit `a83a40d`. The next T020 run exposed a stale developer-simulation expectation; commit `d5029f9` changes it to canonical `silver` and the related local test passes.
+- The latest T021 dry-run and T040/T026/dependency/security/environment checks pass. Production Confidence found a final Q5.1 audit still expecting four legacy env names instead of all eight public names; that assertion is being corrected.
 
 ## Purpose
 
