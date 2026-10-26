@@ -58,7 +58,7 @@ await check("Entitlement service is packaged",()=>assert.equal(exists("app/servi
 await check("Q5.3 developer-mode report is packaged",()=>assert.equal(exists("MILESTONE_Q53_DEVELOPER_MODE.md"),true));
 await check("Q5.3 milestone report is packaged",()=>assert.equal(exists("VSN_MILESTONE_Q53_ENTITLEMENT_ENGINE_REPORT_v2.5.95.md"),true));
 await check("Entitlement developer documentation is packaged",()=>assert.equal(exists("docs/developer/entitlement-engine.md"),true));
-await check("Entitlement contract version is 2",()=>assert.equal(ENTITLEMENT_VERSION,2));
+await check("Entitlement contract version is 3",()=>assert.equal(ENTITLEMENT_VERSION,3));
 await check("Named feature registry covers commercial systems",()=>["collaboration","croExperiments","marketplacePro","globalLibrary","backups","developerSdk","enterpriseControls","localization","forms"].forEach((key)=>assert.ok(ENTITLEMENT_FEATURES[key])));
 await check("Named quota registry covers commercial capacities",()=>["pages","marketplaceInstalls","aiGenerations","croExperiments","collaborationSeats"].forEach((key)=>assert.ok(ENTITLEMENT_QUOTAS[key])));
 

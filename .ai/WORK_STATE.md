@@ -10,9 +10,9 @@ base_branch: development
 working_branch: codex/eight-paid-plan-catalog
 pull_request: 394
 last_verified_commit: 9bf715bd7425262673af9fecd55acbc323703953
-last_verified_step: "PR #394 T040, T021 dry-run, T026, dependency graph, security and environment checks pass. Production Confidence exposed one Q5.1 audit still expecting only four historical handle env names; update it to all eight canonical keys."
-in_flight_step: "Update the Q5.1 environment-handle audit to match the public eight-plan contract and verify it locally."
-next_exact_action: "Complete the Q5.1 audit correction, update PR #394, and wait for every exact-head CI check and review. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
+last_verified_step: "PR #394 Q5.1 handle audit and Q5.3 entitlement test corrections are locally passing; previous CI found Q5.3 still asserted entitlement version 2 after the catalog version was bumped to 3."
+in_flight_step: "Update the Q5.3 version assertion to 3 and verify the focused entitlement audits locally."
+next_exact_action: "Complete the Q5.3 contract-version audit correction, update PR #394, and wait for every exact-head CI check and review. After merge, proceed through protected Staging prerequisites only after all eight Shopify Partner plans are configured."
 approval_needed_now: false
 updated_at: 2026-10-26
 ---
@@ -26,6 +26,7 @@ updated_at: 2026-10-26
 - PR #394 was subsequently published through the connected GitHub integration. Its T040 listing workflow caught that unexpected monthly price keys (for example retired `sliver`) were not rejected; that validation gap is now fixed.
 - The `sliver` extra-key issue is fixed in commit `a83a40d`. The next T020 run exposed a stale developer-simulation expectation; commit `d5029f9` changes it to canonical `silver` and the related local test passes.
 - The latest T021 dry-run and T040/T026/dependency/security/environment checks pass. Production Confidence found a final Q5.1 audit still expecting four legacy env names instead of all eight public names; that assertion is being corrected.
+- Q5.1 now passes 42/42 locally and the eight-key environment names are verified. Production Confidence then found the Q5.3 audit still asserting entitlement contract version 2; catalog migration correctly bumped it to 3, so the stale assertion is being updated.
 
 ## Purpose
 
