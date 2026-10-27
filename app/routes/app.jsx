@@ -67,6 +67,14 @@ const NAV_TARGETS = Object.freeze({
   profile: "/app?view=profile",
 });
 
+// Shopify Admin can issue overlapping embedded loader requests while the app
+// shell is mounting and while merchants move between views. Share the sidebar
+// counts for a short window so each request does not fan out into the same 14
+// database queries. This is presentation data; entitlement checks still read
+// the authoritative subscription and entitlement state on every request.
+const SHELL_COUNTS_CACHE_TTL_MS = 15_000;
+const shellCountsCache = new Map();
+
 function activeNavigationId(location) {
   const params = new URLSearchParams(location.search || "");
   if (location.pathname.startsWith("/app/pages")) return params.get("panel") || "pages";
@@ -91,6 +99,41 @@ function loadShellOwner(session) {
   };
 }
 
+async function loadShellCounts(session, hasPaidPlan) {
+  if (!hasPaidPlan) return Array(14).fill(0);
+
+  const now = Date.now();
+  for (const [shop, entry] of shellCountsCache) {
+    if (entry.expiresAt <= now) shellCountsCache.delete(shop);
+  }
+
+  const cached = shellCountsCache.get(session.shop);
+  if (cached && cached.expiresAt > now) return cached.promise;
+
+  const promise = Promise.all([
+    db.builderNotification.count({ where: { shop: session.shop, readAt: null, dismissedAt: null } }).catch(() => 0),
+    db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { notIn: ["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"] } } }).catch(() => 0),
+    db.builderLibraryItem.count({ where: { shop: session.shop, deletedAt: null, source: "local" } }).catch(() => 0),
+    db.builderBrandKit.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
+    db.builderMotionPreset.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
+    db.builderCustomFont.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
+    db.builderSvgAsset.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
+    db.builderLibraryItem.count({ where: { shop: session.shop, kind: "stock-image", deletedAt: null } }).catch(() => 0),
+    db.builderLibraryItem.count({ where: { shop: session.shop, kind: "stock-video", deletedAt: null } }).catch(() => 0),
+    db.builderLibraryItem.count({ where: { shop: session.shop, kind: "stock-audio", deletedAt: null } }).catch(() => 0),
+    db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { in: ["popup", "modal", "drawer", "flyout", "announcement-overlay"] } } }).catch(() => 0),
+    db.builderEmailTemplate.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
+    db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: "floating-element" } }).catch(() => 0),
+    db.builderExperiment.count({ where: { shop: session.shop } }).catch(() => 0),
+  ]);
+  const entry = { expiresAt: now + SHELL_COUNTS_CACHE_TTL_MS, promise };
+  shellCountsCache.set(session.shop, entry);
+  promise.catch(() => {
+    if (shellCountsCache.get(session.shop) === entry) shellCountsCache.delete(session.shop);
+  });
+  return promise;
+}
+
 async function loadApp({ request }) {
   const { admin, session } = await authenticate.admin(request);
   await syncShopifySubscription({ db, admin, shop:session.shop }).catch(() => null);
@@ -105,23 +148,7 @@ async function loadApp({ request }) {
   const builderAccess = builderRole === "admin" || roleAccess[builderRole] === true;
   const systemAccess = getRoleSystemAccess(roleAccess, builderRole);
   const actionAccess = getRoleActionAccess(roleAccess, builderRole);
-  const WORKSPACE_ONLY_TEMPLATES = ["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"];
-  const shellCounts = hasPaidPlan ? await Promise.all([
-    db.builderNotification.count({ where: { shop: session.shop, readAt: null, dismissedAt: null } }).catch(() => 0),
-    db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { notIn: WORKSPACE_ONLY_TEMPLATES } } }).catch(() => 0),
-    db.builderLibraryItem.count({ where: { shop: session.shop, deletedAt: null, source: "local" } }).catch(() => 0),
-    db.builderBrandKit.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
-    db.builderMotionPreset.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
-    db.builderCustomFont.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
-    db.builderSvgAsset.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
-    db.builderLibraryItem.count({ where: { shop: session.shop, kind: "stock-image", deletedAt: null } }).catch(() => 0),
-    db.builderLibraryItem.count({ where: { shop: session.shop, kind: "stock-video", deletedAt: null } }).catch(() => 0),
-    db.builderLibraryItem.count({ where: { shop: session.shop, kind: "stock-audio", deletedAt: null } }).catch(() => 0),
-    db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { in: ["popup", "modal", "drawer", "flyout", "announcement-overlay"] } } }).catch(() => 0),
-    db.builderEmailTemplate.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
-    db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: "floating-element" } }).catch(() => 0),
-    db.builderExperiment.count({ where: { shop: session.shop } }).catch(() => 0),
-  ]) : Array(14).fill(0);
+  const shellCounts = await loadShellCounts(session, hasPaidPlan);
   const [notificationCount, pageCount, libraryCount, brandKitCount, motionCount, fontCount, svgCount, stockImageCount, stockVideoCount, stockAudioCount, campaignCount, emailTemplateCount, floatingCount, experimentCount] = shellCounts;
   const ownerInfo = loadShellOwner(session);
   const themeEmbed = { status:"unknown", active:null, editorUrl:themeEmbedActivationUrl({shop:session.shop,apiKey:process.env.SHOPIFY_API_KEY||""}) };
