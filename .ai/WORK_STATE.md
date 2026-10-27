@@ -8,11 +8,11 @@ task_key: staging-route-error-diagnostics
 owner_intent: "Diagnose the Staging React Router /app 500 without exposing merchant or credential data."
 base_branch: development
 working_branch: fix/staging-route-error-diagnostics
-pull_request: none
-last_verified_commit: 2ae8967124f94703de27ea2306c00d809cbe374d
-last_verified_step: "Added Staging-only route error classification for app shell/pages loaders and pages action failures. The logs expose only route, error name, safe allowlisted code, HTTP status and GraphQL extension codes; messages, URLs, request data, and stacks are excluded. Focused Node 22.18 tests pass 15/15; touched-file ESLint and git diff --check pass. This is diagnostic instrumentation, not a verified root-cause fix; no Staging deploy has been run for this change."
+pull_request: 398
+last_verified_commit: f8c7b94ae7c90a377fd0f29b7b03eddecdb89671
+last_verified_step: "Extended Staging route diagnostics to safely walk at most 16 SDK error/cause/body objects and capture up to 3 allowlisted GraphQL extension codes, including GraphqlQueryError.body.errors.graphQLErrors. Regression tests cover nested SDK shape and message redaction; focused tests pass 19/19, touched-file ESLint and git diff --check pass. Development ruleset has required approving review count 0 and repository-integrity as required status."
 in_flight_step: none
-next_exact_action: "Publish this branch and open a reviewed PR into development; after exact-head CI and merge, use the protected T021 Staging workflow, then collect a live Shopify request during T023 log tail to identify the 500 cause."
+next_exact_action: "Publish the verified logger-shape fix to PR #398, wait for all exact-head checks, re-review that head, and merge when green; then use protected T021 Staging deployment and capture a live request via T023."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---

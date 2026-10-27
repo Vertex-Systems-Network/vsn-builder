@@ -42,14 +42,26 @@ export function logStagingRouteError(env,route,error){
   const safeCode=value=>typeof value==="string"&&(
     /^[A-Z][A-Z0-9_]{0,63}$/.test(value)||
     /^P\d{4}$/.test(value)||
-    /^admin-identity-(?:http-\d{3}|gql-[A-Z0-9_-]{1,48})$/.test(value)
+    /^admin-identity-(?:error|http-\d{3}|gql-[A-Z0-9_-]{1,48})$/.test(value)
   )?value:"";
   const routeName=route==="app"||route==="app.pages"?route:"other";
-  const gqlErrors=Array.isArray(error?.response?.errors)?error.response.errors:
-    Array.isArray(error?.errors)?error.errors:[];
-  const gqlCodes=gqlErrors.map(item=>safeCode(item?.extensions?.code)).filter(Boolean).slice(0,3);
-  const responseStatus=Number(error?.response?.status);
-  const statusCandidates=[Number(error?.status),Number(error?.statusCode),responseStatus];
+  const queue=[error],seen=new Set(),gqlCodes=[],statusCandidates=[];
+  while(queue.length&&seen.size<16){
+    const current=queue.shift();
+    if(!current||typeof current!=="object"||seen.has(current))continue;
+    seen.add(current);
+    if(Array.isArray(current)){
+      queue.push(...current.slice(0,8));
+      continue;
+    }
+    const code=safeCode(current?.extensions?.code);
+    if(code&&gqlCodes.length<3)gqlCodes.push(code);
+    statusCandidates.push(Number(current?.status),Number(current?.statusCode));
+    for(const key of ["cause","originalError","error","response","body","errors","graphQLErrors"]){
+      const child=current[key];
+      if(child&&typeof child==="object")queue.push(child);
+    }
+  }
   const status=statusCandidates.find(value=>Number.isInteger(value)&&value>=400&&value<=599)||null;
   try{
     console.warn(JSON.stringify({

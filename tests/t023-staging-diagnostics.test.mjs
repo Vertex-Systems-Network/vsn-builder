@@ -37,19 +37,31 @@ test("handled React Router errors log only safe route, status, and Shopify error
     logStagingRouteError({APP_ENV:"staging"},"app",Object.assign(new Error("private token shpat_secret https://shop.example/?token=secret"),{
       name:"GraphqlQueryError",code:"admin-identity-gql-ACCESS_DENIED",response:{status:403,errors:[{extensions:{code:"ACCESS_DENIED"}},{extensions:{code:"SHOP_INACTIVE"}}]},
     }));
+    logStagingRouteError({APP_ENV:"staging"},"app",Object.assign(new Error("private SDK message"),{
+      code:"admin-identity-error",cause:{name:"GraphqlQueryError",body:{errors:{graphQLErrors:[
+        {message:"private GraphQL message",extensions:{code:"ACCESS_DENIED"}},
+        {message:"another private message",extensions:{code:"SHOP_INACTIVE"}},
+      ]}}},
+    }));
     logStagingRouteError({APP_ENV:"staging"},"app.pages",Object.assign(new Error("secret"),{code:"shpat_secret_123456789012345678901234567890",status:500}));
   }finally{console.warn=orig}
-  assert.equal(seen.length,2);
+  assert.equal(seen.length,3);
   assert.deepEqual(JSON.parse(seen[0]),{
     vsn_diag:"route-error",route:"app",error:"GraphqlQueryError",
     code:"admin-identity-gql-ACCESS_DENIED",status:403,gqlCodes:["ACCESS_DENIED","SHOP_INACTIVE"],
   });
   assert.deepEqual(JSON.parse(seen[1]),{
+    vsn_diag:"route-error",route:"app",error:"Error",
+    code:"admin-identity-error",status:null,gqlCodes:["ACCESS_DENIED","SHOP_INACTIVE"],
+  });
+  assert.deepEqual(JSON.parse(seen[2]),{
     vsn_diag:"route-error",route:"app.pages",error:"Error",code:"",status:500,
   });
   assert(!seen.join(" ").includes("private"));
   assert(!seen.join(" ").includes("secret"));
   assert(!seen.join(" ").includes("shop.example"));
+  assert(!seen.join(" ").includes("SDK message"));
+  assert(!seen.join(" ").includes("GraphQL message"));
 });
 test("route diagnostics read only the request-scoped Staging tier and fail closed outside Worker context",()=>{
   const seen=[];const orig=console.warn;console.warn=m=>seen.push(m);
