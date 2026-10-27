@@ -31,6 +31,8 @@ jobs:
       - run: npm ci
       - name: Validate mandatory audit gate continuity
         run: node --test tests/ci-audit-gate-continuity.test.mjs
+      - name: Validate protected Shopify Staging app-version draft workflow
+        run: node --test tests/shopify-staging-app-version-draft-policy.test.mjs
       # Capture audit status without aborting non-credentialed QA. The final
       # always()-running enforcement step MUST fail the required verify job
       # unless every mandatory audit succeeds. This is not an audit exemption.
