@@ -132,7 +132,6 @@ async function loadPagesRoute({ request }) {
 		console.error("VSN collections picker failed:", error);
 	}
 
-
 	try {
 		const blogsResponse = await admin.graphql(BLOGS_QUERY, { variables: { first: 100 } });
 		const blogsJson = await blogsResponse.json();
@@ -184,12 +183,8 @@ async function loadPagesRoute({ request }) {
 }
 
 export async function loader(args) {
-	try {
-		return await loadPagesRoute(args);
-	} catch (error) {
-		logCurrentStagingRouteError("app.pages", error);
-		throw error;
-	}
+	try { return await loadPagesRoute(args); }
+	catch (error) { logCurrentStagingRouteError("app.pages", error); throw error; }
 }
 
 async function runPagesAction({ request, admin, session }) {
@@ -271,7 +266,6 @@ async function runPagesAction({ request, admin, session }) {
 		)
 			.trim()
 			.toLowerCase() || null;
-
 
 	if (intent === "import") {
 		if (!(await canAccessBuilderAction(db, session, "pages", "import"))) return Response.json({ success:false, error:"Your role cannot import templates." }, { status:403 });
@@ -408,7 +402,6 @@ async function runPagesAction({ request, admin, session }) {
 
 		return Response.json({ success: true, intent: "create", pageId: created.page.id, existing: false });
 	}
-
 
 	if (intent === "bulk") return handleBulkTemplateAction({ formData, admin, session, builderRole, builderActorName });
 
@@ -774,16 +767,11 @@ export async function action({ request }) {
 	try {
 		assertTrustedMutationRequest(request);
 		const { admin, session } = await authenticate.admin(request);
-		if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
-			throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
-		}
+		if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
 		const paidDenial = await paidMutationDenied(db, session.shop);
 		if (paidDenial) return paidDenial;
 		return await runPagesAction({ request, admin, session });
-	} catch (error) {
-		logCurrentStagingRouteError("app.pages", error);
-		throw error;
-	}
+	} catch (error) { logCurrentStagingRouteError("app.pages", error); throw error; }
 }
 
 async function generateUniqueHandle({
@@ -866,7 +854,6 @@ export default function PagesRoute() {
 		} catch (error) { console.warn("VSN template view settings save failed:", error instanceof Error ? error.message : error); }
 	}, [location.pathname]);
 
-
 	useEffect(() => {
 		const requestedPanel = new URLSearchParams(location.search || "").get("panel");
 		setActiveView(requestedPanel && BUILDER_PANEL_IDS.has(requestedPanel) ? requestedPanel : "pages");
@@ -878,7 +865,6 @@ export default function PagesRoute() {
 		if (!data) return;
 		setPageFeedback({ error: String(data.error || ""), message: String(data.message || "") });
 	}, [activeView, fetcher.data]);
-
 
 	const changeView = useCallback((view) => {
 		const next = BUILDER_PANEL_IDS.has(view) ? view : "pages";
@@ -912,7 +898,6 @@ export default function PagesRoute() {
 		void openEditorWindow();
 		return () => { cancelled = true; };
 	}, [editorWindowSrc]);
-
 
 	useEffect(() => {
 		if (!editorWindowSrc) return undefined;
@@ -963,7 +948,6 @@ export default function PagesRoute() {
 			{ method: "post" },
 		);
 	}
-
 
 	async function setAsDefault(page) {
 		if (!["collection", "product", "blog", "article"].includes(page.template)) return;
