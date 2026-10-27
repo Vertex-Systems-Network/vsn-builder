@@ -192,15 +192,7 @@ export async function loader(args) {
 	}
 }
 
-async function runPagesAction({ request }) {
-  assertTrustedMutationRequest(request);
-	const { admin, session } =
-		await authenticate.admin(request);
-	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
-		throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
-	}
-	const paidDenial = await paidMutationDenied(db, session.shop);
-	if (paidDenial) return paidDenial;
+async function runPagesAction({ request, admin, session }) {
 	const builderRole = getBuilderRole(session);
 	const builderActorName = builderActor(session);
 
@@ -778,9 +770,16 @@ async function runPagesAction({ request }) {
 	};
 }
 
-export async function action(args) {
+export async function action({ request }) {
 	try {
-		return await runPagesAction(args);
+		assertTrustedMutationRequest(request);
+		const { admin, session } = await authenticate.admin(request);
+		if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
+			throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
+		}
+		const paidDenial = await paidMutationDenied(db, session.shop);
+		if (paidDenial) return paidDenial;
+		return await runPagesAction({ request, admin, session });
 	} catch (error) {
 		logCurrentStagingRouteError("app.pages", error);
 		throw error;
