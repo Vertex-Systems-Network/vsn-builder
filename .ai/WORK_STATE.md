@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: staging-route-error-diagnostics
-owner_intent: "Diagnose the Staging React Router /app 500 without exposing merchant or credential data."
+task_key: T020-staging-cpu-route-attribution
+owner_intent: "Identify and fix the route that exceeds the Shopify Staging Worker's CPU limit without exposing merchant or credential data."
 base_branch: development
-working_branch: fix/staging-route-error-diagnostics
-pull_request: 398
-last_verified_commit: f8c7b94ae7c90a377fd0f29b7b03eddecdb89671
-last_verified_step: "Extended Staging route diagnostics to safely walk at most 16 SDK error/cause/body objects and capture up to 3 allowlisted GraphQL extension codes, including GraphqlQueryError.body.errors.graphQLErrors. Regression tests cover nested SDK shape and message redaction; focused tests pass 19/19, touched-file ESLint and git diff --check pass. Development ruleset has required approving review count 0 and repository-integrity as required status."
-in_flight_step: none
-next_exact_action: "Publish the verified logger-shape fix to PR #398, wait for all exact-head checks, re-review that head, and merge when green; then use protected T021 Staging deployment and capture a live request via T023."
+working_branch: fix/staging-route-cost-reduction
+pull_request: none
+last_verified_commit: 6e1cf4e5c0e2e709b0a4ee504ffeaae25d5498b4
+last_verified_step: "T023 run #31 showed four /app GET 200 requests plus exceededCpu and canceled Worker outcomes; live Shopify Admin /app/pages showed 503 and then a refused embedded frame. Existing development loaders already avoid the Store profile GraphQL call and use reduced billing/dashboard queries. Added a T023 route allowlist that maps Worker request URLs to known static app routes or /app/:other without printing raw paths, queries, or identifiers. Validation passed: diagnostics tests 7/7, npm run typecheck, npm run qa, full npm run lint, and git diff --check on Node 22.18.0."
+in_flight_step: "Commit the validated T023 allowlisted route attribution change and work-state checkpoint."
+next_exact_action: "Push fix/staging-route-cost-reduction, open a PR into development, and complete exact-head CI. After merge, rerun protected T023 while exercising Shopify Admin routes, then use its allowlisted route/outcome to make the smallest CPU-saving app fix."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---

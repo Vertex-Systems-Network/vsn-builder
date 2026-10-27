@@ -105,5 +105,9 @@ test("log tail workflow is manual, protected, Staging-only and read-only",()=>{
   assert.match(wf,/github\.ref == 'refs\/heads\/development' && github\.ref_protected == true/);
   assert.match(wf,/environment: cloudflare-staging/);
   assert.match(wf,/wrangler" tail vsn-builder-staging/);
+  assert.match(wf,/def safe_route:/);
+  assert.match(wf,/\.data\$?/);
+  assert.match(wf,/\/app\/:other/);
+  assert.match(wf,/exceptions:\[\.exceptions\[\]\? \| \{name\}\]/);
   assert.doesNotMatch(wf,/wrangler[^\n]*\b(deploy|secret|delete)\b|production|DATABASE_URL|NEON_API/);
 });
