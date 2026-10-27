@@ -8,7 +8,7 @@ task_key: T033-staging-theme-app-embed
 owner_intent: "Make the VSN theme app embed available in the Shopify Staging Theme Editor and verify the merchant-controlled activation path."
 base_branch: development
 working_branch: fix/staging-theme-embed-version
-pull_request: none
+pull_request: 402 (open)
 last_verified_commit: 9c84af627aff1bb8ddb33af32932e5982fb7504f
 last_verified_step: "On 2026-10-28, the authenticated Staging Theme Editor showed 'You don't have any apps with embeds installed' and the toast 'App embed does not exist' for the VSN activation deep link. The repository contains the VSN Page Renderer app-embed block (target body), but protected T021 deploys only the Cloudflare Worker via Wrangler and does not publish a Shopify app version. T023 run #33 succeeded but captured /app/pages only; no /app CPU event was observed."
 in_flight_step: "Add a protected, manual Shopify Staging app-version draft workflow that uses the app-scoped automation token and never releases the new version automatically."
