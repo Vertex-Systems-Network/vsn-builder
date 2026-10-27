@@ -100,17 +100,17 @@ export async function resolveEntitlementPlan(db, shop, { now = new Date() } = {}
 async function usageForQuota(db, shop, quotaKey, now = new Date()) {
   switch (quotaKey) {
     case "pages":
-      return db.builderPage.count({ where: { shop, deletedAt: null } }).catch(() => 0);
+      return db.builderPage.count({ where: { shop, deletedAt: null } });
     case "marketplaceInstalls":
-      return db.builderMarketplaceInstall.count({ where: { shop } }).catch(() => 0);
+      return db.builderMarketplaceInstall.count({ where: { shop } });
     case "aiGenerations": {
       const start = monthStart(now);
-      return db.builderAiUsage.count({ where: { shop, createdAt: { gte: start }, status: "completed" } }).catch(() => 0);
+      return db.builderAiUsage.count({ where: { shop, createdAt: { gte: start }, status: "completed" } });
     }
     case "croExperiments":
-      return db.builderExperiment.count({ where: { shop, status: { in: ["draft", "running", "paused"] } } }).catch(() => 0);
+      return db.builderExperiment.count({ where: { shop, status: { in: ["draft", "running", "paused"] } } });
     case "collaborationSeats": {
-      const setting = await db.builderShopSetting.findUnique({ where: { shop }, select: { collaborationRolesJson: true } }).catch(() => null);
+      const setting = await db.builderShopSetting.findUnique({ where: { shop }, select: { collaborationRolesJson: true } });
       const assignments = parseObject(setting?.collaborationRolesJson);
       // The store owner is always a seat. Assigned actors are stable seats; transient
       // presence is deliberately not used for commercial enforcement.
@@ -218,6 +218,33 @@ export async function getQuotaDecision(db, shop, quotaKey, { plan = null, used =
   const definition = getEntitlementQuotaDefinition(quotaKey);
   const resetAt = definition?.reset === "monthly" ? monthReset(now).toISOString() : null;
   return getQuotaDecisionFromUsage(resolvedPlan, quotaKey, resolvedUsed, { extra, resetAt });
+}
+
+// Serialize quota-sensitive writes for one shop. Callers must perform both
+// the quota read and the corresponding write inside this callback.
+export async function withShopQuotaLock(db, shop, callback) {
+  if (typeof db?.$transaction !== "function" || typeof callback !== "function") {
+    throw new TypeError("A transactional database and quota callback are required.");
+  }
+  return db.$transaction(async (tx) => {
+    if (typeof tx?.builderShopSetting?.upsert !== "function") {
+      throw new Error("Quota serialization is unavailable.");
+    }
+    await tx.builderShopSetting.upsert({
+      where: { shop },
+      create: { shop },
+      update: { updatedAt: new Date() },
+    });
+    return callback(tx);
+  });
+}
+
+export async function createPageWithQuota(db, shop, data, { extra = 1 } = {}) {
+  return withShopQuotaLock(db, shop, async (tx) => {
+    const quota = await getQuotaDecision(tx, shop, "pages", { extra });
+    if (!quota.allowed) return { quota };
+    return { page: await tx.builderPage.create({ data: { ...data, shop } }) };
+  });
 }
 
 export async function requireEntitlementFeature(db, shop, featureKey, options = {}) {

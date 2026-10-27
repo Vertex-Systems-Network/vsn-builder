@@ -4,17 +4,17 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: eight-paid-plan-catalog
-owner_intent: "Use eight paid plan-name keys, enforce tier-specific feature and usage limits, and add an 8-plan comparison to the Plans page."
+task_key: eight-plan-quota-hardening
+owner_intent: "Close the audited quota bypasses and race conditions for the eight paid plans."
 base_branch: development
-working_branch: codex/eight-paid-plan-catalog
-pull_request: 394
-last_verified_commit: fe753c4a7da04de25ca1b4a2b655a34414587f03
-last_verified_step: "PR #394 exact head fe753c4 passes Production Confidence, CodeQL, T020 Workerd compatibility, T021 Staging artifact dry-run, T040, T026, task graph, environment isolation and repository integrity."
+working_branch: codex/eight-plan-quota-hardening
+pull_request: 396
+last_verified_commit: 0e1c2d2fc13e971416a7ec79d520c89278c634dd
+last_verified_step: "PR #396 exact-head CI passed 11/11 checks on 0e1c2d2fc13e971416a7ec79d520c89278c634dd, including listing-draft, verify, CodeQL, security, merchant Workerd bundle and T021 Staging artifact dry run. The first pricing-head CI found stale price expectations in three tests; those expectations were updated and the corrected exact head is green. Local JSON/source/docs consistency and git diff --check pass; local JavaScript checks are not run because only unsupported Node 24 is available. Shopify Partner pricing publication remains unverified."
 in_flight_step: none
-next_exact_action: "Obtain required PR review/merge. Then verify all eight exact offers in Shopify Partner and satisfy protected Staging snapshot/backup and T021 deployment gates before any Staging deploy."
+next_exact_action: "Obtain the required PR #396 review before merge. After a reviewed merge to protected development, run the protected Staging deployment and verify the hosted app and actual Shopify billing; the T021 dry run is not a deployment."
 approval_needed_now: false
-updated_at: 2026-10-26
+updated_at: 2026-10-27
 ---
 
 ## Eight paid plan catalog — 2026-10-26
@@ -25,6 +25,12 @@ updated_at: 2026-10-26
 - The local `git push` had no credentials; branch/PR updates were published through the connected GitHub integration.
 - CI exposed and the PR fixed three stale contract expectations: unknown monthly plan keys, legacy `sliver` normalized to canonical `silver`, and the Q5.1/Q5.3/Q5.5 audit assumptions. Latest exact PR head passed all observed workflows, including T021 artifact dry-run; no hosted Staging deployment has been run.
 - Shopify Partner publication and live billing verification for all eight offers remain pending; prices in code are proposed values until Partner configuration is verified.
+
+## Eight-plan quota hardening — 2026-10-27
+
+- Started from protected development SHA `efd6c9b7263e0fa50c2a84e253c1c4f741315483` on `codex/eight-plan-quota-hardening`.
+- Added transactional per-shop quota serialization and removed fail-open zero-usage fallbacks. Applied it to page creation, import (including imported section dependencies), duplication, restore, backup restore, onboarding demo seeding, campaigns, floating elements, Marketplace installs, CRO experiment creation/duplication/reactivation, AI generation reservations, and collaboration seats. Backup restore also checks page and marketplace-install capacity. Worker page creation uses the shared quota lock. Marketplace free-tier catalog items now require Starter rather than mapping the catalog label `free` to the inactive billing tier.
+- Initial exact-head CI found two gates: `app/routes/app.pages.jsx` exceeded the Milestone G line ceiling by three counted lines, and the Milestone H static audit expected an inline `db.$transaction` call in the import service. Both are corrected: create/duplicate use `createPageWithQuota`, and the audit verifies the shared `withShopQuotaLock` transaction helper. Milestone H passes 39/39 and codebase health passes at 1,214/1,225 lines. On Node 22.18.0, typecheck, QA (429 files; Phase C 112/112), focused billing/plan/Worker tests (27/27), touched-file ESLint, and `git diff --check` pass. Exact-head CI on `afe2882` passed all seven required workflows, including the T021 dry run. PR review is still required before merge; no Staging promotion has occurred.
 
 ## Purpose
 

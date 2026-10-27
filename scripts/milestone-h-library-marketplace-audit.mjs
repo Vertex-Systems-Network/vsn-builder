@@ -15,6 +15,7 @@ const inserter=read("app/components/editor/SectionInserter.jsx");
 const builderRoute=read("app/routes/app.builder.$id.jsx");
 const pageTransfer=read("app/utils/page-transfer.js");
 const pageTransferServer=read("app/services/page-transfer.server.js");
+const entitlements=read("app/services/entitlements.server.js");
 const pages=read("app/routes/app.pages.jsx");
 const host=read("app/components/BuilderPanelHost.jsx");
 const settings=read("app/components/dashboard/pages/Settings.jsx");
@@ -49,7 +50,7 @@ check("Editor My Library pagination remains independent",inserter.includes("libr
 check("Builder route supports combined library-browser resource loading",builderRoute.includes('intent === "library-browser"')&&builderRoute.includes("loadEditorTemplateBrowser"));
 check("Save as template writes to merchant My Library",builderRoute.includes('source:"local"'));
 check("Page export uses the versioned page package",pageTransfer.includes('format: "vsn-page-package"')&&pageTransfer.includes("makePagePackage"));
-check("Page imports run in a Prisma transaction",pageTransferServer.includes("importPagePackage")&&pageTransferServer.includes("db.$transaction"));
+check("Page imports use the shared transactional quota lock",pageTransferServer.includes("importPagePackage")&&pageTransferServer.includes("withShopQuotaLock")&&entitlements.includes("export async function withShopQuotaLock")&&entitlements.includes("db.$transaction(async"));
 check("Page import remaps reusable section references",pageTransferServer.includes("global-section")&&pageTransferServer.includes("sectionId"));
 check("Pages route delegates import/export to package services",pages.includes("importPagePackage")&&pages.includes("makePagePackage")&&pages.includes(".vsn.json"));
 check("Builder Plan screen is usage-only and links to Dashboard Plans",host.includes('title="Plan usage"')&&host.includes('href="/app?view=pricing"')&&host.includes("one authoritative Plans screen"));

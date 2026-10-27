@@ -22,7 +22,7 @@ const plans = {
   }),
   solo: Object.freeze({
     ...shared, key: "solo", publicKey: "solo", name: "Solo", label: "Solo",
-    badge: "Independent builders", shopifyHandle: "solo", monthlyUsd: 59, annualUsd: null,
+    badge: "Independent builders", shopifyHandle: "solo", monthlyUsd: 60, annualUsd: null,
     trialDays: PAID_TRIAL_DAYS, description: "More room for a growing storefront managed by one person.",
     maxPages: 25, templateQuota: 30, aiMonthly: 100, croExperiments: 0,
     collaboration: false, teamMembers: 1, enterpriseControls: false,
@@ -46,7 +46,7 @@ const plans = {
   }),
   business: Object.freeze({
     ...shared, key: "business", publicKey: "business", name: "Business", label: "Business",
-    badge: "Advanced operations", shopifyHandle: "business", monthlyUsd: 249, annualUsd: null,
+    badge: "Advanced operations", shopifyHandle: "business", monthlyUsd: 250, annualUsd: null,
     trialDays: PAID_TRIAL_DAYS, description: "Higher capacity and developer workflows for established teams.",
     maxPages: 1500, templateQuota: 1000, aiMonthly: 3000, croExperiments: 100,
     collaboration: true, teamMembers: 20, enterpriseControls: false,
@@ -62,7 +62,7 @@ const plans = {
   }),
   agency: Object.freeze({
     ...shared, key: "agency", publicKey: "agency", name: "Agency", label: "Agency",
-    badge: "Agency teams", shopifyHandle: "agency", monthlyUsd: 599, annualUsd: null,
+    badge: "Agency teams", shopifyHandle: "agency", monthlyUsd: 600, annualUsd: null,
     trialDays: PAID_TRIAL_DAYS, description: "Large production capacity for agency-sized teams.",
     maxPages: 10000, templateQuota: -1, aiMonthly: 10000, croExperiments: -1,
     collaboration: true, teamMembers: 100, enterpriseControls: true,
@@ -70,7 +70,7 @@ const plans = {
   }),
   scale: Object.freeze({
     ...shared, key: "scale", publicKey: "scale", name: "Scale", label: "Scale",
-    badge: "Maximum capacity", shopifyHandle: "scale", monthlyUsd: 999, annualUsd: null,
+    badge: "Maximum capacity", shopifyHandle: "scale", monthlyUsd: 1000, annualUsd: null,
     trialDays: PAID_TRIAL_DAYS, description: "Maximum capacity for high-volume storefront operations.",
     maxPages: 25000, templateQuota: -1, aiMonthly: 25000, croExperiments: -1,
     collaboration: true, teamMembers: 250, enterpriseControls: true,

@@ -19,7 +19,7 @@ test("draft describes ONE public VSN Builder app, eight paid plans and trial",()
  assert.equal(result.metadataComplete,false);
  assert.equal(result.externallyVerified,false);
  assert.deepEqual(original.commerce.plan_ids,["starter","solo","silver","gold","business","platinum","agency","scale"]);
- assert.deepEqual(original.commerce.monthly_usd,{starter:30,solo:59,silver:100,gold:150,business:249,platinum:350,agency:599,scale:999});
+ assert.deepEqual(original.commerce.monthly_usd,{starter:30,solo:60,silver:100,gold:150,business:250,platinum:350,agency:600,scale:1000});
  assert.equal(original.commerce.annual_usd.platinum,3000);
  assert.equal(original.commerce.trial_days,10);
  assert.equal(original.release.submission_allowed,false);

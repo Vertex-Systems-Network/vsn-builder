@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { builderActor, getBuilderRole, isBuilderOwner } from "../utils/builder-permissions.js";
-import { getFeatureDecision, getQuotaDecision } from "./entitlements.server.js";
+import { getFeatureDecision, getQuotaDecision, withShopQuotaLock } from "./entitlements.server.js";
 
 export const COLLABORATION_ROLES = Object.freeze([
   { key: "publisher", label: "Publisher", description: "Can edit, approve and publish." },
@@ -47,24 +47,26 @@ export async function getCollaborationRole(db, session) {
 
 export async function setCollaborationRole(db, { shop, actorKey, role }) {
   if (!COLLABORATION_ROLES.some((item) => item.key === role)) throw new Error("Invalid collaboration role.");
-  const setting = await db.builderShopSetting.findUnique({ where: { shop }, select: { collaborationRolesJson: true } });
-  const assignments = parseRoleAssignments(setting?.collaborationRolesJson);
   const normalizedActorKey = String(actorKey || "").trim().toLowerCase();
   if (!normalizedActorKey) throw new Error("A valid collaboration user is required.");
-  const feature = await getFeatureDecision(db, shop, "collaboration");
-  if (!feature.allowed) throw new Error(feature.message);
-  const isNewSeat = !Object.prototype.hasOwnProperty.call(assignments, normalizedActorKey);
-  if (isNewSeat) {
-    const quota = await getQuotaDecision(db, shop, "collaborationSeats");
-    if (!quota.allowed) throw new Error(quota.message);
-  }
-  assignments[normalizedActorKey] = role;
-  await db.builderShopSetting.upsert({
-    where: { shop },
-    create: { shop, collaborationRolesJson: JSON.stringify(assignments) },
-    update: { collaborationRolesJson: JSON.stringify(assignments) },
+  return withShopQuotaLock(db, shop, async (tx) => {
+    const setting = await tx.builderShopSetting.findUnique({ where: { shop }, select: { collaborationRolesJson: true } });
+    const assignments = parseRoleAssignments(setting?.collaborationRolesJson);
+    const feature = await getFeatureDecision(tx, shop, "collaboration");
+    if (!feature.allowed) throw new Error(feature.message);
+    const isNewSeat = !Object.prototype.hasOwnProperty.call(assignments, normalizedActorKey);
+    if (isNewSeat) {
+      const quota = await getQuotaDecision(tx, shop, "collaborationSeats");
+      if (!quota.allowed) throw new Error(quota.message);
+    }
+    assignments[normalizedActorKey] = role;
+    await tx.builderShopSetting.upsert({
+      where: { shop },
+      create: { shop, collaborationRolesJson: JSON.stringify(assignments) },
+      update: { collaborationRolesJson: JSON.stringify(assignments) },
+    });
+    return assignments;
   });
-  return assignments;
 }
 
 export function extractMentions(body) {

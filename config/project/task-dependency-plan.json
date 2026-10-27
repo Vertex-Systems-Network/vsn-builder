@@ -15,7 +15,7 @@
     {
       "name": "Solo",
       "id": "solo",
-      "monthly_usd": 59,
+      "monthly_usd": 60,
       "annual_usd": null,
       "trial_days": 10
     },
@@ -36,7 +36,7 @@
     {
       "name": "Business",
       "id": "business",
-      "monthly_usd": 249,
+      "monthly_usd": 250,
       "annual_usd": null,
       "trial_days": 10
     },
@@ -50,14 +50,14 @@
     {
       "name": "Agency",
       "id": "agency",
-      "monthly_usd": 599,
+      "monthly_usd": 600,
       "annual_usd": null,
       "trial_days": 10
     },
     {
       "name": "Scale",
       "id": "scale",
-      "monthly_usd": 999,
+      "monthly_usd": 1000,
       "annual_usd": null,
       "trial_days": 10
     }

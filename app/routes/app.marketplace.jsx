@@ -5,7 +5,7 @@ import db from "../db.server.js";
 import { builderActor, getBuilderRole } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 import { getPlan, getPlanUsage } from "../utils/plan.server.js";
-import { getMinimumPlanDecision, getQuotaDecision } from "../services/entitlements.server.js";
+import { getMinimumPlanDecision, getQuotaDecision, withShopQuotaLock } from "../services/entitlements.server.js";
 import { findCatalogItem, getMarketplaceCatalog, installMarketplaceItem, rollbackMarketplaceInstall, toggleMarketplaceFavorite } from "../services/marketplace.server.js";
 import { VSN_BASELINE } from "../config/baseline.js";
 
@@ -34,12 +34,17 @@ export async function action({request}) {
   if(!(await canAccessBuilderAction(db,session,"marketplace","install")))return Response.json({ok:false,error:"Your role cannot install or update templates."},{status:403});
   const [catalog,plan]=await Promise.all([getMarketplaceCatalog({db,shop:session.shop,currentVersion:CURRENT_VERSION}),getPlan(db,session.shop)]); const item=findCatalogItem(catalog,catalogId);
   if(!item)return Response.json({ok:false,error:"Template is no longer available in the catalog."},{status:404});
-  const tierDecision=await getMinimumPlanDecision(db,session.shop,item.planTier||"core",{plan,label:`${item.title} Marketplace template`});
+  const requiredPlan=item.planTier==="pro"?"silver":"starter";
+  const tierDecision=await getMinimumPlanDecision(db,session.shop,requiredPlan,{plan,label:`${item.title} Marketplace template`});
   if(!tierDecision.allowed)return Response.json({ok:false,error:tierDecision.message,code:tierDecision.code,entitlement:tierDecision},{status:403});
-  const existingInstall=await db.builderMarketplaceInstall.findUnique({where:{shop_catalogId:{shop:session.shop,catalogId}}}).catch(()=>null);
-  if(!existingInstall){const quota=await getQuotaDecision(db,session.shop,"marketplaceInstalls",{plan});if(!quota.allowed)return Response.json({ok:false,error:quota.message,code:quota.code,entitlement:quota},{status:403});}
   if(!item.compatible)return Response.json({ok:false,error:"This template requires a newer builder version."},{status:409});
-  const result=await installMarketplaceItem({db,shop:session.shop,item,actor:builderActor(session)});
+	const installation = await withShopQuotaLock(db, session.shop, async (tx) => {
+		const existingInstall=await tx.builderMarketplaceInstall.findUnique({where:{shop_catalogId:{shop:session.shop,catalogId}}});
+		if(!existingInstall){const quota=await getQuotaDecision(tx,session.shop,"marketplaceInstalls");if(!quota.allowed)return {quota};}
+		return {result:await installMarketplaceItem({db:tx,shop:session.shop,item,actor:builderActor(session)})};
+	});
+	if(installation.quota)return Response.json({ok:false,error:installation.quota.message,code:installation.quota.code,entitlement:installation.quota},{status:403});
+	const result=installation.result;
   await db.builderAuditLog.create({data:{shop:session.shop,actor:builderActor(session),role,action:result.updated?"marketplace.updated":"marketplace.installed",details:JSON.stringify({catalogId,itemVersion:item.version,libraryItemId:result.libraryItem.id,assetsDeduplicated:result.assetCount})}}).catch(()=>{});
   return Response.json({ok:true,intent,catalogId,libraryItemId:result.libraryItem.id,updated:result.updated,message:result.updated?"Marketplace template updated. The previous installed version can be rolled back.":"Marketplace template installed for editor use. It remains separate from My Library."});
 }

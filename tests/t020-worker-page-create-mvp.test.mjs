@@ -26,10 +26,16 @@ function fixture({plan="starter",used=0,paid=true,shopOwner=shop,roleAccessJson=
           verifiedAt:new Date(),trialEndsAt:null,cancelEffectiveOn:null}:null;
       },
     },
-    builderShopSetting:{async findUnique(){
-      calls.push("role");
-      return {roleAccessJson};
-    }},
+    builderShopSetting:{
+      async findUnique(){
+        calls.push("role");
+        return {roleAccessJson};
+      },
+      async upsert({where}){
+        calls.push("lock:"+where.shop);
+        assert.deepEqual(where,{shop});
+      },
+    },
     builderPage:{
       async count({where}){
         calls.push("count:"+where.shop);
@@ -91,8 +97,8 @@ test("verified paid owner can create blank draft with tenant-scoped unique handl
   assert.notEqual(f.rows[0].handle,f.rows[1].handle);
   assert.match(f.rows[0].handle,/^client-landing-page-[a-f0-9]{16}$/);
   assert.deepEqual(f.calls,[
-    "plan:"+shop,"count:"+shop,"create:"+shop,
-    "plan:"+shop,"count:"+shop,"create:"+shop,
+    "plan:"+shop,"lock:"+shop,"count:"+shop,"create:"+shop,
+    "plan:"+shop,"lock:"+shop,"count:"+shop,"create:"+shop,
   ]);
 });
 

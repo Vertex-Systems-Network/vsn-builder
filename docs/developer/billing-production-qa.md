@@ -1,6 +1,6 @@
 # Billing Production Lifecycle QA — Paid-only Q5.5 contract
 
-The current eight-tier catalog is **Starter ($30), Solo ($59), Silver ($100), Gold ($150), Business ($249), Platinum ($350 or $3,000/year), Agency ($599), and Scale ($999) per month**. Each has a **10-day Shopify-managed trial**. Handles match the lowercase plan names. The retired `sliver` handle remains a Silver compatibility alias. No Free plan is offered. Confirm all eight offers in Shopify Partner before live billing.
+The current eight-tier catalog is **Starter ($30), Solo ($60), Silver ($100), Gold ($150), Business ($250), Platinum ($350 or $3,000/year), Agency ($600), and Scale ($1,000) per month**. Each has a **10-day Shopify-managed trial**. Handles match the lowercase plan names. The retired `sliver` handle remains a Silver compatibility alias. No Free plan is offered. Confirm all eight offers in Shopify Partner before live billing.
 
 ## Authority rules
 

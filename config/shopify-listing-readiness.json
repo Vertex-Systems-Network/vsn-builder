@@ -17,13 +17,13 @@
     ],
     "monthly_usd": {
       "starter": 30,
-      "solo": 59,
+      "solo": 60,
       "silver": 100,
       "gold": 150,
-      "business": 249,
+      "business": 250,
       "platinum": 350,
-      "agency": 599,
-      "scale": 999
+      "agency": 600,
+      "scale": 1000
     },
     "annual_usd": {
       "platinum": 3000

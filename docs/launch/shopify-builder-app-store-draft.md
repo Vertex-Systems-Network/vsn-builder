@@ -30,13 +30,13 @@ Avoid unsupported performance, AI quality, compatibility, revenue-impact or conv
 | Public plan / canonical handle | Monthly USD | Yearly USD | Shopify-managed trial |
 | --- | ---: | ---: | ---: |
 | Starter / `starter` | $30 | — | 10 days |
-| Solo / `solo` | $59 | — | 10 days |
+| Solo / `solo` | $60 | — | 10 days |
 | Silver / `silver` | $100 | — | 10 days |
 | Gold / `gold` | $150 | — | 10 days |
-| Business / `business` | $249 | — | 10 days |
+| Business / `business` | $250 | — | 10 days |
 | Platinum / `platinum` | $350 | $3,000 | 10 days |
-| Agency / `agency` | $599 | — | 10 days |
-| Scale / `scale` | $999 | — | 10 days |
+| Agency / `agency` | $600 | — | 10 days |
+| Scale / `scale` | $1,000 | — | 10 days |
 
 No Free tier, no extra public app/listing. Solo, Business, Agency and Scale amounts reflect the latest proposed app catalog; all eight prices and handles remain subject to direct confirmation in the Shopify Partner Dashboard. Repo config is NOT published Partner pricing. Do not include plan prices in screenshots, subtitle or other non-pricing fields.
 

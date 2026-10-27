@@ -21,13 +21,13 @@ export function inspectTaskPlan(plan,{includeClosed=false}={}) {
    errors.push("Exactly ONE public Shopify Builder app is permitted");
  const expected=[
   ["Starter","starter",30,null,10],
-  ["Solo","solo",59,null,10],
+  ["Solo","solo",60,null,10],
   ["Silver","silver",100,null,10],
   ["Gold","gold",150,null,10],
-  ["Business","business",249,null,10],
+  ["Business","business",250,null,10],
   ["Platinum","platinum",350,3000,10],
-  ["Agency","agency",599,null,10],
-  ["Scale","scale",999,null,10],
+  ["Agency","agency",600,null,10],
+  ["Scale","scale",1000,null,10],
  ];
  if(JSON.stringify((plan?.commercial_plans||[]).map(p=>[
     p.name,p.id,p.monthly_usd,p.annual_usd,p.trial_days

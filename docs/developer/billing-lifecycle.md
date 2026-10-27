@@ -7,13 +7,13 @@ This document records the owner-directed eight-plan expansion from 2026-10-26. E
 | Public plan | Canonical ID and Shopify handle | USD monthly | USD yearly | Trial |
 | --- | --- | ---: | ---: | --- |
 | Starter | `starter` | $30 | — | 10 days |
-| Solo | `solo` | $59 | — | 10 days |
+| Solo | `solo` | $60 | — | 10 days |
 | Silver | `silver` | $100 | — | 10 days |
 | Gold | `gold` | $150 | — | 10 days |
-| Business | `business` | $249 | — | 10 days |
+| Business | `business` | $250 | — | 10 days |
 | Platinum | `platinum` | $350 | $3,000 | 10 days |
-| Agency | `agency` | $599 | — | 10 days |
-| Scale | `scale` | $999 | — | 10 days |
+| Agency | `agency` | $600 | — | 10 days |
+| Scale | `scale` | $1,000 | — | 10 days |
 
 All eight plans are paid; there is no Free public plan. Their public plan IDs and display names match. The previous Shopify `sliver` handle and historical DB IDs are accepted as migration aliases only; `free` never maps to paid Starter.
 

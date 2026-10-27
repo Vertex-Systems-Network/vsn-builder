@@ -1,3 +1,4 @@
+import { EntitlementDeniedError, getQuotaDecision, withShopQuotaLock } from "./entitlements.server.js";
 const ALLOWED_TEMPLATES = new Set(["page","index","collection","product","search","blog","article","header","footer","section","cart","404","password","customer-account","customer-login","customer-register","customer-order","customer-addresses","popup","modal","drawer","flyout","announcement-overlay","floating-element"]);
 
 function nodeId() { return `node_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,9)}`; }
@@ -13,10 +14,14 @@ export async function importPagePackage({ db, shop, payload, actor, role }) {
   if (!content) throw new Error("The page resource does not contain editable VSN content.");
   const template = ALLOWED_TEMPLATES.has(source.template) ? source.template : "page";
 
-  return db.$transaction(async (tx) => {
+  const importableSections = (Array.isArray(dependencies) ? dependencies.slice(0,100) : [])
+    .filter((dependency) => dependency?.template === "section");
+
+  return withShopQuotaLock(db, shop, async (tx) => {
+    const quota = await getQuotaDecision(tx, shop, "pages", { extra: importableSections.length + 1 });
+    if (!quota.allowed) throw new EntitlementDeniedError(quota.message, quota);
     const dependencyMap = new Map();
-    for (const dependency of Array.isArray(dependencies) ? dependencies.slice(0,100) : []) {
-      if (dependency?.template !== "section") continue;
+    for (const dependency of importableSections) {
       const handle = await uniqueHandle(tx, shop, safeHandle(dependency.handle || dependency.title, "imported-section"));
       const row = await tx.builderPage.create({ data:{ shop, title:`${dependency.title || "Imported section"} (Imported)`, handle, template:"section", status:"draft", isDefault:false, contentJson:JSON.stringify(cloneNodes(dependency.content || [])), createdBy:actor || "Store owner" } });
       if (dependency.id) dependencyMap.set(String(dependency.id), row.id);

@@ -17,13 +17,13 @@ VSN | Builder is **one public Shopify app**. Development and Staging are interna
 | Public plan / canonical ID / handle | Monthly USD | Annual USD | Shopify free trial |
 | --- | ---: | ---: | ---: |
 | Starter (`starter`) | $30 | Not offered | 10 days |
-| Solo (`solo`) | $59 | Not offered | 10 days |
+| Solo (`solo`) | $60 | Not offered | 10 days |
 | Silver (`silver`) | $100 | Not offered | 10 days |
 | Gold (`gold`) | $150 | Not offered | 10 days |
-| Business (`business`) | $249 | Not offered | 10 days |
+| Business (`business`) | $250 | Not offered | 10 days |
 | Platinum (`platinum`) | $350 | $3,000 | 10 days |
-| Agency (`agency`) | $599 | Not offered | 10 days |
-| Scale (`scale`) | $999 | Not offered | 10 days |
+| Agency (`agency`) | $600 | Not offered | 10 days |
+| Scale (`scale`) | $1,000 | Not offered | 10 days |
 
 The earlier four-plan contract is superseded by the owner-directed eight-plan catalog above. The monthly amounts for Solo, Business, Agency and Scale carry forward the previously proposed rates; Shopify Partner publication must be verified before live billing. The retired Shopify handle `sliver` and prior internal keys remain read aliases for Silver or their verified historical contract; `free` and an unknown Shopify paid handle never authorize Starter. Subscription-free merchants remain on a no-access `inactive` sentinel until a Shopify-verified trial or paid contract exists.
 

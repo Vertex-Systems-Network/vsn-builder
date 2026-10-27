@@ -14,8 +14,8 @@ import { buildBillingLifecycle } from "../app/config/billingLifecycle.js";
 import { serializePlan } from "../app/utils/plan.server.js";
 
 const pricing = [
-  ["starter",30,null], ["solo",59,null], ["silver",100,null], ["gold",150,null],
-  ["business",249,null], ["platinum",350,3000], ["agency",599,null], ["scale",999,null],
+  ["starter",30,null], ["solo",60,null], ["silver",100,null], ["gold",150,null],
+  ["business",250,null], ["platinum",350,3000], ["agency",600,null], ["scale",1000,null],
 ];
 
 test("exactly eight paid Shopify public IDs and no Free plan",()=>{

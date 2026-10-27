@@ -42,7 +42,7 @@ check("Silver key matches merchant-facing plan name",COMMERCIAL_PLANS.silver?.na
 check("Gold ID matches merchant-facing plan name",COMMERCIAL_PLANS.gold?.name==="Gold");
 check("Platinum ID matches merchant-facing plan name",COMMERCIAL_PLANS.platinum?.name==="Platinum");
 check("Public commercial catalog has eight paid plans and no free plan",!PLAN_ORDER.includes("free")&&Object.keys(COMMERCIAL_PLANS).length===8);
-check("Paid USD prices match the eight-tier catalog",PLAN_ORDER.map(k=>COMMERCIAL_PLANS[k].monthlyUsd).join(",")==="30,59,100,150,249,350,599,999");
+check("Paid USD prices match the eight-tier catalog",PLAN_ORDER.map(k=>COMMERCIAL_PLANS[k].monthlyUsd).join(",")==="30,60,100,150,250,350,600,1000");
 check("Platinum annual USD rate is 3000",COMMERCIAL_PLANS.platinum.annualUsd===3000);
 check("Every paid plan has a Shopify-managed 10-day trial",PLAN_ORDER.every(k=>COMMERCIAL_PLANS[k].trialDays===10));
 check("Every plan includes all widgets",PLAN_ORDER.every((key)=>COMMERCIAL_PLANS[key]?.allWidgets===true));

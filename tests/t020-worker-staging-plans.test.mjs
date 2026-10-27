@@ -55,7 +55,7 @@ test("plan page lists all eight plans, shows comparison and only links checkout 
     assert.match(html,new RegExp(`<h2>${plan}<\\/h2>`));
   assert.match(html,/Compare all 8 plans/);
   assert.match(html,/\$30\/month/);
-  assert.match(html,/\$59\/month/);
+  assert.match(html,/\$60\/month/);
   assert.match(html,/\$100\/month/);
   assert.match(html,/\$150\/month/);
   assert.match(html,/\$350\/month · \$3000\/year/);
