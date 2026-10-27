@@ -1530,7 +1530,7 @@ export default function BuilderRoute() {
 			onBack={() => {
 				const params = new URLSearchParams(window.location.search);
 				if (params.get("appWindow") === "1" && window.parent && window.parent !== window) {
-					window.parent.postMessage({ type: "vsn:close-editor" }, window.location.origin);
+					window.parent.postMessage({ type: "vsn:close-editor" }, "https://admin.shopify.com");
 					return;
 				}
 				["appWindow", "preview", "collection", "product", "blog", "article", "query"].forEach((key) => params.delete(key));
