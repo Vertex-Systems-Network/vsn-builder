@@ -72,6 +72,9 @@ export function createStagingFullAppRouterWorker({
         context=await createSdkContext(request,env);
         if(!context||typeof context.close!=="function"||!context.database||!context.shopify)
           throw new Error("Missing request-scoped Shopify/Neon runtime");
+        // Only the non-secret tier marker enters AsyncLocalStorage so route
+        // error boundaries can emit Staging-only classified diagnostics.
+        context.runtimeTier=env.APP_ENV;
         const response=await runWithWorkerRequestContext(context,()=>handler()(
           request,{cloudflare:{env,ctx}},
         ));

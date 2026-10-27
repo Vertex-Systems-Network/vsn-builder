@@ -30,6 +30,7 @@ import { importPagePackage } from "../services/page-transfer.server.js";
 import { makePagePackage } from "../utils/page-transfer.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { loadTemplatesViewSettings, saveTemplatesViewSettings } from "../services/templates-view-settings.server.js";
+import { logCurrentStagingRouteError } from "../services/worker-route-error-diagnostics.server.js";
 
 const PRODUCTS_QUERY = `#graphql
 	query GetBuilderProducts($first: Int!) {
@@ -79,7 +80,7 @@ const COLLECTIONS_QUERY = `#graphql
 	}
 `;
 
-export async function loader({ request }) {
+async function loadPagesRoute({ request }) {
 	const { admin, session } =
 		await authenticate.admin(request);
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
@@ -131,7 +132,6 @@ export async function loader({ request }) {
 		console.error("VSN collections picker failed:", error);
 	}
 
-
 	try {
 		const blogsResponse = await admin.graphql(BLOGS_QUERY, { variables: { first: 100 } });
 		const blogsJson = await blogsResponse.json();
@@ -182,15 +182,12 @@ export async function loader({ request }) {
 	};
 }
 
-export async function action({ request }) {
-  assertTrustedMutationRequest(request);
-	const { admin, session } =
-		await authenticate.admin(request);
-	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
-		throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
-	}
-	const paidDenial = await paidMutationDenied(db, session.shop);
-	if (paidDenial) return paidDenial;
+export async function loader(args) {
+	try { return await loadPagesRoute(args); }
+	catch (error) { logCurrentStagingRouteError("app.pages", error); throw error; }
+}
+
+async function runPagesAction({ request, admin, session }) {
 	const builderRole = getBuilderRole(session);
 	const builderActorName = builderActor(session);
 
@@ -269,7 +266,6 @@ export async function action({ request }) {
 		)
 			.trim()
 			.toLowerCase() || null;
-
 
 	if (intent === "import") {
 		if (!(await canAccessBuilderAction(db, session, "pages", "import"))) return Response.json({ success:false, error:"Your role cannot import templates." }, { status:403 });
@@ -407,7 +403,6 @@ export async function action({ request }) {
 		return Response.json({ success: true, intent: "create", pageId: created.page.id, existing: false });
 	}
 
-
 	if (intent === "bulk") return handleBulkTemplateAction({ formData, admin, session, builderRole, builderActorName });
 
 	if (!pageId) {
@@ -506,6 +501,7 @@ export async function action({ request }) {
 					`Default ${existingPage.template} template updated successfully.`,
 			});
 		} catch (error) {
+			logCurrentStagingRouteError("app.pages", error);
 			console.error(
 				"VSN set default collection error:",
 				error,
@@ -559,6 +555,7 @@ export async function action({ request }) {
 
 			return Response.json({ success: true, intent: "delete", pageId: existingPage.id, message: warnings.length ? "Template moved to Trash with warnings." : "Template moved to Trash. Generated CSS/JS removed.", warnings });
 		} catch (error) {
+			logCurrentStagingRouteError("app.pages", error);
 			console.error("VSN page trash error:", error);
 			return Response.json({ success: false, intent: "delete", error: error instanceof Error ? error.message : "Could not move template to Trash." }, { status: 500 });
 		}
@@ -613,7 +610,7 @@ export async function action({ request }) {
 		const staleFiles = safeParseJson(existingPage.trashedAssetsJson, []);
 		const assetResult = await trashTemplateThemeAssets({ admin, session, pageId: existingPage.id, fallbackFiles: staleFiles });
 		if (existingPage.shopifyPageId) {
-			try { await deleteShopifyPage({ admin, shopifyPageId: existingPage.shopifyPageId }); } catch (error) { return Response.json({ success: false, error: error instanceof Error ? error.message : "Shopify page deletion failed." }, { status: 500 }); }
+			try { await deleteShopifyPage({ admin, shopifyPageId: existingPage.shopifyPageId }); } catch (error) { logCurrentStagingRouteError("app.pages", error); return Response.json({ success: false, error: error instanceof Error ? error.message : "Shopify page deletion failed." }, { status: 500 }); }
 		}
 		await db.$transaction([
 			db.builderTemplateRule.deleteMany({ where: { shop: session.shop, pageId: existingPage.id } }),
@@ -738,6 +735,7 @@ export async function action({ request }) {
 					updatedPage.shopifyPageUrl,
 			});
 		} catch (error) {
+			logCurrentStagingRouteError("app.pages", error);
 			console.error(
 				"VSN rename error:",
 				error,
@@ -763,6 +761,17 @@ export async function action({ request }) {
 		success: false,
 		error: "Invalid page action.",
 	};
+}
+
+export async function action({ request }) {
+	try {
+		assertTrustedMutationRequest(request);
+		const { admin, session } = await authenticate.admin(request);
+		if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
+		const paidDenial = await paidMutationDenied(db, session.shop);
+		if (paidDenial) return paidDenial;
+		return await runPagesAction({ request, admin, session });
+	} catch (error) { logCurrentStagingRouteError("app.pages", error); throw error; }
 }
 
 async function generateUniqueHandle({
@@ -845,7 +854,6 @@ export default function PagesRoute() {
 		} catch (error) { console.warn("VSN template view settings save failed:", error instanceof Error ? error.message : error); }
 	}, [location.pathname]);
 
-
 	useEffect(() => {
 		const requestedPanel = new URLSearchParams(location.search || "").get("panel");
 		setActiveView(requestedPanel && BUILDER_PANEL_IDS.has(requestedPanel) ? requestedPanel : "pages");
@@ -857,7 +865,6 @@ export default function PagesRoute() {
 		if (!data) return;
 		setPageFeedback({ error: String(data.error || ""), message: String(data.message || "") });
 	}, [activeView, fetcher.data]);
-
 
 	const changeView = useCallback((view) => {
 		const next = BUILDER_PANEL_IDS.has(view) ? view : "pages";
@@ -891,7 +898,6 @@ export default function PagesRoute() {
 		void openEditorWindow();
 		return () => { cancelled = true; };
 	}, [editorWindowSrc]);
-
 
 	useEffect(() => {
 		if (!editorWindowSrc) return undefined;
@@ -942,7 +948,6 @@ export default function PagesRoute() {
 			{ method: "post" },
 		);
 	}
-
 
 	async function setAsDefault(page) {
 		if (!["collection", "product", "blog", "article"].includes(page.template)) return;

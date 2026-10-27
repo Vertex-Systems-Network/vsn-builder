@@ -25,6 +25,7 @@ import { resolveBuilderBranding, VSN_BUILDER_DISPLAY_VERSION } from "../config/e
 import { normalizeUiColorScheme, normalizeUiHex, resolveUiTheme } from "../config/ui-theme.js";
 import { applyVsnSecurityHeaders } from "../utils/request-security.server.js";
 import { hasVerifiedBuilderPlan, isPlanlessBillingLocation } from "../utils/billing-route-gate.js";
+import { logCurrentStagingRouteError } from "../services/worker-route-error-diagnostics.server.js";
 
 const NAV_TARGETS = Object.freeze({
   home: "/app",
@@ -90,7 +91,7 @@ function loadShellOwner(session) {
   };
 }
 
-export const loader = async ({ request }) => {
+async function loadApp({ request }) {
   const { admin, session } = await authenticate.admin(request);
   await syncShopifySubscription({ db, admin, shop:session.shop }).catch(() => null);
   const plan = await getPlan(db, session.shop).catch(() => null);
@@ -159,6 +160,15 @@ export const loader = async ({ request }) => {
     localizationEnabled: featureFlags.localizationMarketsV1 === true,
     themeEmbed,
   };
+}
+
+export const loader = async (args) => {
+  try {
+    return await loadApp(args);
+  } catch (error) {
+    logCurrentStagingRouteError("app", error);
+    throw error;
+  }
 };
 
 export const action = handleDashboardAction;

@@ -39,6 +39,7 @@ test("only the exact opt-in Staging Worker uses the full route graph",async()=>{
   assert.equal(f.calls.filter(x=>x.startsWith("sdk:")).length,0);
   const enabled=await f.worker.fetch(new Request(origin+"/app"),stage);
   assert.equal(await enabled.text(),"full-app");
+  assert.equal(f.runtime.runtimeTier,"staging");
   assert.equal(f.calls.filter(x=>x.startsWith("sdk:")).length,1);
   assert.equal(f.calls.at(-1),"close");
 });

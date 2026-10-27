@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: eight-plan-quota-hardening
-owner_intent: "Close the audited quota bypasses and race conditions for the eight paid plans."
+task_key: staging-route-error-diagnostics
+owner_intent: "Diagnose the Staging React Router /app 500 without exposing merchant or credential data."
 base_branch: development
-working_branch: codex/eight-plan-quota-hardening
-pull_request: 396
-last_verified_commit: 0e1c2d2fc13e971416a7ec79d520c89278c634dd
-last_verified_step: "PR #396 exact-head CI passed 11/11 checks on 0e1c2d2fc13e971416a7ec79d520c89278c634dd, including listing-draft, verify, CodeQL, security, merchant Workerd bundle and T021 Staging artifact dry run. The first pricing-head CI found stale price expectations in three tests; those expectations were updated and the corrected exact head is green. Local JSON/source/docs consistency and git diff --check pass; local JavaScript checks are not run because only unsupported Node 24 is available. Shopify Partner pricing publication remains unverified."
+working_branch: fix/staging-route-error-diagnostics
+pull_request: 398
+last_verified_commit: f8c7b94ae7c90a377fd0f29b7b03eddecdb89671
+last_verified_step: "Extended Staging route diagnostics to safely walk at most 16 SDK error/cause/body objects and capture up to 3 allowlisted GraphQL extension codes, including GraphqlQueryError.body.errors.graphQLErrors. Regression tests cover nested SDK shape and message redaction; focused tests pass 19/19, touched-file ESLint and git diff --check pass. Development ruleset has required approving review count 0 and repository-integrity as required status."
 in_flight_step: none
-next_exact_action: "Obtain the required PR #396 review before merge. After a reviewed merge to protected development, run the protected Staging deployment and verify the hosted app and actual Shopify billing; the T021 dry run is not a deployment."
+next_exact_action: "Publish the verified logger-shape fix to PR #398, wait for all exact-head checks, re-review that head, and merge when green; then use protected T021 Staging deployment and capture a live request via T023."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---
