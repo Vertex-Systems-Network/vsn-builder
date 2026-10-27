@@ -4,17 +4,17 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: T020-staging-cpu-route-attribution
-owner_intent: "Identify and fix the route that exceeds the Shopify Staging Worker's CPU limit without exposing merchant or credential data."
+task_key: T033-staging-theme-app-embed
+owner_intent: "Make the VSN theme app embed available in the Shopify Staging Theme Editor and verify the merchant-controlled activation path."
 base_branch: development
-working_branch: fix/staging-cpu-root-cause
-pull_request: 400 (merged)
-last_verified_commit: 0b3b18db77fcf2ecd364d92e0bb6e3e9cfb2e6ff
-last_verified_step: "PR #400 merged at 0b3b18d after all five exact-head checks passed. T023 run #32 (40567904983) captured /app/pages requests as 200 and one /app request as exceededCpu with 11 generic Worker exceptions. Shopify Admin Templates rendered, but Plans & License returned an embedded 503 at /app?view=pricing. Added short-lived per-shop in-memory caching and in-flight deduplication for the root loader's 14 sidebar count queries. Local typecheck, full lint, npm run qa, and git diff --check pass."
-in_flight_step: "Submit the root-loader sidebar-count deduplication fix through development PR and exact-head CI."
-next_exact_action: "Commit and push the fix from fix/staging-cpu-root-cause, open a PR into development, and complete required exact-head CI/review/merge. Then deploy that exact protected development SHA through T021, reopen the Staging app, verify dashboard, Templates, and Plans & License live, and capture a follow-up T023 tail."
+working_branch: fix/staging-theme-embed-version
+pull_request: 402 (open)
+last_verified_commit: 9c84af627aff1bb8ddb33af32932e5982fb7504f
+last_verified_step: "On 2026-10-28, the authenticated Staging Theme Editor showed 'You don't have any apps with embeds installed' and the toast 'App embed does not exist' for the VSN activation deep link. The repository contains the VSN Page Renderer app-embed block (target body), but protected T021 deploys only the Cloudflare Worker via Wrangler and does not publish a Shopify app version. PR #402 adds a protected manual draft-only Shopify app-version workflow; exact-head Repository Integrity, Environment Isolation, Production Confidence, and CodeQL all passed. The policy test passed 3/3 and workflow YAML parsed locally. T023 run #33 succeeded but captured /app/pages only; no /app CPU event was observed."
+in_flight_step: "Wait for PR #402 to merge and for the app-scoped Shopify automation token to be configured in the protected cloudflare-staging environment."
+next_exact_action: "After PR #402 merges, confirm SHOPIFY_APP_AUTOMATION_TOKEN is available in cloudflare-staging, dispatch the draft workflow on protected development with its exact confirmation, and inspect the unreleased app version. Keep app-version release and merchant theme activation separate from this draft operation."
 approval_needed_now: false
-updated_at: 2026-10-27
+updated_at: 2026-10-28
 ---
 
 ## Eight paid plan catalog — 2026-10-26

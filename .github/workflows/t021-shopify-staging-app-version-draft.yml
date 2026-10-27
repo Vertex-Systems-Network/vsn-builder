@@ -1,0 +1,65 @@
+name: T021 Shopify Staging App Version Draft — Protected Manual Only
+# Creates an unreleased Shopify app version for the Staging app. This is
+# deliberately separate from the Cloudflare Worker deploy and never releases
+# the new app version to installed stores.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type CREATE_STAGING_SHOPIFY_APP_DRAFT to create an unreleased version"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: vsn-builder-staging-shopify-app-version
+  cancel-in-progress: false
+jobs:
+  create-staging-app-version-draft:
+    if: github.ref == 'refs/heads/development' && github.ref_protected == true && inputs.confirmation == 'CREATE_STAGING_SHOPIFY_APP_DRAFT'
+    runs-on: ubuntu-24.04
+    environment: cloudflare-staging
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact protected development SHA without GitHub write credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Use pinned Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Install pinned Shopify CLI in an isolated runner directory
+        run: |
+          npm install --no-save --package-lock=false --no-audit --prefix "$RUNNER_TEMP/shopify-cli" @shopify/cli@4.9.0
+          test -x "$RUNNER_TEMP/shopify-cli/node_modules/.bin/shopify"
+      - name: Validate and create the unreleased Staging app version
+        env:
+          SHOPIFY_STAGING_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+          SHOPIFY_APP_AUTOMATION_TOKEN: ${{ secrets.SHOPIFY_APP_AUTOMATION_TOKEN }}
+          SOURCE_CONTROL_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
+        run: |
+          set +x
+          test -n "$SHOPIFY_STAGING_API_KEY" || { echo "Missing Staging Shopify API key secret."; exit 1; }
+          test -n "$SHOPIFY_APP_AUTOMATION_TOKEN" || { echo "Missing app-scoped Shopify App Automation Token in cloudflare-staging."; exit 1; }
+          trap 'git restore --worktree -- shopify.app.staging.toml' EXIT
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+          const path = "shopify.app.staging.toml";
+          const placeholder = 'client_id = "__SHOPIFY_STAGING_CLIENT_ID__"';
+          const key = process.env.SHOPIFY_STAGING_API_KEY;
+          if (!key || /[\r\n"\\]/.test(key)) throw new Error("Staging app identity is invalid.");
+          const source = readFileSync(path, "utf8");
+          if (source.split(placeholder).length !== 2) throw new Error("Expected exactly one Staging app client ID placeholder.");
+          writeFileSync(path, source.replace(placeholder, `client_id = "${key}"`), { mode: 0o600 });
+          NODE
+          "$RUNNER_TEMP/shopify-cli/node_modules/.bin/shopify" app config validate --config staging
+          "$RUNNER_TEMP/shopify-cli/node_modules/.bin/shopify" app deploy \
+            --config staging \
+            --allow-updates \
+            --no-release \
+            --source-control-url "$SOURCE_CONTROL_URL" \
+            --message "Staging app version draft ${GITHUB_SHA}"
+          git restore --worktree -- shopify.app.staging.toml
+          trap - EXIT
+          git diff --exit-code -- package.json package-lock.json shopify.app.staging.toml
