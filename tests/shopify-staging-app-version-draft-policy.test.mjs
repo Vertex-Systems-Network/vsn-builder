@@ -29,5 +29,6 @@ test("Staging config placeholder is replaced only in the ephemeral runner", () =
   assert.match(workflow, /__SHOPIFY_STAGING_CLIENT_ID__/);
   assert.match(workflow, /shopify\.app\.staging\.toml/);
   assert.match(workflow, /writeFileSync\(path, source\.replace/);
+  assert.match(workflow, /trap 'git restore --worktree -- shopify\.app\.staging\.toml' EXIT/);
   assert.match(workflow, /git diff --exit-code -- package\.json package-lock\.json shopify\.app\.staging\.toml/);
 });
