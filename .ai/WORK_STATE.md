@@ -7,12 +7,12 @@ mode: implementation
 task_key: T020-staging-cpu-route-attribution
 owner_intent: "Identify and fix the route that exceeds the Shopify Staging Worker's CPU limit without exposing merchant or credential data."
 base_branch: development
-working_branch: fix/staging-route-cost-reduction
-pull_request: none
-last_verified_commit: 6e1cf4e5c0e2e709b0a4ee504ffeaae25d5498b4
-last_verified_step: "T023 run #31 showed four /app GET 200 requests plus exceededCpu and canceled Worker outcomes; live Shopify Admin /app/pages showed 503 and then a refused embedded frame. Existing development loaders already avoid the Store profile GraphQL call and use reduced billing/dashboard queries. Added a T023 route allowlist that maps Worker request URLs to known static app routes or /app/:other without printing raw paths, queries, or identifiers. Validation passed: diagnostics tests 7/7, npm run typecheck, npm run qa, full npm run lint, and git diff --check on Node 22.18.0."
-in_flight_step: "Commit the validated T023 allowlisted route attribution change and work-state checkpoint."
-next_exact_action: "Push fix/staging-route-cost-reduction, open a PR into development, and complete exact-head CI. After merge, rerun protected T023 while exercising Shopify Admin routes, then use its allowlisted route/outcome to make the smallest CPU-saving app fix."
+working_branch: fix/staging-cpu-root-cause
+pull_request: 400 (merged)
+last_verified_commit: 0b3b18db77fcf2ecd364d92e0bb6e3e9cfb2e6ff
+last_verified_step: "PR #400 merged at 0b3b18d after all five exact-head checks passed. T023 run #32 (40567904983) captured /app/pages requests as 200 and one /app request as exceededCpu with 11 generic Worker exceptions. Shopify Admin Templates rendered, but Plans & License returned an embedded 503 at /app?view=pricing. Added short-lived per-shop in-memory caching and in-flight deduplication for the root loader's 14 sidebar count queries. Local typecheck, full lint, npm run qa, and git diff --check pass."
+in_flight_step: "Submit the root-loader sidebar-count deduplication fix through development PR and exact-head CI."
+next_exact_action: "Commit and push the fix from fix/staging-cpu-root-cause, open a PR into development, and complete required exact-head CI/review/merge. Then deploy that exact protected development SHA through T021, reopen the Staging app, verify dashboard, Templates, and Plans & License live, and capture a follow-up T023 tail."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---
