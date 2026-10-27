@@ -157,6 +157,7 @@ export default function Dashboard({
   const contentRef = useRef(null);
   const masterRef = useRef(null);
   const hydratedRef = useRef(false);
+  const skippedInitialSettingsSaveRef = useRef(false);
   const handledRefreshRef = useRef(null);
   const dataViewConfig = useMemo(() => normalizeDataViewConfig(dataViewOptions || {}), [dataViewOptions]);
 
@@ -224,6 +225,12 @@ export default function Dashboard({
 
   useEffect(() => {
     if (!hydratedRef.current) return;
+    // The loaded server settings are already persisted. Do not issue a write
+    // just because the Templates route mounted; save only after a user change.
+    if (!skippedInitialSettingsSaveRef.current) {
+      skippedInitialSettingsSaveRef.current = true;
+      return;
+    }
     const settings = { columns: [...visibleColumns], widgets: [...visibleWidgets], pageSize, viewMode };
     try { window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { /* ignore: best-effort */ }
     const timer = window.setTimeout(() => onSaveViewSettings?.(settings), 350);
