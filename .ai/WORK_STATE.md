@@ -4,15 +4,15 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: eight-plan-quota-hardening
-owner_intent: "Close the audited quota bypasses and race conditions for the eight paid plans."
+task_key: staging-route-error-diagnostics
+owner_intent: "Diagnose the Staging React Router /app 500 without exposing merchant or credential data."
 base_branch: development
-working_branch: codex/eight-plan-quota-hardening
-pull_request: 396
-last_verified_commit: 0e1c2d2fc13e971416a7ec79d520c89278c634dd
-last_verified_step: "PR #396 exact-head CI passed 11/11 checks on 0e1c2d2fc13e971416a7ec79d520c89278c634dd, including listing-draft, verify, CodeQL, security, merchant Workerd bundle and T021 Staging artifact dry run. The first pricing-head CI found stale price expectations in three tests; those expectations were updated and the corrected exact head is green. Local JSON/source/docs consistency and git diff --check pass; local JavaScript checks are not run because only unsupported Node 24 is available. Shopify Partner pricing publication remains unverified."
+working_branch: fix/staging-route-error-diagnostics
+pull_request: none
+last_verified_commit: 2ae8967124f94703de27ea2306c00d809cbe374d
+last_verified_step: "Added Staging-only route error classification for app shell/pages loaders and pages action failures. The logs expose only route, error name, safe allowlisted code, HTTP status and GraphQL extension codes; messages, URLs, request data, and stacks are excluded. Focused Node 22.18 tests pass 15/15; touched-file ESLint and git diff --check pass. This is diagnostic instrumentation, not a verified root-cause fix; no Staging deploy has been run for this change."
 in_flight_step: none
-next_exact_action: "Obtain the required PR #396 review before merge. After a reviewed merge to protected development, run the protected Staging deployment and verify the hosted app and actual Shopify billing; the T021 dry run is not a deployment."
+next_exact_action: "Publish this branch and open a reviewed PR into development; after exact-head CI and merge, use the protected T021 Staging workflow, then collect a live Shopify request during T023 log tail to identify the 500 cause."
 approval_needed_now: false
 updated_at: 2026-10-27
 ---

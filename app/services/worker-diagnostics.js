@@ -33,6 +33,35 @@ export function logStagingDenial(env,reason){
   catch{/* diagnostics must never affect responses */}
 }
 
+// React Router handles many loader/action errors internally and returns a 500
+// instead of letting the outer Worker catch observe them. Log classification
+// only: never include an error message, request URL, body, or stack trace.
+export function logStagingRouteError(env,route,error){
+  if(env?.APP_ENV!=="staging")return;
+  const safeName=value=>typeof value==="string"&&/^[A-Za-z][A-Za-z0-9_$.-]{0,63}$/.test(value)?value:"";
+  const safeCode=value=>typeof value==="string"&&(
+    /^[A-Z][A-Z0-9_]{0,63}$/.test(value)||
+    /^P\d{4}$/.test(value)||
+    /^admin-identity-(?:http-\d{3}|gql-[A-Z0-9_-]{1,48})$/.test(value)
+  )?value:"";
+  const routeName=route==="app"||route==="app.pages"?route:"other";
+  const gqlErrors=Array.isArray(error?.response?.errors)?error.response.errors:
+    Array.isArray(error?.errors)?error.errors:[];
+  const gqlCodes=gqlErrors.map(item=>safeCode(item?.extensions?.code)).filter(Boolean).slice(0,3);
+  const responseStatus=Number(error?.response?.status);
+  const statusCandidates=[Number(error?.status),Number(error?.statusCode),responseStatus];
+  const status=statusCandidates.find(value=>Number.isInteger(value)&&value>=400&&value<=599)||null;
+  try{
+    console.warn(JSON.stringify({
+      vsn_diag:"route-error",route:routeName,
+      error:safeName(error?.name)||"UnknownError",
+      code:safeCode(error?.code)||"",
+      status,
+      ...(gqlCodes.length?{gqlCodes}:{}),
+    }));
+  }catch{/* diagnostics must never affect app responses */}
+}
+
 // Request breadcrumbs expose only fixed app/OAuth route paths and response
 // metadata. Never log the signed Shopify query, redirect destination, headers,
 // cookies, request body, or response body.
