@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 // Standalone /preview tab: opens outside the Shopify admin shell and receives the
 // live (unsaved) editor state over same-origin postMessage, re-sent on every change.
-export default function usePreviewWindow(payload, deps = [], { shop = "" } = {}) {
+export default function usePreviewWindow(payload, deps = [], { shop = "", pageId = "", token = "" } = {}) {
   const windowRef = useRef(null);
   const payloadRef = useRef(payload);
   payloadRef.current = payload;
@@ -20,6 +20,13 @@ export default function usePreviewWindow(payload, deps = [], { shop = "" } = {})
     return () => window.removeEventListener("message", onMessage);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- send reads the latest payload from a ref
   useEffect(() => { send(); }, deps); // eslint-disable-line react-hooks/exhaustive-deps -- caller passes the change keys
-  // The shop lets the Shopify SDK issue the document CSP on hosted Workers.
-  return () => { windowRef.current = window.open(shop ? `/preview?shop=${encodeURIComponent(shop)}` : "/preview", "vsn-preview"); };
+  // shop lets the Shopify SDK issue the document CSP on hosted Workers; page+token let
+  // the tab load the saved draft itself when the admin iframe gives it no window.opener.
+  return () => {
+    const query = new URLSearchParams();
+    if (shop) query.set("shop", shop);
+    if (pageId && token) { query.set("page", pageId); query.set("token", token); }
+    const url = `${window.location.origin}/preview${query.toString() ? `?${query}` : ""}`;
+    windowRef.current = window.open(url, "_blank");
+  };
 }

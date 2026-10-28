@@ -225,6 +225,7 @@ export default function PageEditor({
   collaborationActor = null,
   initialLocalization = {},
   shop = "",
+  previewToken = "",
   designTokens = {},
   serverRevisions = [],
   collections = [],
@@ -1352,7 +1353,7 @@ export default function PageEditor({
     previewCollection, previewProduct, previewBlog, previewArticle, previewSearch,
   };
   const globalColorList = useMemo(() => listGlobalColors(globalStyles), [globalStyles]);
-  const openPreviewWindow = usePreviewWindow(previewPayload, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id], { shop });
+  const openPreviewWindow = usePreviewWindow(previewPayload, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id], { shop, pageId: page?.id, token: previewToken });
 
   /*
    * Dedicated preview route:
@@ -1451,8 +1452,10 @@ export default function PageEditor({
         onSave={handleSave}
         onPublish={handlePublish}
         onPreview={() => {
-          // Standalone tab outside the Shopify admin shell; it receives live state via postMessage.
+          // Standalone tab outside the Shopify admin shell: live state via postMessage when the
+          // opener link survives; otherwise it loads the saved draft, so save unsaved edits first.
           openPreviewWindow();
+          if (!isSaved && !saving) handleSave();
         }}
         onUndo={handleUndo}
         onRedo={handleRedo}
