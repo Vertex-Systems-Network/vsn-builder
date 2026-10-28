@@ -99,3 +99,12 @@ test("shop-less entry documents go to the legacy login flow, never the embedded 
   }
   assert.equal(f.calls.filter(x=>x.startsWith("sdk:")).length,0);
 });
+
+test("a shop-less preview link gets a plain notice, never the embedded SSR",async()=>{
+  const f=fixture();
+  const response=await f.worker.fetch(new Request(origin+"/preview"),stage);
+  assert.equal(response.status,400);
+  assert.match(await response.text(),/Open the preview from the VSN editor/);
+  assert.match(response.headers.get("content-security-policy"),/frame-ancestors 'none'/);
+  assert.equal(f.calls.length,0);
+});
