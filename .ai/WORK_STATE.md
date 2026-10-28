@@ -47,7 +47,7 @@ QA method:
    - Add per-device visibility (desktop/tablet/mobile) in Advanced.
    - Store the state in node props (`hidden`, `hideOn`).
    - The editor shows hidden nodes dimmed. `PreviewRenderer` and the storefront renderer (`builder-proxy.$.jsx`) leave them out, using responsive CSS for per-device hiding.
-3. **Linked/unlinked box controls.**
+3. DONE: **Linked/unlinked box controls.**
    - Applies to padding, margin, border-width, border-radius and any other 4-side control.
    - A link toggle sets one value on all sides. Unlinked, top/right/bottom/left are edited separately, each with its own unit (Elementor style).
    - File: `EditorControls.jsx` spacing controls. Keep the stored shape backwards compatible.

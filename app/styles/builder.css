@@ -701,3 +701,6 @@ html[data-vsn-theme="dark"] #vsn-editor-overlay-root .vsn-editor-code-suggestion
 
 /* Hidden elements (meta.hidden or hidden on the current device) stay selectable but dimmed. */
 [data-vsn-editor-root="true"] [data-vsn-editor-hidden="1"] { opacity: .35; outline: 1px dashed #8a8a8a; outline-offset: -1px; background-image: repeating-linear-gradient(135deg, transparent 0 8px, rgba(0,0,0,.04) 8px 16px); }
+
+/* Box shorthand controls span the whole inspector row even inside two-column grids. */
+[data-vsn-editor-root="true"] .vsn-box-shorthand-control { grid-column: 1 / -1; display: grid; gap: 6px; }
