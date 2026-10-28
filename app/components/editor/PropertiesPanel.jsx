@@ -7,6 +7,7 @@ import { ColorGradientControl, SliderControl, TextControl, NumberControl, Typogr
 import FontFamilyControl from './fonts/FontFamilyControl';
 import { getWidgetCapabilities } from '../../builder/widgetCapabilities';
 import WidgetSpecificStyleControls from './WidgetSpecificStyleControls';
+import { normalizeColumnsProps, syncColumnCells } from '../../builder/columnsWidget.js';
 import { normalizeControlOptions } from '../../builder/controlSchema';
 import { normalizeElementInteractions, mergeElementInteractions } from '../../builder/interactionSchema.js';
 import { IMAGE_SOURCE_OPTIONS, IMAGE_RESOLUTION_OPTIONS, normalizeImageWidgetProps } from '../../builder/imageWidget.js';
@@ -1047,6 +1048,21 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
       </>)}
 
       {activeTab === 'content' && (<>
+        {selectedElement.type === "columns" ? (() => {
+          const cols = normalizeColumnsProps(props, (selectedElement.children || []).length);
+          const setCount = (key, value) => {
+            const next = { ...cols, [key]: Math.max(1, Math.min(6, Number(value) || 1)) };
+            onUpdate(selectedElement.id, key === "columns" ? { props: next, children: syncColumnCells(selectedElement.children || [], next.columns) } : { props: next });
+          };
+          return <SectionHeader title="Columns">
+            <div className="grid grid-cols-3 gap-2">
+              <NumberControl label="Desktop" value={cols.columns} min={1} max={6} onChange={(value) => setCount("columns", value)} />
+              <NumberControl label="Tablet" value={cols.columnsTablet} min={1} max={6} onChange={(value) => setCount("columnsTablet", value)} />
+              <NumberControl label="Mobile" value={cols.columnsMobile} min={1} max={6} onChange={(value) => setCount("columnsMobile", value)} />
+            </div>
+            <p className="text-[11px] text-[#6d7175]">Desktop adds or removes column cells; only empty trailing cells are removed.</p>
+          </SectionHeader>;
+        })() : null}
         {(capabilities.media || capabilities.imageDimensions || capabilities.icon || capabilities.backgroundGallery) ? <SectionHeader title="Widget Media">
           {capabilities.media && selectedElement.type !== "image" ? <MediaControl
             label="Element Media"

@@ -24,6 +24,20 @@ updated_at: 2026-10-28
 - Pre-existing, unchanged by this deploy (run 46 on `9c84af6` probed the same): a bare `/app` request without Shopify `shop` params returns 500. T023 tail run 36 shows the Shopify auth layer throwing a 410 that escapes as React Router's plain-text 500; `/app?shop=...` returns the expected 410 HTML. Real Admin traffic always carries `shop`/`host`/`hmac`.
 - Not yet certified: Tier 2 exit still needs real Shopify Admin E2E on a Staging test store (install/OAuth, editor save/publish, theme embed, Liquid widget, webhooks, test billing) and a rollback drill. Production promotion stays blocked until that evidence and explicit owner approval exist.
 
+## Owner queue — 2026-10-28 (strict FIFO, one item finished before the next)
+
+0. DONE when merged: `/readyz` reported tier "staging" on Production (hardcoded label).
+1. Editor dark mode styling.
+2. Grid layouts on pages no longer render as grids.
+3. DONE (PR #412): Preview opens `/preview` in its own tab outside the Shopify admin shell; the editor streams live (unsaved) state to it via same-origin postMessage.
+4. DONE (PR #412): 134/138 module audits pass; ecosystem manifest regenerated; remaining 4 are stale source-marker checks (fonts, Trash now in table filter, carousel markers) with working behaviour. Audit every module: options, systems, behaviour, logic.
+5. DONE (PR #412): editor loader runs 9 independent DB/Admin reads in parallel instead of serially; client bundles measured (editor 163 KB gzip). App and page load time.
+6. DONE (PR #412): SSR sweep of 117 widgets x Content/Style/Advanced + preview renders clean; fixed SDK key-spread and fetchPriority React warnings; storefront buttons no longer stretch full width. Editor UI issues.
+7. DONE (PR #412): home builder fragment is cached in an app metafield by the proxy and printed inline by the app embed (Liquid), so it swaps in with zero network requests and no loader; publish clears the cache, 6h TTL; personalised/experiment/localized/dynamic pages keep the live fetch. Storefront: no loader flash — widget output files installed in the theme on activation, content renders with the Shopify page.
+8. DONE (PR #412): /app/setup wizard opens on first activation (home redirects until finished or skipped): plan, app embed (verified from settings_data.json), theme files install, first page; one step at a time, each verified against the store. Setup page appears on app activation and walks required steps one by one.
+
+Production went live 2026-10-28 via T041 run 1 (main 74cf6b7): Neon backup branch, migrate deploy, Worker deploy; /healthz and /readyz 200.
+
 ## Polaris cards, Liquid widget, editor browser QA and CI runners — 2026-10-28
 
 - Merged into `development`: #404 (palette, storefront carousels), #405 (template device preview), #406 (superseded pull_request runs cancelled across 28 workflows; push runs never cancelled; `tests/ci-runner-concurrency.test.mjs`).
@@ -72,10 +86,10 @@ Instead it must:
 1. read `.ai/README.md`, this file, and `.ai/CHECKPOINT.md`;
 2. inspect current Git branch/status, recent commits, referenced PR/issue and the task-relevant source;
 3. compare repository evidence with the fields above;
-4. reconcile stale state silently when the answer is recoverable from Git/repository evidence;
-5. verify whether any `in_flight_step` actually completed before repeating it;
-6. continue from `next_exact_action` or the earliest unverified sub-step;
-7. ask the owner only when a genuinely material product/security/data-loss decision cannot be resolved from repository evidence.
+4. DONE (PR #412): 134/138 module audits pass; ecosystem manifest regenerated; remaining 4 are stale source-marker checks (fonts, Trash now in table filter, carousel markers) with working behaviour. reconcile stale state silently when the answer is recoverable from Git/repository evidence;
+5. DONE (PR #412): editor loader runs 9 independent DB/Admin reads in parallel instead of serially; client bundles measured (editor 163 KB gzip). verify whether any `in_flight_step` actually completed before repeating it;
+6. DONE (PR #412): SSR sweep of 117 widgets x Content/Style/Advanced + preview renders clean; fixed SDK key-spread and fetchPriority React warnings; storefront buttons no longer stretch full width. continue from `next_exact_action` or the earliest unverified sub-step;
+7. DONE (PR #412): home builder fragment is cached in an app metafield by the proxy and printed inline by the app embed (Liquid), so it swaps in with zero network requests and no loader; publish clears the cache, 6h TTL; personalised/experiment/localized/dynamic pages keep the live fetch. ask the owner only when a genuinely material product/security/data-loss decision cannot be resolved from repository evidence.
 
 Conversation memory is never required for resume.
 

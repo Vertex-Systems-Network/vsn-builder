@@ -2,6 +2,7 @@ import { DEFAULT_ELEMENT_INTERACTIONS } from "./interactionSchema.js";
 import { createSliderSlide } from "./sliderWidget.js";
 import { createNestedCarouselItems, isNestedSliderType, nestedSliderDefaults } from "./nestedCarouselWidget.js";
 import { createLoopItemTemplate, normalizeQueryDefinition } from "./queryBuilder.js";
+import { syncColumnCells } from "./columnsWidget.js";
 import { connectLegacyWidgetRegistry } from "../sdk/registry.js";
 import { ensureBuiltinSdkPlugins } from "../sdk/builtinPlugins.js";
 /* 
@@ -49,7 +50,7 @@ export const widgetRegistry = {
   divider: base('Divider', false),
   spacer: base('Spacer', false, { height: '60px' }),
   video: base('Video', false, { sourceType: 'auto', url: '', videoMedia: {}, startTime: 0, endTime: 0, autoplay: false, muted: false, loop: false, controls: true, playsInline: true, defaultVolume: 100, preload: 'metadata', lazyLoad: true, posterEnabled: false, poster: {}, showPlayIcon: true, playIcon: { source: 'library', name: 'play', polarisType: 'play' }, playIconSize: 64 }),
-  columns: base('Columns', true, { columns: 2 }),
+  columns: base('Columns', true, { columns: 2, columnsTablet: 2, columnsMobile: 1 }),
   slider: base('Slider', true, { direction: 'horizontal', slidesDesktop: 1, slidesTablet: 1, slidesMobile: 1, gap: 16, edgePadding: 0, autoHeight: true, equalHeight: false, centered: false, effect: 'slide', speed: 450, autoplay: false, autoplayDelay: 4500, pauseOnHover: true, pauseOnInteraction: true, stopOnLastSlide: false, loop: false, rewind: true, navigation: true, previousIcon: '‹', nextIcon: '›', pagination: 'dots', swipe: true, keyboard: true }),
   loop: base('Loop / Query', true, { query: normalizeQueryDefinition({ source: 'products', limit: 8 }), columnsDesktop: 4, columnsTablet: 2, columnsMobile: 1, gap: 20 }, { spacing: { paddingTop: '24px', paddingRight: '0px', paddingBottom: '24px', paddingLeft: '0px' } }),
   'product-grid': base('Product Grid', false, { title: 'Products', source: 'all-products', query: '', sortBy: 'featured', limit: 12, columns: 4, columnsDesktop: 4, columnsTablet: 2, columnsMobile: 1, gap: 18, showImage: true, showTitle: true, showPrice: true, showVendor: false, imageRatio: 'square', emptyText: 'No products found.' }, { spacing: { paddingTop: '48px', paddingRight: '48px', paddingBottom: '48px', paddingLeft: '48px' } }),
@@ -382,7 +383,7 @@ export function createWidget(type) {
     props: structuredClone(definition.props ?? {}),
     styles: structuredClone(definition.styles ?? {}),
     interactions: structuredClone(DEFAULT_ELEMENT_INTERACTIONS),
-    children: type === "slider" ? [createSliderSlide(0), createSliderSlide(1), createSliderSlide(2)] : type === "loop" ? [createLoopItemTemplate()] : isNestedSliderType(type) ? createNestedCarouselItems(type, 3) : [],
+    children: type === "slider" ? [createSliderSlide(0), createSliderSlide(1), createSliderSlide(2)] : type === "loop" ? [createLoopItemTemplate()] : isNestedSliderType(type) ? createNestedCarouselItems(type, 3) : type === "columns" ? syncColumnCells([], 2) : [],
   };
 }
 

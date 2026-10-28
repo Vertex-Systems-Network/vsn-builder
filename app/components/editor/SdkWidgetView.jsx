@@ -16,9 +16,9 @@ export function renderSdkEditorValue(value, key = "sdk") {
   if (Array.isArray(value)) return value.map((item,index)=>renderSdkEditorValue(item,`${key}-${index}`));
   if (value?.__vsnSdkDescriptor === true) {
     const allowedTags=new Set(["div","span","strong","em","small","p","section","article","aside","nav","a","button","ul","ol","li","figure","figcaption","img"]);
-    const Tag=allowedTags.has(String(value.tag||""))?String(value.tag):"div"; const props={...sanitizeVsnDescriptorProps(value.props||{}),key};
-    if(Tag==="img")return <img /* eslint-disable-line jsx-a11y/alt-text -- alt is forwarded through spread props */ {...props}/>; if(Tag==="a")props.onClick=(event)=>event.preventDefault(); if(Tag==="button"&&!props.type)props.type="button";
-    return <Tag {...props}>{renderSdkEditorValue(value.children||[],`${key}-child`)}</Tag>;
+    const Tag=allowedTags.has(String(value.tag||""))?String(value.tag):"div"; const props={...sanitizeVsnDescriptorProps(value.props||{})}; delete props.key;
+    if(Tag==="img")return <img /* eslint-disable-line jsx-a11y/alt-text -- alt is forwarded through spread props */ key={key} {...props}/>; if(Tag==="a")props.onClick=(event)=>event.preventDefault(); if(Tag==="button"&&!props.type)props.type="button";
+    return <Tag key={key} {...props}>{renderSdkEditorValue(value.children||[],`${key}-child`)}</Tag>;
   }
   return value;
 }

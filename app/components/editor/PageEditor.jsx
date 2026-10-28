@@ -220,7 +220,6 @@ export default function PageEditor({
   initialCollaboration = {},
   collaborationActor = null,
   initialLocalization = {},
-  shop = "",
   designTokens = {},
   serverRevisions = [],
   collections = [],
@@ -1327,6 +1326,35 @@ export default function PageEditor({
     ? (pageSettings.footerId ? footers.find((item) => item.id === pageSettings.footerId) : footers.find((item) => item.isDefault) || footers[0])
     : null;
 
+  const previewWindowRef = useRef(null);
+  const previewPayload = {
+    title: pageTitle,
+    elements: displayElements,
+    globalStyles,
+    previewWidth: deviceMode === "desktop" ? 0 : previewWidth,
+    direction: localizationPreview?.direction,
+    header: !["header", "footer"].includes(page?.template) && selectedHeader ? { content: selectedHeader.content || [], globalStyles: readGlobalStyles(selectedHeader.content || []), sticky: Boolean(readPageSettings(selectedHeader.content).sticky) } : null,
+    footer: !["header", "footer"].includes(page?.template) && selectedFooter ? { content: selectedFooter.content || [], globalStyles: readGlobalStyles(selectedFooter.content || []) } : null,
+    reusableSections, componentDefinitions, widgetPlatform,
+    previewCollection, previewProduct, previewBlog, previewArticle, previewSearch,
+  };
+  const previewPayloadRef = useRef(previewPayload);
+  previewPayloadRef.current = previewPayload;
+  const sendPreview = () => {
+    const target = previewWindowRef.current;
+    if (!target || target.closed) return;
+    try { target.postMessage({ type: "vsn:preview-payload", payload: JSON.parse(JSON.stringify(previewPayloadRef.current)) }, window.location.origin); } catch (error) { console.warn("VSN preview sync failed:", error); }
+  };
+  useEffect(() => {
+    const onMessage = (event) => {
+      if (event.origin !== window.location.origin || event.source !== previewWindowRef.current) return;
+      if (event.data?.type === "vsn:preview-ready") sendPreview();
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+  useEffect(() => { sendPreview(); }, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id]);
+
   /*
    * Dedicated preview route:
    * /app/builder/:id?preview=true
@@ -1423,37 +1451,8 @@ export default function PageEditor({
         onSave={handleSave}
         onPublish={handlePublish}
         onPreview={() => {
-          const currentParams =
-            new URLSearchParams(
-              window.location.search,
-            );
-
-          currentParams.set(
-            "preview",
-            "true",
-          );
-          currentParams.delete("embedded");
-
-          if (shop) {
-            currentParams.set("shop", shop);
-          }
-
-          currentParams.set(
-            "collection",
-            previewCollectionHandle || "",
-          );
-
-          currentParams.set("product", previewProductHandle || "");
-          if (page?.template === "blog") currentParams.set("blog", previewBlog?.handle || page?.resourceHandle || "");
-          if (page?.template === "article") currentParams.set("article", previewArticle?.blogHandle && previewArticle?.handle ? `${previewArticle.blogHandle}/${previewArticle.handle}` : page?.resourceHandle || "");
-          if (page?.template === "search") currentParams.set("query", previewSearch?.query || "shirt");
-          if (localizationPreview?.enabled && localizationPreview.locale) currentParams.set("language", localizationPreview.locale);
-          if (localizationPreview?.enabled && localizationPreview.marketKey && localizationPreview.marketKey !== "*") currentParams.set("market", localizationPreview.marketKey);
-
-          window.open(
-            `/app/builder/${page.id}?${currentParams.toString()}`,
-            "_blank",
-          );
+          // Standalone tab outside the Shopify admin shell; it receives live state via postMessage.
+          previewWindowRef.current = window.open("/preview", "vsn-preview");
         }}
         onUndo={handleUndo}
         onRedo={handleRedo}

@@ -1,3 +1,4 @@
+import { clearPrerenders } from "./storefront-prerender.server.js";
 import { createHash } from "node:crypto";
 import { buildStyleBundleCss, dedupeGeneratedCss } from "../builder/stylePipeline.js";
 import { GLOBAL_DESIGN_DEFAULTS } from "../builder/globalDesign.js";
@@ -534,6 +535,8 @@ export async function rebuildThemeAssets({ admin, session, db }) {
   ]);
   const designTokens = parseJson(setting?.designTokensJson, {});
   const compiled = compileThemeAssets(pages, { designTokens, customFonts, enterprise: parseJson(setting?.enterpriseJson, {}) });
+  // Published content changed: inline storefront prerenders are now stale.
+  await clearPrerenders(admin).catch((error) => console.warn("VSN prerender clear failed:", error?.message || error));
 
   if (missingScopes.length) {
     await setAssetState(admin, { ready: false }).catch(()=>{});
