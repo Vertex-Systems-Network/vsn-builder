@@ -7,7 +7,8 @@
 export const PRERENDER_NAMESPACE = "vsn_prerender";
 export const PRERENDER_TTL_SECONDS = 6 * 60 * 60;
 export const PRERENDER_MAX_BYTES = 256 * 1024;
-export const PRERENDER_TEMPLATES = Object.freeze(["index"]);
+// Product/collection stay on the live fetch: price and stock must never be stale.
+export const PRERENDER_TEMPLATES = Object.freeze(["index", "blog", "article"]);
 
 const PERSONALIZED_KEYS = /"(customer|cart|condition|conditions|visibilityRules|serverConditions|personaliz)[A-Za-z]*"\s*:/i;
 

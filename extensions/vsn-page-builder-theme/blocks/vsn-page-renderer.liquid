@@ -107,12 +107,19 @@
 </script>
 
 {% comment %} Inline prerendered builder fragment (cached by the app proxy; key matches prerenderKey()). {% endcomment %}
+{% assign vsn_pr_key = blank %}
 {% if template.name == 'index' %}
   {% assign vsn_pr_key = 'p_index__default' %}
+{% elsif template.name == 'article' and article and blog %}
+  {% assign vsn_pr_key = 'p_article__' | append: blog.handle | append: '-' | append: article.handle | slice: 0, 64 %}
+{% elsif template.name == 'blog' and blog %}
+  {% assign vsn_pr_key = 'p_blog__' | append: blog.handle | slice: 0, 64 %}
+{% endif %}
+{% if vsn_pr_key != blank %}
   {% assign vsn_pr = app.metafields.vsn_prerender[vsn_pr_key].value %}
   {% assign vsn_pr_now = 'now' | date: '%s' | plus: 0 %}
   {% if vsn_pr != blank and vsn_pr.html != blank and vsn_pr.exp > vsn_pr_now %}
-    <template id="vsn-prerendered" data-vsn-template="index" data-vsn-key="{{ vsn_pr_key }}">{{ vsn_pr.html }}</template>
+    <template id="vsn-prerendered" data-vsn-template="{{ template.name }}" data-vsn-key="{{ vsn_pr_key }}">{{ vsn_pr.html }}</template>
   {% endif %}
 {% endif %}
 
