@@ -350,6 +350,12 @@ export default function PageEditor({
   const [stagedRevisionId, setStagedRevisionId] = useState("");
   const [leftPanelWidth, setLeftPanelWidth] = useState(340);
   const [rightPanelWidth, setRightPanelWidth] = useState(340);
+  // Site settings (global styles) panel: open on wide screens, closed on laptops; remembered per browser.
+  const [showSiteSettings, setShowSiteSettings] = useState(true);
+  useEffect(() => {
+    try { const saved = localStorage.getItem("vsn-builder:site-settings-open"); setShowSiteSettings(saved === null ? window.innerWidth >= 1600 : saved === "1"); } catch { setShowSiteSettings(window.innerWidth >= 1600); }
+  }, []);
+  const toggleSiteSettings = useCallback(() => setShowSiteSettings((current) => { const next = !current; try { localStorage.setItem("vsn-builder:site-settings-open", next ? "1" : "0"); } catch { /* ignore: best-effort */ } return next; }), []);
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
@@ -1346,7 +1352,7 @@ export default function PageEditor({
     observer?.observe(surface);
     window.addEventListener("resize", fit);
     return () => { observer?.disconnect(); window.removeEventListener("resize", fit); };
-  }, [autoFit, isPreview, previewWidth, leftPanelWidth, rightPanelWidth]);
+  }, [autoFit, isPreview, previewWidth, leftPanelWidth, rightPanelWidth, showSiteSettings]);
 
   const previewWindowRef = useRef(null);
   const previewPayload = {
@@ -1493,6 +1499,8 @@ export default function PageEditor({
         canSaveTemplate={pagePermissions.edit === true}
         canDelete={pagePermissions.delete === true}
         onPageSettings={() => { setShowPageSettings((value) => !value); setShowRevisions(false); setShowHistory(false); setShowCollaboration(false); setShowLocalization(false); }}
+        onToggleSiteSettings={toggleSiteSettings}
+        siteSettingsOpen={showSiteSettings}
         onHistory={() => { setShowHistory((value) => !value); setShowRevisions(false); }}
         revisionsCount={revisionRows.length}
         responsiveBreakpoints={globalStyles}
@@ -1698,10 +1706,12 @@ export default function PageEditor({
 
         <AiBuilderPanel open={showAI} onClose={()=>setShowAI(false)} fetcher={aiFetcher} page={page} elements={elements} globalStyles={globalStyles} selectedElement={selectedElement} selectedIds={selectedIds.length?selectedIds:(selectedId?[selectedId]:[])} breakpoint={deviceMode} hasUnsavedChanges={!isSaved} commerceContext={{product:previewProduct?{title:previewProduct.title,handle:previewProduct.handle,vendor:previewProduct.vendor,productType:previewProduct.productType,description:previewProduct.description}:null,collection:previewCollection?{title:previewCollection.title,handle:previewCollection.handle,description:previewCollection.description}:null,search:previewSearch?{query:previewSearch.query}:null}} onApply={handleApplyAiResult} onAgentResult={handleAgentResult} />
 
+        {showSiteSettings ? <>
         <PanelResizeHandle side="right" value={rightPanelWidth} onChange={setRightPanelWidth} />
         <EditorPanelBoundary resetKey={`global:${deviceMode}`}>
           <PropertiesPanel selectedElement={null} onUpdate={handleUpdate} onDelete={handleDelete} activeTab="style" onTabChange={() => {}} globalStyles={globalStyles} onGlobalStylesChange={handleGlobalStylesChange} deviceMode={deviceMode} reusableSections={reusableSections} libraryItems={editorLibraryItems} componentDefinitions={componentDefinitions} componentUsage={componentUsage} onApplyLibraryStyle={handleApplyLibraryStyle} onSaveCurrentStyle={handleSaveCurrentStyle} onUnlinkGlobalSection={handleUnlinkGlobalSection} onSaveComponentVariant={handleSaveComponentVariant} onUpdateComponentMaster={handleUpdateComponentMaster} width={rightPanelWidth} hideTabs />
         </EditorPanelBoundary>
+        </> : null}
       </div>
     </div>
   );

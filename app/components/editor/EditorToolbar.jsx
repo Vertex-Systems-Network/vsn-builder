@@ -27,7 +27,7 @@ export default function EditorToolbar({
   pageName, pageTemplate, collections = [], products = [], previewCollectionHandle = "", onPreviewCollectionChange,
   previewProductHandle = "", onPreviewProductChange, previewMode, onPreviewChange, saving, saveResult, onSave, onPublish,
   onPreview, onUndo, onRedo, canUndo, canRedo, isSaved, onSaveTemplate, onDeletePage, onHelp,
-  onQA, onRevisions, onCollaboration, onLocalization, onPageSettings, onHistory, revisionsCount = 0, responsiveBreakpoints = {}, previewWidth = 0, onPreviewWidthChange,
+  onQA, onRevisions, onCollaboration, onLocalization, onPageSettings, onHistory, onToggleSiteSettings, siteSettingsOpen = false, revisionsCount = 0, responsiveBreakpoints = {}, previewWidth = 0, onPreviewWidthChange,
   zoom = 1, onZoomChange, onZoomFit,
   collaborationEnabled = false, localizationEnabled = false, localizationLabel = "Localization", activePresenceCount = 0, unresolvedComments = 0, workflowStatus = "draft", canPublish = true, canSave = true, canSaveTemplate = true, canDelete = true,
   darkMode = false, onToggleTheme,
@@ -66,6 +66,7 @@ export default function EditorToolbar({
           <TipButton label="Page settings" onClick={onPageSettings}><PolarisIcon type="settings" size={17}/></TipButton>
           <TipButton label="Editor history" onClick={onHistory}><PolarisIcon type="list" size={17}/></TipButton>
           <TipButton label={`Revisions · ${revisionsCount}`} onClick={onRevisions}><PolarisIcon type="clock" size={17}/></TipButton>
+          {onToggleSiteSettings ? <TipButton label={siteSettingsOpen ? "Hide site settings" : "Site settings (global styles)"} onClick={onToggleSiteSettings}><span data-vsn-site-settings-active={siteSettingsOpen ? "1" : "0"} style={{ display: "inline-flex" }}><PolarisIcon type="paint-brush" size={17}/></span></TipButton> : null}
           {collaborationEnabled ? <TipButton label={`Collaboration · ${activePresenceCount} active · ${unresolvedComments} comments`} onClick={onCollaboration}><PolarisIcon type="profile" size={17}/></TipButton> : null}
           {localizationEnabled ? <TipButton label={localizationLabel} onClick={onLocalization}><PolarisIcon type="language" size={17}/></TipButton> : null}
         </div>

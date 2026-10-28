@@ -704,3 +704,20 @@ html[data-vsn-theme="dark"] #vsn-editor-overlay-root .vsn-editor-code-suggestion
 
 /* Box shorthand controls span the whole inspector row even inside two-column grids. */
 [data-vsn-editor-root="true"] .vsn-box-shorthand-control { grid-column: 1 / -1; display: grid; gap: 6px; }
+
+/* Canvas drop/insert gaps take no layout space (the canvas matches the storefront)
+   and only appear on hover or while dragging. */
+[data-vsn-editor-root="true"] .vsn-drop-zone { height: 14px; margin: -7px 0; z-index: 6; }
+[data-vsn-editor-root="true"] .vsn-drop-zone:not(:hover):not([data-active="1"]) > * { opacity: 0; }
+html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] .vsn-drop-zone > * { opacity: 1; }
+[data-vsn-editor-root="true"] .vsn-drop-zone > * { transition: opacity .12s ease; }
+
+/* Paired colour/font pickers truncate their values in the narrow inspector: stack them. */
+[data-vsn-editor-root="true"] :is(.vsn-properties-panel, .vsn-editor-sidebar) .grid.grid-cols-2:has(.vsn-color-trigger, .vsn-font-trigger) { grid-template-columns: minmax(0, 1fr); }
+[data-vsn-editor-root="true"] [data-vsn-site-settings-active="1"] { color: #625BA8; }
+
+/* Below 1440px the absolutely centred device switcher collides with the left
+   toolbar icons; let it flow in the toolbar instead. */
+@media (max-width: 1439px) {
+  .vsn-editor-device-switcher--center { position: static !important; transform: none !important; }
+}

@@ -68,7 +68,9 @@ function DropZone({ parentId, beforeId = null, afterId = null, onDrop, onAdd, co
   const [active, setActive] = useState(false);
   return (
     <div
-      className={`${compact ? 'h-6' : 'h-7'} group relative flex items-center justify-center transition-all`}
+      className="vsn-drop-zone group relative flex items-center justify-center"
+      data-active={active ? "1" : undefined}
+      data-compact={compact ? "1" : undefined}
       onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); setActive(true); }}
       onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = event.dataTransfer.getData('vsnNodeId') ? 'move' : 'copy'; setActive(true); }}
       onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setActive(false); }}

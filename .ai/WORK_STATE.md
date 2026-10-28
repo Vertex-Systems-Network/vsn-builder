@@ -51,7 +51,7 @@ QA method:
    - Applies to padding, margin, border-width, border-radius and any other 4-side control.
    - A link toggle sets one value on all sides. Unlinked, top/right/bottom/left are edited separately, each with its own unit (Elementor style).
    - File: `EditorControls.jsx` spacing controls. Keep the stored shape backwards compatible.
-4. **Editor UI pass.** Inspect every panel at 1280 and 1440, in light and dark mode.
+4. DONE (round 1; more in item 8): **Editor UI pass.** Inspect every panel at 1280 and 1440, in light and dark mode.
    - Fix overflow, truncation, misaligned controls, inconsistent spacing and broken icons.
    - List every fix in the PR body.
 5. **Marketplace templates.**
