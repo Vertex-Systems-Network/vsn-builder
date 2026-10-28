@@ -29,7 +29,7 @@ updated_at: 2026-10-28
 0. DONE when merged: `/readyz` reported tier "staging" on Production (hardcoded label).
 1. Editor dark mode styling.
 2. Grid layouts on pages no longer render as grids.
-3. Preview opens in its own page without the Shopify admin shell.
+3. DONE (PR #412): Preview opens `/preview` in its own tab outside the Shopify admin shell; the editor streams live (unsaved) state to it via same-origin postMessage.
 4. Audit every module: options, systems, behaviour, logic.
 5. App and page load time.
 6. Editor UI issues.
