@@ -164,8 +164,10 @@ function makeSection({ prefix, industry, pattern, palette, compact = false, dark
     const strip = { ...theme, background: theme.brand, text: "#ffffff", muted: "rgba(255,255,255,.85)", brand: "#ffffff" };
     const stack = headingStack(node, copy, strip, { title: key === "urgency" ? "Last chance: offer ends soon" : "Free shipping on orders over $50", align: "center", compact: true, eyebrow: key === "announcement" ? "Announcement" : "Limited offer", body: "Use code WELCOME10 at checkout for 10% off your first order." });
     const button = node("button", "Offer button", { text: copy.cta, url: "/collections/all", variant: "primary" }, { background: { type: "color", color: "#ffffff" }, typography: { color: theme.brand, fontWeight: "700" }, border: { radius: "10px" }, spacing: { paddingTop: "14px", paddingRight: "24px", paddingBottom: "14px", paddingLeft: "24px" } });
-    const extra = key === "urgency" ? [node("countdown", "Countdown", { endDate: "", expiredText: "Offer ended", showDays: true, showHours: true, showMinutes: true, showSeconds: true }, { typography: { color: "#ffffff" }, spacing: { marginBottom: "20px" } })] : [];
-    return sectionWrap(node, industry, label, strip, centered(stack, [...extra, plainContainer(node, "Button", [button], { layout: { display: "flex", justifyContent: "center" } })]), true);
+    // Row containers so justify-content centres horizontally (a column flexbox would centre vertically).
+    const row = (label, children) => plainContainer(node, label, children, { layout: { display: "flex", flexDirection: "row", flexWrap: "wrap", justifyContent: "center" } });
+    const extra = key === "urgency" ? [row("Countdown row", [node("countdown", "Countdown", { endDate: "", expiredText: "Offer ended", showDays: true, showHours: true, showMinutes: true, showSeconds: true }, { typography: { color: "#ffffff" }, spacing: { marginBottom: "20px" } })])] : [];
+    return sectionWrap(node, industry, label, strip, centered(stack, [...extra, row("Button", [button])]), true);
   } else if (layout === "split" || ["media-split", "collection-intro"].includes(key)) {
     const reverse = key === "media-split" || key === "premium";
     const text = plainContainer(node, "Text column", [...headingStack(node, copy, theme, { title, compact, eyebrow: industry.label }), buttonRow(node, copy, theme)], { layout: { display: "flex", flexDirection: "column", justifyContent: "center" } });

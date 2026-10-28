@@ -224,6 +224,7 @@ export default function PageEditor({
   initialCollaboration = {},
   collaborationActor = null,
   initialLocalization = {},
+  shop = "",
   designTokens = {},
   serverRevisions = [],
   collections = [],
@@ -1351,7 +1352,7 @@ export default function PageEditor({
     previewCollection, previewProduct, previewBlog, previewArticle, previewSearch,
   };
   const globalColorList = useMemo(() => listGlobalColors(globalStyles), [globalStyles]);
-  const openPreviewWindow = usePreviewWindow(previewPayload, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id]);
+  const openPreviewWindow = usePreviewWindow(previewPayload, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id], { shop });
 
   /*
    * Dedicated preview route:

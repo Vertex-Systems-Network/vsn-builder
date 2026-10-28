@@ -11,11 +11,17 @@ test("prerender key matches the Liquid embed key", () => {
   assert.match(liquid, /'p_index__default'/);
   assert.match(liquid, /app\.metafields\.vsn_prerender\[vsn_pr_key\]/);
   assert.ok(prerenderKey("index", "x".repeat(200)).length <= 64);
+  // Liquid builds blog.handle + "-" + article.handle; the proxy receives "blog/article".
+  assert.equal(prerenderKey("article", "news/hello-world"), "p_article__news-hello-world");
+  assert.equal(prerenderKey("blog", "news"), "p_blog__news");
+  assert.match(liquid, /'p_article__' \| append: blog\.handle \| append: '-' \| append: article\.handle/);
 });
 
 test("only static, non-personalised home fragments are cached", () => {
   assert.equal(isPrerenderCacheable(base), true);
   assert.equal(isPrerenderCacheable({ ...base, template: "product" }), false);
+  assert.equal(isPrerenderCacheable({ ...base, template: "collection" }), false);
+  assert.equal(isPrerenderCacheable({ ...base, template: "article" }), true);
   assert.equal(isPrerenderCacheable({ ...base, experiment: { id: "e" } }), false);
   assert.equal(isPrerenderCacheable({ ...base, localizationEnabled: true }), false);
   assert.equal(isPrerenderCacheable({ ...base, hasLiquid: true }), false);

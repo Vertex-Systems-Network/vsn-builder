@@ -14,8 +14,10 @@ const shopify=read('app/services/shopify-pages.server.js');
 pass('BuilderPage has soft-delete timestamp', /model BuilderPage[\s\S]*deletedAt\s+DateTime\?/.test(schema));
 pass('BuilderPage remembers trashed asset filenames', /trashedAssetsJson\s+String\?/.test(schema));
 pass('BuilderPage has trash index', schema.includes('@@index([shop, deletedAt, updatedAt])'));
-pass('Pages loader separates active and Trash', pages.includes('deletedAt: null') && pages.includes('deletedAt: { not: null }') && /trash:\s*trash[\s\S]{0,180}\.map/.test(pages));
-pass('Dashboard exposes Trash tab', dash.includes('"Trash"') && dash.includes('normalizedTrash'));
+// Trash moved to the server-side Templates table filter (template-management.server.js).
+const tableData=read('app/services/template-management.server.js');
+pass('Pages loader separates active and Trash', pages.includes('loadTemplateTableData') && tableData.includes('deletedAt: trash ? { not: null } : null') && tableData.includes('"trash"'));
+pass('Dashboard exposes Trash tab', /FILTERS = \[[^\]]*"Trash"/.test(dash) && dash.includes('BULK_ACTIONS.restore'));
 pass('Dashboard exposes Restore', dash.includes('onRestorePage') && dash.includes('<RotateCcw'));
 pass('Dashboard exposes Delete forever', dash.includes('onHardDeletePage') && dash.includes('Delete forever'));
 pass('Page delete is soft-delete', pages.includes('data: { deletedAt: new Date() }'));
