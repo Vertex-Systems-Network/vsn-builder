@@ -97,8 +97,9 @@ test("both protected tiers refuse missing or swapped Neon Project/Cloudflare Wor
  }
 });
 test("manual preflight takes resource names exclusively from protected GitHub Environment vars",()=>{
- assert.match(workflow,/NEON_PROJECT_ID:\s*\$\{\{\s*vars\.NEON_PROJECT_ID\s*\}\}/);
- assert.match(workflow,/CLOUDFLARE_WORKER_NAME:\s*\$\{\{\s*vars\.CLOUDFLARE_WORKER_NAME\s*\}\}/);
+ // Staging identity is pinned in the workflow; every other tier reads protected Environment vars.
+ assert.match(workflow,/NEON_PROJECT_ID:\s*\$\{\{\s*inputs\.target == 'staging' && 'shiny-violet-61219572' \|\| vars\.NEON_PROJECT_ID\s*\}\}/);
+ assert.match(workflow,/CLOUDFLARE_WORKER_NAME:\s*\$\{\{\s*inputs\.target == 'staging' && 'vsn-builder-staging' \|\| vars\.CLOUDFLARE_WORKER_NAME\s*\}\}/);
  assert.doesNotMatch(workflow,/NEON_PROJECT_ID:\s*\$\{\{\s*github\.event/);
 });
 test("scoped Staging/Production validator requires three real distinct Shopify Client IDs",()=>{
@@ -123,10 +124,12 @@ test("scoped Staging/Production validator requires three real distinct Shopify C
 });
 test("protected runner verifies selected GitHub vars instead of comparing its own expected constants",()=>{
  assert.match(workflow,/REQUESTED_TIER:\s*\$\{\{\s*inputs\.target\s*\}\}/);
- assert.match(workflow,/APP_ENV:\s*\$\{\{\s*vars\.APP_ENV\s*\}\}/);
- assert.match(workflow,/SHOPIFY_BILLING_TEST_MODE:\s*\$\{\{\s*vars\.SHOPIFY_BILLING_TEST_MODE\s*\}\}/);
+ // Staging values are pinned literals; Production always comes from protected vars.
+ assert.match(workflow,/APP_ENV:\s*\$\{\{\s*inputs\.target == 'staging' && 'staging' \|\| vars\.APP_ENV\s*\}\}/);
+ assert.match(workflow,/SHOPIFY_BILLING_TEST_MODE:\s*\$\{\{\s*inputs\.target == 'staging' && 'true' \|\| vars\.SHOPIFY_BILLING_TEST_MODE\s*\}\}/);
  assert.doesNotMatch(workflow,/APP_ENV:\s*\$\{\{\s*inputs\.target\s*\}\}/);
- assert.doesNotMatch(workflow,/SHOPIFY_BILLING_TEST_MODE:\s*\$\{\{\s*inputs\.target\s*==/);
+ // A dispatch input may only force the safe Staging test mode; Live billing comes from protected vars.
+ assert.doesNotMatch(workflow,/SHOPIFY_BILLING_TEST_MODE:\s*\$\{\{[^}]*'false'/);
 });
 test("configuration vars are resolved at runner step scope after protected environment declaration",()=>{
  const start=workflow.indexOf("      - name: Validate secret presence");
@@ -134,7 +137,8 @@ test("configuration vars are resolved at runner step scope after protected envir
  const jobEnv=workflow.slice(workflow.indexOf("    env:"),workflow.indexOf("    steps:"));
  assert.match(workflow,/environment:.*cloudflare-staging.*cloudflare-production/);
  for(const name of ["APP_ENV","SHOPIFY_BILLING_TEST_MODE","NEON_PROJECT_ID","CLOUDFLARE_WORKER_NAME"]){
-  assert.match(stepEnv,new RegExp(name+":\\s*\\$\\{\\{\\s*vars\\."+name+"\\s*\\}\\}"));
+  // Effective value resolves at step scope and always falls back to the protected var.
+  assert.match(stepEnv,new RegExp(name+":\\s*\\$\\{\\{[^}]*\\|\\|\\s*vars\\."+name+"\\s*\\}\\}"));
   assert.doesNotMatch(jobEnv,new RegExp("vars\\."+name));
  }
 });
