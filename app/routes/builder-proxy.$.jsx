@@ -1,5 +1,6 @@
+import { absolutizeAppAssetUrls, appBaseUrl } from "../storefront/appAssetUrls.js";
 import { hideOnCss } from "../builder/visibility.js";
-import { isPrerenderCacheable, prerenderKey, PRERENDER_TEMPLATES, storePrerender } from "../services/storefront-prerender.server.js";
+import { isPrerenderCacheable, prerenderKey, PRERENDER_ALL_TEMPLATES, storePrerender } from "../services/storefront-prerender.server.js";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { buildNodeStyle } from "../builder/styleEngine.js";
@@ -70,7 +71,7 @@ import {
 	normalizeProductSort,
 } from "../storefront/productPagination.js";
 ensureBuiltinSdkPlugins();
-export async function loader({ request, params }) {
+export async function loader({ request, params, context }) {
 	const { admin, session } =
 		await authenticate.public.appProxy(request);
 
@@ -607,7 +608,7 @@ export async function loader({ request, params }) {
 		);
 	}
 
-	const html = fragmentMode
+	let html = fragmentMode
 		? renderBuilderFragment({
 			page,
 			elements: resolvedElements,
@@ -642,7 +643,7 @@ export async function loader({ request, params }) {
 			localization: { locale: localizationRender.locale || requestedLocale, marketKey: requestedMarketKey, direction: localizationRender.direction || "ltr" },
 		});
 
-	if (fragmentMode && admin && PRERENDER_TEMPLATES.includes(requestedTemplate)) {
+	if (fragmentMode && admin && PRERENDER_ALL_TEMPLATES.includes(requestedTemplate) && url.searchParams.get("prerendered") !== "1") {
 		try {
 			const ruleCount = await db.builderTemplateRule.count({ where: { shop: session.shop, template: requestedTemplate, enabled: true } });
 			if (isPrerenderCacheable({ template: requestedTemplate, html, experiment: experimentMeta, localizationEnabled, hasLiquid: hasLiquidPlaceholders(html), dynamicData: [dynamicMetaobjects, widgetQueries, loopQueries], elementGroups: [resolvedElements, globalHeader?.elements || [], globalFooter?.elements || []], ruleCount })) {
@@ -651,6 +652,8 @@ export async function loader({ request, params }) {
 		} catch (error) { console.warn("VSN prerender cache skipped:", error?.message || error); }
 	}
 
+	// Built-in template media is served from the app origin, not the shop domain.
+	html = absolutizeAppAssetUrls(html, appBaseUrl(context));
 	if (hasLiquidPlaceholders(html)) {
 		const liquid = buildLiquidBody(html, { enabled: !enterpriseSettings.safeMode });
 		return liquid.liquid ? liquidResponse(liquid.body, 200) : htmlResponse(liquid.body, 200);

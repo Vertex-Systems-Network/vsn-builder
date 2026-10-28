@@ -114,12 +114,18 @@
   {% assign vsn_pr_key = 'p_article__' | append: blog.handle | append: '-' | append: article.handle | slice: 0, 64 %}
 {% elsif template.name == 'blog' and blog %}
   {% assign vsn_pr_key = 'p_blog__' | append: blog.handle | slice: 0, 64 %}
+{% elsif template.name == 'product' and product %}
+  {% assign vsn_pr_key = 'p_product__' | append: product.handle | slice: 0, 64 %}
+  {% assign vsn_pr_mode = 'swr' %}
+{% elsif template.name == 'collection' and collection %}
+  {% assign vsn_pr_key = 'p_collection__' | append: collection.handle | slice: 0, 64 %}
+  {% assign vsn_pr_mode = 'swr' %}
 {% endif %}
 {% if vsn_pr_key != blank %}
   {% assign vsn_pr = app.metafields.vsn_prerender[vsn_pr_key].value %}
   {% assign vsn_pr_now = 'now' | date: '%s' | plus: 0 %}
   {% if vsn_pr != blank and vsn_pr.html != blank and vsn_pr.exp > vsn_pr_now %}
-    <template id="vsn-prerendered" data-vsn-template="{{ template.name }}" data-vsn-key="{{ vsn_pr_key }}">{{ vsn_pr.html }}</template>
+    <template id="vsn-prerendered" data-vsn-template="{{ template.name }}" data-vsn-key="{{ vsn_pr_key }}" data-vsn-mode="{{ vsn_pr_mode | default: 'exact' }}">{{ vsn_pr.html }}</template>
   {% endif %}
 {% endif %}
 

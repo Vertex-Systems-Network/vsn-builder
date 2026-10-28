@@ -7,8 +7,12 @@
 export const PRERENDER_NAMESPACE = "vsn_prerender";
 export const PRERENDER_TTL_SECONDS = 6 * 60 * 60;
 export const PRERENDER_MAX_BYTES = 256 * 1024;
-// Product/collection stay on the live fetch: price and stock must never be stale.
+// Exact templates: the inline copy IS the content (answered without a fetch).
 export const PRERENDER_TEMPLATES = Object.freeze(["index", "blog", "article"]);
+// Stale-while-revalidate templates: the inline copy paints instantly (no loader) and
+// the live fetch still runs and replaces it, so price and stock are always refreshed.
+export const PRERENDER_SWR_TEMPLATES = Object.freeze(["product", "collection"]);
+export const PRERENDER_ALL_TEMPLATES = Object.freeze([...PRERENDER_TEMPLATES, ...PRERENDER_SWR_TEMPLATES]);
 
 const PERSONALIZED_KEYS = /"(customer|cart|condition|conditions|visibilityRules|serverConditions|personaliz)[A-Za-z]*"\s*:/i;
 
@@ -25,10 +29,12 @@ function isEmpty(value) {
 }
 
 export function isPrerenderCacheable({ template, html = "", experiment = null, localizationEnabled = false, hasLiquid = false, dynamicData = [], elementGroups = [], ruleCount = 0 } = {}) {
-  if (!PRERENDER_TEMPLATES.includes(String(template || ""))) return false;
+  const swr = PRERENDER_SWR_TEMPLATES.includes(String(template || ""));
+  if (!swr && !PRERENDER_TEMPLATES.includes(String(template || ""))) return false;
   if (experiment || localizationEnabled || hasLiquid || ruleCount > 0) return false;
   if (!html || new TextEncoder().encode(html).length > PRERENDER_MAX_BYTES) return false;
-  if (!dynamicData.every(isEmpty)) return false;
+  // Dynamic data is fine for SWR templates: the live fetch replaces the copy right away.
+  if (!swr && !dynamicData.every(isEmpty)) return false;
   return !PERSONALIZED_KEYS.test(JSON.stringify(elementGroups || []));
 }
 
