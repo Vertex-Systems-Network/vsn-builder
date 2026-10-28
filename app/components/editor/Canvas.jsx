@@ -1078,19 +1078,21 @@ function RenderNode({
           ...style,
           display: "grid",
           gridTemplateColumns: node.styles?.gridTemplateColumns || node.styles?.grid?.templateColumns || `repeat(${columnsForDevice(node.props, (node.children || []).length, previewMode)}, minmax(0, 1fr))`,
-          gap: node.styles?.gap || node.styles?.grid?.gap || "20px",
+          gap: node.styles?.gap || node.styles?.grid?.gap || node.styles?.layout?.gap || style.gap || "20px",
         }
       : {
           ...style,
           display: "flex",
-          flexDirection: node.styles?.flexDirection || "column",
-          alignItems: node.styles?.alignItems || "stretch",
-          justifyContent: node.styles?.justifyContent || "flex-start",
-          gap: node.styles?.gap || "12px",
+          // Advanced > Layout stores these under styles.layout; cssFromStyles already resolved them into style.
+          flexDirection: node.styles?.flexDirection || style.flexDirection || "column",
+          flexWrap: style.flexWrap,
+          alignItems: node.styles?.alignItems || style.alignItems || "stretch",
+          justifyContent: node.styles?.justifyContent || style.justifyContent || "flex-start",
+          gap: node.styles?.gap || style.gap || "12px",
         };
     content = (
       <div style={childLayoutStyle} className="min-h-24">
-        <div className={node.type === "columns" ? "contents" : "space-y-3"}>
+        <div className="contents">
           {(node.children ?? []).map((child) => (
             <div key={child.id} data-vsn-column-cell={node.type === "columns" ? "1" : undefined} className={node.type === "columns" ? "min-w-0 self-stretch" : undefined}>
               <DropZone parentId={node.id} beforeId={child.id} onDrop={onDrop} onAdd={onRequestAddChild} compact />

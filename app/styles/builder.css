@@ -721,3 +721,15 @@ html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] .vsn-drop-zone > * { o
 @media (max-width: 1439px) {
   .vsn-editor-device-switcher--center { position: static !important; transform: none !important; }
 }
+
+/* Marketplace: live thumbnails with a fixed ratio (no layout shift) and a list view. */
+.vsn-marketplace-display{display:inline-flex;gap:6px;margin-left:auto}
+.vsn-library-toolbar-top:has(.vsn-marketplace-display){display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.vsn-marketplace-thumb{position:relative;display:block;aspect-ratio:16/10;overflow:hidden;padding:0}
+.vsn-marketplace-thumb-live{position:absolute;inset:0;overflow:hidden;background:#f6f6f7}
+.vsn-marketplace-thumb-live>img{width:100%;height:100%;object-fit:cover}
+.vsn-marketplace-thumb-live .vsn-library-preview{height:100%;border:0;border-radius:0;pointer-events:none}
+.vsn-marketplace-grid.is-list{grid-template-columns:minmax(0,1fr)!important}
+.vsn-marketplace-grid.is-list .vsn-marketplace-card{display:grid;grid-template-columns:260px minmax(0,1fr);align-items:stretch}
+.vsn-marketplace-grid.is-list .vsn-marketplace-thumb{aspect-ratio:auto;min-height:160px;height:100%}
+@media(max-width:720px){.vsn-marketplace-grid.is-list .vsn-marketplace-card{grid-template-columns:1fr}.vsn-marketplace-grid.is-list .vsn-marketplace-thumb{aspect-ratio:16/10}}

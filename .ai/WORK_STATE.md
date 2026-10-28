@@ -54,7 +54,7 @@ QA method:
 4. DONE (round 1; more in item 8): **Editor UI pass.** Inspect every panel at 1280 and 1440, in light and dark mode.
    - Fix overflow, truncation, misaligned controls, inconsistent spacing and broken icons.
    - List every fix in the PR body.
-5. **Marketplace templates.**
+5. DONE: **Marketplace templates.**
    - Every built-in template in `app/data/marketplaceCatalog.js` renders correctly: no empty or broken sections, real images or placeholders, responsive columns.
    - The marketplace list and grid views use consistent cards (thumbnail ratio, title, tags, actions) with no layout shift.
 6. **Motion library.**

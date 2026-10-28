@@ -55,52 +55,154 @@ const PALETTES = {
 };
 
 function id(...parts) { return parts.join("-").replace(/[^a-z0-9-]/g, ""); }
-function nodeId(prefix, index) { return `${prefix}-${index}`; }
-function copyFor(industryLabel, patternLabel) {
-  return {
-    eyebrow: industryLabel,
-    title: `${patternLabel} for ${industryLabel}`,
-    body: `A conversion-aware ${industryLabel.toLowerCase()} layout built from editable VSN widgets.`,
-    cta: industryLabel === "B2B" ? "Book a consultation" : "Shop the collection",
-  };
+
+// Industry copy so every template reads like a real store, not a placeholder.
+const COPY = {
+  fashion: { hero: "Wardrobe pieces made to be worn for years", body: "Considered fabrics, honest pricing and fits that work on real bodies.", cta: "Shop the collection", features: [["✦", "Natural fabrics", "Linen, organic cotton and merino sourced from audited mills."], ["↺", "Free returns", "30 days to try it at home, returns are on us."], ["✂", "Tailored fits", "Patterns tested on five body types before release."], ["♻", "Repair program", "Send worn pieces back and we mend them for free."]], stats: "40K+|Happy customers\n4.8/5|Average rating\n30 days|Free returns\n12|Partner mills", quotes: "The linen shirt is the best thing I bought this year.|Amira K.\nFits perfectly and still looks new after a season.|Daniel R.\nFinally a brand that tells you where clothes are made.|Sofia L." },
+  beauty: { hero: "Skincare that respects your skin barrier", body: "Clinically tested formulas with short ingredient lists and visible results.", cta: "Find your routine", features: [["◎", "Dermatologist tested", "Every formula is patch tested on sensitive skin."], ["❀", "Clean ingredients", "No fragrance, parabens or drying alcohols."], ["◷", "Results in 4 weeks", "Measured hydration and texture improvements."], ["♲", "Refillable packaging", "Glass jars with refill pouches."]], stats: "92%|Saw smoother skin\n15K+|5-star reviews\n0|Synthetic fragrance\n100%|Vegan formulas", quotes: "My redness calmed down within two weeks.|Hana M.\nThe only serum my sensitive skin tolerates.|Priya S.\nLovely textures and zero irritation.|Elena G." },
+  electronics: { hero: "Smart devices built for everyday life", body: "Long battery life, seamless setup and support from real engineers.", cta: "Shop devices", features: [["⚡", "All-day battery", "Up to 48 hours on a single charge."], ["⚙", "Setup in minutes", "Pair with your phone in three taps."], ["⛨", "2-year warranty", "Repairs or replacement, no questions asked."], ["☎", "Expert support", "Talk to engineers, not scripts."]], stats: "48h|Battery life\n2 years|Warranty\n120K|Devices shipped\n4.7/5|Rating", quotes: "Setup took less than five minutes.|Marco T.\nBattery easily lasts two days of heavy use.|Jin W.\nSupport fixed my issue in one email.|Lucas P." },
+  food: { hero: "Small-batch food delivered fresh", body: "Seasonal ingredients from local farms, packed the day we ship.", cta: "Order now", features: [["❦", "Farm sourced", "We work directly with 30 local growers."], ["❄", "Shipped fresh", "Insulated packaging keeps everything cold."], ["✓", "No additives", "Nothing artificial, ever."], ["♡", "Taste guarantee", "Not delicious? We refund you."]], stats: "30|Partner farms\n24h|Farm to door\n60K+|Boxes delivered\n4.9/5|Taste rating", quotes: "You can really taste the difference.|Olivia B.\nArrived cold and perfectly packed.|Tom H.\nOur weekly family favourite.|Grace N." },
+  saas: { hero: "The workspace your team will actually use", body: "Plan, track and ship work in one place with automations that save hours.", cta: "Start free trial", features: [["▦", "Unified workspace", "Docs, tasks and roadmaps together."], ["⟳", "Automations", "Remove repetitive work with simple rules."], ["⛨", "Enterprise security", "SSO, audit logs and SOC 2 Type II."], ["⇄", "100+ integrations", "Connect the tools you already use."]], stats: "8K+|Teams\n6h|Saved per week\n99.99%|Uptime\nSOC 2|Certified", quotes: "We replaced four tools with one.|Nadia F., COO\nOnboarding the team took a single afternoon.|Ben C., Eng Lead\nThe automations alone paid for it.|Ines V., Ops" },
+  luxury: { hero: "Crafted by hand, made to be kept", body: "Limited pieces from master artisans, finished with uncompromising detail.", cta: "Discover the collection", features: [["◆", "Hand finished", "Every piece is finished by a single artisan."], ["✉", "Private service", "A dedicated advisor for every client."], ["⌂", "Lifetime care", "Complimentary servicing for life."], ["❖", "Numbered editions", "Each piece is individually certified."]], stats: "1 of 250|Edition size\n40 hrs|Craft per piece\nLifetime|Care\n18|Countries", quotes: "An heirloom from the moment it arrived.|Charlotte D.\nThe service was impeccable.|Henri M.\nWorth every hour of craftsmanship.|Isabella R." },
+  "real-estate": { hero: "Find a home that fits your next chapter", body: "Curated listings, local experts and a transparent buying process.", cta: "Browse listings", features: [["⌂", "Verified listings", "Every property is inspected by our team."], ["⚑", "Local experts", "Agents who know each neighbourhood."], ["✎", "Clear pricing", "No hidden fees at any step."], ["⧗", "Fast closing", "Average close in 21 days."]], stats: "1,200+|Homes sold\n21 days|Average close\n98%|Client satisfaction\n15|Neighbourhoods", quotes: "They found us the perfect home in three weeks.|The Patel family\nHonest advice from the first call.|Mark S.\nSmoothest purchase we have ever had.|Leah & Chris" },
+  "single-product": { hero: "One product, perfected", body: "Everything we know went into a single product designed to last.", cta: "Buy now", features: [["★", "Award winning design", "Recognised for form and function."], ["⛨", "Lifetime guarantee", "If it breaks, we replace it."], ["⚖", "Thoughtful materials", "Aerospace aluminium and recycled steel."], ["⇆", "Free shipping", "Delivered free worldwide."]], stats: "25K+|Owners\n4.9/5|Rating\nLifetime|Guarantee\n60+|Countries", quotes: "I use it every single day.|Ryan O.\nBuilt like a tank, looks beautiful.|Mei L.\nThe last one I will ever need.|Tom A." },
+  b2b: { hero: "Wholesale supply your business can rely on", body: "Volume pricing, net terms and a dedicated account manager.", cta: "Book a consultation", features: [["▤", "Volume pricing", "Tiered discounts from 50 units."], ["⧉", "Net 30 terms", "Flexible payment for approved buyers."], ["☏", "Account manager", "One contact for every order."], ["⛟", "Reliable logistics", "98% on-time delivery."]], stats: "2,000+|Business clients\n98%|On-time delivery\nNet 30|Payment terms\n24h|Quote turnaround", quotes: "Our reorders are effortless now.|Procurement, Northline\nPricing and terms that scale with us.|Ops, Bramble Co.\nResponsive account management.|Buyer, Halden" },
+  "landing-cro": { hero: "Get results in your first 30 days", body: "A proven system with clear steps, real support and a money-back guarantee.", cta: "Claim your offer", features: [["①", "Simple start", "Set up in under ten minutes."], ["②", "Guided plan", "Daily steps that build momentum."], ["③", "Real support", "Coaches answer within an hour."], ["✓", "Risk free", "Full refund within 30 days."]], stats: "50K+|Customers\n30 days|Money-back guarantee\n4.8/5|Rating\n1h|Support response", quotes: "Saw results in the first two weeks.|Jess W.\nThe guided plan kept me consistent.|Omar K.\nBest decision I made this year.|Clara P." },
+};
+const FAQ = "How long does shipping take?|Most orders arrive in 2–5 business days.\nCan I return my order?|Yes, returns are free within 30 days.\nDo you ship internationally?|We ship to over 40 countries.\nHow can I contact support?|Use the contact form and we reply within one business day.";
+
+function luminance(hex) {
+  const value = String(hex || "").replace("#", "");
+  if (value.length !== 6) return 0;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-function makeSection({ prefix, industry, pattern, palette, compact = false }) {
-  const copy = copyFor(industry.label, pattern[1]);
-  const bg = pattern[0].includes("dark") ? "#111827" : palette[1];
-  const text = pattern[0].includes("dark") ? "#f8fafc" : palette[0];
-  const children = [
-    { id: nodeId(prefix, 1), type: "text", label: "Eyebrow", props: { text: copy.eyebrow.toUpperCase() }, styles: { typography: { fontSize: "12px", fontWeight: "700", color: palette[2], letterSpacing: "1.4px" }, spacing: { marginBottom: "10px" } }, children: [] },
-    { id: nodeId(prefix, 2), type: "heading", label: "Headline", props: { text: copy.title, tag: compact ? "h3" : "h2" }, styles: { typography: { fontSize: compact ? "30px" : "48px", fontWeight: "700", color: text, lineHeight: "1.08" }, spacing: { marginBottom: "14px" } }, children: [] },
-    { id: nodeId(prefix, 3), type: "text", label: "Description", props: { text: copy.body }, styles: { typography: { fontSize: "16px", color: text, lineHeight: "1.6" }, spacing: { marginBottom: "20px" } }, children: [] },
-    { id: nodeId(prefix, 4), type: "button", label: "CTA", props: { text: copy.cta, url: "/collections/all", variant: "primary" }, styles: { background: { color: palette[2] }, typography: { color: "#ffffff", fontWeight: "700" }, border: { radius: "10px" }, spacing: { paddingTop: "12px", paddingRight: "20px", paddingBottom: "12px", paddingLeft: "20px" } }, children: [] },
+function themeFor(industry, palette, dark) {
+  const background = dark ? "#111827" : palette[1];
+  const text = dark ? "#f8fafc" : palette[0];
+  // Brand colour must stay readable on the background (light palette tints are not).
+  const accent = luminance(palette[2]) > 0.45 || (dark && luminance(palette[2]) < 0.2) ? (dark ? "#22c55e" : industry.accent) : palette[2];
+  const brand = dark ? accent : (luminance(accent) > 0.35 ? industry.accent : accent);
+  return { background, text, muted: dark ? "#cbd5e1" : "#5c5f62", brand, surface: dark ? "#1f2937" : (palette[1] === "#ffffff" ? "#f6f6f7" : "#ffffff"), border: dark ? "#334155" : "#e5e7eb" };
+}
+
+function makeBuilder(prefix) {
+  let counter = 0;
+  const node = (type, label, props = {}, styles = {}, children = []) => ({ id: `${prefix}-${++counter}`, type, label, props, styles, children });
+  return node;
+}
+
+function headingStack(node, copy, theme, { title, align = "left", compact = false, eyebrow, body }) {
+  const typo = (extra) => ({ textAlign: align, ...extra });
+  return [
+    node("text", "Eyebrow", { text: String(eyebrow || "").toUpperCase() }, { typography: typo({ fontSize: "12px", fontWeight: "700", color: theme.brand, letterSpacing: "1.6px" }), spacing: { marginBottom: "12px" } }),
+    node("heading", "Headline", { text: title, tag: compact ? "h2" : "h1" }, { typography: typo({ fontSize: compact ? "36px" : "52px", fontWeight: "700", color: theme.text, lineHeight: "1.08" }), spacing: { marginBottom: "16px" } }),
+    node("text", "Description", { text: body || copy.body }, { typography: typo({ fontSize: "17px", color: theme.muted, lineHeight: "1.6" }), spacing: { marginBottom: "24px" } }),
   ];
-  if (["grid", "product-first"].includes(pattern[2])) {
-    children.push({ id: nodeId(prefix, 5), type: "product-grid", label: "Product Grid", props: { title: "", limit: compact ? 4 : 8, columnsDesktop: 4, columnsTablet: 2, columnsMobile: 1, gap: 18, showImage: true, showTitle: true, showPrice: true }, styles: { spacing: { marginTop: "28px" } }, children: [] });
+}
+
+function buttonRow(node, copy, theme, align = "left") {
+  const primary = node("button", "Primary button", { text: copy.cta, url: "/collections/all", variant: "primary" }, { background: { type: "color", color: theme.brand }, typography: { color: "#ffffff", fontWeight: "700" }, border: { radius: "10px" }, spacing: { paddingTop: "14px", paddingRight: "24px", paddingBottom: "14px", paddingLeft: "24px" } });
+  const secondary = node("button", "Secondary button", { text: "Learn more", url: "/pages/about", variant: "secondary" }, { background: { type: "color", color: "transparent" }, typography: { color: theme.text, fontWeight: "600" }, border: { width: "1px", style: "solid", color: theme.border, radius: "10px" }, spacing: { paddingTop: "13px", paddingRight: "22px", paddingBottom: "13px", paddingLeft: "22px" } });
+  return node("container", "Buttons", {}, { layout: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: "12px", justifyContent: align === "center" ? "center" : "flex-start" }, spacing: { paddingTop: "0px", paddingRight: "0px", paddingBottom: "0px", paddingLeft: "0px" }, border: { width: "0px" } }, [primary, secondary]);
+}
+
+function mediaBlock(node, theme, label = "Media") {
+  // Decorative brand gradient block; merchants set a background image on it.
+  return node("container", label, {}, { background: { type: "gradient", color: theme.surface, gradientAngle: 135, from: theme.brand, to: theme.surface }, size: { minHeight: "380px" }, border: { width: "0px", radius: "20px" }, spacing: { paddingTop: "0px", paddingRight: "0px", paddingBottom: "0px", paddingLeft: "0px" } });
+}
+
+function plainContainer(node, label, children, extra = {}) {
+  const { spacing = {}, ...rest } = extra;
+  return node("container", label, {}, { spacing: { paddingTop: "0px", paddingRight: "0px", paddingBottom: "0px", paddingLeft: "0px", ...spacing }, border: { width: "0px" }, ...rest }, children);
+}
+
+function sectionWrap(node, industry, label, theme, children, compact) {
+  return node("section", label, {}, { background: { type: "color", color: theme.background }, spacing: { paddingTop: compact ? "64px" : "96px", paddingRight: "48px", paddingBottom: compact ? "64px" : "96px", paddingLeft: "48px" }, border: { radius: "0px" } }, children);
+}
+
+function makeSection({ prefix, industry, pattern, palette, compact = false, dark = false }) {
+  const node = makeBuilder(prefix);
+  const copy = COPY[industry.key] || COPY.fashion;
+  const theme = themeFor(industry, palette, dark || pattern[0].includes("dark"));
+  const key = pattern[0];
+  const layout = pattern[2];
+  const label = `${industry.label} ${pattern[1]}`;
+  const title = key.startsWith("hero") || key === "editorial" ? copy.hero : pattern[1].replace(/ · .*/, "").replace(/ Intro$/, "");
+  let children;
+  const centered = (stack, extra = []) => [plainContainer(node, "Content", [...stack, ...extra], { size: { maxWidth: "760px" }, spacing: { marginLeft: "auto", marginRight: "auto" } })];
+
+  if (["features-3", "features-4", "benefits", "proof", "trust", "shipping"].includes(key)) {
+    const count = key === "features-3" || key === "proof" ? 3 : 4;
+    const cards = copy.features.slice(0, count).map(([icon, heading, text]) => node("icon-box", heading, { icon, heading, text, url: "" }, { background: { type: "color", color: theme.surface }, typography: { color: theme.text }, spacing: { paddingTop: "28px", paddingRight: "24px", paddingBottom: "28px", paddingLeft: "24px" }, border: { width: "1px", style: "solid", color: theme.border, radius: "16px" } }));
+    const grid = node("columns", "Feature grid", { columns: count, columnsTablet: 2, columnsMobile: 1 }, { layout: { gap: "20px" } }, cards);
+    children = [...centered(headingStack(node, copy, theme, { title: key === "proof" ? `Why customers choose ${industry.label.toLowerCase()} from us` : title, align: "center", compact: true, eyebrow: industry.label })), grid];
+  } else if (["testimonial", "testimonial-grid"].includes(key)) {
+    children = [...centered(headingStack(node, copy, theme, { title: "Loved by our customers", align: "center", compact: true, eyebrow: "Reviews" })), node("testimonials", "Testimonials", { items: [], itemsText: copy.quotes, columns: key === "testimonial" ? 1 : 3 }, { grid: { gap: "20px" }, typography: { color: theme.text } })];
+  } else if (key === "stats") {
+    children = [...centered(headingStack(node, copy, theme, { title: "Results that speak for themselves", align: "center", compact: true, eyebrow: industry.label })), node("stats", "Stats", { items: [], itemsText: copy.stats, columns: 4 }, { grid: { gap: "20px" }, typography: { color: theme.text } })];
+  } else if (key === "logos" || key === "press") {
+    children = [...centered(headingStack(node, copy, theme, { title: key === "press" ? "As featured in" : "Trusted by leading brands", align: "center", compact: true, eyebrow: "Partners", body: "Brands and publications that work with us every day." })), node("logo-cloud", "Logo cloud", { items: [], itemsText: "Northline\nBramble & Co\nHalden\nAtlas Studio\nMeridian" }, { grid: { gap: "28px" }, typography: { color: theme.muted } })];
+  } else if (key === "faq") {
+    children = [...centered(headingStack(node, copy, theme, { title: "Frequently asked questions", align: "center", compact: true, eyebrow: "Support" }), [node("faq", "FAQ", { items: [], itemsText: FAQ }, { spacing: { gap: "10px" }, typography: { color: theme.text } })])];
+  } else if (key === "newsletter") {
+    children = centered(headingStack(node, copy, theme, { title: "Get 10% off your first order", align: "center", compact: true, eyebrow: "Newsletter", body: "New arrivals, restocks and members-only offers. No spam, unsubscribe anytime." }), [node("newsletter-form", "Newsletter form", { heading: "", placeholder: "Email address", submitText: "Subscribe", successText: "Thanks for subscribing.", errorText: "Please enter a valid email address." }, { spacing: { gap: "10px" } })]);
+  } else if (key === "timeline" || key === "story") {
+    children = [node("columns", "Story columns", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "48px" } }, [
+      plainContainer(node, "Story text", headingStack(node, copy, theme, { title: key === "story" ? `The story behind ${industry.label.toLowerCase()} done right` : "How we got here", compact: true, eyebrow: "Our story" })),
+      key === "timeline" ? node("timeline", "Timeline", { items: [], itemsText: "2019|Founded|Started in a small studio with one idea.\n2022|10,000 customers|Grew through word of mouth.\n2025|Going further|New products, same standards." }, { typography: { color: theme.text } }) : mediaBlock(node, theme),
+    ])];
+  } else if (key === "gallery") {
+    children = [...centered(headingStack(node, copy, theme, { title: "In the wild", align: "center", compact: true, eyebrow: "Gallery" })), node("columns", "Gallery", { columns: 3, columnsTablet: 2, columnsMobile: 1 }, { layout: { gap: "16px" } }, [0, 1, 2].map((index) => mediaBlock(node, theme, `Gallery image ${index + 1}`)))];
+  } else if (["contact", "lead-form"].includes(key)) {
+    children = [node("columns", "Contact columns", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "48px" } }, [
+      plainContainer(node, "Contact text", headingStack(node, copy, theme, { title: key === "contact" ? "Talk to our team" : "Get a tailored proposal", compact: true, eyebrow: "Contact", body: "Tell us what you need and we will get back to you within one business day." })),
+      node("contact-form", "Contact form", { heading: "", submitText: key === "contact" ? "Send message" : "Request proposal", successText: "Thanks. Your message has been received.", errorText: "Please check the form and try again.", showPhone: true }, { background: { type: "color", color: theme.surface }, spacing: { gap: "12px", paddingTop: "28px", paddingRight: "28px", paddingBottom: "28px", paddingLeft: "28px" }, border: { radius: "16px" } }),
+    ])];
+  } else if (["announcement", "offer", "urgency"].includes(key)) {
+    const strip = { ...theme, background: theme.brand, text: "#ffffff", muted: "rgba(255,255,255,.85)", brand: "#ffffff" };
+    const stack = headingStack(node, copy, strip, { title: key === "urgency" ? "Last chance: offer ends soon" : "Free shipping on orders over $50", align: "center", compact: true, eyebrow: key === "announcement" ? "Announcement" : "Limited offer", body: "Use code WELCOME10 at checkout for 10% off your first order." });
+    const button = node("button", "Offer button", { text: copy.cta, url: "/collections/all", variant: "primary" }, { background: { type: "color", color: "#ffffff" }, typography: { color: theme.brand, fontWeight: "700" }, border: { radius: "10px" }, spacing: { paddingTop: "14px", paddingRight: "24px", paddingBottom: "14px", paddingLeft: "24px" } });
+    const extra = key === "urgency" ? [node("countdown", "Countdown", { endDate: "", expiredText: "Offer ended", showDays: true, showHours: true, showMinutes: true, showSeconds: true }, { typography: { color: "#ffffff" }, spacing: { marginBottom: "20px" } })] : [];
+    return sectionWrap(node, industry, label, strip, centered(stack, [...extra, plainContainer(node, "Button", [button], { layout: { display: "flex", justifyContent: "center" } })]), true);
+  } else if (layout === "split" || ["media-split", "collection-intro"].includes(key)) {
+    const reverse = key === "media-split" || key === "premium";
+    const text = plainContainer(node, "Text column", [...headingStack(node, copy, theme, { title, compact, eyebrow: industry.label }), buttonRow(node, copy, theme)], { layout: { display: "flex", flexDirection: "column", justifyContent: "center" } });
+    const media = mediaBlock(node, theme);
+    children = [node("columns", "Split layout", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "56px", alignItems: "center" } }, reverse ? [media, text] : [text, media])];
+  } else if (["grid", "product-first"].includes(layout) || ["product-grid", "category-grid", "comparison"].includes(key)) {
+    children = [...centered(headingStack(node, copy, theme, { title: layout === "product-first" ? "Bestsellers" : title, align: "center", compact: true, eyebrow: industry.label }), [buttonRow(node, copy, theme, "center")]), node(key === "category-grid" ? "collection-grid" : "product-grid", key === "category-grid" ? "Collection grid" : "Product grid", { title: "", limit: compact ? 4 : 8, columnsDesktop: 4, columnsTablet: 2, columnsMobile: 1, gap: 20, showImage: true, showTitle: true, showPrice: true }, { spacing: { marginTop: "40px" } })];
+  } else if (key === "video") {
+    children = [...centered(headingStack(node, copy, theme, { title: "See it in action", align: "center", compact: true, eyebrow: "Watch" })), node("video", "Video", { url: "", autoplay: false, controls: true }, { border: { radius: "16px" } })];
+  } else {
+    children = centered(headingStack(node, copy, theme, { title: key === "cta" ? "Ready when you are" : title, align: "center", compact, eyebrow: industry.label }), [buttonRow(node, copy, theme, "center")]);
   }
-  return { id: prefix, type: "section", label: `${industry.label} ${pattern[1]}`, props: {}, styles: { background: { type: "color", color: bg }, spacing: { paddingTop: compact ? "44px" : "72px", paddingRight: "48px", paddingBottom: compact ? "44px" : "72px", paddingLeft: "48px" }, border: { radius: "0px" } }, children };
+  return sectionWrap(node, industry, label, theme, children, compact);
 }
 
 function makePageContent(industry, pattern, index) {
   const palette = PALETTES[pattern[0]] || PALETTES.minimal;
+  const dark = pattern[0] === "dark";
   const root = id("market", industry.key, pattern[0], index);
-  const sections = [
-    makeSection({ prefix: `${root}-hero`, industry, pattern, palette }),
-    makeSection({ prefix: `${root}-proof`, industry, pattern: ["proof", "Why customers choose us", "grid"], palette, compact: true }),
-    makeSection({ prefix: `${root}-story`, industry, pattern: ["story", "Designed around the customer journey", "editorial"], palette, compact: true }),
-    makeSection({ prefix: `${root}-cta`, industry, pattern: ["cta", "Ready to convert more visitors?", "centered"], palette, compact: true }),
-  ];
+  const heroLayout = pattern[2] === "centered" ? ["hero-centered", "Hero", "centered"] : pattern[2] === "grid" || pattern[2] === "product-first" ? ["hero-product", "Hero", "split"] : ["hero-split", "Hero", "split"];
+  const plan = {
+    editorial: [heroLayout, ["story", "Story", "editorial"], ["features-3", "Features", "grid"], ["testimonial-grid", "Reviews", "grid"], ["newsletter", "Newsletter", "centered"]],
+    conversion: [heroLayout, ["trust", "Trust", "grid"], ["product-grid", "Products", "product-first"], ["testimonial-grid", "Reviews", "grid"], ["faq", "FAQ", "editorial"], ["urgency", "Offer", "product-first"]],
+    catalogue: [heroLayout, ["category-grid", "Categories", "grid"], ["product-grid", "Products", "product-first"], ["shipping", "Shipping", "grid"], ["newsletter", "Newsletter", "centered"]],
+  }[pattern[0]] || [heroLayout, ["features-4", "Features", "grid"], ["media-split", "Media", "split"], ["stats", "Stats", "grid"], ["testimonial-grid", "Reviews", "grid"], ["cta", "CTA", "centered"]];
+  const sections = plan.map((sectionPattern, position) => makeSection({ prefix: `${root}-s${position + 1}`, industry, pattern: position === 0 ? [sectionPattern[0], pattern[1], sectionPattern[2]] : sectionPattern, palette, compact: position > 0, dark }));
+  const theme = themeFor(industry, palette, dark);
   return [
-    { id: `${root}-globals`, type: "global-styles", label: "Global Styles", props: { primaryColor: palette[2], textColor: palette[0], backgroundColor: palette[1], surfaceColor: palette[1], mutedSurfaceColor: palette[1], borderColor: "#e5e7eb", buttonBackground: palette[2], buttonTextColor: "#ffffff", radiusMd: "12px", radiusLg: "20px", spacingBase: 4 }, styles: {}, children: [] },
+    { id: `${root}-globals`, type: "global-styles", label: "Global Styles", props: { primaryColor: theme.brand, textColor: theme.text, backgroundColor: theme.background, surfaceColor: theme.surface, mutedSurfaceColor: theme.surface, borderColor: theme.border, buttonBackground: theme.brand, buttonTextColor: "#ffffff", radiusMd: "12px", radiusLg: "20px", spacingBase: 4 }, styles: {}, children: [] },
     ...sections,
   ];
 }
 
 function makeSectionContent(industry, pattern, index) {
   const palette = PALETTES[PAGE_PATTERNS[index % PAGE_PATTERNS.length][0]] || PALETTES.minimal;
-  return makeSection({ prefix: id("market-section", industry.key, pattern[0], index), industry, pattern, palette, compact: false });
+  return makeSection({ prefix: id("market-section", industry.key, pattern[0], index), industry, pattern, palette, compact: false, dark: PAGE_PATTERNS[index % PAGE_PATTERNS.length][0] === "dark" });
 }
-
 
 function pageCategory(patternKey) {
   if (["bold", "launch", "seasonal"].includes(patternKey)) return "Campaign Pages";
