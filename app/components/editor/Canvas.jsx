@@ -80,9 +80,9 @@ function DropZone({ parentId, beforeId = null, afterId = null, onDrop, onAdd, co
         else if (type) onDrop?.({ type, parentId, beforeId, afterId, mode: 'create' });
       }}
     >
-      <div className={`pointer-events-none absolute left-0 right-0 h-0.5 rounded-full transition-all ${active ? 'bg-[#008060] opacity-100 shadow-[0_0_0_3px_rgba(0,128,96,.12)]' : 'bg-[#008060] opacity-20 group-hover:opacity-45'}`} />
-      {!active ? <button type="button" data-vsn-add-child="1" aria-label="Add widget here" data-tooltip="Add widget here" onMouseDown={(event)=>{event.preventDefault();event.stopPropagation();}} onClick={(event)=>{event.preventDefault();event.stopPropagation();onAdd?.({parentId,beforeId,afterId});}} className="relative z-10 grid h-5 w-5 place-items-center rounded-full border border-[#b7bdc1] bg-white text-[14px] font-semibold leading-none text-[#008060] shadow-sm transition hover:border-[#008060] hover:bg-[#eaf7f2]">+</button> : null}
-      {active ? <span className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full bg-[#008060] px-2 py-0.5 text-[9px] font-semibold text-white shadow">Drop here</span> : null}
+      <div className={`pointer-events-none absolute left-0 right-0 h-0.5 rounded-full transition-all ${active ? 'bg-[#625BA8] opacity-100 shadow-[0_0_0_3px_rgba(98,91,168,.12)]' : 'bg-[#625BA8] opacity-20 group-hover:opacity-45'}`} />
+      {!active ? <button type="button" data-vsn-add-child="1" aria-label="Add widget here" data-tooltip="Add widget here" onMouseDown={(event)=>{event.preventDefault();event.stopPropagation();}} onClick={(event)=>{event.preventDefault();event.stopPropagation();onAdd?.({parentId,beforeId,afterId});}} className="relative z-10 grid h-5 w-5 place-items-center rounded-full border border-[#b7bdc1] bg-white text-[14px] font-semibold leading-none text-[#625BA8] shadow-sm transition hover:border-[#625BA8] hover:bg-[#f1f0fa]">+</button> : null}
+      {active ? <span className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full bg-[#625BA8] px-2 py-0.5 text-[9px] font-semibold text-white shadow">Drop here</span> : null}
     </div>
   );
 }
@@ -541,7 +541,7 @@ function RenderNode({
     const section = reusableSections.find((item) => item.id === node.props?.sectionId);
     const sectionNodes = Array.isArray(section?.content) ? section.content.filter((item) => !["global-styles", "template-settings"].includes(item?.type)) : [];
     content = section ? (
-      <div style={{ ...style, border: selected ? "1px solid #008060" : "1px dashed #d9d9d9", borderRadius: "8px" }}>
+      <div style={{ ...style, border: selected ? "1px solid #625BA8" : "1px dashed #d9d9d9", borderRadius: "8px" }}>
         {sectionNodes.map((child) => <RenderNode key={child.id} node={child} parentId={node.id} selectedId={selectedId} onSelect={() => onSelect(node.id)} onDrop={onDrop} onRequestAddChild={onRequestAddChild} onMoveNode={onMoveNode} previewCollection={previewCollection} previewProduct={previewProduct} previewBlog={previewBlog} previewArticle={previewArticle} previewSearch={previewSearch} reusableSections={reusableSections} previewMode={previewMode} />)}
       </div>
     ) : <div className="rounded-lg border border-dashed border-[#c9cccf] bg-[#fafbfb] p-6 text-center text-xs text-[#6d7175]">Choose a reusable section in Properties.</div>;
@@ -1200,11 +1200,11 @@ function RenderNode({
       else if (type) onDrop?.({ type, ...destination, mode: 'create' });
     }}
   >
-    {dropPosition === 'before' ? <span className="pointer-events-none absolute -top-1 left-0 right-0 z-30 h-1 rounded-full bg-[#008060] shadow-[0_0_0_3px_rgba(0,128,96,.14)]" /> : null}
-    {dropPosition === 'after' ? <span className="pointer-events-none absolute -bottom-1 left-0 right-0 z-30 h-1 rounded-full bg-[#008060] shadow-[0_0_0_3px_rgba(0,128,96,.14)]" /> : null}
-    {dropPosition === 'inside' ? <span className="pointer-events-none absolute inset-0 z-30 rounded-[inherit] border-2 border-dashed border-[#008060] bg-emerald-50/20" /> : null}
+    {dropPosition === 'before' ? <span className="pointer-events-none absolute -top-1 left-0 right-0 z-30 h-1 rounded-full bg-[#625BA8] shadow-[0_0_0_3px_rgba(98,91,168,.14)]" /> : null}
+    {dropPosition === 'after' ? <span className="pointer-events-none absolute -bottom-1 left-0 right-0 z-30 h-1 rounded-full bg-[#625BA8] shadow-[0_0_0_3px_rgba(98,91,168,.14)]" /> : null}
+    {dropPosition === 'inside' ? <span className="pointer-events-none absolute inset-0 z-30 rounded-[inherit] border-2 border-dashed border-[#625BA8] bg-[#625BA8]/5" /> : null}
     {content}
-    {selected && <span className="pointer-events-none absolute -top-6 left-0 z-20 flex items-center gap-1 rounded-t bg-[#008060] px-2 py-1 text-[10px] text-white">{node.label}{node.conditions?.enabled && !conditionMatches ? ' · hidden by condition' : ''}</span>}
+    {selected && <span className="pointer-events-none absolute -top-6 left-0 z-20 flex items-center gap-1 rounded-t bg-[#625BA8] px-2 py-1 text-[10px] text-white">{node.label}{node.conditions?.enabled && !conditionMatches ? ' · hidden by condition' : ''}</span>}
   </div>;
 }
 const MemoRenderNode = memo(RenderNode, (prev, next) => prev.node === next.node && prev.selectedId === next.selectedId && prev.previewMode === next.previewMode && prev.previewCollection === next.previewCollection && prev.previewProduct === next.previewProduct && prev.previewBlog === next.previewBlog && prev.previewArticle === next.previewArticle && prev.previewSearch === next.previewSearch && prev.reusableSections === next.reusableSections);
@@ -1395,7 +1395,7 @@ export default function Canvas({
       data-vsn-canvas-root="true"
       data-vsn-locale={localizationLocale || undefined}
       dir={localizationDirection === "rtl" ? "rtl" : "ltr"}
-      className={`flex-1 bg-[#e8e8e8] overflow-auto flex flex-col items-center py-8 px-4 vsn-canvas-pan-surface ${isPanning ? "is-panning" : ""}`}
+      className={`flex-1 bg-[#e8e8e8] overflow-auto flex flex-col py-8 px-4 vsn-canvas-pan-surface ${isPanning ? "is-panning" : ""}`}
       onPointerDownCapture={beginCanvasPan}
       onPointerMoveCapture={moveCanvasPan}
       onPointerUpCapture={endCanvasPan}

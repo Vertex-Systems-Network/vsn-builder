@@ -312,7 +312,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
     {!selectedElement ? (<div className="flex-1 overflow-y-auto">
       <div className="px-4 py-3 border-b border-[#f1f1f1] bg-[#fafafa]">
         <p className="text-xs font-semibold text-[#1a1a1a]">Global Styles</p>
-        <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Select an element to edit that element instead.</p>
+        <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Selected element settings open in the left panel.</p>
       </div>
       <SectionHeader title="Colors">
         <div><Label>Primary</Label><ColorInput value={globalStyles.primaryColor || "#625BA8"} onChange={(value) => onGlobalStylesChange?.({ primaryColor: value })} /></div>
