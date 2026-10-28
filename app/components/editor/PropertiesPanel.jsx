@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router';
 import { DynamicSourcePanel, DynamicBindingsPanel, ConditionsBuilder, ResponsivePanel, AdvancedLayoutPanel, StateStylesPanel, BreakpointControls } from "./AdvancedBuilderControls";
 import PolarisIcon from '../ui/PolarisIcon';
-import { ColorGradientControl, CssLengthControl, DimensionsControl, SliderControl, TextControl, NumberControl, TypographyControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, BoxShadowControl, TextStrokeControl, BorderControl, BackgroundControl } from './EditorControls';
-import FilterEffectsControl from './FilterEffectsControl';
+import { ColorGradientControl, SliderControl, TextControl, NumberControl, TypographyControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, TextStrokeControl } from './EditorControls';
 import FontFamilyControl from './fonts/FontFamilyControl';
 import { getWidgetCapabilities } from '../../builder/widgetCapabilities';
 import WidgetSpecificStyleControls from './WidgetSpecificStyleControls';
@@ -1039,54 +1038,15 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
           />
         </SectionHeader> : null}
 
-        {capabilities.background ? <SectionHeader title="Background">
-          <BackgroundControl
-            value={styles.background || { type: "color", color: "#ffffff" }}
-            onChange={(next) => onUpdate(selectedElement.id, { styles: { ...styles, background: next } })}
-          />
+
+        {capabilities.textEffects ? <SectionHeader title="Text Effects">
+          <TextShadowControl value={styles.effects?.textShadow || {}} onChange={(value) => updateStyle("effects", "textShadow", value)} />
+          <TextStrokeControl value={styles.effects?.textStroke || {}} onChange={(value) => updateStyle("effects", "textStroke", value)} />
         </SectionHeader> : null}
 
-        {capabilities.border ? <SectionHeader title="Border">
-          <BorderControl
-            value={styles.border || { width: "0px", style: "solid", color: "#e3e3e3", radius: "0px", sides: "all" }}
-            onChange={(next) => onUpdate(selectedElement.id, { styles: { ...styles, border: next } })}
-          />
-        </SectionHeader> : null}
+      </>)}
 
-        {capabilities.spacing ? <SectionHeader title="Spacing">
-          <DimensionsControl
-            label="Margin"
-            values={{ top: styles.spacing?.marginTop, right: styles.spacing?.marginRight, bottom: styles.spacing?.marginBottom, left: styles.spacing?.marginLeft }}
-            onChange={(next) => onUpdate(selectedElement.id, { styles: { ...styles, spacing: { ...(styles.spacing || {}), marginTop: next.top, marginRight: next.right, marginBottom: next.bottom, marginLeft: next.left } } })}
-          />
-          <DimensionsControl
-            label="Padding"
-            values={{ top: styles.spacing?.paddingTop, right: styles.spacing?.paddingRight, bottom: styles.spacing?.paddingBottom, left: styles.spacing?.paddingLeft }}
-            onChange={(next) => onUpdate(selectedElement.id, { styles: { ...styles, spacing: { ...(styles.spacing || {}), paddingTop: next.top, paddingRight: next.right, paddingBottom: next.bottom, paddingLeft: next.left } } })}
-          />
-        </SectionHeader> : null}
-
-        {capabilities.sizing ? <SectionHeader title="Size">
-          <div className="grid grid-cols-2 gap-2">
-            <CssLengthControl label="Width" value={styles.size?.width || ""} defaultUnit="%" keywords={["auto","fit-content","min-content","max-content"]} placeholder="100" onChange={(v) => updateStyle("size", "width", v)} />
-            <CssLengthControl label="Height" value={styles.size?.height || ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} placeholder="auto" onChange={(v) => updateStyle("size", "height", v)} />
-            <CssLengthControl label="Min width" value={styles.size?.minWidth || ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} placeholder="0" onChange={(v) => updateStyle("size", "minWidth", v)} />
-            <CssLengthControl label="Min height" value={styles.size?.minHeight || ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} placeholder="0" onChange={(v) => updateStyle("size", "minHeight", v)} />
-            <CssLengthControl label="Max width" value={styles.size?.maxWidth || ""} defaultUnit="px" keywords={["none","fit-content","min-content","max-content"]} placeholder="none" onChange={(v) => updateStyle("size", "maxWidth", v)} />
-            <CssLengthControl label="Max height" value={styles.size?.maxHeight || ""} defaultUnit="px" keywords={["none","fit-content","min-content","max-content"]} placeholder="none" onChange={(v) => updateStyle("size", "maxHeight", v)} />
-          </div>
-        </SectionHeader> : null}
-
-        {capabilities.effects ? <SectionHeader title="Effects">
-          {capabilities.textEffects ? <>
-            <TextShadowControl value={styles.effects?.textShadow || {}} onChange={(value) => updateStyle("effects", "textShadow", value)} />
-            <TextStrokeControl value={styles.effects?.textStroke || {}} onChange={(value) => updateStyle("effects", "textStroke", value)} />
-          </> : null}
-          <BoxShadowControl value={styles.effects?.boxShadow || {}} onChange={(value) => updateStyle("effects", "boxShadow", value)} />
-          <FilterEffectsControl value={styles.effects?.filters || {}} onChange={(value) => updateStyle("effects", "filters", value)} />
-          <SliderControl label="Opacity" value={Number.isFinite(parseFloat(String(styles.effects?.opacity ?? "100").replace("%", ""))) ? parseFloat(String(styles.effects?.opacity ?? "100").replace("%", "")) : 100} min={0} max={100} suffix="%" onChange={(v) => updateStyle("effects", "opacity", `${v}%`)} />
-        </SectionHeader> : null}
-
+      {activeTab === 'content' && (<>
         {(capabilities.media || capabilities.imageDimensions || capabilities.icon || capabilities.backgroundGallery) ? <SectionHeader title="Widget Media">
           {capabilities.media && selectedElement.type !== "image" ? <MediaControl
             label="Element Media"
@@ -1120,8 +1080,6 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
             onChange={(value) => updateStyle("advanced", "link", value)}
           />
         </SectionHeader> : null}
-
-
       </>)}
 
       {activeTab === 'content' && (<div className="p-4 space-y-3">
@@ -1614,11 +1572,8 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
       </div>)}
 
       {activeTab === 'advanced' && selectedElement && (
-        <div className="flex-1 space-y-3 overflow-y-auto p-3">
-          {dynamicFieldsForWidget(selectedElement.type).length ? <DynamicBindingsPanel element={selectedElement} onUpdate={onUpdate} context={bindingContext} /> : null}
-          {selectedElement.dynamicSource?.enabled ? <DynamicSourcePanel element={selectedElement} onUpdate={onUpdate} /> : null}
-          {capabilities.conditions ? <ConditionsBuilder element={selectedElement} onUpdate={onUpdate} /> : null}
-          {capabilities.responsive ? <ResponsivePanel element={selectedElement} deviceMode={deviceMode} onUpdate={onUpdate} capabilities={capabilities} globalStyles={globalStyles} /> : null}
+        <div className="flex-1 overflow-y-auto">
+          {/* Elementor-style order: layout first, then motion, responsive, conditions, data and code. */}
           <AdvancedLayoutPanel element={selectedElement} onUpdate={onUpdate} capabilities={capabilities} />
           {capabilities.stateStyles ? <StateStylesPanel element={selectedElement} onUpdate={onUpdate} capabilities={capabilities} /> : null}
           {capabilities.animations ? <SectionHeader title="Animation & Interaction">
@@ -1660,6 +1615,10 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
             <CheckboxControl label="Parallax" checked={interactions.parallax} onChange={(value)=>updateInteraction({parallax:value})} />
             <div className="mt-3 border-t border-[#e3e3e3] pt-3"><InteractionTimelinePanel value={interactions} elementId={selectedElement.id} onChange={updateInteraction} globalMotionTimeline={globalStyles.motionPresetTimeline || null} /></div>
           </SectionHeader> : null}
+          {capabilities.responsive ? <ResponsivePanel element={selectedElement} deviceMode={deviceMode} onUpdate={onUpdate} capabilities={capabilities} globalStyles={globalStyles} /> : null}
+          {capabilities.conditions ? <ConditionsBuilder element={selectedElement} onUpdate={onUpdate} /> : null}
+          {dynamicFieldsForWidget(selectedElement.type).length ? <DynamicBindingsPanel element={selectedElement} onUpdate={onUpdate} context={bindingContext} /> : null}
+          {selectedElement.dynamicSource?.enabled ? <DynamicSourcePanel element={selectedElement} onUpdate={onUpdate} /> : null}
           {capabilities.cssVariables ? <SectionHeader title="CSS Variables">
             <RepeaterControl
               label="Variables"

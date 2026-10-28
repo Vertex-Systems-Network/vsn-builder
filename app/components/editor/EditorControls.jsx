@@ -45,19 +45,34 @@ function lengthInputValue(value, unit, fallback = "px") {
   const numeric = Number.parseFloat(text);
   return Number.isFinite(numeric) ? String(numeric) : "";
 }
-function composeLengthValue(raw, unit, fallback = "px") {
+// Elementor-style limits per unit: absolute caps keep typos like 99999 from breaking layouts.
+const LENGTH_UNIT_LIMITS = { px: 10000, "%": 1000, em: 100, rem: 100, vw: 1000, vh: 1000, vmin: 1000, vmax: 1000, ch: 1000, ex: 1000, lh: 100, rlh: 100, pt: 7500, pc: 625, cm: 265, mm: 2650, Q: 10600, in: 105 };
+
+function clampLengthNumber(text, unit, min) {
+  const limit = LENGTH_UNIT_LIMITS[unit] ?? 1000;
+  const lower = Number.isFinite(min) ? min : -limit;
+  const number = Number(text);
+  if (number < lower) return String(lower);
+  if (number > limit) return String(limit);
+  return text;
+}
+
+function composeLengthValue(raw, unit, fallback = "px", min) {
   const normalizedUnit = unit || fallback;
   if (CSS_LENGTH_KEYWORDS.has(normalizedUnit)) return normalizedUnit;
   const text = String(raw ?? "").trim();
   if (!text) return "";
   if (normalizedUnit === "css") return text;
-  if (/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) return `${text}${normalizeLengthUnit(normalizedUnit, fallback)}`;
+  const finalUnit = normalizeLengthUnit(normalizedUnit, fallback);
+  if (/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) return `${clampLengthNumber(text, finalUnit, min)}${finalUnit}`;
   // If a complete CSS value was pasted, preserve it instead of corrupting it.
   if (CSS_LENGTH_KEYWORDS.has(text) || CSS_LENGTH_UNIT_PATTERN.test(text) || /^(?:calc|min|max|clamp|var)\(/i.test(text)) return text;
-  return `${text}${normalizeLengthUnit(normalizedUnit, fallback)}`;
+  // Keep half-typed numbers ("-", ".", "-.") editable; drop anything that can never be a length.
+  if (/^-?\.?$/.test(text)) return Number.isFinite(min) && min >= 0 ? "" : text;
+  return "";
 }
 
-export function CssLengthControl({ label, value = "", onChange, defaultUnit = "px", keywords = [], placeholder = "0" }) {
+export function CssLengthControl({ label, value = "", onChange, defaultUnit = "px", keywords = [], placeholder = "0", min }) {
   const allowedKeywords = keywords.filter((item) => CSS_LENGTH_KEYWORDS.has(item));
   const detected = detectLengthUnit(value, defaultUnit);
   const [unit, setUnit] = useState(detected);
@@ -71,7 +86,7 @@ export function CssLengthControl({ label, value = "", onChange, defaultUnit = "p
     setUnit(nextUnit);
     if (CSS_LENGTH_KEYWORDS.has(nextUnit)) { onChange?.(nextUnit); return; }
     const current = lengthInputValue(value, unit, defaultUnit);
-    if (current !== "") onChange?.(composeLengthValue(current, nextUnit, defaultUnit));
+    if (current !== "") onChange?.(composeLengthValue(current, nextUnit, defaultUnit, min));
     else if (CSS_LENGTH_KEYWORDS.has(String(value || ""))) onChange?.("");
   };
   return <div className="vsn-css-length-control">
@@ -84,7 +99,7 @@ export function CssLengthControl({ label, value = "", onChange, defaultUnit = "p
         value={keywordMode ? "" : lengthInputValue(value, unit, defaultUnit)}
         placeholder={keywordMode ? unit : placeholder}
         disabled={keywordMode}
-        onInput={(event) => onChange?.(composeLengthValue(event.currentTarget.value, unit, defaultUnit))}
+        onInput={(event) => onChange?.(composeLengthValue(event.currentTarget.value, unit, defaultUnit, min))}
         aria-label={label || "CSS length"}
       />
       <select className="vsn-css-unit-select" value={unit} onChange={(event) => changeUnit(event.currentTarget.value)} aria-label={`${label || "Length"} unit`}>
@@ -163,7 +178,7 @@ export function ButtonSetControl({ label, value, onChange, options = [] }) {
   );
 }
 
-export function DimensionsControl({ label, values = {}, onChange, unit = "px" }) {
+export function DimensionsControl({ label, values = {}, onChange, unit = "px", min }) {
   const [linked, setLinked] = useState(false);
   const sides = ["top", "right", "bottom", "left"];
   const inferredUnit = useMemo(() => {
@@ -180,7 +195,7 @@ export function DimensionsControl({ label, values = {}, onChange, unit = "px" })
   const [selectedUnit, setSelectedUnit] = useState(inferredUnit);
   useEffect(() => { setSelectedUnit(inferredUnit); }, [inferredUnit]);
   const change = (side, raw) => {
-    const next = composeLengthValue(raw, selectedUnit, unit);
+    const next = composeLengthValue(raw, selectedUnit, unit, min);
     if (linked) {
       onChange?.(Object.fromEntries(sides.map((key) => [key, next])));
     } else {
@@ -194,7 +209,7 @@ export function DimensionsControl({ label, values = {}, onChange, unit = "px" })
       const current = values?.[side];
       if (current === undefined || current === null || current === "") continue;
       const raw = lengthInputValue(current, detectLengthUnit(current, unit), unit);
-      patch[side] = nextUnit === "css" ? String(current) : composeLengthValue(raw, nextUnit, unit);
+      patch[side] = nextUnit === "css" ? String(current) : composeLengthValue(raw, nextUnit, unit, min);
     }
     onChange?.(patch);
   };
@@ -539,7 +554,9 @@ export function ColorGradientControl({
   const triggerRef = useRef(null);
   const colorCapabilities = normalizeColorCapabilities(capabilities, { solidOnly, gradientOnly });
   const type = resolveColorMode(value, colorCapabilities);
-  const isEnabled = enabled ?? value?.enabled !== false;
+  // An optional (toggleable) colour with nothing saved is Off; it must not pretend a white fill is applied.
+  const hasSavedColor = Boolean(value?.color || value?.type === "gradient" || value?.stops?.length);
+  const isEnabled = enabled ?? (toggleable && value?.enabled === undefined ? hasSavedColor : value?.enabled !== false);
   const normalizedValue = type === "gradient" ? { ...value, type: "gradient" } : { ...value, type: "color" };
   useEffect(() => { if (!isEnabled && open) setOpen(false); }, [isEnabled, open]);
   const setEnabled = (nextEnabled) => {
@@ -547,7 +564,7 @@ export function ColorGradientControl({
     if (!onEnabledChange) onChange?.({ ...value, enabled: nextEnabled });
   };
   const preview = isEnabled ? gradientToCss(normalizedValue) : "transparent";
-  const display = !isEnabled ? "Off" : type === "gradient" ? `${value?.gradientType === "radial" ? "Radial" : "Linear"} Gradient` : String(value?.color || "#ffffff").toUpperCase();
+  const display = !isEnabled ? "Off" : type === "gradient" ? `${value?.gradientType === "radial" ? "Radial" : "Linear"} Gradient` : value?.color ? String(value.color).toUpperCase() : "Default";
   return (
     <div className={`vsn-control-block vsn-color-control ${!isEnabled ? "is-disabled" : ""}`}>
       {label ? <div className="flex items-center justify-between gap-2"><FieldLabel>{label}</FieldLabel>{toggleable ? <VsnCheckbox checked={isEnabled} onChange={(event) => setEnabled(event.currentTarget.checked)}>On</VsnCheckbox> : null}</div> : toggleable ? <VsnCheckbox checked={isEnabled} onChange={(event) => setEnabled(event.currentTarget.checked)}>Enable color</VsnCheckbox> : null}
