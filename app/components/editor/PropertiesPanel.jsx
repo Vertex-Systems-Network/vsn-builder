@@ -1,7 +1,7 @@
 import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnUnitField } from "./EditorUi";
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router';
-import { DynamicSourcePanel, DynamicBindingsPanel, ConditionsBuilder, ResponsivePanel, AdvancedLayoutPanel, StateStylesPanel, BreakpointControls } from "./AdvancedBuilderControls";
+import { DynamicSourcePanel, DynamicBindingsPanel, ConditionsBuilder, VisibilityPanel, ResponsivePanel, AdvancedLayoutPanel, StateStylesPanel, BreakpointControls } from "./AdvancedBuilderControls";
 import PolarisIcon from '../ui/PolarisIcon';
 import { ColorGradientControl, SliderControl, TextControl, NumberControl, TypographyControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, TextStrokeControl } from './EditorControls';
 import FontFamilyControl from './fonts/FontFamilyControl';
@@ -1631,6 +1631,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
             <CheckboxControl label="Parallax" checked={interactions.parallax} onChange={(value)=>updateInteraction({parallax:value})} />
             <div className="mt-3 border-t border-[#e3e3e3] pt-3"><InteractionTimelinePanel value={interactions} elementId={selectedElement.id} onChange={updateInteraction} globalMotionTimeline={globalStyles.motionPresetTimeline || null} /></div>
           </SectionHeader> : null}
+          <SectionHeader title="Visibility"><VisibilityPanel element={selectedElement} onUpdate={onUpdate} /></SectionHeader>
           {capabilities.responsive ? <ResponsivePanel element={selectedElement} deviceMode={deviceMode} onUpdate={onUpdate} capabilities={capabilities} globalStyles={globalStyles} /> : null}
           {capabilities.conditions ? <ConditionsBuilder element={selectedElement} onUpdate={onUpdate} /> : null}
           {dynamicFieldsForWidget(selectedElement.type).length ? <DynamicBindingsPanel element={selectedElement} onUpdate={onUpdate} context={bindingContext} /> : null}

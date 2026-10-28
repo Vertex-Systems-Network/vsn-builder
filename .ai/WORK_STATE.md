@@ -42,7 +42,7 @@ QA method:
 1. DONE: **Canvas auto-fit.** The page design fits the visible canvas on load, on window resize and on device switch (desktop/tablet/mobile).
    - Files: `app/components/editor/Canvas.jsx`, `PageEditor.jsx` (zoom/Fit).
    - Done when: no horizontal scroll at 1280, 1440 or 1920 width; Fit is the default zoom; manual zoom is kept until the device changes.
-2. **Show/hide toggles.**
+2. DONE: **Show/hide toggles.**
    - Add an eye toggle for each widget, section and the global header/footer, in the Navigator and on the canvas toolbar.
    - Add per-device visibility (desktop/tablet/mobile) in Advanced.
    - Store the state in node props (`hidden`, `hideOn`).

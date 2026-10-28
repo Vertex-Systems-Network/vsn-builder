@@ -1,3 +1,4 @@
+import { hideOnCss } from "../../builder/visibility.js";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { ContentPolarisIcon } from "../ui/PolarisIcon";
 import { globalCssVariables } from '../../builder/globalDesign';
@@ -1132,6 +1133,12 @@ function RenderNodeCore({
 }
 
 function RenderNode(props) {
+  const visibilityCss = props.node?.meta?.hidden === true ? "" : hideOnCss(props.node?.id, props.node?.meta);
+  if (visibilityCss) return <><style>{visibilityCss}</style><RenderNodeInner {...props} /></>;
+  return <RenderNodeInner {...props} />;
+}
+
+function RenderNodeInner(props) {
   const templates=useContext(WidgetTemplateContext); const template=templates?.[props.node?.type];
   const base=<RenderNodeCore {...props}/>; if(!template?.enabled||!template?.html)return base;
   try { const descriptor=visualTemplateTreeToDescriptor(parseVisualTemplate(template.html),{props:props.node?.props||{},slot:base,templateKey:props.node.type}); const css=scopeVisualTemplateCss(template.css||"",props.node.type); return <>{css?<style>{css}</style>:null}{renderSdkEditorValue(descriptor,`template-${props.node?.id||props.node?.type}`)}</>; }

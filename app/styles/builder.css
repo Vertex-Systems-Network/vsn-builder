@@ -698,3 +698,6 @@ html[data-vsn-theme="dark"] #vsn-editor-overlay-root .vsn-editor-code-suggestion
 [data-vsn-editor-root="true"].vsn-editor-dark .vsn-properties-panel [class~="text-[#625BA8]"]{color:#B3ADF0!important}
 [data-vsn-editor-root="true"].vsn-editor-dark .vsn-editor-category-toggle>span{color:#C3CAD5!important}
 [data-vsn-editor-root="true"].vsn-editor-dark .vsn-canvas-pan-surface{background:#0B0E13!important}
+
+/* Hidden elements (meta.hidden or hidden on the current device) stay selectable but dimmed. */
+[data-vsn-editor-root="true"] [data-vsn-editor-hidden="1"] { opacity: .35; outline: 1px dashed #8a8a8a; outline-offset: -1px; background-image: repeating-linear-gradient(135deg, transparent 0 8px, rgba(0,0,0,.04) 8px 16px); }

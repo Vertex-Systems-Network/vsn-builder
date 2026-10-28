@@ -1537,6 +1537,10 @@ export default function PageEditor({
           onRename={handleRename}
           onToggleHidden={(id) => toggleMeta(id, "hidden")}
           onToggleLocked={(id) => toggleMeta(id, "locked")}
+          globalSections={["header", "footer"].includes(page?.template) ? [] : [
+            { key: "header", label: "Header", visible: pageSettings.headerEnabled !== false, onToggle: () => handlePageSettingsChange({ ...pageSettings, headerEnabled: pageSettings.headerEnabled === false }) },
+            { key: "footer", label: "Footer", visible: pageSettings.footerEnabled !== false, onToggle: () => handlePageSettingsChange({ ...pageSettings, footerEnabled: pageSettings.footerEnabled === false }) },
+          ]}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
           width={leftPanelWidth}

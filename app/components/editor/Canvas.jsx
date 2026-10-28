@@ -1,3 +1,4 @@
+import { isHiddenOnDevice } from "../../builder/visibility.js";
 import { Component, createContext, memo, useContext, useEffect, useRef, useState } from 'react';
 import SectionInserter from './SectionInserter';
 import { acceptsChildren } from '../../builder/widgetRegistry';
@@ -501,7 +502,7 @@ function RenderNode({
   const [dropPosition, setDropPosition] = useState("");
   const dragFrameRef = useRef(0);
   const pendingDropPositionRef = useRef("");
-  if (node?.meta?.hidden === true) return null;
+  const editorHidden = isHiddenOnDevice(node, previewMode);
   node = applyPreviewDynamicSource(node, { previewCollection, previewProduct, previewBlog, previewArticle, previewSearch });
   node = applyDynamicBindings(node, { loop: loopContext, product: previewProduct, collection: previewCollection, blog: previewBlog, article: previewArticle, search: previewSearch, customer: { name: "Customer", email: "customer@example.com" } });
   node = applyResponsiveNode(node, previewMode, responsiveConfig);
@@ -1132,6 +1133,7 @@ function RenderNode({
   return <div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */
     data-vsn-id={node.id}
     data-vsn-node-type={node.type}
+    data-vsn-editor-hidden={editorHidden ? "1" : undefined}
     data-vsn-component-id={node.type === "component-instance" ? String(node.props?.componentId || "") : undefined}
     data-vsn-component-slot={node.meta?.__vsnComponentSlotName || undefined}
     data-vsn-sticky-element={interactions.sticky ? "1" : undefined}
@@ -1205,7 +1207,7 @@ function RenderNode({
     {dropPosition === 'after' ? <span className="pointer-events-none absolute -bottom-1 left-0 right-0 z-30 h-1 rounded-full bg-[#625BA8] shadow-[0_0_0_3px_rgba(98,91,168,.14)]" /> : null}
     {dropPosition === 'inside' ? <span className="pointer-events-none absolute inset-0 z-30 rounded-[inherit] border-2 border-dashed border-[#625BA8] bg-[#625BA8]/5" /> : null}
     {content}
-    {selected && <span className="pointer-events-none absolute -top-6 left-0 z-20 flex items-center gap-1 rounded-t bg-[#625BA8] px-2 py-1 text-[10px] text-white">{node.label}{node.conditions?.enabled && !conditionMatches ? ' · hidden by condition' : ''}</span>}
+    {selected && <span className="pointer-events-none absolute -top-6 left-0 z-20 flex items-center gap-1 rounded-t bg-[#625BA8] px-2 py-1 text-[10px] text-white">{node.label}{node.conditions?.enabled && !conditionMatches ? ' · hidden by condition' : ''}{editorHidden ? (node.meta?.hidden === true ? ' · hidden' : ` · hidden on ${previewMode}`) : ''}</span>}
   </div>;
 }
 const MemoRenderNode = memo(RenderNode, (prev, next) => prev.node === next.node && prev.selectedId === next.selectedId && prev.previewMode === next.previewMode && prev.previewCollection === next.previewCollection && prev.previewProduct === next.previewProduct && prev.previewBlog === next.previewBlog && prev.previewArticle === next.previewArticle && prev.previewSearch === next.previewSearch && prev.reusableSections === next.reusableSections);

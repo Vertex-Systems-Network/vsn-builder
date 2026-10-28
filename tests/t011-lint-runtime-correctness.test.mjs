@@ -3,14 +3,17 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { SECTION_PRESETS, createSectionPreset } from "../app/data/sectionPresets.js";
 
-test("Canvas hooks run before conditional hidden-node return", () => {
+test("Canvas hooks run before hidden-node visibility is resolved", () => {
   const source=readFileSync("app/components/editor/Canvas.jsx","utf8");
   const start=source.indexOf("function RenderNode(");
   const end=source.indexOf("function ",start+17);
   assert.ok(start>=0,"expected actual editor renderer");
   const body=source.slice(start,end>start?end:undefined);
-  const firstReturn=body.indexOf("if (node?.meta?.hidden === true) return null;");
-  assert.ok(firstReturn>0,"hidden-node early return must remain");
+  // Hidden nodes render dimmed in the editor (no early return); every hook must
+  // still run before visibility is computed so toggling never changes hook order.
+  assert.equal(body.includes("if (node?.meta?.hidden === true) return null;"),false,"hidden nodes stay selectable on the canvas");
+  const firstReturn=body.indexOf("const editorHidden = isHiddenOnDevice(node, previewMode);");
+  assert.ok(firstReturn>0,"canvas must resolve per-device visibility");
   for(const expression of [
     "useContext(LoopItemContext)",
     "useContext(ComponentLibraryContext)",
@@ -23,7 +26,7 @@ test("Canvas hooks run before conditional hidden-node return", () => {
   ]){
     const hook=body.indexOf(expression);
     assert.ok(hook>=0 && hook<firstReturn,
-      expression+" must execute before hidden-node return");
+      expression+" must execute before visibility is resolved");
   }
 });
 
