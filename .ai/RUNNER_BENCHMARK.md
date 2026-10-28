@@ -49,6 +49,14 @@ Required protected security/quality checks are **not** deferred. They still run 
 - Change: `ci.yml` push is limited to `development` and `main`; a `concurrency` group cancels superseded pull_request runs only. Protected-branch pushes are never cancelled, so every merged SHA keeps full evidence. `tests/ci-audit-gate-continuity.test.mjs` pins both properties. Expected saving: one ~6-minute `verify` run per PR push, plus superseded PR runs.
 - Rollback: restore unfiltered `push:` and remove the `concurrency` block.
 
+### 2026-10-28 / repository-wide superseded-run cancellation
+
+- Inventory: 49 workflows; 35 run on `pull_request`, and 28 of those had no `concurrency` block, so every push to an open PR left the previous run of each of those workflows consuming a runner until it finished.
+- Change: the 28 workflows gain `group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}` with `cancel-in-progress: ${{ github.event_name == 'pull_request' }}` (the `ci.yml` pattern). Five workflows that already cancelled every run (`dev-chromium-browser-acceptance`, `development-localhost-smoke`, `postgres-ephemeral-runtime-integration`, `t020-cloudflare-native-ssr`, `workerd-local-compatibility`) also cancelled protected `development` push runs; they now cancel pull_request runs only, so every merged SHA keeps full evidence.
+- Unchanged: intentional serial groups with `cancel-in-progress: false` (`t018-staging-private-r2-backup`, `t019-private-staging-secret-sync`, `t021-*` deploy/draft) still queue and never cancel. Every job that touches real Staging runs only on push or workflow_dispatch, so a cancelled PR run never interrupts infrastructure work.
+- Guard: `tests/ci-runner-concurrency.test.mjs` requires a concurrency group on every pull_request workflow and forbids cancelling push runs.
+- Rollback: remove the added `concurrency` blocks and restore the five previous groups.
+
 ## Deferred benchmark backlog
 
 1. Measure total runner minutes for one protected merge, including duplicate push + pull_request runs.

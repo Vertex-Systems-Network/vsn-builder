@@ -18,6 +18,10 @@ on:
       - ".github/workflows/t024-shop-redact-generation-fence.yml"
 permissions:
   contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   sdk-authenticated-gdpr-boundary:
     runs-on: ubuntu-24.04

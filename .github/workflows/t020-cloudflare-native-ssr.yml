@@ -22,8 +22,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: t020-cf-vite-${{ github.ref }}
-  cancel-in-progress: true
+  group: t020-cf-vite-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   cloudflare-vite-full-merchant:
     runs-on: ubuntu-latest
