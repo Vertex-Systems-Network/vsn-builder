@@ -1,3 +1,4 @@
+import { isPrerenderCacheable, prerenderKey, PRERENDER_TEMPLATES, storePrerender } from "../services/storefront-prerender.server.js";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { buildNodeStyle } from "../builder/styleEngine.js";
@@ -639,6 +640,15 @@ export async function loader({ request, params }) {
 			googleMapsApiKey, googleCaptcha, formConfigs,
 			localization: { locale: localizationRender.locale || requestedLocale, marketKey: requestedMarketKey, direction: localizationRender.direction || "ltr" },
 		});
+
+	if (fragmentMode && admin && PRERENDER_TEMPLATES.includes(requestedTemplate)) {
+		try {
+			const ruleCount = await db.builderTemplateRule.count({ where: { shop: session.shop, template: requestedTemplate, enabled: true } });
+			if (isPrerenderCacheable({ template: requestedTemplate, html, experiment: experimentMeta, localizationEnabled, hasLiquid: hasLiquidPlaceholders(html), dynamicData: [dynamicMetaobjects, widgetQueries, loopQueries], elementGroups: [resolvedElements, globalHeader?.elements || [], globalFooter?.elements || []], ruleCount })) {
+				await storePrerender(admin, { key: prerenderKey(requestedTemplate, requestedResourceHandle), html });
+			}
+		} catch (error) { console.warn("VSN prerender cache skipped:", error?.message || error); }
+	}
 
 	if (hasLiquidPlaceholders(html)) {
 		const liquid = buildLiquidBody(html, { enabled: !enterpriseSettings.safeMode });
