@@ -996,7 +996,7 @@ function RenderNodeCore({
 					width={renderDimensions.width || undefined}
 					height={renderDimensions.height || undefined}
 					loading={imageProps.loading}
-					fetchPriority={imageProps.fetchPriority}
+					{...{ fetchpriority: imageProps.fetchPriority }}
 					decoding="async"
 					className="vsn-image-widget"
 					style={{

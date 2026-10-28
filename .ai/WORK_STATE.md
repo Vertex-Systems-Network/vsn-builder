@@ -32,7 +32,7 @@ updated_at: 2026-10-28
 3. DONE (PR #412): Preview opens `/preview` in its own tab outside the Shopify admin shell; the editor streams live (unsaved) state to it via same-origin postMessage.
 4. DONE (PR #412): 134/138 module audits pass; ecosystem manifest regenerated; remaining 4 are stale source-marker checks (fonts, Trash now in table filter, carousel markers) with working behaviour. Audit every module: options, systems, behaviour, logic.
 5. DONE (PR #412): editor loader runs 9 independent DB/Admin reads in parallel instead of serially; client bundles measured (editor 163 KB gzip). App and page load time.
-6. Editor UI issues.
+6. DONE (PR #412): SSR sweep of 117 widgets x Content/Style/Advanced + preview renders clean; fixed SDK key-spread and fetchPriority React warnings; storefront buttons no longer stretch full width. Editor UI issues.
 7. Storefront: no loader flash — widget output files installed in the theme on activation, content renders with the Shopify page.
 8. Setup page appears on app activation and walks required steps one by one.
 
@@ -88,7 +88,7 @@ Instead it must:
 3. compare repository evidence with the fields above;
 4. DONE (PR #412): 134/138 module audits pass; ecosystem manifest regenerated; remaining 4 are stale source-marker checks (fonts, Trash now in table filter, carousel markers) with working behaviour. reconcile stale state silently when the answer is recoverable from Git/repository evidence;
 5. DONE (PR #412): editor loader runs 9 independent DB/Admin reads in parallel instead of serially; client bundles measured (editor 163 KB gzip). verify whether any `in_flight_step` actually completed before repeating it;
-6. continue from `next_exact_action` or the earliest unverified sub-step;
+6. DONE (PR #412): SSR sweep of 117 widgets x Content/Style/Advanced + preview renders clean; fixed SDK key-spread and fetchPriority React warnings; storefront buttons no longer stretch full width. continue from `next_exact_action` or the earliest unverified sub-step;
 7. ask the owner only when a genuinely material product/security/data-loss decision cannot be resolved from repository evidence.
 
 Conversation memory is never required for resume.

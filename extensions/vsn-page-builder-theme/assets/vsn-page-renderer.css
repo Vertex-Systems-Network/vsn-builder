@@ -73,6 +73,7 @@
 .vsn-page .vsn-heading,
 .vsn-page .vsn-text { margin: 0; }
 .vsn-page .vsn-button { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; }
+:where(.vsn-page .vsn-button) { width: fit-content; max-width: 100%; }
 .vsn-global-header[data-vsn-sticky="1"] { position: sticky; top: 0; z-index: 50; }
 .vsn-global-header[data-vsn-transparent="1"] { position: absolute; inset: 0 0 auto 0; z-index: 50; background: transparent !important; }
 .vsn-global-header,
