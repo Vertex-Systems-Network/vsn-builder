@@ -93,7 +93,7 @@ test("Local-only developer simulation remains available and cannot sync real Sho
   VSN_DEFAULT_PLAN:"sliver",VSN_SYNC_SHOPIFY_BILLING_IN_DEVELOPMENT:undefined,
  },async()=>{
   const plan=await resolveEntitlementPlan(db(null),shop);
-  assert.equal(plan.key,"sliver");
+  assert.equal(plan.key,"silver");
   assert.equal(plan.entitlementVerified,false);
   assert.equal(plan.developerMode,true);
   const result=await syncShopifySubscription({shop,db:db(null),admin:{

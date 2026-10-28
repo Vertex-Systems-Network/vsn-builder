@@ -17,7 +17,7 @@ check("Production application URL", productionUrl(appUrl), appUrl || "missing");
 check("OAuth callback matches app URL", Boolean(appUrl) && redirect === `${appUrl.replace(/\/+$/,"")}/auth/callback`, redirect || "missing");
 check("Embedded app enabled", /^embedded\s*=\s*true$/m.test(text));
 check("Dev URL mutation disabled", /^automatically_update_urls_on_dev\s*=\s*false$/m.test(text));
-check("Webhook API version 2026-07", /^api_version\s*=\s*"2026-07"$/m.test(text));
+check("Webhook API version 2026-10", /^api_version\s*=\s*"2026-10"$/m.test(text));
 for (const topic of ["app/uninstalled","app/scopes_update","orders/paid"]) check(`Webhook ${topic}`, text.includes(`"${topic}"`));
 for (const topic of ["customers/data_request","customers/redact","shop/redact"]) check(`Compliance webhook ${topic}`, new RegExp(`compliance_topics\\s*=\\s*\\[[^\\]]*"${topic.replace("/","\\/")}"`).test(text));
 check("App proxy route", /\[app_proxy\][\s\S]*?url\s*=\s*"\/builder-proxy"[\s\S]*?prefix\s*=\s*"apps"[\s\S]*?subpath\s*=\s*"vsn-builder"/m.test(text));

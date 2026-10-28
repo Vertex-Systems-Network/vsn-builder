@@ -4,18 +4,33 @@
 schema_version: 1
 status: active
 mode: implementation
-task_key: T030-staging-shopify-worker-runtime-adapter
-owner_intent: "Fix the Staging Admin GraphQL identity failure by initializing Shopify SDK runtime adapter in the Cloudflare Worker entry, matching the working Metafields app bootstrap."
+task_key: T033-staging-theme-app-embed
+owner_intent: "Make the VSN theme app embed available in the Shopify Staging Theme Editor and verify the merchant-controlled activation path."
 base_branch: development
-working_branch: fix/staging-shopify-worker-adapter
-pull_request: https://github.com/Vertex-Systems-Network/vsn-builder/pull/382
-last_verified_commit: c313d17f234dd876271fcdcada51f91702f7844a
-last_verified_step: "On branch fix/staging-shopify-worker-adapter, workers/app.js now initializes the official Shopify React Router Node adapter before Worker SDK imports; Metafields uses the same adapter bootstrap and is loading in Staging Admin. Local tests not run."
-in_flight_step: "Inspect exact-head CI and required review on PR #382."
-next_exact_action: "After required exact-head CI/review and merge, promote only through protected Staging workflows; recheck Admin GraphQL identity and billing on the deployed SHA."
+working_branch: fix/staging-theme-embed-version
+pull_request: 402 (open)
+last_verified_commit: 9c84af627aff1bb8ddb33af32932e5982fb7504f
+last_verified_step: "On 2026-10-28, the authenticated Staging Theme Editor showed 'You don't have any apps with embeds installed' and the toast 'App embed does not exist' for the VSN activation deep link. The repository contains the VSN Page Renderer app-embed block (target body), but protected T021 deploys only the Cloudflare Worker via Wrangler and does not publish a Shopify app version. PR #402 adds a protected manual draft-only Shopify app-version workflow; exact-head Repository Integrity, Environment Isolation, Production Confidence, and CodeQL all passed. The policy test passed 3/3 and workflow YAML parsed locally. T023 run #33 succeeded but captured /app/pages only; no /app CPU event was observed."
+in_flight_step: "Wait for PR #402 to merge and for the app-scoped Shopify automation token to be configured in the protected cloudflare-staging environment."
+next_exact_action: "After PR #402 merges, confirm SHOPIFY_APP_AUTOMATION_TOKEN is available in cloudflare-staging, dispatch the draft workflow on protected development with its exact confirmation, and inspect the unreleased app version. Keep app-version release and merchant theme activation separate from this draft operation."
 approval_needed_now: false
-updated_at: 2026-10-25
+updated_at: 2026-10-28
 ---
+
+## Eight paid plan catalog — 2026-10-26
+
+- Public plan keys and labels: Starter, Solo, Silver, Gold, Business, Platinum, Agency, Scale. No public Free plan; inactive stores receive no entitlement.
+- Updated the shared catalog, Partner-handle mapping/legacy aliases, server-side quotas, plan cards and comparison table, worker plan mirror, tests, audits, docs and task manifest.
+- Verification on supported Node 22.18.0: `npm run typecheck`, `npm run lint`, `npm run qa`, and 62 focused billing/entitlement tests passed. `git diff --check` passed. Shopify Partner plan publication/pricing is still a required external step; no hosted Staging result is claimed.
+- The local `git push` had no credentials; branch/PR updates were published through the connected GitHub integration.
+- CI exposed and the PR fixed three stale contract expectations: unknown monthly plan keys, legacy `sliver` normalized to canonical `silver`, and the Q5.1/Q5.3/Q5.5 audit assumptions. Latest exact PR head passed all observed workflows, including T021 artifact dry-run; no hosted Staging deployment has been run.
+- Shopify Partner publication and live billing verification for all eight offers remain pending; prices in code are proposed values until Partner configuration is verified.
+
+## Eight-plan quota hardening — 2026-10-27
+
+- Started from protected development SHA `efd6c9b7263e0fa50c2a84e253c1c4f741315483` on `codex/eight-plan-quota-hardening`.
+- Added transactional per-shop quota serialization and removed fail-open zero-usage fallbacks. Applied it to page creation, import (including imported section dependencies), duplication, restore, backup restore, onboarding demo seeding, campaigns, floating elements, Marketplace installs, CRO experiment creation/duplication/reactivation, AI generation reservations, and collaboration seats. Backup restore also checks page and marketplace-install capacity. Worker page creation uses the shared quota lock. Marketplace free-tier catalog items now require Starter rather than mapping the catalog label `free` to the inactive billing tier.
+- Initial exact-head CI found two gates: `app/routes/app.pages.jsx` exceeded the Milestone G line ceiling by three counted lines, and the Milestone H static audit expected an inline `db.$transaction` call in the import service. Both are corrected: create/duplicate use `createPageWithQuota`, and the audit verifies the shared `withShopQuotaLock` transaction helper. Milestone H passes 39/39 and codebase health passes at 1,214/1,225 lines. On Node 22.18.0, typecheck, QA (429 files; Phase C 112/112), focused billing/plan/Worker tests (27/27), touched-file ESLint, and `git diff --check` pass. Exact-head CI on `afe2882` passed all seven required workflows, including the T021 dry run. PR review is still required before merge; no Staging promotion has occurred.
 
 ## Purpose
 
@@ -93,7 +108,9 @@ Do not update it for every keystroke or trivial local edit.
 
 ## Current state
 
-**2026-10-25:** PR #368 merged at `b2836a8`; protected T021 run #16 deployed it. `/healthz` and `/readyz` returned 200 and unauthenticated `/app` returned 302. A real Shopify Admin launch still showed `about:blank`; T023 run #7 saw billing-sync-failed, paid-plan-not-verified and billing-notice-session-rotated, but no successful HTTP status. PR #369 adds safe app/OAuth response metadata so the next live tail can distinguish HTML from reauthorization. The internal Staging app cannot verify Partner `activeSubscription`; paid page data and mutations remain gated.
+**2026-10-26:** PR #384 wired the full React Router app to the Staging Worker; PR #385 repaired the protected deploy config guard; PR #386 added safe session persistence reason codes. All three are merged to protected `development`, and T021 run #34 deployed `45e9d41b342721f3ccce8a10f81512d1d90c9a6a` to Staging. Live Shopify Admin showed the full navigation and plan catalog, but repeat opens/navigation failed intermittently. Protected T023 run #21 recorded Cloudflare invocation outcome `exceededCpu`, which is the current blocker. Production remains untouched.
+
+**2026-10-26 billing follow-up:** PR #391 at `02ecff5a5dadcf1666ae7d73e8d959851820d827` is merged and its T021 run #39 passed. Live Staging now loads Dashboard and Plans & License; forced billing refresh says `Shopify subscription status verified.` The current subscription is `canceling` through 2026-11-24, while entitlements remain fail-closed with 0 pages and source `production-unrecognized-paid-contract`. Shopify hosted App Pricing confirms subscription expiration on 2026-11-24. A Tier-1 branch `fix/staging-plan-handle-diagnostic` now preserves one syntactically safe unmapped Partner API plan handle and surfaces it on Plans & License without granting access. Focused tests passed under Node 24, but the repository rejects Node 24; `npm ci` stopped at its runtime guard and ESLint/typecheck/full local QA are NOT VERIFIED. Continue only after supported Node 22.18+ is available; no PR or additional Staging deployment yet. Production untouched.
 
 Historical note (2026-09-18):
 

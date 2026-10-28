@@ -12,6 +12,7 @@ const CSP="default-src 'none'; script-src https://cdn.shopify.com; "+
   "img-src 'self' data:; object-src 'none'; base-uri 'none'; "+
   "form-action 'none'; frame-ancestors https://admin.shopify.com https://*.myshopify.com";
 import { renderStagingBillingRequired } from "./worker-shopify-staging-billing-notice.js";
+import { buildStagingPricingUrl } from "./worker-shopify-staging-plans.js";
 export { renderStagingBillingRequired };
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
@@ -84,6 +85,7 @@ export function renderVerifiedStagingMerchantDashboard({shop,apiKey,summary}={})
   }).join("");
   const key=htmlText(apiKey,32);
   const host=htmlText(shop,250);
+  const plansUrl='/app/plans?shop='+shopQuery;
   const pageRows=rows||'<li><div><div class="row-title">No pages yet</div>'+
     '<div class="row-meta">New pages will appear here after verified editor integration.</div></div></li>';
   const markup='<!doctype html><html lang="en"><head><meta charset="utf-8">'+
@@ -94,7 +96,7 @@ export function renderVerifiedStagingMerchantDashboard({shop,apiKey,summary}={})
     '<style>'+css+'</style></head><body>'+
     '<main><div class="eyebrow">VSN | Builder · Staging preview</div>'+
     '<h1>Builder overview</h1><p class="muted">Read-only pages from your verified store: '+
-    host+'</p><section class="cards" aria-label="Page counts">'+
+    host+'</p><p><a href="'+plansUrl+'">Plans &amp; License</a></p><section class="cards" aria-label="Page counts">'+
     '<div class="card"><div class="label">Total pages</div><div class="count">'+summary.total+'</div></div>'+
     '<div class="card"><div class="label">Drafts</div><div class="count">'+summary.draft+'</div></div>'+
     '<div class="card"><div class="label">Published</div><div class="count">'+summary.published+'</div></div>'+
@@ -133,6 +135,7 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
     syncVerifiedPaidRead:true,
     onUnverifiedPaidRead:({shop,billingCode})=>renderStagingBillingRequired({
       shop,apiKey:env.SHOPIFY_API_KEY,billingCode,
+      pricingUrl:buildStagingPricingUrl(shop,env.SHOPIFY_APP_HANDLE),
     }),
     onAuthenticated:async({shop,pageSummary})=>{
       const summary=await pageSummary();

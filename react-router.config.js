@@ -6,7 +6,9 @@ const ci = process.env.CI === "true" &&
   process.env.VSN_CLOUDFLARE_NATIVE_CI === "1" &&
   process.env.APP_ENV === "development" &&
   process.env.NODE_ENV === "test";
+const stagingWorker = process.env.APP_ENV === "staging" &&
+  process.env.VSN_STAGING_FULL_APP_BUILD === "1";
 export default {
   ssr: true,
-  buildDirectory: ci ? "dist" : "build",
+  buildDirectory: ci || stagingWorker ? "dist" : "build",
 };

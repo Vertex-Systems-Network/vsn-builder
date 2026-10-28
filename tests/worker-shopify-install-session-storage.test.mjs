@@ -76,6 +76,12 @@ function database(){
             return {...rows.get(where.id)};
           },
           async findUnique({where}){return rows.get(where.id)||null},
+          async delete({where}){
+            calls.push("session:delete");
+            const row=rows.get(where.id);
+            if(!row)throw Error("missing session");
+            rows.delete(where.id);return {...row};
+          },
         },
       };
       try {
@@ -122,6 +128,44 @@ test("token rotation updates official token but DOES NOT counterfeit installatio
  assert.equal(fx.lifecycle.get(shop).installedAt.getTime(),previous);
  assert.equal(fx.sessions.get("offline_"+shop).accessToken,"rotated-token");
  assert.equal(fx.sessions.get("offline_two.myshopify.com").accessToken,"another-shop-token");
+});
+test("SDK token invalidation safely deletes its persisted session",async()=>{
+ const fx=database();await persist(offline(),fx);
+ const session=offline();
+ const base={
+  async loadSession(){return session},
+  async findSessionsByShop(){return [session]},
+  async deleteSession(){return true},async deleteSessions(){return true},
+  async isReady(){return true},
+ };
+ const safe=createWorkerGenerationSessionStorage(fx.client,base,{
+  SessionStorage:PrismaSessionStorage,clock:()=>baseTime,
+ });
+ const loaded=await safe.loadSession(session.id);
+ assert.equal(loaded.accessToken,"synthetic-token-1");
+ loaded.accessToken=undefined; // Shopify SDK clears this after Admin API rejects it.
+ assert.equal(await safe.storeSession(loaded),true);
+ assert.equal(fx.sessions.has(session.id),false);
+ assert(fx.calls.includes("session:delete"));
+});
+test("stale SDK token invalidation cannot delete a concurrently rotated token",async()=>{
+ const fx=database();await persist(offline(),fx);
+ const session=offline();
+ const base={
+  async loadSession(){return session},
+  async findSessionsByShop(){return [session]},
+  async deleteSession(){return true},async deleteSessions(){return true},
+  async isReady(){return true},
+ };
+ const safe=createWorkerGenerationSessionStorage(fx.client,base,{
+  SessionStorage:PrismaSessionStorage,clock:()=>baseTime,
+ });
+ const loaded=await safe.loadSession(session.id);
+ fx.sessions.get(session.id).accessToken="concurrently-rotated-token";
+ loaded.accessToken=undefined;
+ assert.equal(await safe.storeSession(loaded),true);
+ assert.equal(fx.sessions.get(session.id).accessToken,"concurrently-rotated-token");
+ assert(!fx.calls.includes("session:delete"));
 });
 test("old SDK storeSession cannot resurrect an uninstalled shop",async()=>{
  const fx=database();
@@ -178,15 +222,20 @@ test("session failures are blocked without a valid transactional installation mo
   persistWorkerShopifySessionWithGeneration(data,bad,{SessionStorage:PrismaSessionStorage}),
   {code:"VSN_WORKER_INSTALL_SESSION_BLOCKED"}
  );
- for(const bad of [
-  {...data,id:"unverified-offline-id"},
-  {...data,shop:"invalid.example.net"},
-  {...data,accessToken:""},
-  {...data,isOnline:"no"},
-  {...online(),id:"offline_"+shop},
+ for(const [bad,safeReason] of [
+  [{...data,id:"unverified-offline-id"},"offline-session-id-mismatch"],
+  [{...data,shop:"invalid.example.net"},"invalid-session-shop"],
+  [{...data,accessToken:""},"invalid-session-access-token"],
+  [{...data,accessToken:undefined},"invalid-session-access-token"],
+  [{...data,isOnline:"no"},"invalid-session-online-flag"],
+  [{...online(),id:"offline_"+shop},"online-session-id-offline-format"],
  ])await assert.rejects(
   persistWorkerShopifySessionWithGeneration(bad,database().client,{SessionStorage:PrismaSessionStorage}),
-  {code:"VSN_WORKER_INSTALL_SESSION_BLOCKED"}
+  error=>error.code==="VSN_WORKER_INSTALL_SESSION_BLOCKED"&&error.safeReason===safeReason
+ );
+ await assert.rejects(
+  persistWorkerShopifySessionWithGeneration(data,{...database().client,$transaction:null},{SessionStorage:PrismaSessionStorage}),
+  error=>error.code==="VSN_WORKER_INSTALL_SESSION_BLOCKED"&&error.safeReason==="invalid-session-transaction"
  );
 });
 test("SDK storage wrapper intercepts writes and delegates reads/deletes to official storage",async()=>{

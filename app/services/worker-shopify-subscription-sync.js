@@ -6,7 +6,9 @@ const ORG=/^[A-Za-z0-9_-]{1,120}$/;
 const VERSION=/^2026-(07|10)$|^unstable$/;
 // The allowlisted private $0 Shopify test plan exists only to validate the
 // protected Staging billing flow. It is not a commercial entitlement tier.
-const HANDLES=new Set(["starter","sliver","gold","platinum","shopify-test"]);
+const PLAN_HANDLES=new Set(["starter","solo","silver","gold","business","platinum","agency","scale"]);
+const HANDLES=new Set([...PLAN_HANDLES,"sliver","platenium","shopify-test"]);
+const canonicalPlan=handle=>handle==="sliver"?"silver":handle==="platenium"?"platinum":HANDLES.has(handle)?handle:null;
 const CACHE_TTL_MS=5*60*1000;
 const QUERY=`query VsnStagingSubscription($appId: ID!, $shopId: ID!, $occurredAtMin: DateTime!) {
   activeSubscription(appId:$appId,shopId:$shopId) {
@@ -30,12 +32,12 @@ function newestEvent(edges){
 }
 function planFromHandles(items){
   const matches=[...new Set((items||[]).map(item=>text(item?.handle).toLowerCase()).filter(handle=>HANDLES.has(handle)))];
-  return matches.length===1?matches[0]:null;
+  return matches.length===1?{key:canonicalPlan(matches[0]),handle:matches[0]}:null;
 }
 function validConfig(env){
   const org=text(env?.SHOPIFY_PARTNER_ORGANIZATION_ID);
   const token=text(env?.SHOPIFY_PARTNER_API_TOKEN);
-  const version=text(env?.SHOPIFY_PARTNER_API_VERSION||"2026-07");
+  const version=text(env?.SHOPIFY_PARTNER_API_VERSION||"2026-10");
   if(env?.APP_ENV!=="staging"||env?.VSN_WORKER_NAME!=="vsn-builder-staging"||
      env?.VSN_STAGING_BILLING_SYNC_ENABLED!=="true"||
      env?.SHOPIFY_BILLING_TEST_MODE!=="true"||
@@ -219,13 +221,13 @@ async function partnerState({config,appId,shopId,shop,fetchImpl,now}){
 
   const activePlan=active?planFromHandles(active.items):null;
   const eventHandle=text(event?.plan?.handle).toLowerCase();
-  const eventPlan=HANDLES.has(eventHandle)?eventHandle:null;
+  const eventPlan=HANDLES.has(eventHandle)?{key:canonicalPlan(eventHandle),handle:eventHandle}:null;
   const trialEndsAt=date(active?.trialEndsAt);
   const cycleEnd=date(active?.currentBillingCycle?.endTime);
   const eventCutoff=date(event?.cancelEffectiveOn);
   const canceledState=String(event?.state||"").toUpperCase();
-  let planKey=active?activePlan:eventPlan;
-  let planHandle=active?activePlan:eventPlan;
+  let planKey=(active?activePlan:eventPlan)?.key||null;
+  let planHandle=(active?activePlan:eventPlan)?.handle||null;
   let status="inactive";
   let cancelEffectiveOn=null;
   if(active&&planKey){
@@ -238,7 +240,7 @@ async function partnerState({config,appId,shopId,shop,fetchImpl,now}){
     cancelEffectiveOn=eventCutoff;
   }else if(canceledState==="FROZEN")status="frozen";
   else if(canceledState==="CANCELED")status="canceled";
-  if(!planKey||!HANDLES.has(planKey)||!planHandle){
+  if(!planKey||!HANDLES.has(planKey)||!planHandle||!HANDLES.has(planHandle)){
     planKey="inactive";
     planHandle=null;
     status=["frozen","canceled"].includes(status)?status:"inactive";
@@ -251,8 +253,8 @@ async function partnerState({config,appId,shopId,shop,fetchImpl,now}){
     cancelEffectiveOn,
     currentCycleStart:date(active?.currentBillingCycle?.startTime),
     currentCycleEnd:cycleEnd,
-    pendingPlanKey:pending,
-    pendingPlanHandle:pending,
+    pendingPlanKey:pending?.key||null,
+    pendingPlanHandle:pending?.handle||null,
     pendingBillingPeriod:active?.pendingUpdate?.billingPeriod||null,
     trialEndsAt:status==="trialing"?trialEndsAt:null,
     legacySubscriptionId:active?.legacySubscriptionId||null,

@@ -13,7 +13,7 @@ const lifecycle=read("app/services/shop-data-lifecycle.server.js");
 const topnav=read("app/components/dashboard/TopNav.jsx");
 
 check("Q4 version sync",Number(pkg.version.split(".").at(-1))>=84&&baseline.includes(`version: "${pkg.version}"`)&&baseline.includes('milestone: "Q.'));
-check("Current stable Shopify API contract",config.includes('SHOPIFY_API_VERSION_HANDLE = "2026-07"')&&toml.includes('api_version = "2026-07"')&&server.includes("ApiVersion.July26"));
+check("Current stable Shopify API contract",config.includes('SHOPIFY_API_VERSION_HANDLE = "2026-10"')&&toml.includes('api_version = "2026-10"')&&server.includes("ApiVersion.October26"));
 check("Production config generator packaged",fs.existsSync("scripts/prepare-shopify-production-config.mjs")&&String(pkg.scripts?.["config:production"]||"").includes("prepare-shopify-production-config.mjs"));
 check("Production readiness command packaged",fs.existsSync("scripts/shopify-production-readiness.mjs")&&String(pkg.scripts?.["release:production:check"]||"").includes("shopify-production-readiness.mjs"));
 const threeTierMigration = fs.existsSync("config/deployment/environments.json");

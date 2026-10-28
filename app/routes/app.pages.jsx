@@ -12,7 +12,7 @@ import db from "../db.server.js";
 import { builderActor, getBuilderRole, getRoleActionAccess } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction, getBuilderRoleAccess } from "../utils/builder-permissions.server.js";
 import { finishObservation, startObservation } from "../utils/observability.server";
-import { getQuotaDecision } from "../services/entitlements.server.js";
+import { createPageWithQuota, getQuotaDecision, withShopQuotaLock } from "../services/entitlements.server.js";
 import { handleBulkTemplateAction } from "../services/template-dashboard-actions.server.js";
 import {
 	deleteShopifyPage,
@@ -30,6 +30,7 @@ import { importPagePackage } from "../services/page-transfer.server.js";
 import { makePagePackage } from "../utils/page-transfer.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { loadTemplatesViewSettings, saveTemplatesViewSettings } from "../services/templates-view-settings.server.js";
+import { logCurrentStagingRouteError } from "../services/worker-route-error-diagnostics.server.js";
 
 const PRODUCTS_QUERY = `#graphql
 	query GetBuilderProducts($first: Int!) {
@@ -79,7 +80,7 @@ const COLLECTIONS_QUERY = `#graphql
 	}
 `;
 
-export async function loader({ request }) {
+async function loadPagesRoute({ request }) {
 	const { admin, session } =
 		await authenticate.admin(request);
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
@@ -131,7 +132,6 @@ export async function loader({ request }) {
 		console.error("VSN collections picker failed:", error);
 	}
 
-
 	try {
 		const blogsResponse = await admin.graphql(BLOGS_QUERY, { variables: { first: 100 } });
 		const blogsJson = await blogsResponse.json();
@@ -182,15 +182,12 @@ export async function loader({ request }) {
 	};
 }
 
-export async function action({ request }) {
-  assertTrustedMutationRequest(request);
-	const { admin, session } =
-		await authenticate.admin(request);
-	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) {
-		throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
-	}
-	const paidDenial = await paidMutationDenied(db, session.shop);
-	if (paidDenial) return paidDenial;
+export async function loader(args) {
+	try { return await loadPagesRoute(args); }
+	catch (error) { logCurrentStagingRouteError("app.pages", error); throw error; }
+}
+
+async function runPagesAction({ request, admin, session }) {
 	const builderRole = getBuilderRole(session);
 	const builderActorName = builderActor(session);
 
@@ -270,14 +267,13 @@ export async function action({ request }) {
 			.trim()
 			.toLowerCase() || null;
 
-
 	if (intent === "import") {
 		if (!(await canAccessBuilderAction(db, session, "pages", "import"))) return Response.json({ success:false, error:"Your role cannot import templates." }, { status:403 });
 		let payload; try { payload=JSON.parse(String(formData.get("payload")||"{}")); } catch { return Response.json({success:false,error:"Invalid VSN page package JSON."},{status:400}); }
 		try {
 			const result=await importPagePackage({db,shop:session.shop,payload,actor:builderActorName,role:builderRole});
 			return Response.json({success:true,intent:"import",pageId:result.created.id,message:`Page package imported as a draft${result.dependencies?` with ${result.dependencies} reusable section dependenc${result.dependencies===1?"y":"ies"}`:""}.`});
-		} catch (error) { return Response.json({success:false,error:error instanceof Error?error.message:"Page package import failed."},{status:400}); }
+		} catch (error) { return Response.json({success:false,error:error instanceof Error?error.message:"Page package import failed.",...(error?.code?{code:error.code}:{}),...(error?.decision?{entitlement:error.decision}:{})},{status:error?.status===403?403:400}); }
 	}
 
 	/*
@@ -390,33 +386,22 @@ export async function action({ request }) {
 			title: finalTitle,
 		});
 
-		const page =
-			await db.builderPage.create({
-				data: {
-					shop: session.shop,
-					title: finalTitle,
-					handle,
-					template,
+		const created = await createPageWithQuota(db, session.shop, {
+			title: finalTitle,
+			handle,
+			template,
+			resourceId: ["collection", "product", "blog", "article"].includes(template) ? resourceId : null,
+			resourceHandle: ["collection", "product", "blog", "article"].includes(template) ? resourceHandle : null,
+			isDefault,
+			status: "draft",
+			createdBy: builderActorName,
+			contentJson: JSON.stringify([]),
+			publishedJson: null,
+		});
+		if (created.quota) return Response.json({ success:false,error:created.quota.message,code:created.quota.code,entitlement:created.quota },{status:403});
 
-					resourceId:
-						["collection", "product", "blog", "article"].includes(template) ? resourceId : null,
-
-					resourceHandle:
-						["collection", "product", "blog", "article"].includes(template) ? resourceHandle : null,
-
-					isDefault,
-
-					status: "draft",
-					createdBy: builderActorName,
-					contentJson:
-						JSON.stringify([]),
-					publishedJson: null,
-				},
-			});
-
-		return Response.json({ success: true, intent: "create", pageId: page.id, existing: false });
+		return Response.json({ success: true, intent: "create", pageId: created.page.id, existing: false });
 	}
-
 
 	if (intent === "bulk") return handleBulkTemplateAction({ formData, admin, session, builderRole, builderActorName });
 
@@ -516,6 +501,7 @@ export async function action({ request }) {
 					`Default ${existingPage.template} template updated successfully.`,
 			});
 		} catch (error) {
+			logCurrentStagingRouteError("app.pages", error);
 			console.error(
 				"VSN set default collection error:",
 				error,
@@ -569,6 +555,7 @@ export async function action({ request }) {
 
 			return Response.json({ success: true, intent: "delete", pageId: existingPage.id, message: warnings.length ? "Template moved to Trash with warnings." : "Template moved to Trash. Generated CSS/JS removed.", warnings });
 		} catch (error) {
+			logCurrentStagingRouteError("app.pages", error);
 			console.error("VSN page trash error:", error);
 			return Response.json({ success: false, intent: "delete", error: error instanceof Error ? error.message : "Could not move template to Trash." }, { status: 500 });
 		}
@@ -594,7 +581,14 @@ export async function action({ request }) {
 		}
 
 		const staleFiles = safeParseJson(existingPage.trashedAssetsJson, []);
-		await db.builderPage.update({ where: { id: existingPage.id }, data: { deletedAt: null } });
+		const restoreResult = await withShopQuotaLock(db, session.shop, async (tx) => {
+			const quota = await getQuotaDecision(tx, session.shop, "pages");
+			if (!quota.allowed) return { quota };
+			const page = await tx.builderPage.updateMany({ where: { id: existingPage.id, shop: session.shop, deletedAt: { not: null } }, data: { deletedAt: null } });
+			return { restored: page.count === 1 };
+		});
+		if (restoreResult.quota) return Response.json({success:false,intent:"restore",error:restoreResult.quota.message,code:restoreResult.quota.code,entitlement:restoreResult.quota},{status:403});
+		if (!restoreResult.restored) return Response.json({success:false,intent:"restore",error:"Template changed while it was being restored. Refresh and try again."},{status:409});
 		const warnings = [];
 		if (existingPage.shopifyPageId && existingPage.status === "published") {
 			try { await setShopifyPagePublished({ admin, shopifyPageId: existingPage.shopifyPageId, isPublished: true }); }
@@ -616,7 +610,7 @@ export async function action({ request }) {
 		const staleFiles = safeParseJson(existingPage.trashedAssetsJson, []);
 		const assetResult = await trashTemplateThemeAssets({ admin, session, pageId: existingPage.id, fallbackFiles: staleFiles });
 		if (existingPage.shopifyPageId) {
-			try { await deleteShopifyPage({ admin, shopifyPageId: existingPage.shopifyPageId }); } catch (error) { return Response.json({ success: false, error: error instanceof Error ? error.message : "Shopify page deletion failed." }, { status: 500 }); }
+			try { await deleteShopifyPage({ admin, shopifyPageId: existingPage.shopifyPageId }); } catch (error) { logCurrentStagingRouteError("app.pages", error); return Response.json({ success: false, error: error instanceof Error ? error.message : "Shopify page deletion failed." }, { status: 500 }); }
 		}
 		await db.$transaction([
 			db.builderTemplateRule.deleteMany({ where: { shop: session.shop, pageId: existingPage.id } }),
@@ -641,28 +635,20 @@ export async function action({ request }) {
 				title: duplicateTitle,
 			});
 
-		const duplicatedPage =
-			await db.builderPage.create({
-				data: {
-					shop: session.shop,
-					title: duplicateTitle,
-					handle: duplicateHandle,
-					template: existingPage.template || "page",
-					// A duplicate must never silently become another default template.
-					isDefault: false,
-					resourceId: existingPage.isDefault ? null : existingPage.resourceId,
-					resourceHandle: existingPage.isDefault ? null : existingPage.resourceHandle,
-					status: "draft",
-					createdBy: builderActorName,
-					templateImage: existingPage.templateImage || null,
-					seoScore: Number(existingPage.seoScore ?? 100),
-					pageCount: Number(existingPage.pageCount ?? 1),
-					contentJson:
-						existingPage.contentJson ||
-						JSON.stringify([]),
-					publishedJson: null,
-				},
-			});
+		const duplicateResult = await createPageWithQuota(db, session.shop, {
+			title: duplicateTitle, handle: duplicateHandle,
+			template: existingPage.template || "page", isDefault: false,
+			resourceId: existingPage.isDefault ? null : existingPage.resourceId,
+			resourceHandle: existingPage.isDefault ? null : existingPage.resourceHandle,
+			status: "draft", createdBy: builderActorName,
+			templateImage: existingPage.templateImage || null,
+			seoScore: Number(existingPage.seoScore ?? 100),
+			pageCount: Number(existingPage.pageCount ?? 1),
+			contentJson: existingPage.contentJson || JSON.stringify([]),
+			publishedJson: null,
+		});
+		if (duplicateResult.quota) return Response.json({ success:false,error:duplicateResult.quota.message,code:duplicateResult.quota.code,entitlement:duplicateResult.quota },{status:403});
+		const duplicatedPage = duplicateResult.page;
 
 		try {
 			const translations = await db.builderPageTranslation.findMany({ where: { shop: session.shop, pageId: existingPage.id } });
@@ -749,6 +735,7 @@ export async function action({ request }) {
 					updatedPage.shopifyPageUrl,
 			});
 		} catch (error) {
+			logCurrentStagingRouteError("app.pages", error);
 			console.error(
 				"VSN rename error:",
 				error,
@@ -774,6 +761,17 @@ export async function action({ request }) {
 		success: false,
 		error: "Invalid page action.",
 	};
+}
+
+export async function action({ request }) {
+	try {
+		assertTrustedMutationRequest(request);
+		const { admin, session } = await authenticate.admin(request);
+		if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view builder pages.", { status: 403 });
+		const paidDenial = await paidMutationDenied(db, session.shop);
+		if (paidDenial) return paidDenial;
+		return await runPagesAction({ request, admin, session });
+	} catch (error) { logCurrentStagingRouteError("app.pages", error); throw error; }
 }
 
 async function generateUniqueHandle({
@@ -856,7 +854,6 @@ export default function PagesRoute() {
 		} catch (error) { console.warn("VSN template view settings save failed:", error instanceof Error ? error.message : error); }
 	}, [location.pathname]);
 
-
 	useEffect(() => {
 		const requestedPanel = new URLSearchParams(location.search || "").get("panel");
 		setActiveView(requestedPanel && BUILDER_PANEL_IDS.has(requestedPanel) ? requestedPanel : "pages");
@@ -868,7 +865,6 @@ export default function PagesRoute() {
 		if (!data) return;
 		setPageFeedback({ error: String(data.error || ""), message: String(data.message || "") });
 	}, [activeView, fetcher.data]);
-
 
 	const changeView = useCallback((view) => {
 		const next = BUILDER_PANEL_IDS.has(view) ? view : "pages";
@@ -902,7 +898,6 @@ export default function PagesRoute() {
 		void openEditorWindow();
 		return () => { cancelled = true; };
 	}, [editorWindowSrc]);
-
 
 	useEffect(() => {
 		if (!editorWindowSrc) return undefined;
@@ -953,7 +948,6 @@ export default function PagesRoute() {
 			{ method: "post" },
 		);
 	}
-
 
 	async function setAsDefault(page) {
 		if (!["collection", "product", "blog", "article"].includes(page.template)) return;

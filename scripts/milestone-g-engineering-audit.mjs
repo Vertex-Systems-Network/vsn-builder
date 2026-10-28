@@ -14,7 +14,7 @@ check("Milestone G contract is preserved in v2.5.56 or later",Number(pkg.version
 check("Milestone G keeps completed roadmap phases 0–16",baseline.phase===16&&baselineJs.includes("15, 16"));
 check("Plans billing-period UX remains compatible with Shopify authority",(pricing.includes("Billing period")&&pricing.includes("Monthly")&&pricing.includes("Yearly")&&pricing.includes("setAnnual"))||pricing.includes("billing period")&&pricing.includes("Shopify Admin"));
 check("Plans preserve Shopify-managed authoritative billing",pricing.includes("Shopify App Pricing remains authoritative")&&pricing.includes("does not create Billing API subscriptions")&&pricing.includes("never treats a plan_handle query parameter as proof")&&!pricing.includes("searchParams.set(\"interval\"")&&!pricing.includes("searchParams.set(\"plan\""));
-check("Established four-paid Plans visual rhythm preserved without Free",pricing.includes("Most Popular")&&pricing.includes("Frequently Asked Questions")&&pricing.includes("Starter, Sliver, Gold & Platinum")&&!pricing.includes("Free, Silver, Gold & Platinum"));
+check("Eight paid Plans tiers and comparison remain visible without a Free tier",pricing.includes("Most Popular")&&pricing.includes("Frequently Asked Questions")&&pricing.includes("8 paid plans")&&pricing.includes("PlanComparison"));
 check("Builder panel contract extracted",host.includes('from "./builder-panel/panel-contract.js"')&&panelContract.includes("LAZY_PANEL_ROUTES"));
 check("Human label formatting extracted",host.includes('from "../utils/display-format.js"')&&display.includes("humanLabel"));
 check("Browser file helpers extracted",host.includes('from "../utils/browser-files.js"')&&browserFiles.includes("downloadJson"));

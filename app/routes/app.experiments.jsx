@@ -8,7 +8,7 @@ import { migrateBuilderContent } from "../builder/schemaMigrations.js";
 import { rebuildThemeAssets } from "../services/theme-assets.server.js";
 import { builderActor } from "../utils/builder-permissions.js";
 import { getPlan, getPlanUsage } from "../utils/plan.server.js";
-import { getFeatureDecision, getQuotaDecision } from "../services/entitlements.server.js";
+import { getFeatureDecision, getQuotaDecision, withShopQuotaLock } from "../services/entitlements.server.js";
 
 function safeJson(value, fallback = []) { try { const parsed = JSON.parse(value || "[]"); return parsed ?? fallback; } catch { return fallback; } }
 function findNode(nodes, id) { for (const node of Array.isArray(nodes) ? nodes : []) { if (String(node?.id || "") === String(id || "")) return node; const nested = findNode(node?.children || [], id); if (nested) return nested; } return null; }
@@ -60,8 +60,6 @@ export async function action({ request }) {
   const actor = builderActor(session);
 
   if (intent === "create") {
-    const quota = await getQuotaDecision(db, session.shop, "croExperiments");
-    if (!quota.allowed) return Response.json({ ok: false, error: quota.message, code: quota.code, entitlement: quota }, { status: 403 });
     const name = String(form.get("name") || "New experiment").trim() || "New experiment";
     const pageId = String(form.get("pageId") || "");
     const targetType = EXPERIMENT_TARGET_TYPES.includes(String(form.get("targetType"))) ? String(form.get("targetType")) : "page";
@@ -76,18 +74,24 @@ export async function action({ request }) {
     let snapshotJson;
     try { snapshotJson = await snapshotForVariant({ shop: session.shop, pageId: variantPageId, targetType, targetNodeId: variantSourceNodeId }); }
     catch (error) { return Response.json({ ok: false, error: error.message }, { status: 400 }); }
-    const experiment = await db.builderExperiment.create({ data: {
-      shop: session.shop, name, pageId, targetType, targetNodeId: targetNodeId || null, goalType, goalValue: goalValue || null,
-      trafficPercent: Math.max(1, Math.min(100, Number(form.get("trafficPercent") || 100) || 100)),
-      minimumSessions: Math.max(20, Number(form.get("minimumSessions") || 200) || 200),
-      confidenceThreshold: Math.max(0.8, Math.min(0.999, Number(form.get("confidenceThreshold") || 0.95) || 0.95)),
-    } });
-    await db.$transaction([
-      db.builderExperimentVariant.create({ data: { experimentId: experiment.id, key: "A", name: "Control", weight: 50, isControl: true, sourcePageId: pageId } }),
-      db.builderExperimentVariant.create({ data: { experimentId: experiment.id, key: "B", name: "Variation B", weight: 50, isControl: false, sourcePageId: variantPageId, sourceNodeId: variantSourceNodeId || null, snapshotJson } }),
-      db.builderAuditLog.create({ data: { shop: session.shop, pageId, actor, action: "experiment.created", details: JSON.stringify({ experimentId: experiment.id, targetType, goalType }) } }),
-    ]);
-    return Response.json({ ok: true, experimentId: experiment.id });
+    const result = await withShopQuotaLock(db, session.shop, async (tx) => {
+      const quota = await getQuotaDecision(tx, session.shop, "croExperiments");
+      if (!quota.allowed) return { quota };
+      const experiment = await tx.builderExperiment.create({ data: {
+        shop: session.shop, name, pageId, targetType, targetNodeId: targetNodeId || null, goalType, goalValue: goalValue || null,
+        trafficPercent: Math.max(1, Math.min(100, Number(form.get("trafficPercent") || 100) || 100)),
+        minimumSessions: Math.max(20, Number(form.get("minimumSessions") || 200) || 200),
+        confidenceThreshold: Math.max(0.8, Math.min(0.999, Number(form.get("confidenceThreshold") || 0.95) || 0.95)),
+      } });
+      await Promise.all([
+        tx.builderExperimentVariant.create({ data: { experimentId: experiment.id, key: "A", name: "Control", weight: 50, isControl: true, sourcePageId: pageId } }),
+        tx.builderExperimentVariant.create({ data: { experimentId: experiment.id, key: "B", name: "Variation B", weight: 50, isControl: false, sourcePageId: variantPageId, sourceNodeId: variantSourceNodeId || null, snapshotJson } }),
+        tx.builderAuditLog.create({ data: { shop: session.shop, pageId, actor, action: "experiment.created", details: JSON.stringify({ experimentId: experiment.id, targetType, goalType }) } }),
+      ]);
+      return { experimentId: experiment.id };
+    });
+    if (result.quota) return Response.json({ ok:false,error:result.quota.message,code:result.quota.code,entitlement:result.quota },{status:403});
+    return Response.json({ ok: true, experimentId: result.experimentId });
   }
 
   const experiment = await db.builderExperiment.findFirst({ where: { id: experimentId, shop: session.shop } });
@@ -112,20 +116,37 @@ export async function action({ request }) {
   if (intent === "start" || intent === "resume") {
     const variants = await db.builderExperimentVariant.findMany({ where: { experimentId } });
     if (variants.length < 2 || !variants.some((v) => !v.isControl && v.snapshotJson)) return Response.json({ ok: false, error: "At least one valid variation is required." }, { status: 400 });
-    const conflict = await db.builderExperiment.findFirst({ where: { shop: session.shop, pageId: experiment.pageId, targetNodeId: experiment.targetNodeId, status: "running", id: { not: experiment.id } } });
-    if (conflict) return Response.json({ ok: false, error: `Another experiment is already running on this target: ${conflict.name}` }, { status: 409 });
-    await db.builderExperiment.update({ where: { id: experiment.id }, data: { status: "running", startedAt: experiment.startedAt || new Date(), endedAt: null } });
+    const result = await withShopQuotaLock(db, session.shop, async (tx) => {
+      const current = await tx.builderExperiment.findFirst({ where: { id: experiment.id, shop: session.shop } });
+      if (!current) return { missing: true };
+      const wasActive = ["draft", "running", "paused"].includes(current.status);
+      if (!wasActive) {
+        const quota = await getQuotaDecision(tx, session.shop, "croExperiments");
+        if (!quota.allowed) return { quota };
+      }
+      const conflict = await tx.builderExperiment.findFirst({ where: { shop: session.shop, pageId: current.pageId, targetNodeId: current.targetNodeId, status: "running", id: { not: current.id } } });
+      if (conflict) return { conflict: conflict.name };
+      await tx.builderExperiment.update({ where: { id: current.id }, data: { status: "running", startedAt: current.startedAt || new Date(), endedAt: null } });
+      return { ok: true };
+    });
+    if (result.quota) return Response.json({ ok:false,error:result.quota.message,code:result.quota.code,entitlement:result.quota },{status:403});
+    if (result.missing) return Response.json({ ok:false,error:"Experiment not found." },{status:404});
+    if (result.conflict) return Response.json({ ok:false,error:`Another experiment is already running on this target: ${result.conflict}` },{status:409});
     return Response.json({ ok: true });
   }
   if (intent === "pause") { await db.builderExperiment.update({ where: { id: experiment.id }, data: { status: "paused" } }); return Response.json({ ok: true }); }
   if (intent === "archive") { await db.builderExperiment.update({ where: { id: experiment.id }, data: { status: "archived", endedAt: experiment.endedAt || new Date() } }); return Response.json({ ok: true }); }
   if (intent === "duplicate") {
-    const quota = await getQuotaDecision(db, session.shop, "croExperiments");
-    if (!quota.allowed) return Response.json({ ok: false, error: quota.message, code: quota.code, entitlement: quota }, { status: 403 });
     const variants = await db.builderExperimentVariant.findMany({ where: { experimentId } });
-    const copy = await db.builderExperiment.create({ data: { shop: session.shop, name: `${experiment.name} Copy`, status: "draft", targetType: experiment.targetType, pageId: experiment.pageId, targetNodeId: experiment.targetNodeId, goalType: experiment.goalType, goalValue: experiment.goalValue, trafficPercent: experiment.trafficPercent, minimumSessions: experiment.minimumSessions, confidenceThreshold: experiment.confidenceThreshold } });
-    for (const variant of variants) await db.builderExperimentVariant.create({ data: { experimentId: copy.id, key: variant.key, name: variant.name, weight: variant.weight, isControl: variant.isControl, sourcePageId: variant.sourcePageId, sourceNodeId: variant.sourceNodeId, snapshotJson: variant.snapshotJson } });
-    return Response.json({ ok: true, experimentId: copy.id });
+    const result = await withShopQuotaLock(db, session.shop, async (tx) => {
+      const quota = await getQuotaDecision(tx, session.shop, "croExperiments");
+      if (!quota.allowed) return { quota };
+      const copy = await tx.builderExperiment.create({ data: { shop: session.shop, name: `${experiment.name} Copy`, status: "draft", targetType: experiment.targetType, pageId: experiment.pageId, targetNodeId: experiment.targetNodeId, goalType: experiment.goalType, goalValue: experiment.goalValue, trafficPercent: experiment.trafficPercent, minimumSessions: experiment.minimumSessions, confidenceThreshold: experiment.confidenceThreshold } });
+      for (const variant of variants) await tx.builderExperimentVariant.create({ data: { experimentId: copy.id, key: variant.key, name: variant.name, weight: variant.weight, isControl: variant.isControl, sourcePageId: variant.sourcePageId, sourceNodeId: variant.sourceNodeId, snapshotJson: variant.snapshotJson } });
+      return { experimentId: copy.id };
+    });
+    if (result.quota) return Response.json({ ok:false,error:result.quota.message,code:result.quota.code,entitlement:result.quota },{status:403});
+    return Response.json({ ok: true, experimentId: result.experimentId });
   }
   if (intent === "publish-winner") {
     const variantId = String(form.get("variantId") || "");

@@ -1,4 +1,4 @@
-import { Outlet, useLoaderData, useLocation, useNavigate, useRouteError } from "react-router";
+import { Outlet, redirect, useLoaderData, useLocation, useNavigate, useRouteError } from "react-router";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
@@ -19,11 +19,13 @@ import { syncShopifySubscription } from "../services/shopify-subscription.server
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { getLocalMarketplaceCatalogCount } from "../services/marketplace.server.js";
 import { builtinMotionPresets } from "../services/motion-library.server.js";
-import { inspectThemeEmbedStatus } from "../services/theme-embed-status.server.js";
+import { themeEmbedActivationUrl } from "../services/theme-embed-status.server.js";
 import { VSN_BASELINE } from "../config/baseline.js";
 import { resolveBuilderBranding, VSN_BUILDER_DISPLAY_VERSION } from "../config/environment-branding.js";
 import { normalizeUiColorScheme, normalizeUiHex, resolveUiTheme } from "../config/ui-theme.js";
 import { applyVsnSecurityHeaders } from "../utils/request-security.server.js";
+import { hasVerifiedBuilderPlan, isPlanlessBillingLocation } from "../utils/billing-route-gate.js";
+import { logCurrentStagingRouteError } from "../services/worker-route-error-diagnostics.server.js";
 
 const NAV_TARGETS = Object.freeze({
   home: "/app",
@@ -65,6 +67,14 @@ const NAV_TARGETS = Object.freeze({
   profile: "/app?view=profile",
 });
 
+// Shopify Admin can issue overlapping embedded loader requests while the app
+// shell is mounting and while merchants move between views. Share the sidebar
+// counts for a short window so each request does not fan out into the same 14
+// database queries. This is presentation data; entitlement checks still read
+// the authoritative subscription and entitlement state on every request.
+const SHELL_COUNTS_CACHE_TTL_MS = 15_000;
+const shellCountsCache = new Map();
+
 function activeNavigationId(location) {
   const params = new URLSearchParams(location.search || "");
   if (location.pathname.startsWith("/app/pages")) return params.get("panel") || "pages";
@@ -77,49 +87,32 @@ function activeNavigationId(location) {
   return direct?.[0] || "home";
 }
 
-async function loadShellOwner(admin, session) {
+function loadShellOwner(session) {
   const associated = session?.onlineAccessInfo?.associated_user || session?.onlineAccessInfo?.associatedUser || null;
-  const fallback = {
+  return {
     firstName: associated?.first_name || associated?.firstName || "",
     lastName: associated?.last_name || associated?.lastName || "",
     name: [associated?.first_name || associated?.firstName, associated?.last_name || associated?.lastName].filter(Boolean).join(" "),
-    email: associated?.email || session?.email || "",
+    email: associated?.email || associated?.contact_email || associated?.contactEmail || session?.email || "",
     avatar: null,
     shopName: "",
   };
-  try {
-    const response = await admin.graphql(`#graphql
-      query VsnShellShop {
-        shop { name email contactEmail }
-      }
-    `);
-    const result = await response.json();
-    if (result.errors?.length) {
-      console.warn("VSN shell shop lookup GraphQL warning:", result.errors.map((row)=>row.message).join("; "));
-      return fallback;
-    }
-    const shop = result.data?.shop || {};
-    return { ...fallback, email: fallback.email || shop.contactEmail || shop.email || "", shopName: shop.name || "" };
-  } catch (error) {
-    console.warn("VSN shell owner lookup warning:", error instanceof Error ? error.message : error);
-    return fallback;
-  }
 }
 
-export const loader = async ({ request }) => {
-  const { admin, session } = await authenticate.admin(request);
-  await syncShopifySubscription({ db, admin, shop: session.shop }).catch(() => null);
-  const builderRole = getBuilderRole(session);
-  const roleAccess = await getBuilderRoleAccess(db, session.shop);
-  const builderAccess = builderRole === "admin" || roleAccess[builderRole] === true;
-  const systemAccess = getRoleSystemAccess(roleAccess, builderRole);
-  const actionAccess = getRoleActionAccess(roleAccess, builderRole);
-  const WORKSPACE_ONLY_TEMPLATES = ["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"];
-  const [ownerInfo, notificationCount, plan, pageCount, libraryCount, brandKitCount, motionCount, fontCount, svgCount, stockImageCount, stockVideoCount, stockAudioCount, campaignCount, emailTemplateCount, floatingCount, experimentCount, themeEmbed] = await Promise.all([
-    loadShellOwner(admin, session),
+async function loadShellCounts(session, hasPaidPlan) {
+  if (!hasPaidPlan) return Array(14).fill(0);
+
+  const now = Date.now();
+  for (const [shop, entry] of shellCountsCache) {
+    if (entry.expiresAt <= now) shellCountsCache.delete(shop);
+  }
+
+  const cached = shellCountsCache.get(session.shop);
+  if (cached && cached.expiresAt > now) return cached.promise;
+
+  const promise = Promise.all([
     db.builderNotification.count({ where: { shop: session.shop, readAt: null, dismissedAt: null } }).catch(() => 0),
-    getPlan(db, session.shop).catch(() => null),
-    db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { notIn: WORKSPACE_ONLY_TEMPLATES } } }).catch(() => 0),
+    db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: { notIn: ["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"] } } }).catch(() => 0),
     db.builderLibraryItem.count({ where: { shop: session.shop, deletedAt: null, source: "local" } }).catch(() => 0),
     db.builderBrandKit.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
     db.builderMotionPreset.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
@@ -132,8 +125,33 @@ export const loader = async ({ request }) => {
     db.builderEmailTemplate.count({ where: { shop: session.shop, deletedAt: null } }).catch(() => 0),
     db.builderPage.count({ where: { shop: session.shop, deletedAt: null, template: "floating-element" } }).catch(() => 0),
     db.builderExperiment.count({ where: { shop: session.shop } }).catch(() => 0),
-    inspectThemeEmbedStatus(admin, session).catch(() => ({status:"unknown",active:null,editorUrl:""})),
   ]);
+  const entry = { expiresAt: now + SHELL_COUNTS_CACHE_TTL_MS, promise };
+  shellCountsCache.set(session.shop, entry);
+  promise.catch(() => {
+    if (shellCountsCache.get(session.shop) === entry) shellCountsCache.delete(session.shop);
+  });
+  return promise;
+}
+
+async function loadApp({ request }) {
+  const { admin, session } = await authenticate.admin(request);
+  await syncShopifySubscription({ db, admin, shop:session.shop }).catch(() => null);
+  const plan = await getPlan(db, session.shop).catch(() => null);
+  const hasPaidPlan = hasVerifiedBuilderPlan(plan);
+  const currentUrl = new URL(request.url);
+  if (!hasPaidPlan && !isPlanlessBillingLocation(currentUrl)) {
+    throw redirect("/app?view=pricing");
+  }
+  const builderRole = getBuilderRole(session);
+  const roleAccess = await getBuilderRoleAccess(db, session.shop);
+  const builderAccess = builderRole === "admin" || roleAccess[builderRole] === true;
+  const systemAccess = getRoleSystemAccess(roleAccess, builderRole);
+  const actionAccess = getRoleActionAccess(roleAccess, builderRole);
+  const shellCounts = await loadShellCounts(session, hasPaidPlan);
+  const [notificationCount, pageCount, libraryCount, brandKitCount, motionCount, fontCount, svgCount, stockImageCount, stockVideoCount, stockAudioCount, campaignCount, emailTemplateCount, floatingCount, experimentCount] = shellCounts;
+  const ownerInfo = loadShellOwner(session);
+  const themeEmbed = { status:"unknown", active:null, editorUrl:themeEmbedActivationUrl({shop:session.shop,apiKey:process.env.SHOPIFY_API_KEY||""}) };
   const featureFlags = getServerFeatureFlags();
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
@@ -147,6 +165,7 @@ export const loader = async ({ request }) => {
     ownerInfo,
     notificationCount,
     planName: plan?.name || "No active subscription",
+    hasPaidPlan,
     widgetCount: getWidgetDefinitions().length,
     navigationCounts: {
       pages: pageCount,
@@ -168,19 +187,30 @@ export const loader = async ({ request }) => {
     localizationEnabled: featureFlags.localizationMarketsV1 === true,
     themeEmbed,
   };
+}
+
+export const loader = async (args) => {
+  try {
+    return await loadApp(args);
+  } catch (error) {
+    logCurrentStagingRouteError("app", error);
+    throw error;
+  }
 };
 
 export const action = handleDashboardAction;
 
 export function shouldRevalidate({ formMethod, currentUrl, nextUrl, defaultShouldRevalidate }) {
-  // The app shell is intentionally persistent. Child route/panel navigation must not
-  // refetch owner/plan/sidebar data and visually behave like a second application.
-  if (!formMethod && currentUrl?.pathname?.startsWith("/app") && nextUrl?.pathname?.startsWith("/app")) return false;
+  // Re-run the entitlement gate when merchants navigate; otherwise client-side
+  // transitions could keep the shell's previous paid-plan decision indefinitely.
+  if (!formMethod && currentUrl?.pathname?.startsWith("/app") && nextUrl?.pathname?.startsWith("/app")) {
+    return currentUrl.pathname !== nextUrl.pathname || currentUrl.search !== nextUrl.search;
+  }
   return defaultShouldRevalidate;
 }
 
 export default function App() {
-  const { apiKey, brand, displayVersion, builderAccess, builderRole, systemAccess, actionAccess, isOwner, ownerInfo, notificationCount, planName, widgetCount, navigationCounts, localizationEnabled, themeEmbed } = useLoaderData();
+  const { apiKey, brand, displayVersion, builderAccess, builderRole, systemAccess, actionAccess, isOwner, ownerInfo, notificationCount, planName, hasPaidPlan, widgetCount, navigationCounts, localizationEnabled, themeEmbed } = useLoaderData();
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
@@ -245,6 +275,24 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const activePage = activeNavigationId(location);
+  useEffect(() => {
+    if (focusedBuilder || embeddedPanel) return undefined;
+
+    const main = document.querySelector(".dashboard-root > div > main");
+    if (!main) return undefined;
+
+    const normalizePageWidths = () => {
+      main.querySelectorAll("s-page").forEach((page) => {
+        if (page.getAttribute("inlineSize") !== "large") page.setAttribute("inlineSize", "large");
+        page.dataset.vsnPageWidth = "template";
+      });
+    };
+
+    normalizePageWidths();
+    const observer = new MutationObserver(normalizePageWidths);
+    observer.observe(main, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [focusedBuilder, embeddedPanel, location.pathname, location.search]);
   const shellWidgetSettings = useMemo(() => ({ settings: { totalCount: widgetCount } }), [widgetCount]);
   const fullName = [ownerInfo?.firstName, ownerInfo?.lastName].filter(Boolean).join(" ") || ownerInfo?.name || "Store owner";
 
@@ -298,6 +346,7 @@ export default function App() {
         darkMode={darkMode}
         notificationCount={notificationCount}
         planName={planName}
+        hasPaidPlan={hasPaidPlan}
         localizationEnabled={localizationEnabled}
         builderAccess={builderAccess}
         isOwner={isOwner || builderRole === "admin"}
@@ -322,7 +371,7 @@ export default function App() {
           isOwner={isOwner}
         />
         <AppSessionGuard />
-        <AppCommandPalette onNavigate={navigateApp} darkMode={darkMode} onToggleDark={() => setThemePreference(darkMode ? "light" : "dark")} systemAccess={systemAccess} />
+        {hasPaidPlan ? <AppCommandPalette onNavigate={navigateApp} darkMode={darkMode} onToggleDark={() => setThemePreference(darkMode ? "light" : "dark")} systemAccess={systemAccess} /> : null}
         <main style={{ flex: 1, minHeight: 0, overflow: "auto", background }}>
           <AppRuntimeBoundary release={VSN_BASELINE.version}><Outlet context={{ darkMode, themePreference, setThemePreference, colorSchemePreference, customAccent, setColorSchemePreference, setCustomAccent, navigateApp, activePage, systemAccess, actionAccess, isOwner }} /></AppRuntimeBoundary>
         </main>

@@ -7,15 +7,23 @@
   "commerce": {
     "plan_ids": [
       "starter",
-      "sliver",
+      "solo",
+      "silver",
       "gold",
-      "platinum"
+      "business",
+      "platinum",
+      "agency",
+      "scale"
     ],
     "monthly_usd": {
       "starter": 30,
-      "sliver": 100,
+      "solo": 60,
+      "silver": 100,
       "gold": 150,
-      "platinum": 350
+      "business": 250,
+      "platinum": 350,
+      "agency": 600,
+      "scale": 1000
     },
     "annual_usd": {
       "platinum": 3000

@@ -33,8 +33,8 @@ export const sessionStorage = Object.freeze({
   deleteSessions: unavailableAsync,
   findSessionsByShop: unavailableAsync,
 });
-export const apiVersion = "2026-07";
-export const apiVersionHandle = "2026-07";
+export const apiVersion = "2026-10";
+export const apiVersionHandle = "2026-10";
 export default Object.freeze({
   authenticate, unauthenticated, login,
   registerWebhooks, addDocumentResponseHeaders,

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import process from "node:process";
 import {
   COMMERCIAL_PLANS, PLAN_ORDER, PAID_TRIAL_DAYS, UNSUBSCRIBED_PLAN,
   normalizePlanKey, planAtLeast, publicPlanName,
@@ -10,15 +11,14 @@ import {
 } from "../app/services/entitlements.server.js";
 import { getShopifyPlanHandleMap, resolveInternalPlanKeyFromHandle } from "../app/services/shopify-app-pricing.server.js";
 import { buildBillingLifecycle } from "../app/config/billingLifecycle.js";
+import { serializePlan } from "../app/utils/plan.server.js";
 
 const pricing = [
-  ["starter",30,null],
-  ["sliver",100,null],
-  ["gold",150,null],
-  ["platinum",350,3000],
+  ["starter",30,null], ["solo",60,null], ["silver",100,null], ["gold",150,null],
+  ["business",250,null], ["platinum",350,3000], ["agency",600,null], ["scale",1000,null],
 ];
 
-test("exactly four paid Shopify public IDs and no Free plan",()=>{
+test("exactly eight paid Shopify public IDs and no Free plan",()=>{
  assert.deepEqual(PLAN_ORDER,pricing.map(([id])=>id));
  assert.deepEqual(Object.keys(COMMERCIAL_PLANS),PLAN_ORDER);
  assert.equal(COMMERCIAL_PLANS.free,undefined);
@@ -36,17 +36,18 @@ test("exactly four paid Shopify public IDs and no Free plan",()=>{
  assert.equal(COMMERCIAL_PLANS.platinum.monthlyUsd*12,4200);
  assert.equal(COMMERCIAL_PLANS.platinum.annualUsd,3000);
 });
-test("legacy VSN internal IDs remain aliases, but a Free handle does NOT grant Starter",()=>{
- for(const [old,current] of Object.entries({core:"starter",pro:"sliver",cro:"gold",agency:"platinum",silver:"sliver",platenium:"platinum"})){
+test("legacy IDs normalize safely, and a Free handle does NOT grant Starter",()=>{
+ for(const [old,current] of Object.entries({core:"starter",pro:"silver",cro:"gold",sliver:"silver",platenium:"platinum",enterprise:"scale"})){
   assert.equal(normalizePlanKey(old),current);
  }
  assert.equal(normalizePlanKey("free"),"inactive");
  assert.equal(normalizePlanKey("unknown_plan"),"inactive");
  assert.equal(publicPlanName("free"),"No active subscription");
  assert.equal(COMMERCIAL_PLANS.core,COMMERCIAL_PLANS.starter);
- assert.equal(COMMERCIAL_PLANS.pro,COMMERCIAL_PLANS.sliver);
+ assert.equal(COMMERCIAL_PLANS.pro,COMMERCIAL_PLANS.silver);
  assert.equal(COMMERCIAL_PLANS.cro,COMMERCIAL_PLANS.gold);
- assert.equal(COMMERCIAL_PLANS.agency,COMMERCIAL_PLANS.platinum);
+ assert.equal(COMMERCIAL_PLANS.agency.name,"Agency");
+ assert.equal(COMMERCIAL_PLANS.scale.name,"Scale");
 });
 test("default Shopify Partner handles follow exact merchant plan IDs",()=>{
  const handles=getShopifyPlanHandleMap();
@@ -55,6 +56,7 @@ test("default Shopify Partner handles follow exact merchant plan IDs",()=>{
   assert.equal(resolveInternalPlanKeyFromHandle(id,handles),id);
  }
  assert.equal(resolveInternalPlanKeyFromHandle("free",handles),null);
+ assert.equal(resolveInternalPlanKeyFromHandle("sliver",handles),"silver");
 });
 test("all grants fail closed for merchants without a verified paid subscription",()=>{
  assert.equal(UNSUBSCRIBED_PLAN.key,"inactive");
@@ -87,12 +89,25 @@ test("production has no Starter access before Shopify charge approval",()=>inPro
  assert.equal(plan.entitlementVerified,false);
  assert.equal(getFeatureDecisionFromPlan(plan,"forms").allowed,false);
 }));
+test("an unmapped Shopify plan handle stays visible but cannot grant paid access",()=>inProduction(async()=>{
+ const now=new Date();
+ const plan=await resolveEntitlementPlan(memoryDb({provider:"shopify-app-pricing",status:"canceling",
+  planKey:"inactive",planHandle:null,snapshotJson:JSON.stringify({diagnostics:{activePlanHandle:"vsn_starter_legacy",activePlanAmbiguous:false}}),verifiedAt:now,
+  cancelEffectiveOn:new Date(now.getTime()+30*86400000)}),"unknown-handle.myshopify.com",{now});
+ assert.equal(plan.key,"inactive");
+ assert.equal(plan.subscription.planHandle,null);
+ assert.equal(serializePlan(plan).unrecognizedPlanHandle,"vsn_starter_legacy");
+ assert.equal(plan.entitlementSource,"production-unrecognized-paid-contract");
+ assert.equal(plan.entitlementVerified,false);
+ assert.equal(plan.maxPages,0);
+ assert.equal(getFeatureDecisionFromPlan(plan,"forms").allowed,false);
+}));
 test("a verified Shopify 10-day trial unlocks exactly its paid tier",()=>inProduction(async()=>{
  const now=new Date();
- const row={provider:"shopify-app-pricing",status:"trialing",planKey:"sliver",planHandle:"sliver",
+ const row={provider:"shopify-app-pricing",status:"trialing",planKey:"silver",planHandle:"sliver",
   verifiedAt:now,trialEndsAt:new Date(now.getTime()+10*86400000)};
  const plan=await resolveEntitlementPlan(memoryDb(row),"trial.myshopify.com",{now});
- assert.equal(plan.key,"sliver");
+ assert.equal(plan.key,"silver");
  assert.equal(plan.aiMonthly,500);
  assert.equal(plan.entitlementVerified,true);
  const lifecycle=buildBillingLifecycle(plan,{now});

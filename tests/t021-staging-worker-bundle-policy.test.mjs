@@ -13,15 +13,17 @@ const required=["DATABASE_URL","SHOPIFY_API_KEY","SHOPIFY_API_SECRET","SHOPIFY_P
 
 test("exact staging identity requires four pre-existing encrypted secrets by NAME only",()=>{
  assert.equal(staging.name,"vsn-builder-staging");
- assert.equal(staging.main,"./workers/app.js");
+ assert.equal(staging.main,"./workers/staging-full-app.js");
  assert.equal(staging.vars.APP_ENV,"staging");
  assert.equal(staging.vars.VSN_WORKER_NAME,"vsn-builder-staging");
  assert.equal(staging.vars.NEON_PROJECT_ID,"shiny-violet-61219572");
  assert.equal(staging.vars.SHOPIFY_BILLING_TEST_MODE,"true");
  assert.equal(staging.vars.SHOPIFY_APP_HANDLE,"vsn-builder-staging");
  assert.equal(staging.vars.SHOPIFY_PARTNER_ORGANIZATION_ID,"4859256");
- assert.equal(staging.vars.SHOPIFY_PARTNER_API_VERSION,"2026-07");
+ assert.equal(staging.vars.SHOPIFY_PARTNER_API_VERSION,"2026-10");
  assert.equal(staging.vars.VSN_STAGING_BILLING_SYNC_ENABLED,"true");
+ assert.equal(staging.limits,undefined,
+   "custom CPU limits are rejected on the Staging Cloudflare Free plan");
  assert.equal(staging.workers_dev,true);
  assert.equal(staging.preview_urls,false);
  assert.deepEqual([...staging.secrets.required].sort(),[...required].sort());
@@ -38,6 +40,7 @@ test("exact staging identity requires four pre-existing encrypted secrets by NAM
  assert.equal(staging.vars.VSN_STAGING_OAUTH_ENABLED,"true");
  assert.equal(staging.vars.VSN_STAGING_DASHBOARD_ENABLED,"true");
  assert.equal(staging.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,"true");
+ assert.equal(staging.vars.VSN_STAGING_REACT_ROUTER_ENABLED,"true");
 });
 test("production Worker config and no-public-URL policy are independent of staging build",()=>{
  assert.equal(production.name,"vsn-builder-production");
@@ -45,6 +48,8 @@ test("production Worker config and no-public-URL policy are independent of stagi
  assert.equal(production.preview_urls,false);
  assert.equal(production.vars.APP_ENV,"production");
  assert.equal(production.vars.VSN_WORKER_NAME,"vsn-builder-production");
+ assert.equal(production.limits,undefined,
+   "Production Worker limits remain independently configured");
  assert.notEqual(production.vars.NEON_PROJECT_ID,staging.vars.NEON_PROJECT_ID);
  assert.equal(production.vars.VSN_STAGING_DRAFT_SAVE_ENABLED,undefined,"draft save must remain disabled in production");
 });
@@ -54,11 +59,13 @@ test("T021 PR workflow is credentials-free, real Staging bundle dry-run only",()
  assert.match(workflow,/CI: "true"/);
  assert.match(workflow,/NODE_ENV: test/);
  assert.match(workflow,/APP_ENV: development/);
+ assert.match(workflow,/APP_ENV: staging\s+VSN_STAGING_FULL_APP_BUILD: "1"/);
  assert.match(workflow,/WRANGLER_SEND_METRICS: "false"/);
  assert.match(workflow,/npm ci/);
  assert.match(workflow,/@cloudflare\/vite-plugin@1\.64\.0/);
  assert.match(workflow,/prisma generate --schema prisma\/cloud\/schema\.prisma/);
- assert.match(workflow,/wrangler deploy --config wrangler\.staging\.jsonc --dry-run --outdir/);
+ assert.match(workflow,/react-router build --config vite\.staging-cloudflare\.config\.js/);
+ assert.match(workflow,/wrangler deploy --config dist\/server\/wrangler\.json --dry-run --outdir/);
  assert.match(workflow,/--keep-vars/);
  assert.doesNotMatch(workflow,/environment:\s*cloudflare-staging/);
  assert.doesNotMatch(workflow,/\$\{\{\s*secrets\./);

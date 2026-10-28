@@ -10,7 +10,8 @@ const live=parse("wrangler.production.jsonc");
 
 test("Staging HTTPS workers.dev survives approved Wrangler deploys; preview URLs stay disabled",()=>{
   assert.equal(stage.name,"vsn-builder-staging");
-  assert.equal(stage.main,"./workers/app.js");
+  assert.equal(stage.main,"./workers/staging-full-app.js");
+  assert.equal(stage.vars.VSN_STAGING_REACT_ROUTER_ENABLED,"true");
   assert.equal(stage.workers_dev,true);
   assert.equal(stage.preview_urls,false);
   assert.equal(stage.vars.APP_ENV,"staging");

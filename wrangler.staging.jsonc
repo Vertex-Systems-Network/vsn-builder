@@ -1,14 +1,14 @@
 {
-  // Stage-only HTTPS endpoint exists, but merchant routes remain fail-closed
-  // until the protected T018 migration, reviewed deploy and hosted acceptance.
-  // Never enable previews or production workers.dev as a side effect.
-  // Shopify secrets and Neon DATABASE_URL must be set via scoped secret
-  // bindings; NEVER commit credentials to this file or use CLI deploy
-  // until the protected environment and acceptance gates are verified.
+  // Full React Router routes are enabled only in the protected Staging Worker
+  // build. The production manifest and Worker entry remain independent.
+  // Never enable previews or copy Staging credentials into Production.
   "name": "vsn-builder-staging",
-  "main": "./workers/app.js",
+  "main": "./workers/staging-full-app.js",
   "compatibility_date": "2026-10-13",
   "compatibility_flags": ["nodejs_compat"],
+  // The Staging Cloudflare account uses the Free plan, which rejects custom
+  // CPU limits. Keep this manifest deployable and keep dashboard/billing
+  // loaders bounded so they fit the plan's default request budget.
   "workers_dev": true,
   "preview_urls": false,
   "send_metrics": false,
@@ -45,12 +45,13 @@
     "SHOPIFY_BILLING_TEST_MODE": "true",
     "SHOPIFY_APP_HANDLE": "vsn-builder-staging",
     "SHOPIFY_PARTNER_ORGANIZATION_ID": "4859256",
-    "SHOPIFY_PARTNER_API_VERSION": "2026-07",
+    "SHOPIFY_PARTNER_API_VERSION": "2026-10",
     "VSN_STAGING_BILLING_SYNC_ENABLED": "true",
     // T023: owner-directed Staging-only activation of SDK OAuth and the
     // dashboard and the draft editor. Draft saves are Staging-only; Production never sets these.
     "VSN_STAGING_OAUTH_ENABLED": "true",
     "VSN_STAGING_DASHBOARD_ENABLED": "true",
-    "VSN_STAGING_DRAFT_SAVE_ENABLED": "true"
+    "VSN_STAGING_DRAFT_SAVE_ENABLED": "true",
+    "VSN_STAGING_REACT_ROUTER_ENABLED": "true"
   }
 }

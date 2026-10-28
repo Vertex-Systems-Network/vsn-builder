@@ -121,6 +121,8 @@
 
 **FINAL CLOSED:** T011 full dependency-security audits, T027 exact four paid plan code contract, and **T012 audited stacked PR source integration**. These appear in [audit archive](docs/closed-task-archive.md). GitHub branch protection T013 is FINAL CLOSED; Shopify Partner pricing T028 remains open.
 
+**Owner-directed plan expansion (2026-10-26):** the current Builder plan catalog now has eight paid keys (`starter`, `solo`, `silver`, `gold`, `business`, `platinum`, `agency`, `scale`) with no Free tier. T027's four-plan closure is historical evidence for the earlier catalog; current Partner Dashboard publication and live billing verification remain pending under T028/T029.
+
 **Historical T014 Cloudflare Worker runtime audit (now separately tracked under T019):** [PR #205](https://github.com/Vertex-Systems-Network/vsn-builder/pull/205) adds encrypted Cloudflare Worker binding checks. Real Staging audit found 0 Worker secrets and 0 bindings; GitHub Environment reviewers remain unverified. T019/T018 remain WAITING.
 
 ## Entire ACTIVE queue (CLOSED tasks removed)
@@ -136,7 +138,7 @@
 | T023 | P0 | Real Staging Shopify OAuth, App Bridge ID token and session lifecycle | WAITING | T015, T021, T022 | [issues/162](https://github.com/Vertex-Systems-Network/vsn-builder/issues/162) |
 | T024 | P0 | Trusted uninstall-generation provenance and safe replay handling | IN_REVIEW | — | [issues/163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
 | T025 | P0 | Real signed Shopify webhook retry/uninstall/reinstall E2E | WAITING | T018, T023, T024 | [issues/163](https://github.com/Vertex-Systems-Network/vsn-builder/issues/163) |
-| T028 | P0 | Create/verify exactly four public plans in Shopify Partner Dashboard | WAITING | T015 | [issues/164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
+| T028 | P0 | Create/verify all eight paid plans in Shopify Partner Dashboard | WAITING | T015 | [issues/164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | T029 | P0 | Real subscription/trial lifecycle and plan limits E2E | WAITING | T023, T028 | [issues/164](https://github.com/Vertex-Systems-Network/vsn-builder/issues/164) |
 | T036 | P0 | Staging deployment rollback and post-migration restore acceptance | WAITING | T018, T021, T035 | [issues/166](https://github.com/Vertex-Systems-Network/vsn-builder/issues/166) |
 | T037 | P0 | Production Neon isolated migration, backup and recovery proof | WAITING | T011, T012, T013, T014, T035, T036 | [issues/167](https://github.com/Vertex-Systems-Network/vsn-builder/issues/167) |
@@ -146,7 +148,7 @@
 | T030 | P1 | Real Dev create/edit/save/preview and reload persistence | WAITING | T022 | [issues/165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
 | T031 | P1 | Real Staging create/edit/save/publish Shopify page persistence | WAITING | T018, T023, T030 | [issues/165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
 | T033 | P1 | Real Shopify theme extension storefront/mobile E2E | WAITING | T031, T032 | [issues/165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
-| T034 | P1 | AI/widgets/pages/seats quotas across Starter-Sliver-Gold-Platinum | WAITING | T031 | [issues/165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
+| T034 | P1 | AI/widgets/pages/seats quotas across all eight paid plans | WAITING | T031 | [issues/165](https://github.com/Vertex-Systems-Network/vsn-builder/issues/165) |
 | T035 | P1 | Full Staging test-store browser/device/billing/webhook E2E | WAITING | T025, T029, T033, T034 | [issues/166](https://github.com/Vertex-Systems-Network/vsn-builder/issues/166) |
 | T040 | P1 | Shopify listing screenshots, privacy, support, scopes and review assets | IN_REVIEW | — | [issues/168](https://github.com/Vertex-Systems-Network/vsn-builder/issues/168) |
 
@@ -155,6 +157,6 @@
 `node scripts/task-dependency-check.mjs` prints only READY items and active summary.
 `node scripts/task-dependency-check.mjs --format=markdown` prints only active tasks.
 `node scripts/task-dependency-check.mjs --format=markdown --include-closed` explicitly displays audit history.
-`node --test tests/task-dependency-check.test.mjs` enforces irreversible final closure, required release prerequisites, and the four paid Shopify plan contract.
+`node --test tests/task-dependency-check.test.mjs` enforces irreversible final closure, required release prerequisites, and the eight paid Shopify plan contract.
 
 Full mapping: [canonical dependency roadmap](docs/task-dependency-roadmap.md) · [task manifest](config/project/task-dependency-plan.json) · [master issue #156](https://github.com/Vertex-Systems-Network/vsn-builder/issues/156). No production/staging deployment or Shopify submission is authorized by closing local tasks.

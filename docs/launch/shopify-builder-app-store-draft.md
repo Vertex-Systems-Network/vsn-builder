@@ -25,16 +25,20 @@ Explore page templates, adjust responsive layouts, configure form components, an
 
 Avoid unsupported performance, AI quality, compatibility, revenue-impact or conversion guarantees; do not mention ratings/reviews, certifications or merchant testimonials that have not been earned.
 
-## Dedicated Shopify pricing section — exact owner-approved contract
+## Dedicated Shopify pricing section — eight paid plans
 
 | Public plan / canonical handle | Monthly USD | Yearly USD | Shopify-managed trial |
 | --- | ---: | ---: | ---: |
 | Starter / `starter` | $30 | — | 10 days |
-| Sliver / `sliver` | $100 | — | 10 days |
+| Solo / `solo` | $60 | — | 10 days |
+| Silver / `silver` | $100 | — | 10 days |
 | Gold / `gold` | $150 | — | 10 days |
+| Business / `business` | $250 | — | 10 days |
 | Platinum / `platinum` | $350 | $3,000 | 10 days |
+| Agency / `agency` | $600 | — | 10 days |
+| Scale / `scale` | $1,000 | — | 10 days |
 
-No Free tier, no extra public app/listing. Pricing must be independently confirmed in the Shopify Partner Dashboard; repo config is NOT published Partner pricing. Do not include plan prices in screenshots, subtitle or other non-pricing fields.
+No Free tier, no extra public app/listing. Solo, Business, Agency and Scale amounts reflect the latest proposed app catalog; all eight prices and handles remain subject to direct confirmation in the Shopify Partner Dashboard. Repo config is NOT published Partner pricing. Do not include plan prices in screenshots, subtitle or other non-pricing fields.
 
 ## Five real, distinct screenshots REQUIRED before listing can be published
 
@@ -73,7 +77,7 @@ Shopify requires an actual working merchant support channel with a valid support
 3. Confirm one exact certified Live commit, production secrets and database migration/backups, deployed Worker readiness, rollback and no error logs.
 4. Provide a real nonproduction test store and reviewer installation path/access as permitted by Shopify, without putting secrets in this public document.
 5. Demonstrate install → official Shopify OAuth → 10-day paid trial → create/edit/save/reload → theme embed/publish → upgrade/downgrade/cancel/frozen → webhook uninstall/reinstall handling using E2E evidence.
-6. Confirm Partner-managed four prices/trials and no Free fallback. Capture exact reviewed plan handles and invoices privately.
+6. Confirm all eight Partner-managed prices, handles and trials, and no Free fallback. Capture exact reviewed plan handles and invoices privately.
 7. Only after T011, T025, T029, T035, T039 and T040 acceptances, **attempt** submission; log Shopify's actual response and any required fixes. Do not claim submission or approval from draft copy.
 
 ## Official documentation verified 15 October 2026

@@ -98,6 +98,13 @@ export async function authorizeAndCreateVerifiedWorkerPage({
     throw new BuilderDraftSaveError(403,"PAGE_CREATE_PLAN_REQUIRED");
   if(!await canAccessBuilderAction(transaction,session,"pages","create"))
     throw new BuilderDraftSaveError(403,"PAGE_CREATE_ROLE_REQUIRED");
+  // Share the same per-shop quota lock as the app routes so concurrent creates
+  // through separate mutation surfaces still serialize against one page count.
+  if(typeof transaction?.builderShopSetting?.upsert!=="function")
+    throw new BuilderDraftSaveError(503,"PAGE_CREATE_QUOTA_LOCK_REQUIRED");
+  await transaction.builderShopSetting.upsert({
+    where:{shop},create:{shop},update:{updatedAt:new Date()},
+  });
   if(typeof transaction?.builderPage?.count!=="function" ||
      typeof transaction?.builderPage?.create!=="function")
     throw new BuilderDraftSaveError(503,"PAGE_CREATE_STORAGE_REQUIRED");

@@ -68,7 +68,7 @@ function navigationGroups(counts = {}, localizationEnabled = false, builderAcces
   return groups.filter((group) => group.items.length);
 }
 
-export default function Sidebar({ fullName, ownerImage, widgetsFeatcher, activePage, onNavigate, collapsed, onToggleCollapse, darkMode, notificationCount = 0, planName = 'Plan', localizationEnabled = false, builderAccess = true, isOwner = false, navigationCounts = {}, systemAccess = {} }) {
+export default function Sidebar({ fullName, ownerImage, widgetsFeatcher, activePage, onNavigate, collapsed, onToggleCollapse, darkMode, notificationCount = 0, planName = 'Plan', hasPaidPlan = true, localizationEnabled = false, builderAccess = true, isOwner = false, navigationCounts = {}, systemAccess = {} }) {
   const [hoverTooltip, setHoverTooltip] = useState(null);
   const showCollapsedTooltip = (event, label) => {
     if (!collapsed || typeof document === 'undefined') return;
@@ -77,10 +77,11 @@ export default function Sidebar({ fullName, ownerImage, widgetsFeatcher, activeP
   };
   const hideCollapsedTooltip = () => setHoverTooltip(null);
   const widgetLoadedData = widgetsFeatcher.data?.settings;
-  const groups = navigationGroups({ ...navigationCounts, widgets: navigationCounts.widgets ?? widgetLoadedData?.totalCount ?? 0 }, localizationEnabled, builderAccess, isOwner).map((group) => ({
+  const allGroups = navigationGroups({ ...navigationCounts, widgets: navigationCounts.widgets ?? widgetLoadedData?.totalCount ?? 0 }, localizationEnabled, builderAccess, isOwner).map((group) => ({
     ...group,
     items: group.items.filter((item)=>isOwner || systemAccess?.[NAV_SYSTEM[item.id]] !== false).map((item) => item.dynamicBadge === 'notifications' ? { ...item, badge: notificationCount } : item),
   })).filter((group)=>group.items.length);
+  const groups = hasPaidPlan ? allGroups : allGroups.map((group) => ({ ...group, items: group.items.filter((item) => item.id === 'pricing') })).filter((group) => group.items.length);
   const text = darkMode ? '#F9FAFB' : '#1A1F36';
   const muted = darkMode ? '#9CA3AF' : '#4B5563';
   const iconColor = darkMode ? '#6B7280' : '#9CA3AF';

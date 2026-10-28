@@ -1,5 +1,5 @@
 name: T021 Real Staging Worker Artifact Dry Run (No Deploy)
-# Build EXACT workers/app.js for the REAL Staging name with NO provider
+# Build EXACT full React Router Cloudflare Worker for Staging with NO provider
 # credentials, no deployment, no Neon DDL, no OAuth and no merchant writes.
 on:
   pull_request:
@@ -8,11 +8,20 @@ on:
       - "wrangler.staging.jsonc"
       - "wrangler.production.jsonc"
       - "workers/app.js"
+      - "workers/staging-full-app.js"
+      - "vite.staging-cloudflare.config.js"
+      - "react-router.config.js"
+      - "app/**"
       - "workers/staging-editor-ui.js"
       - "app/services/**"
       - "prisma/cloud/**"
       - "tests/t021-staging-worker-bundle-policy.test.mjs"
+      - "tests/t020-staging-worker-react-router-wiring.test.mjs"
+      - "tests/t021-staging-worker-deploy-policy.test.mjs"
       - "tests/t021-staging-worker-observability.test.mjs"
+      - "tests/worker-full-app-router-runtime.test.mjs"
+      - "tests/worker-request-context.test.mjs"
+      - "tests/worker-database-health.test.mjs"
       - "tests/worker-shopify-subscription-sync.test.mjs"
       - "tests/worker-shopify-staging-billing.test.mjs"
       - ".github/workflows/t021-staging-worker-bundle-dryrun.yml"
@@ -55,18 +64,28 @@ jobs:
           test -x ./node_modules/.bin/wrangler
           git diff --exit-code -- package.json package-lock.json
       - name: Verify release artifact identity and encryption guard source contract
-        run: node --test tests/t021-staging-worker-bundle-policy.test.mjs tests/t021-staging-worker-observability.test.mjs tests/worker-shopify-subscription-sync.test.mjs tests/worker-shopify-staging-billing.test.mjs
+        run: node --test tests/t021-staging-worker-bundle-policy.test.mjs tests/t021-staging-worker-deploy-policy.test.mjs tests/t021-staging-worker-observability.test.mjs tests/t020-staging-worker-react-router-wiring.test.mjs tests/worker-full-app-router-runtime.test.mjs tests/worker-request-context.test.mjs tests/worker-database-health.test.mjs tests/worker-shopify-subscription-sync.test.mjs tests/worker-shopify-staging-billing.test.mjs
       - name: Generate compiled hosted Prisma Edge client without network or real DB
         env:
           DATABASE_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
           DIRECT_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
         run: npx prisma generate --schema prisma/cloud/schema.prisma
-      - name: Bundle actual reviewed Staging Worker entry using Wrangler, NEVER deploy
+      - name: Build the full Staging React Router Worker and static assets, never deploy
+        env:
+          APP_ENV: staging
+          VSN_STAGING_FULL_APP_BUILD: "1"
+        run: |
+          ./node_modules/.bin/react-router build --config vite.staging-cloudflare.config.js
+          test -s dist/server/index.js
+          test -s dist/server/wrangler.json
+          test -d dist/client/assets
+          test -d dist/server/assets
+      - name: Bundle the generated full Staging Worker with Wrangler, NEVER deploy
         run: |
           mkdir -p .t021-staging-dryrun
-          ./node_modules/.bin/wrangler deploy --config wrangler.staging.jsonc --dry-run --outdir .t021-staging-dryrun --keep-vars
+          ./node_modules/.bin/wrangler deploy --config dist/server/wrangler.json --dry-run --outdir .t021-staging-dryrun --keep-vars
           test -n "$(find .t021-staging-dryrun -maxdepth 2 -type f -name '*.js' -size +500c -print -quit)"
           echo "PASS: real Staging Worker bundle built in CI without provider credentials or deployment"
       - name: Confirm no dependency changes or generated Staging secrets in git
         if: always()
-        run: git diff --exit-code -- package.json package-lock.json wrangler.staging.jsonc wrangler.production.jsonc
+        run: git diff --exit-code -- package.json package-lock.json

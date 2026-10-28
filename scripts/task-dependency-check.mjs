@@ -21,14 +21,18 @@ export function inspectTaskPlan(plan,{includeClosed=false}={}) {
    errors.push("Exactly ONE public Shopify Builder app is permitted");
  const expected=[
   ["Starter","starter",30,null,10],
-  ["Sliver","sliver",100,null,10],
+  ["Solo","solo",60,null,10],
+  ["Silver","silver",100,null,10],
   ["Gold","gold",150,null,10],
+  ["Business","business",250,null,10],
   ["Platinum","platinum",350,3000,10],
+  ["Agency","agency",600,null,10],
+  ["Scale","scale",1000,null,10],
  ];
  if(JSON.stringify((plan?.commercial_plans||[]).map(p=>[
     p.name,p.id,p.monthly_usd,p.annual_usd,p.trial_days
    ]))!==JSON.stringify(expected))
-   errors.push("Four paid canonical Shopify plans/prices/10-day trials mismatch");
+   errors.push("Eight paid canonical Shopify plans/prices/10-day trials mismatch");
  if(!Array.isArray(plan?.tasks)||plan.tasks.length<20)
    return {errors:[...errors,"Task inventory must be a complete atomic backlog"],rows:[],ready:[],summary:{}};
  const tasks=plan.tasks;

@@ -4,7 +4,8 @@
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 // shopify-test is a store-allowlisted private $0 plan for Staging read-only
 // verification; no commercial entitlement or mutation is granted by it.
-const PLAN_HANDLES=new Set(["starter","sliver","gold","platinum","shopify-test"]);
+const PLAN_KEYS=new Set(["starter","solo","silver","gold","business","platinum","agency","scale"]);
+const canonicalPlan=value=>value==="sliver"?"silver":value==="platenium"?"platinum":value==="shopify-test"?"shopify-test":PLAN_KEYS.has(value)?value:null;
 const ALLOWED_STATES=new Set(["active","trialing","canceling"]);
 const MAX_MIRROR_AGE_MS=24*60*60*1000;
 const FUTURE_CLOCK_SKEW_MS=5*60*1000;
@@ -28,8 +29,8 @@ export async function getVerifiedWorkerPaidPlan(database,verifiedShop,now=new Da
   if(!row || row.shop!==verifiedShop ||
      row.provider!=="shopify-app-pricing" ||
      !ALLOWED_STATES.has(row.status) ||
-     !PLAN_HANDLES.has(row.planKey) ||
-     row.planHandle!==row.planKey ||
+     !(PLAN_KEYS.has(canonicalPlan(row.planKey))||canonicalPlan(row.planKey)==="shopify-test") ||
+     canonicalPlan(row.planHandle)!==canonicalPlan(row.planKey) ||
      !(row.verifiedAt instanceof Date) ||
      !Number.isFinite(row.verifiedAt.getTime()))return null;
   const age=now.getTime()-row.verifiedAt.getTime();
@@ -46,7 +47,7 @@ export async function getVerifiedWorkerPaidPlan(database,verifiedShop,now=new Da
      (!(row.cancelEffectiveOn instanceof Date) ||
       !Number.isFinite(row.cancelEffectiveOn.getTime()) ||
       row.cancelEffectiveOn.getTime()<=now.getTime()))return null;
-  return row.planKey;
+  return canonicalPlan(row.planKey);
 }
 
 // The boolean access guard remains identical for existing authenticated GET

@@ -26,10 +26,16 @@ function fixture({plan="starter",used=0,paid=true,shopOwner=shop,roleAccessJson=
           verifiedAt:new Date(),trialEndsAt:null,cancelEffectiveOn:null}:null;
       },
     },
-    builderShopSetting:{async findUnique(){
-      calls.push("role");
-      return {roleAccessJson};
-    }},
+    builderShopSetting:{
+      async findUnique(){
+        calls.push("role");
+        return {roleAccessJson};
+      },
+      async upsert({where}){
+        calls.push("lock:"+where.shop);
+        assert.deepEqual(where,{shop});
+      },
+    },
     builderPage:{
       async count({where}){
         calls.push("count:"+where.shop);
@@ -91,14 +97,15 @@ test("verified paid owner can create blank draft with tenant-scoped unique handl
   assert.notEqual(f.rows[0].handle,f.rows[1].handle);
   assert.match(f.rows[0].handle,/^client-landing-page-[a-f0-9]{16}$/);
   assert.deepEqual(f.calls,[
-    "plan:"+shop,"count:"+shop,"create:"+shop,
-    "plan:"+shop,"count:"+shop,"create:"+shop,
+    "plan:"+shop,"lock:"+shop,"count:"+shop,"create:"+shop,
+    "plan:"+shop,"lock:"+shop,"count:"+shop,"create:"+shop,
   ]);
 });
 
-test("plan page quotas mirror canonical four paid plans, not request supplied plan",async()=>{
+test("page quotas mirror all eight canonical paid plans, not request supplied plan",async()=>{
   for(const [plan,limit] of [
-    ["starter",5],["sliver",100],["gold",500],["platinum",5000],
+    ["starter",5],["solo",25],["silver",100],["gold",500],
+    ["business",1500],["platinum",5000],["agency",10000],["scale",25000],
   ]){
     const f=fixture({plan,used:limit-1});
     assert.equal((await serve(f)).status,201,plan+" last allowed page");

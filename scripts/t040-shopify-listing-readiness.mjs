@@ -41,6 +41,10 @@ export function inspectListingReadiness(config,{screenshotProbe=inspectRealListi
  if(JSON.stringify(config.commerce?.plan_ids)!==JSON.stringify(PLAN_ORDER))
   errors.push("Public canonical plan IDs do not match source");
  if(config.commerce?.trial_days!==PAID_TRIAL_DAYS)errors.push("Incorrect Shopify trial length");
+ const monthlyIds=Object.keys(config.commerce?.monthly_usd||{});
+ if(monthlyIds.length!==PLAN_ORDER.length || PLAN_ORDER.some(id=>!monthlyIds.includes(id)) ||
+    monthlyIds.some(id=>!PLAN_ORDER.includes(id)))
+  errors.push("Monthly prices must contain exactly the eight canonical plan IDs");
  for(const id of PLAN_ORDER){
   if(config.commerce?.monthly_usd?.[id]!==COMMERCIAL_PLANS[id].monthlyUsd)
    errors.push("Wrong monthly plan price "+id);
@@ -98,6 +102,6 @@ const main=()=>{
   process.exitCode=1;
   return;
  }
- console.log("T040 listing draft and four paid plan metadata: PASS; external Shopify Partner/screenshot/privacy/support certification: NOT VERIFIED.");
+ console.log("T040 listing draft and eight paid plan metadata: PASS; external Shopify Partner/screenshot/privacy/support certification: NOT VERIFIED.");
 };
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1]))main();

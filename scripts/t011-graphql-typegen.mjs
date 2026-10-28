@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { buildClientSchema, getIntrospectionQuery, getNamedType, isEnumType, isInputObjectType, isListType, isNonNullType, isScalarType, parse, validate, GraphQLNonNull } from "graphql";
 
-const VERSION = "2026-07";
+const VERSION = "2026-10";
 const ENDPOINT = "https://shopify.dev/admin-graphql-direct-proxy/" + VERSION;
 const INPUT_PREFIX = "ShopifyAdminInput_";
 const report = JSON.parse(readFileSync("t011-graphql-ast-report.json", "utf8"));
