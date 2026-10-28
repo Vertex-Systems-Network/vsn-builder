@@ -1,3 +1,5 @@
+import { styleKitCss } from "../../builder/styleKit.js";
+import { hideOnCss } from "../../builder/visibility.js";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { ContentPolarisIcon } from "../ui/PolarisIcon";
 import { globalCssVariables } from '../../builder/globalDesign';
@@ -331,36 +333,13 @@ function RenderNodeCore({
 					data-vsn-id={node.id}
 					style={{
 						display: "flex",
-						flexDirection:
-							style.flexDirection ||
-							style.direction ||
-							"column",
-						alignItems:
-							style.alignItems || "stretch",
-						justifyContent:
-							style.justifyContent || "flex-start",
-						gap: getSize(style.gap, "0px"),
-						width: getSize(
-							style.width,
-							"100%",
-						),
-						minHeight: getSize(
-							style.minHeight,
-							"auto",
-						),
-						maxWidth: getSize(
-							style.maxWidth,
-							"none",
-						),
-						margin: getSpacing(style.margin),
-						padding: getSpacing(style.padding),
-						backgroundColor:
-							style.backgroundColor ||
-							"transparent",
-						borderRadius: getSize(
-							style.borderRadius,
-							"0px",
-						),
+						flexDirection: style.direction || "column",
+						alignItems: "stretch",
+						justifyContent: "flex-start",
+						width: "100%",
+						boxSizing: "border-box",
+						// Full computed style (per-side spacing, gradients, layout keys), same as the canvas.
+						...style,
 					}}
 				>
 					{children.map((child) => (
@@ -386,6 +365,7 @@ function RenderNodeCore({
 					data-vsn-id={node.id}
 					className="vsn-columns"
 					style={{
+						...style,
 						display: "grid",
 						gridTemplateColumns: `repeat(${normalizeColumnsProps({ ...settings, columns: settings.columns || style.columns }, children.length).columns}, minmax(0, 1fr))`,
 						gap: getSize(style.gap, "20px"),
@@ -1132,6 +1112,12 @@ function RenderNodeCore({
 }
 
 function RenderNode(props) {
+  const visibilityCss = props.node?.meta?.hidden === true ? "" : hideOnCss(props.node?.id, props.node?.meta);
+  if (visibilityCss) return <><style>{visibilityCss}</style><RenderNodeInner {...props} /></>;
+  return <RenderNodeInner {...props} />;
+}
+
+function RenderNodeInner(props) {
   const templates=useContext(WidgetTemplateContext); const template=templates?.[props.node?.type];
   const base=<RenderNodeCore {...props}/>; if(!template?.enabled||!template?.html)return base;
   try { const descriptor=visualTemplateTreeToDescriptor(parseVisualTemplate(template.html),{props:props.node?.props||{},slot:base,templateKey:props.node.type}); const css=scopeVisualTemplateCss(template.css||"",props.node.type); return <>{css?<style>{css}</style>:null}{renderSdkEditorValue(descriptor,`template-${props.node?.id||props.node?.type}`)}</>; }
@@ -1191,6 +1177,7 @@ export default function PreviewRenderer({
 				minHeight: "100vh",
 			}}
 		>
+			<style dangerouslySetInnerHTML={{ __html: styleKitCss(".vsn-preview-root") }} />
 			{staticPreview ? null : <CustomJsRuntime rootRef={previewRootRef} elements={elements} mode="preview" />}
 			{elements.map((element) => (
 				<RenderNode

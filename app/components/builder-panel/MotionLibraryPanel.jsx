@@ -30,21 +30,35 @@ function previewTimelineFor(item = {}) {
 
 function MotionPreview({timeline}) {
   const ref=useRef(null);
-  const animationRef=useRef(null);
-  const action=timeline?.actions?.find((item)=>item.type==="animate")||{};
-  const duration=Math.max(120,Math.min(3000,Number(action.duration??timeline?.timeline?.duration??400)||400));
-  const easing=action.easing&&action.easing!=="inherit"?action.easing:(timeline?.timeline?.easing||"ease");
+  const stageRef=useRef(null);
+  const animationsRef=useRef([]);
+  const settings=timeline?.timeline||{};
+  // Same timing model as the storefront runtime (vsn-interactions.js): every animate
+  // action, per-action duration/delay/easing, stagger, repeat and yoyo.
   const run=()=>{
     const node=ref.current;if(!node)return;
-    animationRef.current?.cancel?.();
-    const frames=previewFrames(action);
-    Object.assign(node.style,frames[0]||{});
-    if(typeof node.animate==="function")animationRef.current=node.animate(frames,{duration,easing,fill:"both"});
-    else Object.assign(node.style,frames[frames.length-1]||{});
+    animationsRef.current.forEach((animation)=>animation?.cancel?.());animationsRef.current=[];
+    const actions=(timeline?.actions||[]).filter((item)=>item.type==="animate");
+    const reduced=typeof window!=="undefined"&&window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches===true&&(settings.reducedMotion||"instant")!=="allow";
+    actions.forEach((action,index)=>{
+      const frames=previewFrames(action);
+      const duration=Math.max(0,Number(action.duration??settings.duration??400)||400);
+      const delay=Number(settings.delay||0)+Number(action.delay||0)+Number(settings.stagger||0)*index;
+      const easing=action.easing&&action.easing!=="inherit"?action.easing:(settings.easing||"ease");
+      if(reduced||typeof node.animate!=="function"){Object.assign(node.style,frames[frames.length-1]||{});return;}
+      animationsRef.current.push(node.animate(frames,{duration,delay,easing,fill:"both",iterations:settings.yoyo?Math.max(2,(Number(settings.repeat||0)+1)*2):Math.max(1,Math.min(6,Number(settings.repeat||0)+1)),direction:settings.yoyo?"alternate":"normal"}));
+    });
   };
+  // Play once when the card first scrolls into view (not all cards at once on load), and on hover.
+  useEffect(()=>{
+    const stage=stageRef.current;if(!stage)return undefined;
+    if(typeof IntersectionObserver==="undefined"){run();return()=>animationsRef.current.forEach((animation)=>animation?.cancel?.());}
+    const observer=new IntersectionObserver((entries)=>{if(entries.some((entry)=>entry.isIntersecting)){run();observer.disconnect();}},{threshold:.4});
+    observer.observe(stage);
+    return()=>{observer.disconnect();animationsRef.current.forEach((animation)=>animation?.cancel?.());};
   // eslint-disable-next-line react-hooks/exhaustive-deps -- replay only when timeline changes; run is recreated every render
-  useEffect(()=>{run();return()=>animationRef.current?.cancel?.();},[timeline]);
-  return <div className="vsn-motion-preview"><div className="vsn-motion-preview-stage"><div ref={ref} className="vsn-motion-preview-object"><span>VSN</span></div></div><VsnButton size="xs" icon={<Play size={13}/>} onClick={run}>Preview</VsnButton></div>;
+  },[timeline]);
+  return <div className="vsn-motion-preview"><div ref={stageRef} className="vsn-motion-preview-stage" onMouseEnter={run}><div ref={ref} className="vsn-motion-preview-object"><span>VSN</span></div></div><VsnButton size="xs" icon={<Play size={13}/>} onClick={run}>Preview</VsnButton></div>;
 }
 
 function MotionLibraryPanel({data,actionData,submit,busy=false,confirmAction}) {

@@ -698,3 +698,57 @@ html[data-vsn-theme="dark"] #vsn-editor-overlay-root .vsn-editor-code-suggestion
 [data-vsn-editor-root="true"].vsn-editor-dark .vsn-properties-panel [class~="text-[#625BA8]"]{color:#B3ADF0!important}
 [data-vsn-editor-root="true"].vsn-editor-dark .vsn-editor-category-toggle>span{color:#C3CAD5!important}
 [data-vsn-editor-root="true"].vsn-editor-dark .vsn-canvas-pan-surface{background:#0B0E13!important}
+
+/* Hidden elements (meta.hidden or hidden on the current device) stay selectable but dimmed. */
+[data-vsn-editor-root="true"] [data-vsn-editor-hidden="1"] { opacity: .35; outline: 1px dashed #8a8a8a; outline-offset: -1px; background-image: repeating-linear-gradient(135deg, transparent 0 8px, rgba(0,0,0,.04) 8px 16px); }
+
+/* Box shorthand controls span the whole inspector row even inside two-column grids. */
+[data-vsn-editor-root="true"] .vsn-box-shorthand-control { grid-column: 1 / -1; display: grid; gap: 6px; }
+
+/* Canvas drop/insert gaps take no layout space (the canvas matches the storefront)
+   and only appear on hover or while dragging. */
+[data-vsn-editor-root="true"] .vsn-drop-zone { height: 14px; margin: -7px 0; z-index: 6; }
+[data-vsn-editor-root="true"] .vsn-drop-zone:not(:hover):not([data-active="1"]) > * { opacity: 0; }
+html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] .vsn-drop-zone > * { opacity: 1; }
+[data-vsn-editor-root="true"] .vsn-drop-zone > * { transition: opacity .12s ease; }
+
+/* Paired colour/font pickers truncate their values in the narrow inspector: stack them. */
+[data-vsn-editor-root="true"] :is(.vsn-properties-panel, .vsn-editor-sidebar) .grid.grid-cols-2:has(.vsn-color-trigger, .vsn-font-trigger) { grid-template-columns: minmax(0, 1fr); }
+[data-vsn-editor-root="true"] [data-vsn-site-settings-active="1"] { color: #625BA8; }
+
+/* Below 1440px the absolutely centred device switcher collides with the left
+   toolbar icons; let it flow in the toolbar instead. */
+@media (max-width: 1439px) {
+  .vsn-editor-device-switcher--center { position: static !important; transform: none !important; }
+}
+
+/* Marketplace: live thumbnails with a fixed ratio (no layout shift) and a list view. */
+.vsn-marketplace-display{display:inline-flex;gap:6px;margin-left:auto}
+.vsn-library-toolbar-top:has(.vsn-marketplace-display){display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.vsn-marketplace-thumb{position:relative;display:block;aspect-ratio:16/10;overflow:hidden;padding:0}
+.vsn-marketplace-thumb-live{position:absolute;inset:0;overflow:hidden;background:#f6f6f7}
+.vsn-marketplace-thumb-live>img{width:100%;height:100%;object-fit:cover}
+.vsn-marketplace-thumb-live .vsn-library-preview{height:100%;border:0;border-radius:0;pointer-events:none}
+.vsn-marketplace-grid.is-list{grid-template-columns:minmax(0,1fr)!important}
+.vsn-marketplace-grid.is-list .vsn-marketplace-card{display:grid;grid-template-columns:260px minmax(0,1fr);align-items:stretch}
+.vsn-marketplace-grid.is-list .vsn-marketplace-thumb{aspect-ratio:auto;min-height:160px;height:100%}
+@media(max-width:720px){.vsn-marketplace-grid.is-list .vsn-marketplace-card{grid-template-columns:1fr}.vsn-marketplace-grid.is-list .vsn-marketplace-thumb{aspect-ratio:16/10}}
+
+/* Global Style Kit */
+[data-vsn-editor-root="true"] .vsn-global-colors{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+[data-vsn-editor-root="true"] .vsn-global-color{width:24px;height:24px;padding:2px;border:1px solid #d9d9d9;border-radius:999px;background:#fff;cursor:pointer}
+[data-vsn-editor-root="true"] .vsn-global-color>span{display:block;width:100%;height:100%;border-radius:999px}
+[data-vsn-editor-root="true"] .vsn-global-color.is-active{border-color:#625BA8;box-shadow:0 0 0 2px rgba(98,91,168,.25)}
+[data-vsn-editor-root="true"] .vsn-global-color-link{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;color:#5c5f62}
+[data-vsn-editor-root="true"] .vsn-global-color-link button{margin-left:auto;border:0;background:none;color:#625BA8;font-weight:600;cursor:pointer}
+[data-vsn-editor-root="true"] .vsn-kit-color-list{display:grid;gap:8px}
+[data-vsn-editor-root="true"] .vsn-kit-color-row{display:grid;gap:6px}
+[data-vsn-editor-root="true"] .vsn-kit-color-name{display:flex;align-items:baseline;gap:6px;font-size:12px;font-weight:600}
+[data-vsn-editor-root="true"] .vsn-kit-color-name small{font-weight:400;color:#8a8a8a}
+[data-vsn-editor-root="true"] .vsn-kit-add-row{display:flex;gap:6px;align-items:center;margin-top:8px}
+[data-vsn-editor-root="true"] .vsn-kit-preset-tabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+[data-vsn-editor-root="true"] .vsn-kit-preset-tabs button{padding:4px 8px;border:1px solid #e3e3e3;border-radius:6px;background:#fff;font-size:11px;font-weight:600;cursor:pointer}
+[data-vsn-editor-root="true"] .vsn-kit-preset-tabs button.is-active{background:#625BA8;border-color:#625BA8;color:#fff}
+[data-vsn-editor-root="true"] .vsn-kit-preset-sample{padding:10px;border:1px dashed #e3e3e3;border-radius:8px;margin-bottom:8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+[data-vsn-editor-root="true"] .vsn-kit-field{display:grid;gap:4px;font-size:11px;color:#5c5f62}
+[data-vsn-editor-root="true"] .vsn-kit-field select{height:32px;border:1px solid #d9d9d9;border-radius:8px;padding:0 8px;background:#fff}

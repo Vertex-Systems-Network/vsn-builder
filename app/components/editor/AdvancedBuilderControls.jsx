@@ -28,6 +28,7 @@ import {
   TransitionControl,
 } from "./EditorControls";
 import FilterEffectsControl from "./FilterEffectsControl";
+import { normalizeHideOn, VISIBILITY_DEVICES } from "../../builder/visibility.js";
 import FontFamilyControl from "./fonts/FontFamilyControl";
 import { getWidgetCapabilities } from "../../builder/widgetCapabilities";
 import { dynamicFieldsForWidget, dynamicSourcesForType, inspectDynamicBindings, normalizeBindings } from "../../builder/dynamicBindings.js";
@@ -396,3 +397,14 @@ export function BreakpointControls({ globalStyles, onChange }) {
   </Panel>;
 }
 
+
+export function VisibilityPanel({ element, onUpdate }) {
+  const meta = element?.meta || {};
+  const hideOn = normalizeHideOn(meta);
+  const setMeta = (patch) => onUpdate?.(element.id, { meta: { ...meta, ...patch } });
+  return <div className="vsn-visibility-panel" data-vsn-control-group="visibility">
+    <SwitcherControl label="Hide element" checked={meta.hidden === true} onChange={(hidden) => setMeta({ hidden: hidden === true })} />
+    {VISIBILITY_DEVICES.map((device) => <SwitcherControl key={device} label={`Hide on ${device.charAt(0).toUpperCase()}${device.slice(1)}`} checked={hideOn[device]} onChange={(value) => setMeta({ hideOn: { ...hideOn, [device]: value === true } })} />)}
+    <p className="vsn-field-caption">Hidden elements stay dimmed in the editor and are not shown on the storefront.</p>
+  </div>;
+}

@@ -1,3 +1,6 @@
+// Running Web Animations per target+action, so a re-trigger replaces instead of stacking.
+const RUNNING_ANIMATIONS = new WeakMap();
+
 function parseConfig(element) {
   try {
     const raw = element?.getAttribute?.("data-vsn-motion");
@@ -82,7 +85,13 @@ function runAction(source, action, timeline, root, index = 0, progress = null) {
       }
       const keyframes = animationFrames(action);
       if (typeof target.animate === "function" && duration > 0) {
+        // Replace (not stack) a running animation for the same target+action to avoid flicker.
+        const key = action.id || String(index);
+        const active = RUNNING_ANIMATIONS.get(target) || {};
+        try { active[key]?.cancel?.(); } catch { /* ignore: best-effort */ }
         const animation = target.animate(keyframes, { duration, delay:staggerDelay, easing, iterations:timeline.yoyo ? Math.max(2,(Number(timeline.repeat||0)+1)*2) : Math.max(1,Number(timeline.repeat||0)+1), direction:timeline.yoyo?"alternate":"normal", fill:"both" });
+        active[key] = animation;
+        RUNNING_ANIMATIONS.set(target, active);
         animations.push(animation);
       } else Object.assign(target.style, keyframes[keyframes.length-1]);
     } else if (action.type === "show") target.hidden = false;
@@ -146,7 +155,10 @@ export function setupInteractionRuntime(root = document) {
   }
   if (viewportTimelines.length && typeof IntersectionObserver !== "undefined") {
     const map = new Map(); viewportTimelines.forEach((row)=>{ if(!map.has(row.element))map.set(row.element,[]);map.get(row.element).push(row.timeline); });
-    const observer = new IntersectionObserver((entries)=>entries.forEach((entry)=>{ for(const timeline of map.get(entry.target)||[]) { if (timeline.trigger.type === "viewport-enter" && entry.isIntersecting && entry.intersectionRatio >= Number(timeline.trigger?.threshold ?? 0.15)) execute(entry.target,timeline,{type:"viewport-enter"}); if (timeline.trigger.type === "viewport-exit" && !entry.isIntersecting) execute(entry.target,timeline,{type:"viewport-exit"}); } }),{threshold:[0,.01,.15,.5,1]});
+    // Same transition rules as the storefront runtime (vsn-interactions.js): fire on
+    // outside->inside / inside->outside only, and let tall elements enter by viewport share.
+    const inside = new WeakMap();
+    const observer = new IntersectionObserver((entries)=>entries.forEach((entry)=>{ const states = inside.get(entry.target) || {}; inside.set(entry.target, states); const vh = window.innerHeight || document.documentElement.clientHeight || 800; for(const timeline of map.get(entry.target)||[]) { const threshold = Number(timeline.trigger?.threshold ?? 0.15); const entered = entry.isIntersecting && (entry.intersectionRatio >= threshold || entry.intersectionRect.height >= vh * threshold); const was = states[timeline.id] === true; if (entered === was && entry.isIntersecting) continue; states[timeline.id] = entered; if (timeline.trigger.type === "viewport-enter" && entered && !was) execute(entry.target,timeline,{type:"viewport-enter"}); if (timeline.trigger.type === "viewport-exit" && !entry.isIntersecting && was) execute(entry.target,timeline,{type:"viewport-exit"}); } }),{threshold:[0,.01,.15,.5,1]});
     map.forEach((_,element)=>observer.observe(element)); observers.push(observer);
   }
   if (scrollRows.some((row)=>row.type==="scroll-progress")) {

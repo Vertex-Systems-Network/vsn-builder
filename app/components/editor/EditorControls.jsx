@@ -179,7 +179,10 @@ export function ButtonSetControl({ label, value, onChange, options = [] }) {
 }
 
 export function DimensionsControl({ label, values = {}, onChange, unit = "px", min }) {
-  const [linked, setLinked] = useState(false);
+  const [linked, setLinked] = useState(() => {
+    const filled = ["top", "right", "bottom", "left"].map((side) => String(values?.[side] ?? ""));
+    return filled[0] !== "" && filled.every((value) => value === filled[0]);
+  });
   const sides = ["top", "right", "bottom", "left"];
   const inferredUnit = useMemo(() => {
     for (const side of sides) {
