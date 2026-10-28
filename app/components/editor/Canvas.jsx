@@ -13,6 +13,7 @@ import { normalizeGalleryWidgetProps, galleryAspectRatio, galleryColumnsForDevic
 import { normalizeVideoWidgetProps, videoEmbedUrl } from '../../builder/videoWidget.js';
 import { normalizeSliderProps, sliderSlidesForDevice } from '../../builder/sliderWidget.js';
 import { isNestedSliderType, normalizeNestedSliderProps, nestedItemNoun } from '../../builder/nestedCarouselWidget.js';
+import { columnsForDevice } from '../../builder/columnsWidget.js';
 import { normalizeStructuredItems } from '../../builder/structuredItems.js';
 import { applyDynamicBindings } from '../../builder/dynamicBindings.js';
 import { normalizeContextImageProps, contextImageUrl, contextImageAlt } from '../../builder/contextMediaWidget.js';
@@ -1073,7 +1074,7 @@ function RenderNode({
       ? {
           ...style,
           display: "grid",
-          gridTemplateColumns: node.styles?.gridTemplateColumns || node.styles?.grid?.templateColumns || `repeat(${Number(node.props?.columns || Math.max((node.children || []).length, 1))}, minmax(0, 1fr))`,
+          gridTemplateColumns: node.styles?.gridTemplateColumns || node.styles?.grid?.templateColumns || `repeat(${columnsForDevice(node.props, (node.children || []).length, previewMode)}, minmax(0, 1fr))`,
           gap: node.styles?.gap || node.styles?.grid?.gap || "20px",
         }
       : {

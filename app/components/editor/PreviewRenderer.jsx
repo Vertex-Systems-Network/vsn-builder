@@ -9,6 +9,7 @@ import { normalizeGalleryWidgetProps, galleryAspectRatio } from "../../builder/g
 import { normalizeVideoWidgetProps, videoEmbedUrl } from "../../builder/videoWidget.js";
 import { normalizeSliderProps } from "../../builder/sliderWidget.js";
 import { isNestedSliderType, normalizeNestedSliderProps } from "../../builder/nestedCarouselWidget.js";
+import { columnsResponsiveCss, normalizeColumnsProps } from "../../builder/columnsWidget.js";
 import { normalizeStructuredItems } from "../../builder/structuredItems.js";
 import { applyDynamicBindings } from "../../builder/dynamicBindings.js";
 import "../../builder/contextMediaWidget.js";
@@ -379,14 +380,14 @@ function RenderNodeCore({
 
 		case "columns":
 			return (
+				<>
+				<style dangerouslySetInnerHTML={{ __html: columnsResponsiveCss(node.id, settings, children.length) }} />
 				<div
 					data-vsn-id={node.id}
+					className="vsn-columns"
 					style={{
 						display: "grid",
-						gridTemplateColumns: `repeat(${settings.columns ||
-							style.columns ||
-							Math.max(children.length, 2)
-							}, minmax(0, 1fr))`,
+						gridTemplateColumns: `repeat(${normalizeColumnsProps({ ...settings, columns: settings.columns || style.columns }, children.length).columns}, minmax(0, 1fr))`,
 						gap: getSize(style.gap, "20px"),
 						width: "100%",
 					}}
@@ -404,6 +405,7 @@ function RenderNodeCore({
 						/>
 					))}
 				</div>
+				</>
 			);
 
 		case "heading": {

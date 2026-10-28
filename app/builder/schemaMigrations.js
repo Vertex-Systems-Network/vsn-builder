@@ -1,3 +1,4 @@
+import { normalizeColumnsProps, syncColumnCells } from "./columnsWidget.js";
 import { VSN_BASELINE } from "../config/baseline.js";
 import { normalizeElementInteractions } from "./interactionSchema.js";
 import { normalizeResponsiveBreakpoints } from "./responsiveEngine.js";
@@ -113,7 +114,17 @@ export function migrateBuilderContent(input = []) {
     nodes = migration(nodes);
     version = target;
   }
-  return stampBuilderSchema(nodes);
+  return stampBuilderSchema(fillEmptyColumns(nodes));
+}
+
+// Columns widgets created before column cells existed rendered as an empty grid; give them their cells (idempotent).
+function fillEmptyColumns(nodes) {
+  return (Array.isArray(nodes) ? nodes : []).map((node) => {
+    if (!node || typeof node !== "object") return node;
+    const children = fillEmptyColumns(node.children || []);
+    if (node.type === "columns" && !children.length) return { ...node, children: syncColumnCells([], normalizeColumnsProps(node.props).columns) };
+    return node.children ? { ...node, children } : node;
+  });
 }
 
 export function getMigrationRegistrySummary() {
