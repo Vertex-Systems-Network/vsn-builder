@@ -1,6 +1,8 @@
 (function(){
   "use strict";
   const initialized = new WeakSet();
+  // Running Web Animations per target+action, so a re-trigger replaces instead of stacking (flicker).
+  const running = new WeakMap();
   const delegated = { click:[], mouseover:[], focusin:[], submit:[] };
   let delegationReady = false;
   function registerDelegated(type, el, timeline, exec) {
@@ -50,7 +52,7 @@
       if(action.type==="animate"){
         if(progress!==null){Object.assign(target.style,styleFrame(frameAtProgress(action,progress)));return;}
         const frames=animationFrames(action);
-        if(target.animate&&duration>0)target.animate(frames,{duration,delay,easing,iterations:timeline.yoyo?Math.max(2,(Number(timeline.repeat||0)+1)*2):Math.max(1,Number(timeline.repeat||0)+1),direction:timeline.yoyo?"alternate":"normal",fill:"both"});else Object.assign(target.style,frames[frames.length-1]);
+        if(target.animate&&duration>0){const key=action.id||String(index);const active=running.get(target)||{};try{active[key]?.cancel?.();}catch{ /* ignore: best-effort */ }active[key]=target.animate(frames,{duration,delay,easing,iterations:timeline.yoyo?Math.max(2,(Number(timeline.repeat||0)+1)*2):Math.max(1,Number(timeline.repeat||0)+1),direction:timeline.yoyo?"alternate":"normal",fill:"both"});running.set(target,active);}else Object.assign(target.style,frames[frames.length-1]);
         return;
       }
       const apply=()=>{
@@ -85,7 +87,13 @@
         let raf=0;const update=()=>{raf=0;const r=el.getBoundingClientRect(),vh=innerHeight||document.documentElement.clientHeight||800,p=Math.max(0,Math.min(1,(vh-r.top)/(vh+r.height||1)));exec(tl,{type:"scroll-progress"},p)};const schedule=()=>{if(!raf)raf=requestAnimationFrame(update)};addEventListener("scroll",schedule,{passive:true});addEventListener("resize",schedule,{passive:true});schedule();
       } else if(t.type==="mouse-move")el.addEventListener("pointermove",e=>{const r=el.getBoundingClientRect(),nx=r.width?((e.clientX-r.left)/r.width-.5)*2:0,ny=r.height?((e.clientY-r.top)/r.height-.5)*2:0;const copy={...tl,actions:(tl.actions||[]).map(a=>a.type==="animate"?{...a,to:{...a.to,x:Number(a.to?.x||0)*nx,y:Number(a.to?.y||0)*ny}}:a)};exec(copy,e);},{passive:true});
     }
-    if(view.length&&"IntersectionObserver"in window){const observer=new IntersectionObserver(entries=>entries.forEach(entry=>view.forEach(tl=>{const threshold=Number(tl.trigger?.threshold??.15);if(tl.trigger?.type==="viewport-enter"&&entry.isIntersecting&&entry.intersectionRatio>=threshold)exec(tl,{type:"viewport-enter"});if(tl.trigger?.type==="viewport-exit"&&!entry.isIntersecting)exec(tl,{type:"viewport-exit"});})),{threshold:[0,.01,.05,.1,.15,.25,.5,.75,1]});observer.observe(el);}
+    if(view.length&&"IntersectionObserver"in window){
+      // Fire only on the outside->inside (or inside->outside) transition; several thresholds
+      // used to re-run the animation repeatedly while scrolling. Elements taller than the
+      // viewport count as entered once they fill the threshold share of the viewport.
+      const inside=new Map();
+      const observer=new IntersectionObserver(entries=>entries.forEach(entry=>view.forEach(tl=>{const threshold=Number(tl.trigger?.threshold??.15);const vh=innerHeight||document.documentElement.clientHeight||800;const entered=entry.isIntersecting&&(entry.intersectionRatio>=threshold||entry.intersectionRect.height>=vh*threshold);const was=inside.get(tl.id)===true;if(entered===was&&entry.isIntersecting)return;inside.set(tl.id,entered);if(tl.trigger?.type==="viewport-enter"&&entered&&!was)exec(tl,{type:"viewport-enter"});if(tl.trigger?.type==="viewport-exit"&&!entry.isIntersecting&&was)exec(tl,{type:"viewport-exit"});})),{threshold:[0,.01,.05,.1,.15,.25,.5,.75,1]});observer.observe(el);
+    } else if(view.length){for(const tl of view)if(tl.trigger?.type==="viewport-enter")exec(tl,{type:"viewport-enter"});}
   }
   function scan(root=document){if(root?.matches?.("[data-vsn-motion]"))initElement(root);root?.querySelectorAll?.("[data-vsn-motion]").forEach(initElement);}
   window.VSNInteractions={scan,run:(element,timelineId)=>{const config=parse(element);const tl=config?.timelines?.find(x=>x.id===timelineId);if(tl)run(element,tl,{type:"manual"});}};

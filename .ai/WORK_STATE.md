@@ -57,7 +57,7 @@ QA method:
 5. DONE: **Marketplace templates.**
    - Every built-in template in `app/data/marketplaceCatalog.js` renders correctly: no empty or broken sections, real images or placeholders, responsive columns.
    - The marketplace list and grid views use consistent cards (thumbnail ratio, title, tags, actions) with no layout shift.
-6. **Motion library.**
+6. DONE: **Motion library.**
    - Check entrance, scroll and hover animations for wrong behaviour: replays, flicker, wrong origin, not stopping, and differences between editor and storefront.
    - The library preview must match the runtime (`vsn-interactions.js`).
    - Respect `prefers-reduced-motion`.
