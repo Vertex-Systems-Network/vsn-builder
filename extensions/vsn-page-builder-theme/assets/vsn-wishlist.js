@@ -20,6 +20,36 @@
     const variant = clean(item?.variantId, 180);
     return variant ? `${base}::${variant}` : base;
   }
+  // Wishlist records come from localStorage and merchant/server JSON. Never
+  // promote an untrusted saved URL directly into a shopper-clickable href.
+  function safeProductUrl(value, handle) {
+    const product = clean(handle, 255);
+    const fallback = product ? "/products/" + encodeURIComponent(product) : "#";
+    const raw = clean(value, 700);
+    if (!raw) return fallback;
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (url.origin !== window.location.origin ||
+          (url.protocol !== "https:" && url.protocol !== "http:") ||
+          url.username || url.password) return fallback;
+      return url.pathname + url.search + url.hash;
+    } catch { return fallback; }
+  }
+  // Avoid executable/data/blob or insecure remote image schemes. Merchant
+  // product images can be same-origin or externally hosted via HTTPS CDN.
+  function safeMediaUrl(value) {
+    const raw = clean(value, 1400);
+    if (!raw) return "";
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (url.username || url.password ||
+          !(url.protocol === "https:" ||
+            (url.protocol === "http:" && url.origin === window.location.origin)))
+        return "";
+      return url.origin === window.location.origin ?
+        (url.pathname + url.search) : url.href;
+    } catch { return ""; }
+  }
   function normalize(items) {
     const out = [];
     const seen = new Set();
@@ -37,8 +67,8 @@
         variantId,
         handle,
         title: clean(raw.title || "Product", 240) || "Product",
-        url: clean(raw.url || (handle ? `/products/${handle}` : ""), 700),
-        image: clean(raw.image, 1400),
+        url: safeProductUrl(raw.url, handle),
+        image: safeMediaUrl(raw.image),
         price: clean(raw.price, 80),
         currency: clean(raw.currency, 20),
         available: raw.available !== false,
@@ -60,7 +90,7 @@
     if (current.length) return current;
     const legacy = normalize(readRaw(LEGACY_KEY));
     if (legacy.length) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy)); localStorage.removeItem(LEGACY_KEY); } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy)); localStorage.removeItem(LEGACY_KEY); } catch { /* ignore */ }
     }
     return legacy;
   }
@@ -69,7 +99,7 @@
   }
   function write(items, { source = "local", pushServer = true } = {}) {
     const next = normalize(items);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
     emit(next, source);
     scheduleRender();
     if (pushServer && isLoggedIn() && hydratedServer) scheduleServerSave(next);
@@ -140,10 +170,11 @@
     const card = element("article", "vsn-wishlist-card");
     card.setAttribute("role", "listitem");
     card.dataset.vsnWishlistKey = itemKey(item);
-    const url = item.url || (item.handle ? `/products/${item.handle}` : "#");
-    if (grid.dataset.vsnWishlistShowImage !== "0" && item.image) {
+    const url = safeProductUrl(item.url, item.handle);
+    const image = safeMediaUrl(item.image);
+    if (grid.dataset.vsnWishlistShowImage !== "0" && image) {
       const link = element("a", "vsn-wishlist-card-image-link"); link.href = url;
-      const img = element("img", "vsn-wishlist-card-image"); img.src = item.image; img.alt = item.title || "Product"; img.loading = "lazy"; img.decoding = "async";
+      const img = element("img", "vsn-wishlist-card-image"); img.src = image; img.alt = item.title || "Product"; img.loading = "lazy"; img.decoding = "async"; img.referrerPolicy = "no-referrer";
       img.style.aspectRatio = grid.dataset.vsnWishlistImageRatio || "1 / 1"; link.appendChild(img); card.appendChild(link);
     }
     const content = element("div", "vsn-wishlist-card-content");

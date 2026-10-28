@@ -12,8 +12,8 @@ add("Application URL configured", !toml.includes('application_url = "https://exa
 add("Auth URL configured", !toml.includes('redirect_urls = [ "https://example.com/api/auth" ]') && /redirect_urls\s*=\s*\[\s*"https:\/\/[^"]+\/auth\/callback"/.test(toml), `Production OAuth callback must end in /auth/callback (${configPath})`, true);
 add("Production config selected in strict release", !strict || productionConfigSelected, "Generate shopify.app.production.toml with npm run config:production before a strict production release", true);
 add("Production dev URL mutation disabled", !strict || /automatically_update_urls_on_dev\s*=\s*false/.test(toml), "Production config must set automatically_update_urls_on_dev = false", true);
-add("Shopify API version 2026-07", /\[webhooks\][\s\S]*api_version\s*=\s*"2026-07"/.test(toml));
-add("Mandatory compliance webhooks", ["customers/data_request","customers/redact","shop/redact"].every((topic)=>new RegExp(`compliance_topics\\s*=\\s*\\[[^\\]]*\"${topic.replace("/","\\/")}\"`).test(toml)));
+add("Shopify API version 2026-10", /\[webhooks\][\s\S]*api_version\s*=\s*"2026-10"/.test(toml));
+add("Mandatory compliance webhooks", ["customers/data_request","customers/redact","shop/redact"].every((topic)=>new RegExp(`compliance_topics\\s*=\\s*\\[[^\\]]*"${topic.replace("/","\\/")}"`).test(toml)));
 add("App proxy configured", toml.includes("[app_proxy]") && toml.includes('subpath = "vsn-builder"'));
 add("Uninstall webhook configured", toml.includes("app/uninstalled"));
 add("Scopes include products", toml.includes("read_products"));

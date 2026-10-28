@@ -1,0 +1,33 @@
+name: T024 Legacy Shopify Uninstall Route Guard (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "app/routes/webhooks.app.uninstalled.jsx"
+      - "app/services/legacy-shopify-uninstall-guard.js"
+      - "tests/t024-legacy-uninstall-route-guard.test.mjs"
+      - ".github/workflows/t024-legacy-uninstall-route-guard.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  signed-route-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Require verified topic and tenant shape before legacy uninstall deletion
+        run: node --test tests/t024-legacy-uninstall-route-guard.test.mjs
+      - name: No deploy and no accidental credentials in the offline regression
+        run: |
+          test -z "$CLOUDFLARE_API_TOKEN"
+          test -z "$SHOPIFY_API_SECRET"
+          test -z "$DIRECT_URL"

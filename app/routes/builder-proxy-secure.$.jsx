@@ -1,4 +1,5 @@
 import { authenticate } from "../shopify.server";
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import db from "../db.server.js";
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { recordExperimentEvent } from "../services/experiment-engine.server.js";
@@ -17,6 +18,14 @@ export { loader } from "./builder-proxy.$.jsx";
 export async function action({ request }) {
   const { session } = await authenticate.public.appProxy(request);
   if (!session?.shop) return jsonResponse({ ok: false, error: "Invalid storefront request." }, 401);
+
+  // Shopify app-proxy signature authenticates the shop, NOT its paid plan.
+  // Deny all storefront feature writes on an unverified/canceled contract,
+  // including forms, wishlist sync and experiment events, before parsing or DB writes.
+  const entitlementBlock = await paidMutationDenied(db, session.shop);
+  if (entitlementBlock) return jsonResponse({
+    ok: false, error: "This storefront feature is currently unavailable.",
+  }, 403);
 
   try {
     const formData = await boundedStorefrontFormData(request);
@@ -52,7 +61,7 @@ export async function action({ request }) {
       let metadata = null;
       try {
         metadata = JSON.parse(metadataRaw);
-      } catch {}
+      } catch { /* best-effort */ }
 
       const result = await recordExperimentEvent({
         db,

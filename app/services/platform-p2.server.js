@@ -17,7 +17,7 @@ function pageMetrics(content){
     if(typeof value==='string'){
       if(/(?:image|video|media|src|url)/i.test(key)&&/^(?:https?:|shopify:|gid:)/.test(value))stats.mediaRefs++;
       if(/(?:customcss|customjs|code|html)/i.test(key))stats.customCodeBytes+=Buffer.byteLength(value,'utf8');
-      if(/^https?:\/\//.test(value)){try{stats.externalOrigins.add(new URL(value).origin);}catch{}}
+      if(/^https?:\/\//.test(value)){try{stats.externalOrigins.add(new URL(value).origin);}catch{ /* best-effort */ }}
     }
     if(/dynamicSource|binding/i.test(key)&&value&&typeof value==='object'&&value.enabled!==false)stats.dynamicBindings++;
   });

@@ -1,7 +1,6 @@
 const SYSTEM_TYPES = new Set(["global-styles", "template-settings"]);
 const GLOBAL_TYPES = new Set(["header", "footer", "section"]);
 const CAMPAIGN_TYPES = new Set(["popup", "modal", "drawer", "flyout", "announcement-overlay", "floating-element"]);
-const IMAGE_TYPES = new Set(["image", "image-box", "gallery-grid", "product-image", "product-media", "product-gallery", "collection-image", "article-featured-image", "team-grid", "logo-cloud"]);
 const INTERACTIVE_TYPES = new Set(["button", "icon-box", "navigation-menu", "mega-menu", "tabs", "accordion", "toggle", "form-builder", "newsletter-form", "product-add-to-cart", "buy-now", "cart-trigger"]);
 const THIRD_PARTY_TYPES = new Set(["html", "custom-html", "iframe", "embed", "video", "app-block", "third-party-block"]);
 
@@ -216,7 +215,7 @@ export function scanBuilderPages(pages = [], { componentDefinitions = [] } = {})
   const reports = [];
   for (const page of Array.isArray(pages) ? pages : []) {
     let elements = [];
-    try { const parsed = JSON.parse(String(page?.contentJson || page?.publishedJson || "[]")); elements = Array.isArray(parsed) ? parsed : []; } catch {}
+    try { const parsed = JSON.parse(String(page?.contentJson || page?.publishedJson || "[]")); elements = Array.isArray(parsed) ? parsed : []; } catch { /* ignore */ }
     reports.push(scanBuilderPage({ page, elements, componentDefinitions }));
   }
   const canonicalOwners = new Map();

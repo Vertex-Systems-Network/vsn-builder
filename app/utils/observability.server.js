@@ -30,7 +30,7 @@ export async function recordOperationalError({ shop, code, message, route = null
   if (!shop) return;
   try {
     await db.builderDiagnosticEvent.create({ data: { shop, level: "error", code, message, pageId, status, details: details ? JSON.stringify(details).slice(0, 8000) : null } });
-  } catch {}
+  } catch { /* best-effort */ }
 }
 
 export function withRequestId(response, requestId) {

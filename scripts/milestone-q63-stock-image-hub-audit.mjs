@@ -104,7 +104,7 @@ await check("Stock cards render a placeholder when no preview is available",()=>
 
 await check("Import re-fetches provider item server-side by provider ID",()=>assert.ok(stockService.includes("providerPhoto(db, shop, provider, providerId)")));
 await check("Remote image downloads require HTTPS provider-owned hosts",()=>assert.ok(stockService.includes("assertSourceUrl")&&stockService.includes('url.protocol !== "https:"')));
-await check("Remote redirect host is revalidated",()=>assert.ok(stockService.includes("assertSourceUrl(provider, response.url || url)")));
+await check("Remote redirect host is revalidated",()=>assert.ok(stockService.includes("fetchTrustedRedirects(url, (value) => assertSourceUrl(provider, value)")));
 await check("Image MIME allowlist exists",()=>assert.ok(stockService.includes('image/jpeg')&&stockService.includes('image/png')&&stockService.includes('image/webp')&&stockService.includes('image/gif')));
 await check("Image import stays below Shopify Files image limits",()=>assert.ok(stockService.includes("18 * 1024 * 1024")&&stockService.includes("18_000_000")&&stockService.includes("safeImageTarget")));
 await check("Shopify staged upload is used",()=>assert.ok(stockService.includes("stagedUploadsCreate")&&stockService.includes('resource: "IMAGE"')));

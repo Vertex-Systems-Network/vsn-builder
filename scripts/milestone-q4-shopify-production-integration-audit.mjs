@@ -13,10 +13,17 @@ const lifecycle=read("app/services/shop-data-lifecycle.server.js");
 const topnav=read("app/components/dashboard/TopNav.jsx");
 
 check("Q4 version sync",Number(pkg.version.split(".").at(-1))>=84&&baseline.includes(`version: "${pkg.version}"`)&&baseline.includes('milestone: "Q.'));
-check("Current stable Shopify API contract",config.includes('SHOPIFY_API_VERSION_HANDLE = "2026-07"')&&toml.includes('api_version = "2026-07"')&&server.includes("ApiVersion.July26"));
+check("Current stable Shopify API contract",config.includes('SHOPIFY_API_VERSION_HANDLE = "2026-10"')&&toml.includes('api_version = "2026-10"')&&server.includes("ApiVersion.October26"));
 check("Production config generator packaged",fs.existsSync("scripts/prepare-shopify-production-config.mjs")&&String(pkg.scripts?.["config:production"]||"").includes("prepare-shopify-production-config.mjs"));
 check("Production readiness command packaged",fs.existsSync("scripts/shopify-production-readiness.mjs")&&String(pkg.scripts?.["release:production:check"]||"").includes("shopify-production-readiness.mjs"));
-check("Production deploy targets named config",String(pkg.scripts?.["deploy:production"]||"").includes("--config production"));
+const threeTierMigration = fs.existsSync("config/deployment/environments.json");
+const productionDeploy = String(pkg.scripts?.["deploy:production"] || "");
+const safeBlock = productionDeploy === "node scripts/deployment-blocked.mjs production" &&
+  fs.existsSync("scripts/deployment-blocked.mjs") &&
+  read("scripts/deployment-blocked.mjs").includes("Direct Shopify CLI deployment/config switching is disabled") &&
+  String(pkg.scripts?.["release:production:check"] || "").includes("env:production:check");
+check("Production deploy targets named config, or is fail-closed during three-tier migration",
+  threeTierMigration ? safeBlock : productionDeploy.includes("--config production"));
 check("Production runtime env validation",fs.existsSync("scripts/validate-production-runtime.mjs")&&String(pkg.scripts?.start||"").includes("validate-production-runtime.mjs"));
 check("Development config remains tunnel-safe",toml.includes("automatically_update_urls_on_dev = true")&&toml.includes('application_url = "https://example.com"'));
 check("Production auth callback contract",config.includes('SHOPIFY_AUTH_CALLBACK_PATH = "/auth/callback"')&&read("scripts/prepare-shopify-production-config.mjs").includes('/auth/callback'));
@@ -25,7 +32,21 @@ check("write_app_proxy scope retained",toml.includes("write_app_proxy"));
 for(const topic of ["app/uninstalled","app/scopes_update","orders/paid"]) check(`Required webhook ${topic}`,toml.includes(`"${topic}"`));
 for(const topic of ["customers/data_request","customers/redact","shop/redact"]) check(`Compliance webhook ${topic}`,new RegExp(`compliance_topics\\s*=\\s*\\[[^\\]]*"${topic.replace("/","\\/")}"`).test(toml));
 check("Webhook handlers authenticate with Shopify",["webhooks.app.uninstalled.jsx","webhooks.app.scopes_update.jsx","webhooks.orders.paid.jsx","webhooks.customers.data_request.jsx","webhooks.customers.redact.jsx","webhooks.shop.redact.jsx"].every((file)=>read(`app/routes/${file}`).includes("authenticate.webhook(request)")));
-check("Shared shop data deletion lifecycle",uninstall.includes("deleteVsnShopData")&&redact.includes("deleteVsnShopData")&&lifecycle.includes("builderEmailTemplate.deleteMany")&&lifecycle.includes("builderWishlist.deleteMany")&&lifecycle.includes("builderPage.deleteMany")&&lifecycle.includes("session.deleteMany"));
+// A signed app/uninstalled webhook is not an installation-generation attestor.
+// A delayed pre-reinstall uninstall must NOT delete current merchant data.
+// Shopify shop/redact still invokes the shared privacy deletion lifecycle.
+check("GDPR shop redaction retains deletion while untrusted uninstall fails closed",
+  uninstall.includes("authenticate.webhook(request)") &&
+  uninstall.includes("isValidLegacyUninstallEvent(event)") &&
+  uninstall.includes("status: 503") &&
+  !uninstall.includes("deleteVsnShopData") &&
+  !uninstall.includes("shop-data-lifecycle.server") &&
+  redact.includes("authenticate.webhook(request)") &&
+  redact.includes("deleteVsnShopData") &&
+  lifecycle.includes("builderEmailTemplate.deleteMany") &&
+  lifecycle.includes("builderWishlist.deleteMany") &&
+  lifecycle.includes("builderPage.deleteMany") &&
+  lifecycle.includes("session.deleteMany"));
 check("Theme app extension live verification retained",topnav.includes("window.shopify.app.extensions()")&&topnav.includes("theme_app_extension")&&topnav.includes("Theme Active"));
 check("System Health checks served API version",control.includes("publicApiVersions")&&control.includes("x-shopify-api-version")&&control.includes("apiVersionFallForward"));
 check("System Health checks production URL and scopes",control.includes("productionUrlReady")&&control.includes("productionScopesReady")&&control.includes("SHOPIFY_EXPECTED_SCOPES"));

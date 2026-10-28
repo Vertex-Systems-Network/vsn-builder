@@ -1,5 +1,4 @@
-export async function deleteVsnShopData(db, shop, { includeSessions = true } = {}) {
-  if (!shop) return { deleted: false, reason: "missing-shop" };
+function shopDeleteOperations(db, shop, includeSessions) {
   const operations = [
     db.builderRevision.deleteMany({ where: { shop } }),
     db.builderAuditLog.deleteMany({ where: { shop } }),
@@ -48,6 +47,60 @@ export async function deleteVsnShopData(db, shop, { includeSessions = true } = {
     db.builderPage.deleteMany({ where: { shop } }),
   ];
   if (includeSessions) operations.push(db.session.deleteMany({ where: { shop } }));
-  await db.$transaction(operations);
+  return operations;
+}
+
+/** Original explicit administrative purge; preserves historical behavior. */
+export async function deleteVsnShopData(db, shop, { includeSessions = true } = {}) {
+  if (!shop) return { deleted: false, reason: "missing-shop" };
+  await db.$transaction(shopDeleteOperations(db,shop,includeSessions));
   return { deleted: true };
+}
+
+const canonicalShop=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.myshopify\.com$/;
+const blocked=()=>{
+  const error=new Error("T024_SHOP_REDACT_GENERATION_NOT_VERIFIED");
+  error.code="T024_SHOP_REDACT_GENERATION_NOT_VERIFIED";
+  return error;
+};
+
+/**
+ * Shopify shop/redact is NOT an uninstall-generation proof. It may arrive
+ * after reinstall, so the old unconditional purge could erase new merchant
+ * data. Serialize a cleanup claim against the exact installation row.
+ *
+ * Only a confirmed, already-uninstalled installation is eligible; absent
+ * install evidence or a current active installation fails closed. The
+ * generation-aware OAuth writer must update the SAME row transactionally.
+ * The current legacy Node OAuth writer has not been certified to do so:
+ * do NOT claim full T024 acceptance or activate hosted GDPR deletion yet.
+ *
+ * Keep the tombstone row for idempotent retries and generation comparisons.
+ */
+export async function deleteVsnShopDataAfterVerifiedRedaction(db,shop) {
+  if(typeof shop!=="string" || !canonicalShop.test(shop) ||
+     typeof db?.$transaction!=="function")throw blocked();
+  try {
+    return await db.$transaction(async tx=>{
+      if(typeof tx?.builderShopInstallation?.updateMany!=="function")
+        throw blocked();
+      // updateMany acquires the shop generation row lock. A new installation
+      // written via the reviewed generation-aware writer locks this same row.
+      // No delete query is constructed until this claim succeeds.
+      const claim=await tx.builderShopInstallation.updateMany({
+        where:{shop,uninstalledAt:{not:null}},
+        data:{updatedAt:new Date()},
+      });
+      if(!claim || claim.count!==1)throw blocked();
+      // These already scoped deletes use this SAME transaction. Unlike the
+      // normal array $transaction, we must await each command while holding
+      // the row lock. If anything throws, every delete and claim roll back.
+      for(const operation of shopDeleteOperations(tx,shop,true))
+        await operation;
+      return {deleted:true};
+    },{maxWait:5000,timeout:60000});
+  }catch{
+    // Never echo DB driver errors, installation timestamps or merchant data.
+    throw blocked();
+  }
 }

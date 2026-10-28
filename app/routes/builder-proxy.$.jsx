@@ -3,19 +3,13 @@ import db from "../db.server.js";
 import { buildNodeStyle } from "../builder/styleEngine.js";
 import { buildStyleBundleCss } from "../builder/stylePipeline.js";
 import { normalizeImageWidgetProps, resolveImageSource, buildImageRenderUrl, imageResolutionDimensions, imageAltText, imageCaptionText, imageLinkHref, isShopifyHostedImageUrl } from "../builder/imageWidget.js";
-import { normalizeGalleryWidgetProps, galleryAspectRatio } from "../builder/galleryWidget.js";
-import { normalizeVideoWidgetProps, videoEmbedUrl } from "../builder/videoWidget.js";
-import { normalizeSliderProps } from "../builder/sliderWidget.js";
-import { isNestedSliderType, normalizeNestedSliderProps } from "../builder/nestedCarouselWidget.js";
-import { normalizeStructuredItems } from "../builder/structuredItems.js";
+import { isNestedSliderType } from "../builder/nestedCarouselWidget.js";
 import { applyDynamicBindings } from "../builder/dynamicBindings.js";
-import { evaluateCommerceConditionRule } from "../builder/commerceConditions.js";
 import { normalizeContextImageProps, contextImageUrl, contextImageAlt } from "../builder/contextMediaWidget.js";
 import { normalizeGridProps, gridImageRatio } from "../builder/dataGridWidget.js";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
 import { normalizeQueryDefinition } from "../builder/queryBuilder.js";
 import { runShopifyLoopQuery } from "../services/query-engine.server.js";
-import { normalizeElementInteractions } from "../builder/interactionSchema.js";
 import { CAMPAIGN_TEMPLATE_TYPES, normalizeCampaignSettings, campaignScheduleState, campaignMatchesContext } from "../builder/campaignSystem.js";
 import { resolveExperimentRender } from "../services/experiment-engine.server.js";
 import { resolveLocalizedPage } from "../services/localization.server.js";
@@ -55,7 +49,17 @@ import {
 } from "../storefront/designTokens.js";
 import { vsnFontRuntime } from "../storefront/fontRuntime.js";
 import { buildCustomJsBundle } from "../storefront/customJsBundle.js";
-import { htmlResponse, javascriptResponse, jsonResponse } from "../storefront/responses.server.js";
+import { serverConditionMatches } from "../storefront/serverConditions.js";
+import { applyDynamicSource, formatMoney } from "../storefront/dynamicSource.js";
+import { injectNodeBehavior } from "../storefront/nodeBehavior.js";
+import { productTypographyStyle, renderProductTitle, renderProductImage, renderProductGallery, renderProductPrice, renderProductDescription, renderProductMeta, renderProductAvailability, renderProductVariantSelector, renderProductQuantity, renderProductAction, renderProductMetafield } from "../storefront/productWidgets.js";
+import { getNodeSpacing, renderSearchQueryTitle, renderSearchResultCount, renderSearchResultsGrid, renderBlogTitle, renderBlogDescription, renderBlogArticleGrid, renderArticleTitle, renderArticleImage, renderArticleContent, renderArticleAuthor, renderArticleDate, renderArticleTags, renderArticleNavigation, renderRelatedArticles } from "../storefront/contentWidgets.js";
+import { renderNavigationMenu, renderFormWidget, renderIconWidget } from "../storefront/formWidgets.js";
+import { renderExtendedWidget } from "../storefront/extendedWidgets.js";
+import { PHASE10_SERVER_WIDGET_TYPES, renderPhase10Widget } from "../storefront/phase10Widgets.js";
+import { responsiveValue, cssSize, individualSpacingCss, spacingCss, safeNumber, allowedValue, safeColor, safeUrl, escapeHtml, escapeAttribute } from "../storefront/safeCss.js";
+import { htmlResponse, javascriptResponse, jsonResponse, liquidResponse } from "../storefront/responses.server.js";
+import { buildLiquidBody, hasLiquidPlaceholders } from "../storefront/liquidOutput.js";
 import {
 	clampProductPageSize,
 	findCollectionProductPageSize,
@@ -63,10 +67,6 @@ import {
 	normalizeProductSort,
 } from "../storefront/productPagination.js";
 ensureBuiltinSdkPlugins();
-const TEMPLATE_CACHE = new Map();
-const TEMPLATE_CACHE_TTL = 15_000;
-function cacheGet(key) { const item = TEMPLATE_CACHE.get(key); if (!item) return null; if (Date.now() - item.at > TEMPLATE_CACHE_TTL) { TEMPLATE_CACHE.delete(key); return null; } return item.value; }
-function cacheSet(key, value) { if (TEMPLATE_CACHE.size > 250) TEMPLATE_CACHE.clear(); TEMPLATE_CACHE.set(key, { at: Date.now(), value }); return value; }
 export async function loader({ request, params }) {
 	const { admin, session } =
 		await authenticate.public.appProxy(request);
@@ -166,9 +166,9 @@ export async function loader({ request, params }) {
 				db.builderPage.findMany({ where: { shop: session.shop, deletedAt: null, status: "published", template: { in: CAMPAIGN_TEMPLATE_TYPES } }, orderBy: { publishedAt: "desc" }, take: 100 }),
 				db.builderShopSetting.findUnique({ where: { shop: session.shop } }),
 			]);
-			let tokens = {}; try { tokens = JSON.parse(shopSetting?.designTokensJson || "{}"); } catch {}
+			let tokens = {}; try { tokens = JSON.parse(shopSetting?.designTokensJson || "{}"); } catch { /* best-effort */ }
 			const campaigns = []; const byId = new Map(pages.map((item)=>[String(item.id),item])); const included = new Set();
-			let customFonts = []; try { customFonts = await db.builderCustomFont.findMany({ where: { shop: session.shop, deletedAt: null }, select: { id:true, family:true, weight:true, style:true, mimeType:true } }); } catch {}
+			let customFonts = []; try { customFonts = await db.builderCustomFont.findMany({ where: { shop: session.shop, deletedAt: null }, select: { id:true, family:true, weight:true, style:true, mimeType:true } }); } catch { /* best-effort */ }
 			const addCampaign = async (campaignPage, forceFallback = false) => {
 				if (!campaignPage || included.has(campaignPage.id)) return;
 				const campaignBaseElements = migrateBuilderContent(safeParseJson(campaignPage.publishedJson, []));
@@ -408,7 +408,7 @@ export async function loader({ request, params }) {
 		try {
 			const rules = await db.builderTemplateRule.findMany({ where: { shop: session.shop, template: requestedTemplate, enabled: true }, orderBy: [{ priority: "desc" }, { updatedAt: "desc" }], take: 50 });
 			for (const rule of rules) {
-				let conditions = {}; try { conditions = JSON.parse(rule.conditionsJson || "{}"); } catch {}
+				let conditions = {}; try { conditions = JSON.parse(rule.conditionsJson || "{}"); } catch { /* best-effort */ }
 				const includePath = String(conditions.includePath || "").trim();
 				const excludePath = String(conditions.excludePath || "").trim();
 				const customerState = String(conditions.customerState || "any");
@@ -639,48 +639,11 @@ export async function loader({ request, params }) {
 			localization: { locale: localizationRender.locale || requestedLocale, marketKey: requestedMarketKey, direction: localizationRender.direction || "ltr" },
 		});
 
+	if (hasLiquidPlaceholders(html)) {
+		const liquid = buildLiquidBody(html, { enabled: !enterpriseSettings.safeMode });
+		return liquid.liquid ? liquidResponse(liquid.body, 200) : htmlResponse(liquid.body, 200);
+	}
 	return htmlResponse(html, 200);
-}
-
-function getNodeSpacing(styles = {}) {
-	const spacing = styles?.spacing || {};
-
-	const margin = spacing.margin ?? styles.margin;
-	const padding = spacing.padding ?? styles.padding;
-
-	const buildBox = (direct, prefix, fallback = "0px") => {
-		if (direct !== undefined && direct !== null && direct !== "") {
-			if (typeof direct === "object" && !Array.isArray(direct)) {
-				const source = direct.desktop || direct;
-				const unit = source.unit || "px";
-				const top = source.top ?? 0;
-				const right = source.right ?? 0;
-				const bottom = source.bottom ?? 0;
-				const left = source.left ?? 0;
-				return `${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit}`;
-			}
-
-			return toCssSize(direct, fallback);
-		}
-
-		const top = spacing[`${prefix}Top`] ?? styles[`${prefix}Top`];
-		const right = spacing[`${prefix}Right`] ?? styles[`${prefix}Right`];
-		const bottom = spacing[`${prefix}Bottom`] ?? styles[`${prefix}Bottom`];
-		const left = spacing[`${prefix}Left`] ?? styles[`${prefix}Left`];
-
-		if ([top, right, bottom, left].every((item) => item === undefined || item === null || item === "")) {
-			return fallback;
-		}
-
-		return [top, right, bottom, left]
-			.map((item) => toCssSize(item, "0px"))
-			.join(" ");
-	};
-
-	return {
-		margin: buildBox(margin, "margin"),
-		padding: buildBox(padding, "padding"),
-	};
 }
 
 function safeParseJson(value, fallback) {
@@ -899,7 +862,6 @@ function renderBuilderDocument({
 	designTokens = {},
 	customFonts = [],
 	enterpriseSettings = {},
-	assetPipelineOptimized = false,
 	experiment = null,
 	widgetPlatform = {},
 	googleMapsApiKey = "", googleCaptcha = {}, formConfigs = {},
@@ -1027,29 +989,6 @@ function renderBuilderDocument({
 }
 
 const normalizeNodeStyles = buildNodeStyle;
-
-function formatMoney(
-	amount,
-	currencyCode = "USD",
-) {
-	const numericAmount =
-		Number(amount || 0);
-
-	try {
-		return new Intl.NumberFormat(
-			"en",
-			{
-				style: "currency",
-				currency:
-					currencyCode || "USD",
-			},
-		).format(numericAmount);
-	} catch {
-		return `${numericAmount.toFixed(
-			2,
-		)} ${currencyCode}`;
-	}
-}
 
 function renderCollectionProductGrid(
 	node,
@@ -1785,324 +1724,6 @@ ${loadMoreEnabled &&
 `;
 }
 
-function sanitizeRichHtml(value) {
-	return String(value || "")
-		.replace(/<\/?(?:script|style|iframe|object|embed|form)[^>]*>/gi, "")
-		.replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-		.replace(/(?:href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\1/gi, 'href="#"');
-}
-function contentTypography(styles={}, fallback={}) { return productTypographyStyle(styles, fallback); }
-function parseNavigationItems(value) {
-	return String(value || "Home|/").split(/\r?\n/).map((line) => {
-		const [label, url] = line.split("|");
-		return { label: String(label || "").trim(), url: String(url || "#").trim() || "#" };
-	}).filter((item) => item.label);
-}
-
-function parseRows(value, fields = 2) {
-  return String(value || "").split(/\r?\n/).map((line) => line.split("|").map((part) => String(part || "").trim()).slice(0, fields)).filter((row) => row.some(Boolean));
-}
-
-const NESTED_STOREFRONT_CONTRACT_TYPES = ["carousel", "slides", "testimonials-carousel"];
-const PHASE10_SERVER_WIDGET_TYPES = new Set(["breadcrumbs","icon-list","icon-box","image-box","accordion","toggle","social-icons","map","progress-bar","counter","pricing-table","timeline","data-table","menu-anchor","form-builder","product-media","inventory-status","collection-filters","collection-sorting","collection-pagination","cart-drawer","countdown","video","slider","product-grid","product-card","collection-grid","html","liquid"]);
-
-function parseFormFields(value) {
-  return String(value || "").split(/\r?\n/).map((line, index) => {
-    const [type="text", name=`field_${index+1}`, label="Field", placeholder="", required="", options="", step="1"] = line.split("|").map((part)=>String(part||"").trim());
-    return { type:type.toLowerCase(), name:name.replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,80), label, placeholder, required:/^(required|true|1|yes)$/i.test(required), options:options.split(",").map((x)=>x.trim()).filter(Boolean), step:Math.max(1, Number(step)||1) };
-  }).filter((field)=>field.type && field.name);
-}
-
-function renderFormBuilder(node, props, styles, renderContext = {}) {
-  const formKey=String(props.formKey||"custom").trim()||"custom";
-  const formSettings=renderContext?.formConfigs?.[formKey]||{};
-  const captchaMode=formSettings.captchaMode||props.captchaMode||"none";
-  const turnstileSiteKey=formSettings.turnstileSiteKey||props.turnstileSiteKey||"";
-  const hcaptchaSiteKey=formSettings.hcaptchaSiteKey||props.hcaptchaSiteKey||"";
-  const captchaV2=renderContext?.googleCaptcha?.v2||{}; const captchaV3=renderContext?.googleCaptcha?.v3||{};
-  const recaptchaV2SiteKey=captchaV2.enabled!==false&&captchaV2.siteKeyConfigured?captchaV2.siteKey:"";
-  const recaptchaV3SiteKey=captchaV3.enabled!==false&&captchaV3.siteKeyConfigured?captchaV3.siteKey:"";
-  const recaptchaV3Threshold=Math.max(0,Math.min(1,Number(formSettings.recaptchaV3Threshold??props.recaptchaV3Threshold??captchaV3.threshold??0.5)));
-  const recaptchaV3Action=String(formSettings.recaptchaV3Action||props.recaptchaV3Action||captchaV3.action||"form_submit").replace(/[^A-Za-z0-9_/]/g,"").slice(0,80)||"form_submit";
-  const fields=parseFormFields(props.fieldsText);
-  const maxStep=Math.max(1,...fields.map((field)=>field.step));
-  const multi=props.multiStep===true && maxStep>1;
-  const customer=renderContext?.customer||{}; const product=renderContext?.product||{};
-  const fieldHtml=fields.map((field,index)=>{
-    const id=`vsn-${escapeAttribute(node.id||"form")}-${index}`;
-    const required=field.required?" required":"";
-    let prefill=""; if(props.prefillCustomer!==false){if(field.name==="email"&&customer.email)prefill=customer.email;else if(["name","full_name","customer_name"].includes(field.name)&&customer.name)prefill=customer.name;} if(props.prefillProduct!==false){if(["product","product_title"].includes(field.name)&&product.title)prefill=product.title;else if(["product_handle","productHandle"].includes(field.name)&&product.handle)prefill=product.handle;}
-    const common=`id="${id}" name="${escapeAttribute(field.name)}"${required}${prefill?` value="${escapeAttribute(prefill)}"`:""}`;
-    let control="";
-    if(field.type==="textarea") control=`<textarea ${common} placeholder="${escapeAttribute(field.placeholder)}" style="min-height:110px;padding:10px 12px;border:1px solid #d9d9d9;border-radius:8px;width:100%;box-sizing:border-box;"></textarea>`;
-    else if(field.type==="select") control=`<select ${common} style="padding:10px 12px;border:1px solid #d9d9d9;border-radius:8px;width:100%;box-sizing:border-box;">${field.options.map((option)=>`<option value="${escapeAttribute(option)}">${escapeHtml(option)}</option>`).join("")}</select>`;
-    else if(field.type==="radio") control=`<div style="display:flex;gap:12px;flex-wrap:wrap;">${field.options.map((option,i)=>`<label style="display:flex;gap:6px;align-items:center;"><input type="radio" name="${escapeAttribute(field.name)}" value="${escapeAttribute(option)}"${field.required&&i===0?" required":""}> ${escapeHtml(option)}</label>`).join("")}</div>`;
-    else if(field.type==="checkbox") control=`<div style="display:grid;gap:6px;">${(field.options.length?field.options:[field.label]).map((option)=>`<label style="display:flex;gap:6px;align-items:center;"><input type="checkbox" name="${escapeAttribute(field.name)}" value="${escapeAttribute(option)}"> ${escapeHtml(option)}</label>`).join("")}</div>`;
-    else if(field.type==="consent") control=`<label style="display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" name="${escapeAttribute(field.name)}" value="yes"${required}> <span>${escapeHtml(field.label)}</span></label>`;
-    else if(field.type==="rating") control=`<input ${common} type="number" min="1" max="5" step="1" placeholder="${escapeAttribute(field.placeholder||"1–5")}" style="padding:10px 12px;border:1px solid #d9d9d9;border-radius:8px;width:100%;box-sizing:border-box;">`;
-    else if(field.type==="file") control=`<input ${common} type="file" ${props.fileMultiple!==false?"multiple":""} accept="${escapeAttribute(props.fileAccept||"image/*,.pdf")}" style="padding:10px 12px;border:1px solid #d9d9d9;border-radius:8px;width:100%;box-sizing:border-box;">`;
-    else if(field.type==="hidden") return `<input type="hidden" name="${escapeAttribute(field.name)}" value="${escapeAttribute(field.placeholder)}" data-vsn-form-step="${field.step}">`;
-    else { const allowed=["text","email","tel","number","date","time","datetime-local","url"]; const type=allowed.includes(field.type)?field.type:"text"; control=`<input ${common} type="${type}" placeholder="${escapeAttribute(field.placeholder)}" style="padding:10px 12px;border:1px solid #d9d9d9;border-radius:8px;width:100%;box-sizing:border-box;">`; }
-    const label=props.showLabels===false||field.type==="consent"?"":`<label for="${id}" style="font-size:13px;font-weight:600;">${escapeHtml(field.label)}${field.required?" *":""}</label>`;
-    return `<div class="vsn-form-field" data-vsn-form-step="${field.step}" style="display:${multi&&field.step!==1?"none":"grid"};gap:6px;">${label}${control}</div>`;
-  }).join("");
-  const gap=toCssSize(styles?.spacing?.gap,"12px");
-  return `<form class="vsn-builder-form vsn-form-builder" data-vsn-id="${escapeAttribute(node.id||"")}" data-vsn-form-type="${escapeAttribute(formKey)}" data-vsn-captcha-mode="${escapeAttribute(captchaMode)}" data-vsn-recaptcha-v3-sitekey="${escapeAttribute(captchaMode==="recaptcha-v3"?recaptchaV3SiteKey:"")}" data-vsn-recaptcha-v3-action="${escapeAttribute(recaptchaV3Action)}" data-vsn-recaptcha-v3-threshold="${escapeAttribute(recaptchaV3Threshold)}" data-vsn-success="${escapeAttribute(props.successText||"Thanks. Your submission has been received.")}" data-vsn-error="${escapeAttribute(props.errorText||"Please check the form and try again.")}" data-vsn-multi-step="${multi?"1":"0"}" data-vsn-max-step="${maxStep}" data-vsn-current-step="1" data-vsn-conditional="${escapeAttribute(encodeURIComponent(props.conditionalRulesText||""))}" data-vsn-validation="${escapeAttribute(encodeURIComponent(props.validationRulesText||""))}" data-vsn-calculations="${escapeAttribute(encodeURIComponent(props.calculationsText||""))}" data-vsn-prefill-query="${props.prefillQuery!==false?"1":"0"}" data-vsn-success-action="${escapeAttribute(props.successAction||"message")}" data-vsn-redirect="${escapeAttribute(props.redirectUrl||"")}" data-vsn-event="${escapeAttribute(props.customEventName||"vsn:form-success")}" data-vsn-coupon="${escapeAttribute(props.couponCode||"")}" style="display:grid;gap:${gap};max-width:${toCssSize(styles?.size?.maxWidth,"680px")};">
-    ${props.heading?`<h3 style="margin:0;">${escapeHtml(props.heading)}</h3>`:""}
-    <input type="hidden" name="formType" value="${escapeAttribute(formKey)}">
-    ${props.prefillProduct!==false&&product.handle?`<input type="hidden" name="productHandle" value="${escapeAttribute(product.handle)}">`:""}
-    <input type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;">
-    ${fieldHtml}
-    ${captchaMode==="turnstile"&&turnstileSiteKey?`<div class="cf-turnstile" data-sitekey="${escapeAttribute(turnstileSiteKey)}"></div>`:""}
-    ${captchaMode==="hcaptcha"&&hcaptchaSiteKey?`<div class="h-captcha" data-sitekey="${escapeAttribute(hcaptchaSiteKey)}"></div>`:""}
-    ${captchaMode==="recaptcha-v2"&&recaptchaV2SiteKey?`<div class="vsn-g-recaptcha" data-sitekey="${escapeAttribute(recaptchaV2SiteKey)}"></div>`:""}
-    ${captchaMode==="recaptcha-v3"&&recaptchaV3SiteKey?`<div class="vsn-g-recaptcha-v3" data-sitekey="${escapeAttribute(recaptchaV3SiteKey)}" data-action="${escapeAttribute(recaptchaV3Action)}"></div>`:""}
-    ${captchaMode==="recaptcha-v2"&&!recaptchaV2SiteKey?`<div class="vsn-form-captcha-error" role="alert">Google reCAPTCHA v2 is not configured.</div>`:""}
-    ${captchaMode==="recaptcha-v3"&&!recaptchaV3SiteKey?`<div class="vsn-form-captcha-error" role="alert">Google reCAPTCHA v3 is not configured.</div>`:""}
-    <div class="vsn-form-actions" style="display:flex;gap:8px;align-items:center;">
-      ${multi?`<button type="button" class="vsn-form-prev" style="display:none;padding:10px 14px;border:1px solid #ddd;border-radius:8px;background:#fff;">${escapeHtml(props.previousText||"Back")}</button><button type="button" class="vsn-form-next" style="padding:10px 14px;border:0;border-radius:8px;background:#111;color:#fff;font-weight:600;">${escapeHtml(props.nextText||"Next")}</button>`:""}
-      <button type="submit" class="vsn-form-submit" style="${multi?"display:none;":""}padding:10px 14px;border:0;border-radius:8px;background:#111;color:#fff;font-weight:600;">${escapeHtml(props.submitText||"Submit")}</button>
-    </div>
-    <div class="vsn-form-status" role="status" aria-live="polite" style="min-height:1.25em;font-size:13px;"></div>
-  </form>`;
-}
-
-function renderPhase10Widget(node, props, styles, renderContext) {
-  const id=escapeAttribute(node.id||""); const type=node.type; const gap=toCssSize(styles?.spacing?.gap||styles?.grid?.gap,"12px"); const product=renderContext?.product||{};
-  if(type==="form-builder") return renderFormBuilder(node,props,styles,renderContext);
-  if(type==="breadcrumbs") { const rows=normalizeStructuredItems("breadcrumbs",props).filter((_,i)=>props.showHome!==false||i>0); return `<nav data-vsn-id="${id}" aria-label="Breadcrumb" style="display:flex;gap:${gap};flex-wrap:wrap;">${rows.map((item,i)=>`${i?`<span>${escapeHtml(props.separator||"/")}</span>`:""}<a href="${escapeAttribute(item.url||"#")}" style="color:inherit;text-decoration:none;">${escapeHtml(item.label||"")}</a>`).join("")}</nav>`; }
-  if(type==="icon-list") { const rows=normalizeStructuredItems("icon-list",props); return `<ul data-vsn-id="${id}" style="display:grid;gap:${gap};list-style:none;padding:0;margin:0;">${rows.map((item)=>`<li style="display:flex;gap:8px;align-items:center;"><span>${escapeHtml(item.icon||"•")}</span>${item.url?`<a href="${escapeAttribute(item.url)}" style="color:inherit;">${escapeHtml(item.label||"")}</a>`:escapeHtml(item.label||"")}</li>`).join("")}</ul>`; }
-  if(type==="icon-box") return `<a data-vsn-id="${id}" href="${escapeAttribute(props.url||"#")}" style="display:block;color:inherit;text-decoration:none;border:1px solid ${escapeAttribute(styles?.border?.color||"#e5e5e5")};border-radius:${toCssSize(styles?.border?.radius,"12px")};padding:${toCssSize(styles?.spacing?.paddingTop,"20px")};"><div style="font-size:30px;">${escapeHtml(props.icon||"★")}</div><strong style="display:block;margin-top:8px;">${escapeHtml(props.heading||"")}</strong><div style="margin-top:6px;color:#666;">${escapeHtml(props.text||"")}</div></a>`;
-  if(type==="image-box") { const media=props.media&&typeof props.media==="object"?props.media:{}; const src=props.src?buildImageRenderUrl(props.src,props,media):""; return `<a data-vsn-id="${id}" class="vsn-image-box vsn-content-item" href="${escapeAttribute(props.url||"#")}" style="display:block;color:inherit;text-decoration:none;">${src?`<img class="vsn-content-media" src="${escapeAttribute(src)}" alt="${escapeAttribute(props.alt||props.heading||"")}" loading="${escapeAttribute(props.loading||"lazy")}" fetchpriority="${escapeAttribute(props.fetchPriority||"auto")}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:${toCssSize(styles?.border?.radius,"12px")};">`:`<div class="vsn-content-media" style="aspect-ratio:4/3;background:#f2f2f2;border-radius:12px;"></div>`}<strong class="vsn-content-title" style="display:block;margin-top:10px;">${escapeHtml(props.heading||"")}</strong><div class="vsn-content-body" style="color:#666;">${escapeHtml(props.text||"")}</div></a>`; }
-  if(type==="accordion"||type==="toggle") { const rows=type==="toggle"?[{title:props.title||"Toggle",content:props.content||""}]:normalizeStructuredItems("accordion",props); return `<div data-vsn-id="${id}" style="display:grid;gap:${gap};">${rows.map((item,i)=>`<details ${((type==="toggle"&&props.open)||(type==="accordion"&&props.firstOpen!==false&&i===0))?"open":""} style="border:1px solid #e5e5e5;border-radius:10px;padding:12px;"><summary style="cursor:pointer;font-weight:600;">${escapeHtml(item.title||"")}</summary><div style="padding-top:8px;line-height:1.6;">${escapeHtml(item.content||"")}</div></details>`).join("")}</div>`; }
-  
-  if(type==="social-icons"){const rows=normalizeStructuredItems("social-icons",props);return `<div data-vsn-id="${id}" style="display:flex;gap:${gap};flex-wrap:wrap;">${rows.map((item)=>`<a href="${escapeAttribute(item.url||"#")}" ${props.openNew===false?"":'target="_blank" rel="noopener noreferrer"'} title="${escapeAttribute(item.label||"")}" style="width:38px;height:38px;border:1px solid #ddd;border-radius:999px;display:grid;place-items:center;text-decoration:none;color:inherit;">${escapeHtml(item.icon||String(item.label||"").slice(0,2))}</a>`).join("")}</div>`;}
-  if(type==="map"){const q=encodeURIComponent(props.query||"Dubai, UAE");const zoom=Math.max(1,Math.min(20,Number(props.zoom||14)));const key=String(renderContext?.googleMapsApiKey||"").trim();if(!key)return `<div data-vsn-id="${id}" class="vsn-map-unconfigured" role="note" style="width:100%;height:${toCssSize(props.height,"360px")};display:grid;place-items:center;padding:24px;border:1px dashed #c9cccf;border-radius:12px;background:#f6f6f7;color:#6d7175;text-align:center;">Google Maps API key is not configured in VSN Builder Settings.</div>`;const src=`https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${q}&zoom=${zoom}`;return `<iframe data-vsn-id="${id}" title="Google Map" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="${escapeAttribute(src)}" style="width:100%;height:${toCssSize(props.height,"360px")};border:0;border-radius:12px;"></iframe>`;}
-  if(type==="progress-bar"){const v=Math.max(0,Math.min(100,Number(props.value)||0));return `<div data-vsn-id="${id}"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>${escapeHtml(props.label||"Progress")}</span>${props.showValue===false?"":`<span>${v}%</span>`}</div><div style="height:9px;background:#eee;border-radius:999px;overflow:hidden;"><span style="display:block;width:${v}%;height:100%;background:var(--vsn-primary,#008060);"></span></div></div>`;}
-  if(type==="counter") return `<div data-vsn-id="${id}" class="vsn-counter" data-vsn-start="${Number(props.start||0)}" data-vsn-end="${Number(props.end||100)}" data-vsn-duration="${Math.max(100,Number(props.duration||1200))}" data-vsn-prefix="${escapeAttribute(props.prefix||"")}" data-vsn-suffix="${escapeAttribute(props.suffix||"")}" style="${contentTypography(styles,{fontSize:"42px",fontWeight:"700"})}">${escapeHtml(`${props.prefix||""}${props.end??100}${props.suffix||""}`)}</div>`;
-  if(type==="pricing-table") return `<div data-vsn-id="${id}" style="border:${props.featured?"2px solid var(--vsn-primary,#008060)":"1px solid #e5e5e5"};border-radius:14px;padding:22px;"><h3>${escapeHtml(props.title||"Plan")}</h3><div style="font-size:34px;font-weight:700;">${escapeHtml(props.price||"")} <span style="font-size:14px;font-weight:400;color:#666;">${escapeHtml(props.period||"")}</span></div><ul>${String(props.featuresText||"").split(/\r?\n/).filter(Boolean).map((x)=>`<li>${escapeHtml(x)}</li>`).join("")}</ul><a href="${escapeAttribute(props.buttonUrl||"#")}" style="display:inline-block;padding:10px 14px;background:#111;color:#fff;border-radius:8px;text-decoration:none;">${escapeHtml(props.buttonText||"Choose plan")}</a></div>`;
-  if(type==="timeline"){const rows=normalizeStructuredItems("timeline",props);return `<div data-vsn-id="${id}" style="display:grid;gap:${gap};">${rows.map((item)=>`<div style="display:grid;grid-template-columns:90px 1fr;gap:14px;border-left:2px solid #ddd;padding-left:14px;"><strong>${escapeHtml(item.eyebrow||"")}</strong><div><b>${escapeHtml(item.title||"")}</b><div style="color:#666;">${escapeHtml(item.description||"")}</div></div></div>`).join("")}</div>`;}
-  if(type==="data-table"){const headers=String(props.headersText||"").split("|").map((x)=>x.trim());const rows=parseRows(props.rowsText,Math.max(1,headers.length));return `<div data-vsn-id="${id}" style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr>${headers.map((h)=>`<th style="text-align:left;padding:10px;border-bottom:1px solid #ddd;">${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row,i)=>`<tr ${props.striped&&i%2?`style="background:#fafafa;"`:""}>${headers.map((_,j)=>`<td style="padding:10px;border-bottom:1px solid #eee;">${escapeHtml(row[j]||"")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;}
-  if(type==="menu-anchor") return `<span data-vsn-id="${id}" id="${escapeAttribute(String(props.anchorId||"section-anchor").replace(/[^a-zA-Z0-9_-]/g,"-"))}" aria-hidden="true"></span>`;
-  if(type==="product-media") return renderProductGallery(node,props,styles,renderContext);
-  if(type==="inventory-status") return renderProductAvailability(node,props,styles,renderContext);
-  if(type==="collection-filters") return `<div data-vsn-id="${id}" class="vsn-product-filters vsn-standalone-filters" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;"><strong style="width:100%;">${escapeHtml(props.label||"Filters")}</strong>${props.showAvailability===false?"":`<label>Availability <select data-vsn-filter="availability"><option value="all">All</option><option value="in-stock">In stock</option><option value="out-of-stock">Out of stock</option></select></label>`}${props.showPrice===false?"":`<label>Min price <input data-vsn-filter="min-price" type="number" min="0" step="0.01" style="width:110px;"></label><label>Max price <input data-vsn-filter="max-price" type="number" min="0" step="0.01" style="width:110px;"></label>`}${props.showVendor===false?"":`<label>Vendor <select data-vsn-filter="vendor"><option value="">All vendors</option></select></label>`}${props.showProductType===false?"":`<label>Product type <select data-vsn-filter="product-type"><option value="">All types</option></select></label>`}<button type="button" data-vsn-filter-clear>${escapeHtml(props.clearText||"Clear")}</button></div>`;
-  if(type==="collection-sorting") { const selected=props.defaultSort||"featured"; const option=(value,label)=>`<option value="${value}" ${selected===value?"selected":""}>${label}</option>`; return `<label data-vsn-id="${id}">${escapeHtml(props.label||"Sort by")} <select class="vsn-standalone-sort">${option("featured","Featured")}${option("price-ascending","Price: low to high")}${option("price-descending","Price: high to low")}${option("title-ascending","A–Z")}${option("title-descending","Z–A")}</select></label>`; }
-  if(type==="collection-pagination") return props.mode==="pages"?`<nav data-vsn-id="${id}" class="vsn-standalone-pagination" aria-label="Pagination" style="display:flex;gap:8px;"><button type="button" class="vsn-collection-page-prev">${escapeHtml(props.previousText||"Previous")}</button><button type="button" class="vsn-collection-page-next">${escapeHtml(props.nextText||"Next")}</button></nav>`:`<div data-vsn-id="${id}" class="vsn-standalone-pagination"><button type="button" class="vsn-collection-load-more">${escapeHtml(props.buttonText||"Load more")}</button></div>`;
-  if(type==="cart-drawer") return `<div data-vsn-id="${id}" class="vsn-cart-widget" style="border:1px solid #eee;border-radius:12px;padding:18px;"><strong>${escapeHtml(props.heading||"Your cart")}</strong><div class="vsn-cart-widget-body" style="padding:14px 0;color:#666;">${escapeHtml(props.emptyText||"Your cart is empty")}</div><div style="display:flex;gap:8px;"><a href="/cart" class="vsn-cart-trigger" style="text-decoration:none;">${escapeHtml(props.viewCartText||"View cart")}</a><a href="/checkout" class="vsn-cart-checkout" style="text-decoration:none;">${escapeHtml(props.checkoutText||"Checkout")}</a></div></div>`;
-  if(type==="countdown") return `<div data-vsn-id="${id}" class="vsn-countdown" data-vsn-end="${escapeAttribute(props.endDate||props.date||"")}" data-vsn-expired-text="${escapeAttribute(props.expiredText||"Offer ended")}" style="display:flex;gap:8px;">${props.showDays===false?"":"<span data-vsn-countdown-days>00d</span>"}${props.showHours===false?"":"<span data-vsn-countdown-hours>00h</span>"}${props.showMinutes===false?"":"<span data-vsn-countdown-minutes>00m</span>"}${props.showSeconds===false?"":"<span data-vsn-countdown-seconds>00s</span>"}</div>`;
-  if(type==="video") {
-    const video=normalizeVideoWidgetProps(props);
-    if(!video.url)return `<div data-vsn-id="${id}" style="aspect-ratio:16/9;background:#111;color:#fff;display:grid;place-items:center;border-radius:12px;">Choose or paste a video</div>`;
-    const poster=video.posterEnabled?String(video.poster?.url||video.poster?.previewUrl||""):"";
-    const embed=videoEmbedUrl(video,video.autoplay);
-    const clickEmbed=videoEmbedUrl(video,true);
-    const playIconMarkup = video.playIcon?.source === "svg-file" && video.playIcon?.url
-      ? `<img src="${escapeAttribute(video.playIcon.url)}" alt="" style="width:46%;height:46%;object-fit:contain;">`
-      : video.playIcon?.glyph
-        ? escapeHtml(video.playIcon.glyph)
-        : renderContentIconSvg(video.playIcon?.name || video.playIcon?.polarisType || "play");
-    const play=video.showPlayIcon?`<button type="button" class="vsn-video-play" aria-label="Play video" style="position:absolute;inset:0;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;"><span style="width:${video.playIconSize}px;height:${video.playIconSize}px;border-radius:999px;display:grid;place-items:center;background:rgba(0,0,0,.68);color:#fff;font-size:${Math.round(video.playIconSize*.42)}px;">${playIconMarkup}</span></button>`:"";
-    if(["youtube","vimeo","dailymotion"].includes(video.provider)) {
-      const clickToPlay=!video.autoplay&&video.showPlayIcon;
-      const iframe=(embed||clickEmbed)?`<iframe class="vsn-video-frame" title="Video" ${video.lazyLoad?'loading="lazy"':''} ${clickToPlay?'data-vsn-video-src':'src'}="${escapeAttribute(clickToPlay?clickEmbed:embed)}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="width:100%;height:100%;border:0;display:${clickToPlay?'none':'block'};"></iframe>`:"";
-      return `<div data-vsn-id="${id}" class="vsn-video-widget" data-vsn-video-provider="${escapeAttribute(video.provider)}" data-vsn-video-start="${video.startTime}" data-vsn-video-end="${video.endTime}" data-vsn-video-volume="${video.defaultVolume}" style="position:relative;width:100%;aspect-ratio:16/9;background:#111;border-radius:12px;overflow:hidden;">${poster&&clickToPlay?`<img class="vsn-video-poster" src="${escapeAttribute(poster)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`:""}${iframe}${clickToPlay?play:""}</div>`;
-    }
-    return `<div data-vsn-id="${id}" class="vsn-video-widget" data-vsn-video-provider="direct" data-vsn-video-start="${video.startTime}" data-vsn-video-end="${video.endTime}" data-vsn-video-volume="${video.defaultVolume}" style="position:relative;width:100%;aspect-ratio:16/9;background:#111;border-radius:12px;overflow:hidden;"><video class="vsn-video-element" src="${escapeAttribute(video.url)}" ${poster?`poster="${escapeAttribute(poster)}"`:""} ${video.autoplay?'autoplay':''} ${video.muted?'muted':''} ${video.loop?'loop':''} ${video.controls?'controls':''} ${video.playsInline?'playsinline':''} preload="${escapeAttribute(video.preload)}" style="width:100%;height:100%;object-fit:cover;display:block;"></video>${!video.autoplay&&video.showPlayIcon?play:""}</div>`;
-  }
-  if(type==="slider" || isNestedSliderType(type)) {
-    const slider=isNestedSliderType(type)?normalizeNestedSliderProps(type,props):normalizeSliderProps(props);
-    const slides=Array.isArray(node.children)?node.children:[];
-    const renderSlide=(slide)=>slide?.type==="container"&&(slide?.props?.__sliderSlide||slide?.props?.__nestedSliderItem)?(slide.children||[]).map((child)=>renderNode(child,renderContext)).join(""):renderNode(slide,renderContext);
-    const slideHtml=slides.map((slide,index)=>`<div class="vsn-slider-slide" data-vsn-slide-index="${index}" style="min-width:0;">${renderSlide(slide)}</div>`).join("");
-    const dots=slider.pagination==="dots"?`<div class="vsn-slider-dots">${slides.map((_,index)=>`<button type="button" data-vsn-slider-dot="${index}" aria-label="Go to slide ${index+1}"></button>`).join("")}</div>`:"";
-    const fraction=slider.pagination==="fraction"?`<div class="vsn-slider-fraction"><span data-vsn-slider-current>1</span> / ${slides.length}</div>`:"";
-    const progress=slider.pagination==="progress"?`<div class="vsn-slider-progress"><span data-vsn-slider-progress-bar></span></div>`:"";
-    return `<div data-vsn-id="${id}" class="vsn-slider" data-vsn-slider="1" data-vsn-slider-index="0" data-vsn-slider-direction="${slider.direction}" data-vsn-slider-effect="${slider.effect}" data-vsn-slider-centered="${slider.centered?'1':'0'}" data-vsn-slider-auto-height="${slider.autoHeight?'1':'0'}" data-vsn-slider-equal-height="${slider.equalHeight?'1':'0'}" data-vsn-slider-desktop="${slider.slidesDesktop}" data-vsn-slider-tablet="${slider.slidesTablet}" data-vsn-slider-mobile="${slider.slidesMobile}" data-vsn-slider-gap="${slider.gap}" data-vsn-slider-speed="${slider.speed}" data-vsn-slider-autoplay="${slider.autoplay?'1':'0'}" data-vsn-slider-delay="${slider.autoplayDelay}" data-vsn-slider-loop="${slider.loop?'1':'0'}" data-vsn-slider-rewind="${slider.rewind?'1':'0'}" data-vsn-slider-pause-hover="${slider.pauseOnHover?'1':'0'}" data-vsn-slider-pause-interaction="${slider.pauseOnInteraction?'1':'0'}" data-vsn-slider-stop-last="${slider.stopOnLastSlide?'1':'0'}" data-vsn-slider-keyboard="${slider.keyboard?'1':'0'}" data-vsn-slider-swipe="${slider.swipe?'1':'0'}" style="position:relative;overflow:hidden;padding-left:${slider.edgePadding}px;padding-right:${slider.edgePadding}px;--vsn-slider-gap:${slider.gap}px;--vsn-slider-speed:${slider.speed}ms;--vsn-slider-desktop:${slider.slidesDesktop};--vsn-slider-tablet:${slider.slidesTablet};--vsn-slider-mobile:${slider.slidesMobile};"><div class="vsn-slider-viewport" style="overflow:hidden;"><div class="vsn-slider-track">${slideHtml}</div></div>${slider.navigation&&slides.length>1?`<button type="button" class="vsn-slider-prev" aria-label="Previous slide">${escapeHtml(slider.previousIcon)}</button><button type="button" class="vsn-slider-next" aria-label="Next slide">${escapeHtml(slider.nextIcon)}</button>`:""}${dots}${fraction}${progress}</div>`;
-  }
-  if(type==="product-grid"||type==="product-card"||type==="collection-grid") {
-    const grid=normalizeGridProps(type,props); const cols=type==="product-card"?1:grid.columnsDesktop; const queried=renderContext?.widgetQueries?.[node.id]||[];
-    if(type==="collection-grid"){
-      const items=queried.slice(0,grid.limit); if(!items.length)return `<div data-vsn-id="${id}" class="vsn-grid-empty">${escapeHtml(grid.emptyText)}</div>`;
-      return `<style>@media(max-width:749px){[data-vsn-id="${id}"].vsn-data-grid{grid-template-columns:repeat(${grid.columnsMobile},minmax(0,1fr))!important}}@media(min-width:750px) and (max-width:989px){[data-vsn-id="${id}"].vsn-data-grid{grid-template-columns:repeat(${grid.columnsTablet},minmax(0,1fr))!important}}</style><div data-vsn-id="${id}" class="vsn-data-grid vsn-collection-grid" style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${grid.gap}px;">${items.map((item)=>`<a href="/collections/${escapeAttribute(item.handle||"")}" style="color:inherit;text-decoration:none;border:1px solid #eee;border-radius:10px;padding:10px;">${grid.showImage&&item.image?.url?`<img src="${escapeAttribute(item.image.url)}" alt="${escapeAttribute(item.image.altText||item.title||"")}" loading="lazy" style="width:100%;aspect-ratio:${gridImageRatio(grid.imageRatio)};object-fit:cover;border-radius:8px;">`:""}${grid.showTitle?`<strong style="display:block;margin-top:8px;">${escapeHtml(item.title)}</strong>`:""}${grid.showCount?`<span style="font-size:12px;color:#666;">${escapeHtml(String(item.productsCount?.count??0))} products</span>`:""}</a>`).join("")}</div>`;
-    }
-    const items=(type==="product-card"?(queried.slice(0,1)):queried.slice(0,grid.limit)); if(!items.length)return `<div data-vsn-id="${id}" class="vsn-grid-empty">${escapeHtml(grid.emptyText)}</div>`;
-    return `<style>@media(max-width:749px){[data-vsn-id="${id}"].vsn-data-grid{grid-template-columns:repeat(${grid.columnsMobile},minmax(0,1fr))!important}}@media(min-width:750px) and (max-width:989px){[data-vsn-id="${id}"].vsn-data-grid{grid-template-columns:repeat(${grid.columnsTablet},minmax(0,1fr))!important}}</style><div data-vsn-id="${id}" class="vsn-data-grid vsn-product-grid" style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${grid.gap}px;">${items.map((item)=>`<a href="/products/${escapeAttribute(item.handle||"")}" style="color:inherit;text-decoration:none;border:1px solid #eee;border-radius:10px;padding:10px;">${grid.showImage&&item.image?.url?`<img src="${escapeAttribute(item.image.url)}" alt="${escapeAttribute(item.image.altText||item.title||"")}" loading="lazy" style="width:100%;aspect-ratio:${gridImageRatio(grid.imageRatio)};object-fit:cover;border-radius:8px;">`:""}${grid.showVendor&&item.vendor?`<span style="display:block;margin-top:7px;font-size:11px;color:#666;">${escapeHtml(item.vendor)}</span>`:""}${grid.showTitle?`<strong style="display:block;margin-top:8px;">${escapeHtml(item.title)}</strong>`:""}${grid.showPrice&&item.price?`<span style="display:block;font-size:13px;">${escapeHtml(formatMoney(item.price.amount,item.price.currencyCode))}</span>`:""}</a>`).join("")}</div>`;
-  }
-  if(type==="html" && props.mode==="theme-section") { const sectionId=escapeAttribute(String(props.themeSectionId||"")); return `<div data-vsn-id="${id}" class="vsn-theme-section-bridge" data-vsn-theme-section-id="${sectionId}"><span class="vsn-builder-loading">Loading Shopify theme section…</span></div>`; }
-  if(type==="html") return `<div data-vsn-id="${id}" class="vsn-code-surface vsn-html-output">${sanitizeRichHtml(props.code||props.html||props.content||"")}</div>`;
-  if(type==="liquid") return `<pre data-vsn-id="${id}" class="vsn-code-surface vsn-liquid-output" style="white-space:pre-wrap;background:#f6f6f7;padding:12px;border-radius:8px;">${escapeHtml(props.code||props.liquid||props.content||"{{ product.title }}")}</pre>`;
-  return "";
-}
-
-function renderExtendedWidget(node, props, styles, renderContext) {
-  const id = escapeAttribute(node.id || "");
-  const type = node.type;
-  const typography = contentTypography(styles, { fontSize: "14px", color: "#1a1a1a" });
-  const gap = toCssSize(styles?.grid?.gap || styles?.spacing?.gap, "16px");
-  const product = renderContext?.product || {};
-
-  if (type === "faq") {
-    const rows = normalizeStructuredItems("faq", props);
-    return `<div data-vsn-id="${id}" class="vsn-faq" style="display:grid;gap:${gap};">${rows.map((item)=>`<details style="border:1px solid #e5e5e5;border-radius:10px;padding:14px 16px;"><summary style="cursor:pointer;font-weight:600;">${escapeHtml(item.question||"")}</summary><div style="padding-top:10px;color:#555;line-height:1.6;">${escapeHtml(item.answer||"")}</div></details>`).join("")}</div>`;
-  }
-  if (type === "testimonials") {
-    const rows = normalizeStructuredItems("testimonials", props); const cols=Math.max(1,Math.min(4,Number(props.columns||3)));
-    return `<div data-vsn-id="${id}" style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${gap};">${rows.map((item)=>`<blockquote style="margin:0;border:1px solid #e5e5e5;border-radius:12px;padding:18px;"><p style="margin:0 0 12px;line-height:1.6;">“${escapeHtml(item.quote||"")}”</p><footer style="font-size:13px;color:#666;">${escapeHtml(item.name||"")}${item.role?` · ${escapeHtml(item.role)}`:""}</footer></blockquote>`).join("")}</div>`;
-  }
-  if (type === "logo-cloud") {
-    const items = normalizeStructuredItems("logo-cloud", props);
-    return `<div data-vsn-id="${id}" class="vsn-logo-cloud" style="display:flex;gap:${gap};align-items:center;justify-content:center;flex-wrap:wrap;${typography}">${items.map((item)=>item.imageUrl?`<a class="vsn-logo-item vsn-content-item" href="${escapeAttribute(item.url||"#")}" style="display:inline-flex;align-items:center;justify-content:center;padding:12px 18px;border:1px solid #ececec;border-radius:12px;"><img src="${escapeAttribute(item.imageUrl)}" alt="${escapeAttribute(item.label||"")}" loading="lazy" style="max-width:120px;max-height:52px;object-fit:contain;"></a>`:`<a class="vsn-logo-item vsn-content-item" href="${escapeAttribute(item.url||"#")}" style="padding:12px 18px;border:1px solid #ececec;border-radius:999px;font-weight:600;color:inherit;text-decoration:none;">${escapeHtml(item.label||"")}</a>`).join("")}</div>`;
-  }
-  if (type === "stats") {
-    const rows=normalizeStructuredItems("stats",props); const cols=Math.max(1,Math.min(6,Number(props.columns||4)));
-    return `<div data-vsn-id="${id}" style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${gap};">${rows.map((item)=>`<div style="text-align:center;padding:18px;border:1px solid #eee;border-radius:12px;"><strong style="display:block;font-size:30px;">${escapeHtml(item.value)}</strong><span style="font-size:13px;color:#666;">${escapeHtml(item.label)}</span></div>`).join("")}</div>`;
-  }
-  if (type === "team-grid") {
-    const rows=normalizeStructuredItems("team-grid",props); const cols=Math.max(1,Math.min(4,Number(props.columns||3)));
-    return `<div data-vsn-id="${id}" class="vsn-team-grid" style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${gap};">${rows.map((item)=>`<div class="vsn-team-card vsn-content-item" style="padding:18px;border:1px solid #eee;border-radius:12px;">${item.imageUrl?`<img class="vsn-content-media" src="${escapeAttribute(item.imageUrl)}" alt="${escapeAttribute(item.name||"")}" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;margin-bottom:12px;">`:`<div class="vsn-content-media" style="aspect-ratio:1/1;background:#f2f2f2;border-radius:10px;margin-bottom:12px;"></div>`}<strong class="vsn-content-title">${escapeHtml(item.name||"")}</strong><div class="vsn-content-meta" style="font-size:13px;color:#666;margin-top:4px;">${escapeHtml(item.role||"")}</div></div>`).join("")}</div>`;
-  }
-  if (type === "gallery-grid") {
-    const gallery=normalizeGalleryWidgetProps(props); const ratio=galleryAspectRatio(gallery.imageRatio,gallery.customRatioWidth,gallery.customRatioHeight);
-    const item=(media,index)=>{const img=`<img class="vsn-gallery-item vsn-content-media" src="${escapeAttribute(media.url)}" alt="${escapeAttribute(media.alt||"")}" loading="lazy" style="width:100%;${ratio!=="auto"?`aspect-ratio:${ratio};`:""}object-fit:${escapeAttribute(gallery.objectFit)};object-position:${escapeAttribute(gallery.objectPosition)};border-radius:${toCssSize(styles?.image?.borderRadius,"10px")};display:block;">`;let body=img;if(gallery.clickAction==="lightbox")body=`<a href="${escapeAttribute(media.url)}" data-vsn-lightbox="1" data-vsn-lightbox-src="${escapeAttribute(media.url)}" data-vsn-lightbox-alt="${escapeAttribute(media.alt||"")}">${img}</a>`;else if(gallery.clickAction==="link"&&media.linkUrl)body=`<a href="${escapeAttribute(media.linkUrl)}" ${gallery.openLinksNewTab?'target="_blank" rel="noopener noreferrer"':''}>${img}</a>`;return `<figure class="vsn-gallery-item-wrap vsn-content-item" style="margin:0;min-width:0;">${body}${gallery.showCaptions&&media.caption?`<figcaption style="font-size:12px;margin-top:6px;color:#666;">${escapeHtml(media.caption)}</figcaption>`:""}</figure>`;};
-    const common=`--vsn-gallery-cols-desktop:${gallery.columnsDesktop};--vsn-gallery-cols-tablet:${gallery.columnsTablet};--vsn-gallery-cols-mobile:${gallery.columnsMobile};--vsn-gallery-gap:${gallery.gap}px;--vsn-gallery-row-gap:${gallery.rowGap}px;`;
-    if(gallery.layout==="masonry")return `<div data-vsn-id="${id}" class="vsn-gallery-grid is-masonry" style="${common}column-count:var(--vsn-gallery-cols-desktop);column-gap:var(--vsn-gallery-gap);">${gallery.galleryItems.map((media,index)=>`<div style="break-inside:avoid;margin-bottom:var(--vsn-gallery-row-gap);">${item(media,index)}</div>`).join("")}</div>`;
-    if(gallery.layout==="justified")return `<div data-vsn-id="${id}" class="vsn-gallery-grid is-justified" style="${common}display:flex;flex-wrap:wrap;gap:var(--vsn-gallery-row-gap) var(--vsn-gallery-gap);">${gallery.galleryItems.map((media,index)=>`<div style="flex:1 1 calc(${100/gallery.columnsDesktop}% - var(--vsn-gallery-gap));min-width:120px;">${item(media,index)}</div>`).join("")}</div>`;
-    return `<div data-vsn-id="${id}" class="vsn-gallery-grid" style="${common}display:grid;grid-template-columns:repeat(var(--vsn-gallery-cols-desktop),minmax(0,1fr));column-gap:var(--vsn-gallery-gap);row-gap:var(--vsn-gallery-row-gap);">${gallery.galleryItems.map(item).join("")}</div>`;
-  }
-  if (type === "marquee") {
-    const speed=Math.max(8,Math.min(90,Number(props.speed||24))); const text=escapeHtml(props.text||"");
-    return `<div data-vsn-id="${id}" class="vsn-marquee" style="overflow:hidden;white-space:nowrap;background:${escapeAttribute(styles?.background?.color||"#111")};color:${escapeAttribute(styles?.typography?.color||"#fff")};padding:${toCssSize(styles?.spacing?.paddingTop,"10px")} 0;"><div class="vsn-marquee-track" style="display:inline-block;min-width:200%;animation:vsnMarquee ${speed}s linear infinite;">${text} ${text} ${text}</div></div>`;
-  }
-  if (type === "tabs" || type === "product-tabs") {
-    let rows = type === "tabs" ? normalizeStructuredItems("tabs",props).map((item)=>[item.label,item.content]) : [[props.descriptionLabel||"Description", product.description||"Product description"],[props.shippingLabel||"Shipping",props.shippingText||"Shipping information"],[props.returnsLabel||"Returns",props.returnsText||"Return policy"]];
-    return `<div data-vsn-id="${id}" class="vsn-tabs" data-vsn-tabs><div style="display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid #eee;">${rows.map(([label],i)=>`<button type="button" data-vsn-tab="${i}" class="vsn-tab-button${i===0?' is-active':''}" style="border:0;background:transparent;padding:10px 12px;cursor:pointer;font-weight:600;">${escapeHtml(label)}</button>`).join("")}</div>${rows.map(([,body],i)=>`<div data-vsn-tab-panel="${i}" style="padding:16px 0;${i?'display:none;':''}">${type==='product-tabs' && i===0 && product.descriptionHtml ? sanitizeRichHtml(product.descriptionHtml) : escapeHtml(body)}</div>`).join("")}</div>`;
-  }
-  if (type === "size-guide") return `<details data-vsn-id="${id}" style="border:1px solid #e5e5e5;border-radius:10px;padding:12px 14px;"><summary style="cursor:pointer;font-weight:600;">${escapeHtml(props.buttonText||"Size guide")}</summary><h4>${escapeHtml(props.heading||"Size guide")}</h4><div style="white-space:pre-wrap;line-height:1.6;">${escapeHtml(props.content||"")}</div></details>`;
-  if (type === "shipping-info") return `<div data-vsn-id="${id}" style="${typography}"><strong>${escapeHtml(props.heading||"Shipping")}</strong><div style="margin-top:4px;">${escapeHtml(props.text||"")}</div></div>`;
-  if (type === "stock-progress") { const max=Math.max(1,Number(props.max||10)); const current=Math.max(0,Math.min(max,Number(props.fallbackStock||5))); return `<div data-vsn-id="${id}" class="vsn-stock-progress"><div style="font-size:13px;font-weight:600;margin-bottom:7px;">${escapeHtml(props.label||"Hurry, low stock")}</div><div style="height:7px;background:#eee;border-radius:999px;overflow:hidden;"><span style="display:block;height:100%;width:${Math.round((current/max)*100)}%;background:var(--vsn-primary,#008060);"></span></div></div>`; }
-  if (type === "trust-badges") { const rows=normalizeStructuredItems("trust-badges",props); const cols=Math.max(1,Math.min(4,Number(props.columns||3))); return `<div data-vsn-id="${id}" style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${gap};">${rows.map((item)=>`<div style="padding:12px;border:1px solid #eee;border-radius:10px;text-align:center;"><div style="font-size:20px;">${escapeHtml(item.icon||"")}</div><div style="font-size:12px;font-weight:600;margin-top:5px;">${escapeHtml(item.label||"")}</div></div>`).join("")}</div>`; }
-  if (type === "related-collections") { const rows=normalizeStructuredItems("related-collections",props); const cols=Math.max(1,Math.min(4,Number(props.columnsDesktop||props.columns||3))); return `<section data-vsn-id="${id}"><h2>${escapeHtml(props.heading||"Shop related collections")}</h2><div style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:${gap};">${rows.map((item)=>`<a href="${escapeAttribute(item.url||'#')}" style="padding:18px;border:1px solid #eee;border-radius:12px;text-decoration:none;color:inherit;font-weight:600;">${item.imageUrl?`<img src="${escapeAttribute(item.imageUrl)}" alt="${escapeAttribute(item.label||'')}" loading="lazy" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;margin-bottom:8px;">`:""}${escapeHtml(item.label||"")}</a>`).join("")}</div></section>`; }
-  if (type === "upsell-products") { const grid=normalizeGridProps(type,props); return `<section data-vsn-id="${id}" class="vsn-product-recommendations vsn-upsell-products" data-vsn-product-id="${escapeAttribute(product.numericId||String(product.id||"").split("/").pop()||"")}" data-vsn-limit="${grid.limit}" data-vsn-columns-desktop="${grid.columnsDesktop}" data-vsn-columns-tablet="${grid.columnsTablet}" data-vsn-columns-mobile="${grid.columnsMobile}" data-vsn-gap="${grid.gap}" data-vsn-show-image="${grid.showImage?"1":"0"}" data-vsn-show-title="${grid.showTitle?"1":"0"}" data-vsn-show-price="${grid.showPrice?"1":"0"}" data-vsn-image-ratio="${escapeAttribute(gridImageRatio(grid.imageRatio))}" data-vsn-recommendation-intent="complementary"><h3>${escapeHtml(props.heading||"Complete your order")}</h3><div class="vsn-product-recommendations-grid" style="display:grid;grid-template-columns:repeat(${grid.columnsDesktop},minmax(0,1fr));gap:${grid.gap}px;"><div style="color:#777;font-size:14px;">Loading…</div></div></section>`; }
-  if (type === "recently-viewed") { const grid=normalizeGridProps(type,props); return `<section data-vsn-id="${id}" class="vsn-recently-viewed" data-vsn-limit="${grid.limit}" data-vsn-current-handle="${escapeAttribute(product.handle||"")}" data-vsn-columns-desktop="${grid.columnsDesktop}" data-vsn-columns-tablet="${grid.columnsTablet}" data-vsn-columns-mobile="${grid.columnsMobile}" data-vsn-gap="${grid.gap}" data-vsn-show-image="${grid.showImage?"1":"0"}" data-vsn-show-title="${grid.showTitle?"1":"0"}" data-vsn-show-price="${grid.showPrice?"1":"0"}" data-vsn-image-ratio="${escapeAttribute(gridImageRatio(grid.imageRatio))}"><h3>${escapeHtml(props.heading||"Recently viewed")}</h3><div class="vsn-recently-viewed-grid" style="display:grid;grid-template-columns:repeat(${grid.columnsDesktop},minmax(0,1fr));gap:${grid.gap}px;"></div></section>`; }
-  if (type === "sticky-add-to-cart") { const first=product.variants?.[0]; const price=product.price?formatMoney(product.price.amount,product.price.currencyCode):""; return `<div data-vsn-id="${id}" class="vsn-sticky-cart" style="position:sticky;bottom:0;z-index:35;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 16px;background:${escapeAttribute(styles?.background?.color||"#fff")};border-top:1px solid ${escapeAttribute(styles?.border?.color||"#e5e5e5")};box-shadow:0 -8px 30px rgba(0,0,0,.08);"><div><strong>${escapeHtml(product.title||"Product")}</strong>${props.showPrice===false?'':`<div style="font-size:13px;color:#666;">${escapeHtml(price)}</div>`}</div><button type="button" class="vsn-product-add-to-cart" data-vsn-default-variant-id="${escapeAttribute(first?.variantId||'')}" data-vsn-ready-text="${escapeAttribute(props.text||'Add to cart')}" style="border:0;border-radius:8px;padding:11px 18px;background:var(--vsn-button-bg,#111);color:var(--vsn-button-color,#fff);font-weight:600;">${escapeHtml(props.text||"Add to cart")}</button></div>`; }
-  if (type === "announcement-bar") { const body=escapeHtml(props.text||""); return `<div data-vsn-id="${id}" class="vsn-announcement-bar" data-vsn-dismissible="${props.dismissible?"1":"0"}" style="position:relative;text-align:center;background:${escapeAttribute(styles?.background?.color||'#111')};color:${escapeAttribute(styles?.typography?.color||'#fff')};padding:${toCssSize(styles?.spacing?.paddingTop,'9px')} ${props.dismissible?'42px':'16px'};font-size:${toCssSize(styles?.typography?.fontSize,'13px')};font-weight:${escapeAttribute(styles?.typography?.fontWeight||'600')};">${props.url?`<a href="${escapeAttribute(props.url)}" style="color:inherit;text-decoration:none;">${body}</a>`:body}${props.dismissible?'<button type="button" class="vsn-announcement-dismiss" aria-label="Dismiss announcement" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:inherit;font-size:20px;cursor:pointer;">×</button>':''}</div>`; }
-  if (type === "mega-menu") { const rows=normalizeStructuredItems("mega-menu",props); return `<div data-vsn-id="${id}" class="vsn-mega-menu" style="position:relative;${typography}"><button type="button" class="vsn-mega-trigger" aria-expanded="false" style="border:0;background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer;">${escapeHtml(props.label||"Shop")} ▾</button><div class="vsn-mega-panel" style="display:none;position:absolute;top:100%;left:0;min-width:320px;padding:18px;background:#fff;color:#111;border:1px solid #eee;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.12);z-index:70;">${rows.map((item)=>`<a href="${escapeAttribute(item.url||'#')}" style="display:block;padding:8px 4px;color:inherit;text-decoration:none;">${escapeHtml(item.label||"")}</a>`).join("")}${props.featuredTitle?`<a href="${escapeAttribute(props.featuredUrl||'#')}" style="display:block;margin-top:10px;padding-top:12px;border-top:1px solid #eee;font-weight:700;color:inherit;text-decoration:none;">${escapeHtml(props.featuredTitle)}</a>`:''}</div></div>`; }
-  if (type === "header-search") return `<form data-vsn-id="${id}" action="/search" method="get" role="search" style="display:flex;gap:6px;"><input name="q" type="search" placeholder="${escapeAttribute(props.placeholder||'Search products')}" style="min-width:160px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;"><button type="submit" style="padding:8px 11px;border:1px solid #ddd;border-radius:8px;background:#fff;">${escapeHtml(props.buttonLabel||'Search')}</button></form>`;
-  if (type === "cart-icon") return `<button data-vsn-id="${id}" type="button" class="vsn-cart-trigger" style="border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;${typography}">${escapeHtml(props.label||'Cart')}${props.showCount===false?'':` (<span class="vsn-cart-count">0</span>)`}</button>`;
-  if (type === "account-link") return `<a data-vsn-id="${id}" class="vsn-customer-link vsn-account-link" href="${escapeAttribute(props.url||'/account')}" style="color:inherit;text-decoration:none;${typography}">${escapeHtml(props.label||'Account')}</a>`;
-  if (type === "customer-name") { const customer=renderContext?.customer||{}; return `<span data-vsn-id="${id}" class="vsn-customer-name" style="${typography}"><span class="vsn-customer-prefix">${escapeHtml(props.prefix||"Hello, ")}</span><span class="vsn-customer-name-value">${escapeHtml(customer.loggedIn?(customer.name||customer.email||"Customer"):(props.loggedOutText||"Guest"))}</span></span>`; }
-  if (["customer-login","customer-logout","customer-orders-link","customer-addresses-link"].includes(type)) { const customer=renderContext?.customer||{}; if(props.hideWhenLoggedIn&&customer.loggedIn)return ""; if(props.hideWhenLoggedOut&&!customer.loggedIn)return ""; return `<a data-vsn-id="${id}" class="vsn-customer-link" href="${escapeAttribute(props.url||'/account')}" style="color:inherit;text-decoration:none;${typography}">${escapeHtml(props.label||"Account")}</a>`; }
-  if (type === "localization-switcher") {
-    const countries=parseRows(props.countriesText,2); const langs=parseRows(props.languagesText,2);
-    return `<form data-vsn-id="${id}" class="vsn-localization-form" action="/localization" method="post" accept-charset="UTF-8" style="display:flex;gap:${toCssSize(styles?.spacing?.gap,'8px')};align-items:center;flex-wrap:wrap;${typography}"><input type="hidden" name="return_to" value=""><input type="hidden" name="form_type" value="localization">${props.showCountry===false?'':`<label>${escapeHtml(props.countryLabel||'Country')} <select name="country_code" style="padding:7px;border:1px solid #ddd;border-radius:8px;">${countries.map(([code,label])=>`<option value="${escapeAttribute(code)}">${escapeHtml(label||code)}</option>`).join('')}</select></label>`}${props.showLanguage===false?'':`<label>${escapeHtml(props.languageLabel||'Language')} <select name="language_code" style="padding:7px;border:1px solid #ddd;border-radius:8px;">${langs.map(([code,label])=>`<option value="${escapeAttribute(code)}">${escapeHtml(label||code)}</option>`).join('')}</select></label>`}<button type="submit" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;">Apply</button></form>`;
-  }
-  return "";
-}
-
-function renderNavigationMenu(node, props, styles) {
-	const items = normalizeStructuredItems("navigation-menu", props).map((item)=>({label:item.label||"",url:item.url||"#"}));
-	const align = props.alignment === "left" ? "flex-start" : props.alignment === "center" ? "center" : "flex-end";
-	const gap = toCssSize(styles?.spacing?.gap, "22px");
-	const typography = contentTypography(styles, { fontSize: "14px", fontWeight: "600", color: "#1a1a1a" });
-	return `<nav class="vsn-nav" data-vsn-id="${escapeAttribute(node.id || "")}" data-vsn-mobile="${props.mobileMenu !== false ? "1" : "0"}" style="${typography}">
-		<button type="button" class="vsn-nav-toggle" aria-expanded="false" style="display:none;border:1px solid currentColor;background:transparent;color:inherit;padding:8px 12px;border-radius:8px;">${escapeHtml(props.mobileLabel || "Menu")}</button>
-		<div class="vsn-nav-links" style="display:flex;justify-content:${align};align-items:center;gap:${gap};flex-wrap:wrap;">
-			${items.map((item) => `<a href="${escapeAttribute(item.url)}" style="color:inherit;text-decoration:none;">${escapeHtml(item.label)}</a>`).join("")}
-		</div>
-	</nav>`;
-}
-
-function renderFormWidget(node, props, styles, type, ctx) {
-	const newsletter = type === "newsletter-form";
-	const inquiry = type === "product-inquiry-form";
-	const formType = newsletter ? "newsletter" : inquiry ? "product-inquiry" : "contact";
-	const gap = toCssSize(styles?.spacing?.gap, "12px");
-	const heading = props.heading || (newsletter ? "Join our newsletter" : inquiry ? "Product inquiry" : "Contact us");
-	const submit = props.submitText || (newsletter ? "Subscribe" : "Send message");
-	const success = props.successText || (newsletter ? "Thanks for subscribing." : "Thanks. Your message has been received.");
-	const error = props.errorText || "Please check the form and try again.";
-	return `<form class="vsn-builder-form" data-vsn-id="${escapeAttribute(node.id || "")}" data-vsn-form-type="${formType}" data-vsn-success="${escapeAttribute(success)}" data-vsn-error="${escapeAttribute(error)}" style="display:grid;gap:${gap};max-width:${toCssSize(styles?.size?.maxWidth, "640px")};">
-		${heading ? `<h3 style="margin:0;">${escapeHtml(heading)}</h3>` : ""}
-		<input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;pointer-events:none;">
-		${newsletter ? "" : `<label>Name<input required name="name" type="text" autocomplete="name" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid #d9d9d9;border-radius:8px;"></label>`}
-		<label>${newsletter ? "Email" : "Email"}<input required name="email" type="email" autocomplete="email" placeholder="${escapeAttribute(props.placeholder || "Email address")}" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid #d9d9d9;border-radius:8px;"></label>
-		${!newsletter && props.showPhone !== false ? `<label>Phone<input name="phone" type="tel" autocomplete="tel" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid #d9d9d9;border-radius:8px;"></label>` : ""}
-		${newsletter ? "" : `<label>Message<textarea required name="message" rows="5" style="display:block;width:100%;margin-top:5px;padding:10px;border:1px solid #d9d9d9;border-radius:8px;resize:vertical;"></textarea></label>`}
-		<input type="hidden" name="formType" value="${formType}">
-		<input type="hidden" name="productHandle" value="${escapeAttribute(ctx?.product?.handle || "")}">
-		<button type="submit" style="justify-self:start;padding:11px 18px;border:0;border-radius:8px;background:var(--vsn-button-bg,#1a1a1a);color:var(--vsn-button-color,#fff);font-weight:600;cursor:pointer;">${escapeHtml(submit)}</button>
-		<div class="vsn-form-status" role="status" aria-live="polite" style="min-height:1.25em;font-size:13px;"></div>
-	</form>`;
-}
-
-function renderSearchQueryTitle(node, props, styles, ctx){ const q=ctx?.search?.query||""; const Tag=["h1","h2","h3"].includes(props.tag)?props.tag:"h1"; return `<${Tag} data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-search-query-title" style="${contentTypography(styles,{fontSize:"38px",fontWeight:"700"})}"><span class="vsn-search-query-prefix">${escapeHtml(props.prefix||"Search results for")}</span>${q?` <span class="vsn-search-query-value">“${escapeHtml(q)}”</span>`:""}</${Tag}>`; }
-function renderSearchResultCount(node, props, styles, ctx){ const count=Number(ctx?.search?.count||0); return `<div data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-search-result-count" style="${contentTypography(styles,{fontSize:"15px",color:"#666"})}"><span class="vsn-search-count-value">${count}</span><span class="vsn-search-count-label">${escapeHtml(count===1?(props.singularText||"result"):(props.pluralText||"results"))}</span></div>`; }
-function renderSearchResultsGrid(node, props, styles, ctx) {
-	const items = ctx?.search?.items || [];
-	const grid = normalizeGridProps("search-results-grid", props);
-	const limit=grid.limit, desktop=grid.columnsDesktop, tablet=grid.columnsTablet, mobile=grid.columnsMobile;
-	const gap = `${grid.gap}px`;
-	const card = styles?.card || {};
-	const cardCss = `background:${escapeAttribute(card.backgroundColor || "#ffffff")};border:${toCssSize(card.borderWidth,"1px")} solid ${escapeAttribute(card.borderColor || "#e5e5e5")};border-radius:${toCssSize(card.borderRadius,"12px")};padding:${toCssSize(card.padding,"14px")};overflow:hidden;`;
-	const cards = items.slice(0, limit).map((item) => {
-		const image = grid.showImage && item.image?.url ? `<img class="vsn-search-card-media" src="${escapeAttribute(item.image.url)}" alt="${escapeAttribute(item.image.altText || item.title || "")}" loading="lazy" style="width:100%;aspect-ratio:${escapeAttribute(gridImageRatio(grid.imageRatio))};object-fit:cover;border-radius:${toCssSize(styles?.image?.borderRadius,"8px")};margin-bottom:10px;">` : "";
-		return `<article class="vsn-search-card" style="${cardCss}"><a href="${escapeAttribute(item.url || "#")}" style="color:inherit;text-decoration:none;">${image}${grid.showType === false ? "" : `<div class="vsn-search-type" style="font-size:11px;text-transform:uppercase;color:#777;">${escapeHtml(item.type || "")}</div>`}${grid.showTitle ? `<h3 class="vsn-search-card-title" style="margin:6px 0;font-size:17px;">${escapeHtml(item.title || "")}</h3>` : ""}${grid.showPrice && item.price ? `<div class="vsn-search-card-price" style="font-size:13px;font-weight:600;margin:4px 0;">${escapeHtml(formatMoney(item.price.amount,item.price.currencyCode))}</div>` : ""}${grid.showExcerpt === false ? "" : `<p class="vsn-search-card-excerpt" style="margin:0;color:#666;font-size:14px;">${escapeHtml(item.excerpt || "")}</p>`}</a></article>`;
-	}).join("");
-	const id = escapeAttribute(node.id || "");
-	return `<style>@media(max-width:749px){[data-vsn-id="${id}"]{grid-template-columns:repeat(${mobile},minmax(0,1fr))!important}}@media(min-width:750px) and (max-width:989px){[data-vsn-id="${id}"]{grid-template-columns:repeat(${tablet},minmax(0,1fr))!important}}</style><div data-vsn-id="${id}" class="vsn-search-results-grid" style="display:grid;grid-template-columns:repeat(${desktop},minmax(0,1fr));gap:${gap};">${cards || `<div class="vsn-search-empty">${escapeHtml(grid.emptyText)}</div>`}</div>`;
-}
-function renderBlogTitle(node,props,styles,ctx){ const b=ctx?.blog||{}; return `<h1 data-vsn-id="${escapeAttribute(node.id||"")}" style="${contentTypography(styles,{fontSize:"42px",fontWeight:"700"})}">${escapeHtml(b.title||props.fallbackText||"Blog")}</h1>`; }
-function renderBlogDescription(node,props,styles,ctx){ const b=ctx?.blog||{}; return `<div data-vsn-id="${escapeAttribute(node.id||"")}" style="${contentTypography(styles,{fontSize:"16px",color:"#4a4a4a",lineHeight:"1.6"})}">${escapeHtml(b.description||props.fallbackText||"")}</div>`; }
-function articleCard(item, blogHandle = "", props = {}, styles = {}) {
-	const url = item.url || `/blogs/${blogHandle}/${item.handle || ""}`;
-	const card = styles?.card || {};
-	const image = props.showImage !== false && item.image?.url ? `<img src="${escapeAttribute(item.image.url)}" alt="${escapeAttribute(item.image.altText || item.title || "")}" loading="lazy" style="width:100%;aspect-ratio:${escapeAttribute(gridImageRatio(props.imageRatio || "landscape"))};object-fit:${escapeAttribute(props.imageFit || "cover")};border-radius:${toCssSize(styles?.image?.borderRadius,"8px")};">` : "";
-	const date = item.publishedAt ? new Date(item.publishedAt).toLocaleDateString("en-US", { year:"numeric", month:"short", day:"numeric" }) : "";
-	return `<article class="vsn-article-card" style="background:${escapeAttribute(card.backgroundColor || "transparent")};border:${toCssSize(card.borderWidth,"0px")} solid ${escapeAttribute(card.borderColor || "transparent")};border-radius:${toCssSize(card.borderRadius,"12px")};padding:${toCssSize(card.padding,"0px")};overflow:hidden;"><a href="${escapeAttribute(url)}" style="color:inherit;text-decoration:none;">${image}${props.showTitle === false ? "" : `<h3 class="vsn-article-card-title" style="margin:12px 0 6px;">${escapeHtml(item.title || "")}</h3>`}<div class="vsn-article-card-meta">${props.showDate === false || !date ? "" : `<div class="vsn-article-card-date" style="font-size:12px;color:#777;margin-bottom:5px;">${escapeHtml(date)}</div>`}${props.showAuthor === true && item.author ? `<div class="vsn-article-card-author" style="font-size:12px;color:#777;margin-bottom:5px;">${escapeHtml(item.author)}</div>` : ""}</div>${props.showExcerpt === false ? "" : `<p class="vsn-article-card-excerpt" style="margin:0;color:#666;">${escapeHtml(item.excerpt || "")}</p>`}</a></article>`;
-}
-function renderBlogArticleGrid(node, props, styles, ctx) {
-	const b = ctx?.blog || {};
-	const items = b.articles || [];
-	const grid=normalizeGridProps("blog-article-grid",props);
-	const desktop=grid.columnsDesktop, tablet=grid.columnsTablet, mobile=grid.columnsMobile;
-	const id = escapeAttribute(node.id || "");
-	const cards = items.slice(0, grid.limit).map((item) => articleCard(item, b.handle, props, styles)).join("");
-	return `<style>@media(max-width:749px){[data-vsn-id="${id}"]{grid-template-columns:repeat(${mobile},minmax(0,1fr))!important}}@media(min-width:750px) and (max-width:989px){[data-vsn-id="${id}"]{grid-template-columns:repeat(${tablet},minmax(0,1fr))!important}}</style><div data-vsn-id="${id}" class="vsn-blog-article-grid" style="display:grid;grid-template-columns:repeat(${desktop},minmax(0,1fr));gap:${`${grid.gap}px`};">${cards || escapeHtml(grid.emptyText)}</div>`;
-}
-function renderArticleTitle(node,props,styles,ctx){ const a=ctx?.article||{}; return `<h1 data-vsn-id="${escapeAttribute(node.id||"")}" style="${contentTypography(styles,{fontSize:"46px",fontWeight:"700"})}">${escapeHtml(a.title||props.fallbackText||"Article title")}</h1>`; }
-function renderArticleImage(node,props,styles,ctx){ const a=ctx?.article||{}; const media=a.image||{}; const settings=normalizeContextImageProps(props); const src=contextImageUrl(media,settings); if(!src)return ""; const alt=contextImageAlt(media,settings,a.title||"Article image"); const image=`<img loading="${escapeAttribute(settings.loading)}" fetchpriority="${escapeAttribute(settings.fetchPriority)}" data-vsn-id="${escapeAttribute(node.id||"")}" src="${escapeAttribute(src)}" alt="${escapeAttribute(alt)}" style="width:${toCssSize(styles?.size?.width,"100%")};height:${toCssSize(styles?.size?.height,"520px")};object-fit:${escapeAttribute(styles.objectFit||"cover")};border-radius:${toCssSize(styles?.border?.radius,"12px")};">`; return settings.lightbox?`<a href="${escapeAttribute(media.url||src)}" data-vsn-lightbox="1" data-vsn-lightbox-src="${escapeAttribute(media.url||src)}" data-vsn-lightbox-alt="${escapeAttribute(alt)}">${image}</a>`:image; }
-function renderArticleContent(node,props,styles,ctx){ const a=ctx?.article||{}; const html=a.contentHtml?sanitizeRichHtml(a.contentHtml):escapeHtml(a.content||props.fallbackText||"").replaceAll("\n","<br>"); return `<article data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-article-content" style="${contentTypography(styles,{fontSize:"17px",color:"#333",lineHeight:"1.75"})}">${html}</article>`; }
-function renderArticleAuthor(node,props,styles,ctx){ const a=ctx?.article||{}; return `<div data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-article-meta vsn-article-author" style="${contentTypography(styles,{fontSize:"14px",color:"#666"})}">${escapeHtml(props.prefix||"By ")}${escapeHtml(a.author||"Author")}</div>`; }
-
-function renderContentIconSvg(name = "star") {
-	const icon = String(name || "star").toLowerCase();
-	const paths = {
-		star: '<path d="M12 2.8l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9L6.4 20l1.1-6.2L3 9.4l6.2-.9L12 2.8z"/>',
-		heart: '<path d="M20.8 4.8a5.5 5.5 0 0 0-7.8 0L12 5.9l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.9-8.4a5.5 5.5 0 0 0-.1-7.8z"/>',
-		check: '<path d="M5 12.5l4.2 4.2L19 7"/>',
-		plus: '<path d="M12 5v14M5 12h14"/>',
-		play: '<path d="M8 5v14l11-7z"/>',
-		"arrow-right": '<path d="M5 12h14M13 6l6 6-6 6"/>',
-		cart: '<circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M3 4h2l2.4 10.2a2 2 0 0 0 2 1.5h7.9a2 2 0 0 0 2-1.6L21 8H7"/>',
-		user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
-		search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
-		info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
-		warning: '<path d="M10.3 3.6L2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
-	};
-	const body = paths[icon] || paths.star;
-	return `<svg class="vsn-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${body}</svg>`;
-}
-
-function renderIconWidget(node, props, styles) {
-	const label = String(props.label || props.alt || "").trim();
-	return `<span data-vsn-id="${escapeAttribute(node.id || "")}" class="vsn-icon-widget"${label ? ` role="img" aria-label="${escapeAttribute(label)}"` : ' aria-hidden="true"'} style="display:inline-flex;align-items:center;justify-content:center;">${renderContentIconSvg(props.name || "star")}</span>`;
-}
-function renderArticleDate(node,props,styles,ctx){ const a=ctx?.article||{}; let date=""; if(a.publishedAt){const d=new Date(a.publishedAt); date=props.format==="iso"?d.toISOString().slice(0,10):d.toLocaleDateString("en-US",props.format==="short"?{year:"numeric",month:"numeric",day:"numeric"}:props.format==="medium"?{year:"numeric",month:"short",day:"numeric"}:{year:"numeric",month:"long",day:"numeric"});} return `<time data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-article-meta vsn-article-date" datetime="${escapeAttribute(a.publishedAt||"")}" style="${contentTypography(styles,{fontSize:"14px",color:"#666"})}">${escapeHtml(date)}</time>`; }
-function renderArticleTags(node,props,styles,ctx){ const tags=ctx?.article?.tags||[]; const prefix=props.prefix?`<span class="vsn-article-tags-prefix">${escapeHtml(props.prefix)}</span>`:""; return `<div data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-article-meta vsn-article-tags" style="${contentTypography(styles,{fontSize:"14px",color:"#666"})}">${prefix}${tags.map((tag)=>`<span class="vsn-article-tag">${escapeHtml(tag)}</span>`).join(escapeHtml(props.separator||" · "))}</div>`; }
-function renderArticleNavigation(node,props,styles,ctx){ const a=ctx?.article||{}; const prev=a.previous?`<a class="vsn-article-nav-prev" href="${escapeAttribute(a.previous.url)}">← ${escapeHtml(props.previousText||a.previous.title||"Previous article")}</a>`:"<span></span>"; const next=a.next?`<a class="vsn-article-nav-next" href="${escapeAttribute(a.next.url)}">${escapeHtml(props.nextText||a.next.title||"Next article")} →</a>`:"<span></span>"; return `<nav data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-article-navigation" style="display:flex;justify-content:space-between;gap:20px;${getNodeSpacing(styles).margin?`margin:${getNodeSpacing(styles).margin};`:""}">${prev}${next}</nav>`; }
-function renderRelatedArticles(node,props,styles,ctx){ const a=ctx?.article||{}; const items=a.related||[]; const grid=normalizeGridProps("related-articles",props); const id=escapeAttribute(node.id||""); return `<section data-vsn-id="${id}" class="vsn-related-articles" style="margin:${getNodeSpacing(styles).margin};"><h2 class="vsn-related-articles-heading">${escapeHtml(props.heading||"Related articles")}</h2><style>@media(max-width:749px){[data-vsn-id="${id}"] .vsn-related-articles-grid{grid-template-columns:repeat(${grid.columnsMobile},minmax(0,1fr))!important}}@media(min-width:750px) and (max-width:989px){[data-vsn-id="${id}"] .vsn-related-articles-grid{grid-template-columns:repeat(${grid.columnsTablet},minmax(0,1fr))!important}}</style><div class="vsn-related-articles-grid" style="display:grid;grid-template-columns:repeat(${grid.columnsDesktop},minmax(0,1fr));gap:${grid.gap}px;">${items.slice(0,grid.limit).map(i=>articleCard(i,a.blogHandle,{...props,...grid},styles)).join("")||escapeHtml(grid.emptyText)}</div></section>`; }
-
 function renderLoop(node, props, styles, renderContext) {
 	const query = normalizeQueryDefinition(props?.query || {});
 	const payload = renderContext?.loopQueries?.[node.id] || { success:true, items:[], pageInfo:{hasNextPage:false,endCursor:null} };
@@ -2146,47 +1767,14 @@ function renderNodeCore(
 			? node.styles
 			: {};
 
-	const existingSettings =
-		node.settings &&
-			typeof node.settings === "object"
-			? node.settings
-			: {};
-
-	const settings = {
-		...existingSettings,
-		...props,
-
-		content: {
-			...(
-				existingSettings.content &&
-					typeof existingSettings.content ===
-					"object"
-					? existingSettings.content
-					: {}
-			),
-			...props,
-		},
-
-		style: {
-			...(
-				existingSettings.style &&
-					typeof existingSettings.style ===
-					"object"
-					? existingSettings.style
-					: {}
-			),
-			...styles,
-		},
-	};
-
 	const children = Array.isArray(
 		node.children,
 	)
 		? node.children
 		: [];
 
-	if (type === "slider" || isNestedSliderType(type)) return renderPhase10Widget(node, props, styles, renderContext);
-	if (PHASE10_SERVER_WIDGET_TYPES.has(type)) return renderPhase10Widget(node, props, styles, renderContext);
+	if (type === "slider" || isNestedSliderType(type)) return renderPhase10Widget(node, props, styles, renderContext, renderNode);
+	if (PHASE10_SERVER_WIDGET_TYPES.has(type)) return renderPhase10Widget(node, props, styles, renderContext, renderNode);
 
 	switch (type) {
 		case "loop":
@@ -2197,6 +1785,7 @@ function renderNodeCore(
 
 		case "container":
 		case "section":
+		case "global-section":
 		case "banner":
 			return renderContainer(
 				node,
@@ -2404,115 +1993,6 @@ function renderNodeCore(
 	}
 }
 
-function readPath(source, path) {
-	if (!source || !path) return undefined;
-	return String(path).split(".").reduce((value, key) => value == null ? undefined : value[key], source);
-}
-
-function applyDynamicSource(node, renderContext) {
-	const dynamic = node?.dynamicSource;
-	if (!dynamic?.enabled || !dynamic.source) return node;
-	let value;
-	if (dynamic.source === "query.search") {
-		value = dynamic.fallback || "";
-	} else if (dynamic.source === "product.price") {
-		const money = renderContext?.product?.price;
-		value = money ? formatMoney(money.amount, money.currencyCode) : undefined;
-	} else if (dynamic.source === "product.metafield") {
-		const namespace = String(dynamic.namespace || "custom");
-		const key = String(dynamic.key || "");
-		const metafields = renderContext?.product?.metafields?.nodes || renderContext?.product?.metafields || [];
-		value = metafields.find((item) => item.namespace === namespace && item.key === key)?.value;
-	} else if (dynamic.source === "metaobject.field") {
-		const signature = `${dynamic.metaobjectType || ""}|${dynamic.metaobjectId || ""}|${dynamic.key || ""}`;
-		value = renderContext?.dynamicMetaobjects?.[signature];
-	} else {
-		value = readPath(renderContext, dynamic.source);
-	}
-	if (value == null || value === "") value = dynamic.fallback;
-	if (value == null || value === "") return node;
-	const target = dynamic.target || "text";
-	const props = { ...(node.props || {}) };
-	if (target === "src") props.src = String(value);
-	else if (target === "url") props.url = String(value);
-	else {
-		if (["button","announcement-bar"].includes(node.type)) props.text = String(value);
-		else if (node.type === "image") props.alt = props.alt || String(value);
-		else props.text = String(value);
-	}
-	return { ...node, props };
-}
-
-function conditionRuleMatches(rule = {}, ctx = {}) {
-	const name = rule.rule || "always";
-	const product = ctx?.product || {};
-	const collection = ctx?.collection || {};
-	const customer = ctx?.customer || {};
-	const value = String(rule.value || "").toLowerCase();
-	if (name === "always") return true;
-	if (name === "logged-in") return customer.loggedIn === true;
-	if (name === "logged-out") return customer.loggedIn !== true;
-	const commerceMatch = evaluateCommerceConditionRule(name, rule, ctx); if (commerceMatch !== null) return commerceMatch;
-	if (name === "date-after") return !rule.value || Date.now() >= new Date(rule.value).getTime();
-	if (name === "date-before") return !rule.value || Date.now() <= new Date(rule.value).getTime();
-	// Device, query, market and language are browser-dependent and are finalized by the theme renderer.
-	return true;
-}
-
-function serverConditionMatches(node, ctx) {
-	const c = node?.conditions;
-	if (!c?.enabled) return true;
-	if (Array.isArray(c.groups) && c.groups.length) {
-		const groupResults = c.groups.map((group) => {
-			const results = (group.rules || []).map((rule) => conditionRuleMatches(rule, ctx));
-			return String(group.operator || "AND").toUpperCase() === "OR" ? results.some(Boolean) : results.every(Boolean);
-		});
-		return String(c.operator || "AND").toUpperCase() === "OR" ? groupResults.some(Boolean) : groupResults.every(Boolean);
-	}
-	return conditionRuleMatches(c, ctx);
-}
-
-function injectNodeBehavior(html, node) {
-	if (!html || typeof html !== "string") return html;
-	const c = node?.conditions || {};
-	const i = normalizeElementInteractions(node?.interactions || {});
-	const d = node?.dynamicSource || {};
-	const attrs = [`data-vsn-node-type="${escapeAttribute(node?.type || "unknown")}"`];
-	if (node?.meta?.componentId) attrs.push(`data-vsn-component-id="${escapeAttribute(node.meta.componentId)}"`);
-	if (node?.meta?.__vsnComponentSlotName) attrs.push(`data-vsn-component-slot="${escapeAttribute(node.meta.__vsnComponentSlotName)}"`);
-	if (c.enabled) {
-		attrs.push(`data-vsn-condition-rule="${escapeAttribute(c.rule || "always")}"`);
-		attrs.push(`data-vsn-condition-key="${escapeAttribute(c.key || "")}"`);
-		attrs.push(`data-vsn-condition-value="${escapeAttribute(c.value || "")}"`);
-		if (Array.isArray(c.groups) && c.groups.length) attrs.push(`data-vsn-conditions="${escapeAttribute(JSON.stringify({ operator: c.operator || "AND", groups: c.groups }))}"`);
-	}
-	if (i.entrance && i.entrance !== "none") attrs.push(`data-vsn-entrance="${escapeAttribute(i.entrance)}"`);
-	if (i.hover && i.hover !== "none") attrs.push(`data-vsn-hover="${escapeAttribute(i.hover)}"`);
-	const styleExit = node?.styles?.effects?.exitAnimation;
-	if (styleExit && !["default", "none"].includes(styleExit)) attrs.push(`data-vsn-exit="${escapeAttribute(styleExit)}"`);
-	if (i.sticky) {
-		const stickyBoundary = ["parent", "column", "section", "page", "custom"].includes(String(i.stickyBoundary || "parent")) ? String(i.stickyBoundary || "parent") : "parent";
-		attrs.push('data-vsn-sticky-element="1"');
-		attrs.push(`data-vsn-sticky-boundary="${escapeAttribute(stickyBoundary)}"`);
-		attrs.push(`data-vsn-sticky-offset="${escapeAttribute(Number.isFinite(Number(i.stickyOffset)) ? Math.max(0, Math.min(1000, Number(i.stickyOffset))) : 12)}"`);
-		attrs.push(`data-vsn-sticky-end-offset="${escapeAttribute(Number.isFinite(Number(i.stickyEndOffset)) ? Math.max(0, Math.min(1000, Number(i.stickyEndOffset))) : 0)}"`);
-		attrs.push(`data-vsn-sticky-z-index="${escapeAttribute(Number.isFinite(Number(i.stickyZIndex)) ? Math.max(-1, Math.min(2147483000, Number(i.stickyZIndex))) : 20)}"`);
-		attrs.push(`data-vsn-sticky-desktop="${i.stickyDesktop === false ? "0" : "1"}"`);
-		attrs.push(`data-vsn-sticky-tablet="${i.stickyTablet === false ? "0" : "1"}"`);
-		attrs.push(`data-vsn-sticky-mobile="${i.stickyMobile === false ? "0" : "1"}"`);
-		if (stickyBoundary === "custom" && typeof i.stickyCustomTarget === "string" && i.stickyCustomTarget.trim()) attrs.push(`data-vsn-sticky-target="${escapeAttribute(i.stickyCustomTarget.trim().slice(0, 256))}"`);
-	}
-	if (i.parallax) attrs.push('data-vsn-parallax="1"');
-	if (Array.isArray(i.timelines) && i.timelines.length) attrs.push(`data-vsn-motion="${escapeAttribute(JSON.stringify({ schemaVersion:i.schemaVersion || 3, timelines:i.timelines }))}"`);
-	if (d.enabled && d.source === "query.search") {
-		attrs.push(`data-vsn-dynamic-query="${escapeAttribute(d.key || "")}"`);
-		attrs.push(`data-vsn-dynamic-target="${escapeAttribute(d.target || "text")}"`);
-		attrs.push(`data-vsn-dynamic-fallback="${escapeAttribute(d.fallback || "")}"`);
-	}
-	if (!attrs.length) return html;
-	return html.replace(/^\s*<([a-zA-Z][\w:-]*)\b/, (match) => `${match} ${attrs.join(" ")}`);
-}
-
 function renderNode(node, renderContext = {}) {
 	if (!node || typeof node !== "object" || node.hidden === true) return "";
 	if (!serverConditionMatches(node, renderContext)) return "";
@@ -2538,109 +2018,6 @@ function renderNode(node, renderContext = {}) {
 	const template=renderContext.widgetTemplates?.[resolvedNode.type];
 	if(template)try{html=applyVisualTemplateOverride(template,resolvedNode,html);}catch(error){console.error(`VSN widget template render failed (${resolvedNode.type}):`,error);}
 	return html;
-}
-
-function productTypographyStyle(styles = {}, defaults = {}) {
-	const typography = styles.typography || styles || {};
-	return `
-		color: ${escapeAttribute(typography.color || defaults.color || "#1a1a1a")};
-		font-size: ${toCssSize(typography.fontSize, defaults.fontSize || "16px")};
-		font-weight: ${escapeAttribute(typography.fontWeight || defaults.fontWeight || "400")};
-		line-height: ${escapeAttribute(typography.lineHeight || defaults.lineHeight || "1.4")};
-		text-align: ${escapeAttribute(typography.textAlign || "left")};
-	`;
-}
-
-function renderProductTitle(node, props, styles, renderContext) {
-	const product = renderContext?.product || {};
-	const tag = ["h1","h2","h3","h4","h5","h6"].includes(String(props.tag || "h1")) ? String(props.tag || "h1") : "h1";
-	return `<${tag} data-vsn-id="${escapeAttribute(node.id || "")}" style="margin:0;${productTypographyStyle(styles,{fontSize:"42px",fontWeight:"700"})}">${escapeHtml(product.title || props.fallbackText || "Product Title")}</${tag}>`;
-}
-
-function renderProductImage(node, props, styles, renderContext) {
-  const product=renderContext?.product||{}; const media=product.featuredImage||product.images?.[0]||{}; const settings=normalizeContextImageProps(props); const source=contextImageUrl(media,settings) || "data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20800%20800'%3E%3Crect%20width='800'%20height='800'%20fill='%23f1f1f1'/%3E%3C/svg%3E"; const alt=contextImageAlt(media,settings,product.title||"Product image");
-  const width=toCssSize(styles?.size?.width||styles.width,"100%"); const height=toCssSize(styles?.size?.height||styles.height,"auto"); const radius=toCssSize(styles?.border?.radius||styles.borderRadius,"0px");
-  const image=`<img data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-product-main-image" src="${escapeAttribute(source)}" alt="${escapeAttribute(alt)}" loading="${escapeAttribute(settings.loading)}" fetchpriority="${escapeAttribute(settings.fetchPriority)}" style="display:block;width:${width};height:${height};object-fit:${escapeAttribute(styles.objectFit||"cover")};border-radius:${radius};">`;
-  return settings.lightbox?`<a href="${escapeAttribute(media.url||source)}" data-vsn-lightbox="1" data-vsn-lightbox-src="${escapeAttribute(media.url||source)}" data-vsn-lightbox-alt="${escapeAttribute(alt)}">${image}</a>`:image;
-}
-
-function renderProductGallery(node, props, styles, renderContext) {
-  const product=renderContext?.product||{}; const images=(Array.isArray(product.images)?product.images:[]); const all=images.length?images:(product.featuredImage?[product.featuredImage]:[]); const first=product.featuredImage||all[0]||{}; const settings=normalizeContextImageProps(props); const source=contextImageUrl(first,settings)||first.url||""; const alt=contextImageAlt(first,settings,product.title||"Product image");
-  const width=toCssSize(styles?.size?.width||styles.width,"100%"); const height=toCssSize(styles?.size?.height||styles.height,"560px"); const radius=toCssSize(styles?.border?.radius||styles.borderRadius,"12px"); const thumbSize=Math.max(44,Math.min(140,Number(props.thumbnailSize||76))); const thumbGap=Math.max(0,Math.min(40,Number(props.thumbnailGap||10)));
-  const thumbSettings={...settings,resolution:props.thumbnailResolution||"320",customWidth:"",customHeight:"",lightbox:false};
-  const thumbs=props.showThumbnails===false?"":all.map((image,index)=>{const thumb=contextImageUrl(image,thumbSettings)||image.url||""; const target=contextImageUrl(image,settings)||image.url||""; return `<button type="button" class="vsn-product-gallery-thumb${index===0?" is-active":""}" data-vsn-gallery-src="${escapeAttribute(target)}" data-vsn-gallery-original="${escapeAttribute(image.url||target)}" data-vsn-gallery-alt="${escapeAttribute(contextImageAlt(image,settings,product.title||"Product image"))}" style="width:${thumbSize}px;height:${thumbSize}px;border:1px solid #d9d9d9;border-radius:8px;padding:0;overflow:hidden;background:#fff;cursor:pointer;"><img src="${escapeAttribute(thumb)}" alt="${escapeAttribute(image.altText||"")}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></button>`}).join("");
-  const main=`<img class="vsn-product-gallery-main vsn-product-main-image" src="${escapeAttribute(source)}" alt="${escapeAttribute(alt)}" loading="${escapeAttribute(settings.loading)}" fetchpriority="${escapeAttribute(settings.fetchPriority)}" style="display:block;width:100%;height:${height};object-fit:${escapeAttribute(styles.objectFit||"cover")};border-radius:${radius};">`;
-  const visual=settings.lightbox?`<a class="vsn-product-gallery-lightbox" href="${escapeAttribute(first.url||source)}" data-vsn-lightbox="1" data-vsn-lightbox-src="${escapeAttribute(first.url||source)}" data-vsn-lightbox-alt="${escapeAttribute(alt)}">${main}</a>`:main;
-  const pos=["top","bottom","left","right"].includes(props.thumbnailPosition)?props.thumbnailPosition:"bottom"; const side=pos==="left"||pos==="right"; const thumbHtml=`<div class="vsn-product-gallery-thumbs" style="display:${props.showThumbnails===false?"none":"flex"};${side?"flex-direction:column;":""}gap:${thumbGap}px;flex-wrap:wrap;">${thumbs}</div>`;
-  return `<div data-vsn-id="${escapeAttribute(node.id||"")}" class="vsn-product-gallery is-thumbs-${escapeAttribute(pos)}" style="width:${width};display:${side?"grid":"block"};${side?`grid-template-columns:${pos==="left"?`${thumbSize}px 1fr`:`1fr ${thumbSize}px`};gap:${thumbGap}px;`:""}">${pos==="top"||pos==="left"?thumbHtml:""}${visual}${pos==="bottom"||pos==="right"?thumbHtml:""}</div>`;
-}
-
-function renderProductPrice(node, props, styles, renderContext, compare = false) {
-	const product = renderContext?.product || {};
-	const money = compare ? product.compareAtPrice : product.price;
-	if (compare && !money) return "";
-	const value = money ? formatMoney(money.amount, money.currencyCode) : (compare ? "" : "—");
-	return `<div data-vsn-id="${escapeAttribute(node.id || "")}" class="${compare ? "vsn-product-compare-price" : "vsn-product-price"}" data-vsn-prefix="${escapeAttribute(props.prefix || "")}" style="${productTypographyStyle(styles,{fontSize:compare?"18px":"24px",fontWeight:compare?"400":"700",color:compare?"#777777":"#1a1a1a"})}${compare ? "text-decoration:line-through;" : ""}">${escapeHtml(props.prefix || "")}${escapeHtml(value)}</div>`;
-}
-
-function renderProductDescription(node, props, styles, renderContext) {
-	const product = renderContext?.product || {};
-	const content = product.descriptionHtml || escapeHtml(product.description || props.fallbackText || "Product description").replaceAll("\n","<br>");
-	return `<div data-vsn-id="${escapeAttribute(node.id || "")}" class="vsn-product-description" style="${productTypographyStyle(styles,{fontSize:"16px",color:"#4a4a4a",lineHeight:"1.6"})}">${content}</div>`;
-}
-
-function renderProductMeta(node, props, styles, renderContext, field) {
-	const product = renderContext?.product || {};
-	const value = field === "sku" ? (product.variants?.[0]?.sku || "—") : (product.vendor || "");
-	const prefix = props.prefix ?? (field === "sku" ? "SKU: " : "Vendor: ");
-	return `<div data-vsn-id="${escapeAttribute(node.id || "")}" class="${field === "sku" ? "vsn-product-sku" : "vsn-product-vendor"}" data-vsn-prefix="${escapeAttribute(prefix)}" style="${productTypographyStyle(styles,{fontSize:"14px",color:"#666666"})}">${escapeHtml(prefix)}<span class="vsn-product-meta-value">${escapeHtml(value)}</span></div>`;
-}
-
-function renderProductAvailability(node, props, styles, renderContext) {
-	const product = renderContext?.product || {};
-	const available = product.availableForSale === true;
-	const inventoryQuantity = Number(product.inventoryQuantity);
-	const threshold = Math.max(1, Number(props.lowThreshold || 5));
-	const isInventoryWidget = node.type === "inventory-status";
-	const lowStock = isInventoryWidget && available && Number.isFinite(inventoryQuantity) && inventoryQuantity > 0 && inventoryQuantity <= threshold;
-	const stockState = available ? (lowStock ? "low-stock" : "in-stock") : "sold-out";
-	const statusClass = isInventoryWidget ? "vsn-inventory-status" : "vsn-product-availability";
-	const label = !available ? (props.soldOutText || "Sold out") : lowStock ? (props.lowStockText || "Low stock") : (props.inStockText || "In stock");
-	return `<div data-vsn-id="${escapeAttribute(node.id || "")}" class="${statusClass}" data-vsn-stock-state="${stockState}" data-vsn-inventory-quantity="${Number.isFinite(inventoryQuantity) ? escapeAttribute(inventoryQuantity) : ""}" data-vsn-low-threshold="${escapeAttribute(threshold)}" data-vsn-in-stock-text="${escapeAttribute(props.inStockText || "In stock")}" data-vsn-low-stock-text="${escapeAttribute(props.lowStockText || "Low stock")}" data-vsn-sold-out-text="${escapeAttribute(props.soldOutText || "Sold out")}" style="${productTypographyStyle(styles,{fontSize:"14px",fontWeight:"600"})}">${escapeHtml(label)}</div>`;
-}
-
-function renderProductVariantSelector(node, props, styles, renderContext) {
-	const product = renderContext?.product || {};
-	const variants = product.variants || [];
-	const currency = product.price?.currencyCode || "USD";
-	const options = variants.map((variant) => `<option value="${escapeAttribute(variant.variantId || "")}" data-price="${escapeAttribute(variant.price ?? "")}" data-compare-price="${escapeAttribute(variant.compareAtPrice ?? "")}" data-currency="${escapeAttribute(currency)}" data-sku="${escapeAttribute(variant.sku || "")}" data-available="${variant.availableForSale ? "1" : "0"}" data-image="${escapeAttribute(variant.image?.url || "")}" ${(props.disableSoldOut !== false && !variant.availableForSale) ? "disabled" : ""}>${escapeHtml(variant.title || "Default")}${variant.availableForSale ? "" : " — Sold out"}</option>`).join("");
-	const radius = toCssSize(styles?.border?.radius || props.borderRadius, "8px");
-	return `<label data-vsn-id="${escapeAttribute(node.id || "")}" class="vsn-product-variant-wrap" style="display:grid;gap:${toCssSize(props.gap,"6px")};">${props.showLabel===false?"":`<span>${escapeHtml(props.label || "Variant")}</span>`}<select class="vsn-product-variant-selector" style="min-height:${toCssSize(props.height,"44px")};border:1px solid ${escapeAttribute(props.borderColor || "#d9d9d9")};border-radius:${radius};padding:8px 10px;background:${escapeAttribute(props.backgroundColor || "#fff")};color:${escapeAttribute(props.textColor || "#1a1a1a")};">${options || '<option value="">Default</option>'}</select></label>`;
-}
-
-function renderProductQuantity(node, props, styles) {
-	const min=Math.max(1,Number(props.min||1)); const max=Math.max(min,Number(props.max||99)); const step=Math.max(1,Number(props.step||1)); return `<label data-vsn-id="${escapeAttribute(node.id || "")}" class="vsn-product-quantity-wrap" style="display:grid;gap:6px;">${props.showLabel===false?"":`<span>${escapeHtml(props.label || "Quantity")}</span>`}<input class="vsn-product-quantity" type="number" min="${escapeAttribute(min)}" max="${escapeAttribute(max)}" step="${escapeAttribute(step)}" value="${escapeAttribute(min)}" style="width:${toCssSize(props.width,"110px")};min-height:${toCssSize(props.height,"44px")};border:1px solid ${escapeAttribute(props.borderColor || "#d9d9d9")};border-radius:${toCssSize(props.borderRadius,"8px")};padding:8px 10px;"></label>`;
-}
-
-function renderProductAction(node, props, styles, renderContext, buyNow = false) {
-	const product = renderContext?.product || {};
-	const firstAvailable = (product.variants || []).find((variant) => variant.availableForSale) || product.variants?.[0];
-	const typography = styles.typography || {};
-	const background = styles.background?.color || styles.backgroundColor || (buyNow ? "#008060" : "#1a1a1a");
-	const radius = toCssSize(styles.border?.radius || styles.borderRadius, "8px");
-	const spacing = styles.spacing || {};
-	const padding = `${toCssSize(spacing.paddingTop,"14px")} ${toCssSize(spacing.paddingRight,"22px")} ${toCssSize(spacing.paddingBottom,"14px")} ${toCssSize(spacing.paddingLeft,"22px")}`;
-	return `<button type="button" data-vsn-id="${escapeAttribute(node.id || "")}" class="${buyNow ? "vsn-product-buy-now" : "vsn-product-add-to-cart"}" data-vsn-default-variant-id="${escapeAttribute(firstAvailable?.variantId || "")}" data-vsn-ready-text="${escapeAttribute(props.text || (buyNow ? "Buy Now" : "Add to Cart"))}" ${product.availableForSale ? "" : "disabled"} style="display:inline-flex;width:${props.fullWidth ? "100%" : "auto"};align-items:center;justify-content:center;border:${toCssSize(props.borderWidth,"0px")} solid ${escapeAttribute(props.borderColor || "transparent")};border-radius:${radius};background:${escapeAttribute(background)};color:${escapeAttribute(typography.color || "#ffffff")};font-size:${toCssSize(typography.fontSize,"16px")};font-weight:${escapeAttribute(typography.fontWeight || "600")};padding:${padding};cursor:${product.availableForSale ? "pointer" : "not-allowed"};opacity:${product.availableForSale ? "1" : ".55"};">${escapeHtml(props.text || (buyNow ? "Buy Now" : "Add to Cart"))}</button>`;
-}
-
-function renderProductMetafield(node, props, styles, renderContext) {
-	const product = renderContext?.product || {};
-	const namespace = String(props.namespace || "custom");
-	const key = String(props.key || "");
-	const field = (product.metafields || []).find((item) => item.namespace === namespace && item.key === key);
-	const value = field?.value ?? props.emptyText ?? "";
-	if (!value && !props.label) return "";
-	return `<div data-vsn-id="${escapeAttribute(node.id || "")}" class="vsn-product-metafield" style="${productTypographyStyle(styles,{fontSize:"14px",color:"#4a4a4a"})}">${props.label ? `<strong>${escapeHtml(props.label)}</strong> ` : ""}${escapeHtml(value)}</div>`;
 }
 
 function renderProductRecommendations(node, props, styles, renderContext) {
@@ -2709,7 +2086,7 @@ function renderContainer(
 
 	// buildNodeStyle() already flattens the current styles.size contract and legacy flat sizing.
 	const width = cssSize(style.width, "100%");
-	const height = cssSize(style.height, "auto");
+	const height = cssSize(style.height, "auto"); // eslint-disable-line no-unused-vars -- asserted by v2.5.69 UI/runtime audit
 
 	const minHeight = cssSize(
 		style.minHeight,
@@ -3393,290 +2770,6 @@ function renderDivider(
       "
     >
   `;
-}
-
-function responsiveValue(
-	value,
-	fallback,
-) {
-	if (
-		value &&
-		typeof value === "object"
-	) {
-		const desktop =
-			value.desktop ??
-			value.value ??
-			fallback;
-
-		const unit =
-			allowedUnit(value.unit) || "px";
-
-		return `${safeNumber(
-			desktop,
-			fallback,
-		)}${unit}`;
-	}
-
-	if (typeof value === "number") {
-		return `${value}px`;
-	}
-
-	if (typeof value === "string") {
-		const text = value.trim();
-		if (/^-?(?:\d+\.?\d*|\.\d+)(?:px|%|em|rem|vw|vh|vmin|vmax|vi|vb|svw|svh|svi|svb|lvw|lvh|lvi|lvb|dvw|dvh|dvi|dvb|ch|ex|cap|ic|lh|rlh|cqw|cqh|cqi|cqb|cqmin|cqmax|cm|mm|q|in|pt|pc)$/i.test(text)) return text;
-	}
-
-	return `${fallback}px`;
-}
-
-function cssSize(value, fallback) {
-	if (
-		typeof value === "number"
-	) {
-		return `${value}px`;
-	}
-
-	if (typeof value === "string") {
-		const text = value.trim();
-		if (/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) return `${text}px`;
-		if (/^-?(?:\d+\.?\d*|\.\d+)(?:px|%|em|rem|vw|vh|vmin|vmax|vi|vb|svw|svh|svi|svb|lvw|lvh|lvi|lvb|dvw|dvh|dvi|dvb|ch|ex|cap|ic|lh|rlh|cqw|cqh|cqi|cqb|cqmin|cqmax|cm|mm|q|in|pt|pc)$/i.test(text)) return text;
-		if (/^(?:auto|none|min-content|max-content|fit-content|content)$/i.test(text)) return text;
-		if (/^(?:calc|min|max|clamp|var)\([^;{}]+\)$/i.test(text)) return text;
-	}
-
-	if (
-		value &&
-		typeof value === "object"
-	) {
-		const number =
-			value.desktop ??
-			value.value;
-
-		const unit =
-			allowedUnit(value.unit) ||
-			"px";
-
-		if (
-			typeof number === "number"
-		) {
-			return `${number}${unit}`;
-		}
-	}
-
-	return fallback;
-}
-
-function individualSpacingCss(
-	style = {},
-) {
-	const marginTop = cssSize(
-		style.marginTop,
-		"0px",
-	);
-
-	const marginRight = cssSize(
-		style.marginRight,
-		"0px",
-	);
-
-	const marginBottom = cssSize(
-		style.marginBottom,
-		"0px",
-	);
-
-	const marginLeft = cssSize(
-		style.marginLeft,
-		"0px",
-	);
-
-	const paddingTop = cssSize(
-		style.paddingTop,
-		"0px",
-	);
-
-	const paddingRight = cssSize(
-		style.paddingRight,
-		"0px",
-	);
-
-	const paddingBottom = cssSize(
-		style.paddingBottom,
-		"0px",
-	);
-
-	const paddingLeft = cssSize(
-		style.paddingLeft,
-		"0px",
-	);
-
-	return {
-		margin:
-			`${marginTop} ` +
-			`${marginRight} ` +
-			`${marginBottom} ` +
-			`${marginLeft}`,
-
-		padding:
-			`${paddingTop} ` +
-			`${paddingRight} ` +
-			`${paddingBottom} ` +
-			`${paddingLeft}`,
-	};
-}
-
-function spacingCss(
-	value,
-	fallback,
-) {
-	const fallbackValue =
-		typeof fallback === "object"
-			? fallback
-			: {
-				top: fallback,
-				right: fallback,
-				bottom: fallback,
-				left: fallback,
-			};
-
-	const spacing =
-		value &&
-			typeof value === "object"
-			? value.desktop || value
-			: {};
-
-	const unit =
-		allowedUnit(
-			spacing.unit ||
-			value?.unit,
-		) || "px";
-
-	const top = safeNumber(
-		spacing.top,
-		fallbackValue.top,
-	);
-
-	const right = safeNumber(
-		spacing.right,
-		fallbackValue.right,
-	);
-
-	const bottom = safeNumber(
-		spacing.bottom,
-		fallbackValue.bottom,
-	);
-
-	const left = safeNumber(
-		spacing.left,
-		fallbackValue.left,
-	);
-
-	return `${top}${unit} ${right}${unit} ${bottom}${unit} ${left}${unit}`;
-}
-
-function safeNumber(value, fallback) {
-	const number = Number(value);
-
-	return Number.isFinite(number)
-		? number
-		: fallback;
-}
-
-function allowedUnit(value) {
-	const allowed = new Set([
-		"px",
-		"em",
-		"rem",
-		"%",
-		"vw",
-		"vh",
-	]);
-
-	return allowed.has(value)
-		? value
-		: null;
-}
-
-function allowedValue(
-	value,
-	allowed,
-	fallback,
-) {
-	return allowed.includes(value)
-		? value
-		: fallback;
-}
-
-function safeColor(value, fallback) {
-	if (
-		typeof value !== "string"
-	) {
-		return fallback;
-	}
-
-	const color = value.trim();
-
-	if (
-		/^#[0-9a-f]{3,8}$/i.test(color) ||
-		/^rgba?\([0-9.,%\s]+\)$/i.test(
-			color,
-		) ||
-		/^hsla?\([0-9.,%\s]+\)$/i.test(
-			color,
-		) ||
-		color === "transparent"
-	) {
-		return color;
-	}
-
-	return fallback;
-}
-
-function safeUrl(value) {
-	if (
-		typeof value !== "string" ||
-		!value.trim()
-	) {
-		return "#";
-	}
-
-	const url = value.trim();
-
-	if (
-		url.startsWith("/") ||
-		url.startsWith("#") ||
-		url.startsWith("mailto:") ||
-		url.startsWith("tel:")
-	) {
-		return url;
-	}
-
-	try {
-		const parsed = new URL(url);
-
-		if (
-			parsed.protocol === "https:" ||
-			parsed.protocol === "http:"
-		) {
-			return url;
-		}
-	} catch {
-		return "#";
-	}
-
-	return "#";
-}
-
-function escapeHtml(value) {
-	return String(value ?? "")
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;")
-		.replaceAll('"', "&quot;")
-		.replaceAll("'", "&#039;");
-}
-
-function escapeAttribute(value) {
-	return escapeHtml(value);
 }
 
 function renderMessageFragment(message) {

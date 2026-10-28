@@ -11,11 +11,21 @@ export function assertTrustedMediaUrl(value, allowedHosts = []) {
   return url;
 }
 
+// Follow redirects manually so every hop is validated before any request reaches it.
+export async function fetchTrustedRedirects(url, assertUrl, { signal, maxRedirects = 5 } = {}) {
+  let current = assertUrl(url);
+  for (let hop = 0; ; hop += 1) {
+    const response = await fetch(current, { redirect: "manual", signal });
+    const location = response.status >= 300 && response.status < 400 ? response.headers.get("location") : null;
+    if (!location) return response;
+    if (hop >= maxRedirects) throw new Error("Stock provider redirected too many times.");
+    current = assertUrl(new URL(location, current).toString());
+  }
+}
+
 export async function downloadStockMedia({ url, allowedHosts, allowedMimeTypes, maxBytes, label = "media", timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
-  assertTrustedMediaUrl(url, allowedHosts);
-  const response = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout?.(timeoutMs) });
+  const response = await fetchTrustedRedirects(url, (value) => assertTrustedMediaUrl(value, allowedHosts), { signal: AbortSignal.timeout?.(timeoutMs) });
   if (!response.ok) throw new Error(`Could not download ${label} (${response.status}).`);
-  assertTrustedMediaUrl(response.url || url, allowedHosts);
   const contentType = String(response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
   if (allowedMimeTypes?.size && !allowedMimeTypes.has(contentType)) throw new Error(`Unsupported ${label} MIME type: ${contentType || "unknown"}.`);
   const contentLength = Number(response.headers.get("content-length") || 0);
@@ -61,7 +71,7 @@ const FILE_FRAGMENT = `
   ... on Video { preview { image { url width height } } }
 `;
 
-export async function createShopifyMediaFile(admin, { stagedUrl, filename, alt = "Stock media", contentType = "FILE" } = {}) {
+export async function createShopifyMediaFile(admin, { stagedUrl, alt = "Stock media", contentType = "FILE" } = {}) {
   // stagedUploadsCreate already owns the filename. Shopify staged resource URLs do not carry a file extension,
   // so sending filename again to fileCreate can trigger MISMATCHED_FILENAME_AND_ORIGINAL_SOURCE.
   const response = await admin.graphql(`#graphql
@@ -76,7 +86,7 @@ export async function createShopifyMediaFile(admin, { stagedUrl, filename, alt =
   return normalizeFileNode(file);
 }
 
-export async function updateShopifyMediaFile(admin, { fileId, stagedUrl, filename, alt = "Stock media" } = {}) {
+export async function updateShopifyMediaFile(admin, { fileId, stagedUrl, alt = "Stock media" } = {}) {
   const statusResponse = await admin.graphql(`#graphql
     query VsnStockMediaFileStatus($id:ID!){ node(id:$id){ ... on GenericFile{id fileStatus} ... on Video{id fileStatus} ... on MediaImage{id fileStatus} } }
   `, { variables: { id: fileId } });

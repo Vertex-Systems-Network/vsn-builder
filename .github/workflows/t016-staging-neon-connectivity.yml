@@ -1,0 +1,70 @@
+name: T016 Protected Staging Neon Pooled+Direct Connectivity (Read Only)
+# Staging-only; no DDL, migrations, snapshots, Neon branches, Production or Worker mutations.
+on:
+  pull_request:
+    paths:
+      - "scripts/t016-staging-neon-connectivity.py"
+      - "tests/t016-staging-neon-connectivity.test.py"
+      - ".github/workflows/t016-staging-neon-connectivity.yml"
+  push:
+    branches: [development]
+  workflow_dispatch:
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  synthetic-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Checkout PR without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify no-prod, TLS, no secret leak and transaction read-only contracts
+        run: python3 tests/t016-staging-neon-connectivity.test.py -v
+  protected-reference:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require exact protected development before staging secrets
+        env:
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REPO" = "Vertex-Systems-Network/vsn-builder"
+          test "$SOURCE_REF" = "refs/heads/development"
+          test "$SOURCE_PROTECTED" = "true"
+  real-staging-readonly:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: protected-reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    environment: cloudflare-staging
+    env:
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+      APP_ENV: staging
+      NEON_PROJECT_ID: shiny-violet-61219572
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+    steps:
+      - name: Checkout exact protected development branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: development
+          persist-credentials: false
+      - name: Check native PostgreSQL client presence (no installs)
+        run: |
+          command -v psql >/dev/null || { echo "::error::T016_PSQL_CLIENT_NOT_ON_RUNNER"; exit 1; }
+          test -f /etc/ssl/certs/ca-certificates.crt || { echo "::error::T016_SYSTEM_CA_MISSING"; exit 1; }
+      - name: Validate exact paired Neon credentials and run two real READ ONLY transactions
+        run: |
+          set +x
+          python3 scripts/t016-staging-neon-connectivity.py

@@ -14,16 +14,10 @@ function expectedMigrationChecksum() {
   }
 }
 
-export const VSN_FEATURE_TABLES = Object.freeze({
-  core: ["Session", "BuilderPage", "BuilderShopSetting"],
-  developerStudio: ["BuilderGraphqlSavedQuery", "BuilderGraphqlHistory", "BuilderGlobalCode", "BuilderGlobalCodeRevision"],
-  wishlist: ["BuilderWishlist"],
-  emailBuilder: ["BuilderEmailTemplate"],
-  motion: ["BuilderMotionPreset"],
-  widgetPlatform: ["BuilderWidgetTemplate", "BuilderCustomWidget"],
-});
+import { VSN_FEATURE_TABLES, VSN_HEALTH_TABLES } from "./database-feature-contract.js";
+export { VSN_FEATURE_TABLES } from "./database-feature-contract.js";
 
-const HEALTH_TABLES = Object.freeze([...new Set(Object.values(VSN_FEATURE_TABLES).flat())]);
+const HEALTH_TABLES = VSN_HEALTH_TABLES;
 const CACHE_TTL_MS = 15_000;
 let cached = null;
 

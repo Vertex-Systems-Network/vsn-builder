@@ -1,4 +1,5 @@
 import db from "../db.server.js";
+import { createPageWithQuota, EntitlementDeniedError } from "../services/entitlements.server.js";
 
 export async function getBuilderPage({
 	id,
@@ -25,16 +26,15 @@ export async function createBuilderPage({
 	content,
 	createdBy = "Store owner",
 }) {
-	return db.builderPage.create({
-		data: {
-			shop,
-			title,
-			handle,
-			status: "draft",
-			contentJson: JSON.stringify(content),
-			createdBy,
-		},
+	const result = await createPageWithQuota(db, shop, {
+		title,
+		handle,
+		status: "draft",
+		contentJson: JSON.stringify(content),
+		createdBy,
 	});
+	if (result.quota) throw new EntitlementDeniedError(result.quota.message, result.quota);
+	return result.page;
 }
 
 export async function updateBuilderPage({

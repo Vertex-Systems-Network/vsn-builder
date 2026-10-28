@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -24,7 +25,7 @@ export async function loader({request}){
 }
 
 export async function action({request}){
-  const {session}=await authenticate.admin(request);if(!(await canAccessBuilderEditor(db,session)))return Response.json({ok:false,error:"Brand Kit access denied."},{status:403});
+  const {session}=await authenticate.admin(request);const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;if(!(await canAccessBuilderEditor(db,session)))return Response.json({ok:false,error:"Brand Kit access denied."},{status:403});
   const role=getBuilderRole(session);if(!canBuilder(role,"edit"))return Response.json({ok:false,error:"Your role cannot change Brand Kits."},{status:403});
   const form=await request.formData();const intent=safe(form.get("intent"));const id=safe(form.get("id"));
   if(intent==="extract-profile"){
@@ -60,4 +61,4 @@ export async function action({request}){
   return Response.json({ok:false,error:"Unsupported Brand Kit action."},{status:400});
 }
 
-export default function BrandKitsRoute(){const data=useLoaderData();return <s-page heading="Brand Kits"><s-section><div className="rounded-xl border bg-white p-5"><h2 className="font-semibold">Brand Kits are integrated into Builder workspace</h2><p className="mt-2 text-sm text-[#666]">Manage logos, colors, typography, spacing, radii and shadows from Builder → Brand Kits.</p><p className="mt-3 text-sm">Active kits: <b>{data.kits?.length||0}</b></p><s-button href="/app/pages?panel=brand-kits" variant="primary">Open in Builder</s-button></div></s-section></s-page>}
+export default function BrandKitsRoute(){const data=useLoaderData();return <s-page heading="Brand Kits"><s-section heading="Brand Kits are integrated into Builder workspace"><s-stack direction="block" gap="base"><s-paragraph color="subdued">Manage logos, colors, typography, spacing, radii and shadows from Builder → Brand Kits.</s-paragraph><s-paragraph>Active kits: <s-text type="strong">{data.kits?.length||0}</s-text></s-paragraph><s-stack direction="inline"><s-button href="/app/pages?panel=brand-kits" variant="primary">Open in Builder</s-button></s-stack></s-stack></s-section></s-page>}

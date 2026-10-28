@@ -1,4 +1,4 @@
-<div id="vsn-native-section-{{ block.id }}" class="vsn-builder-block vsn-native-section-shell" data-page-handle="{{ block.settings.section_handle | escape }}" data-proxy-path="/apps/vsn-builder" style="--vsn-native-max:{% if block.settings.full_width %}100%{% else %}{{ block.settings.max_width }}px{% endif %};padding:{{ block.settings.padding_y }}px {{ block.settings.padding_x }}px">
+<div id="vsn-native-section-{{ block.id | escape }}" class="vsn-builder-block vsn-native-section-shell" {{ block.shopify_attributes }} data-page-handle="{{ block.settings.section_handle | escape }}" data-proxy-path="/apps/vsn-builder" style="--vsn-native-max:{% if block.settings.full_width %}100%{% else %}{{ block.settings.max_width }}px{% endif %};padding:{{ block.settings.padding_y }}px {{ block.settings.padding_x }}px">
 {% if block.settings.section_handle == blank %}<div class="vsn-builder-message">Enter a published VSN Section handle.</div>{% else %}<div class="vsn-builder-loading">Loading VSN section…</div>{% endif %}</div>
 
 {% schema %}

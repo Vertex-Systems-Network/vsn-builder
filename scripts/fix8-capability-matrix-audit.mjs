@@ -82,7 +82,8 @@ for (const type of types) {
 }
 
 const propertiesSource = fs.readFileSync("app/components/editor/PropertiesPanel.jsx", "utf8");
-for (const key of ["typography", "background", "border", "spacing", "sizing", "effects", "media", "imageDimensions", "icon", "backgroundGallery", "elementLink", "dynamicSource", "conditions", "responsive", "stateStyles", "animations", "cssVariables", "customCode"]) {
+// Background, border, spacing, sizing and box effects live only in the Advanced tab (Elementor grouping); gated below via caps.*.
+for (const key of ["typography", "textEffects", "media", "imageDimensions", "icon", "backgroundGallery", "elementLink", "dynamicSource", "conditions", "responsive", "stateStyles", "animations", "cssVariables", "customCode"]) {
   assert.ok(propertiesSource.includes(`capabilities.${key}`), `PropertiesPanel must gate ${key} by capabilities`);
 }
 const advancedSource = fs.readFileSync("app/components/editor/AdvancedBuilderControls.jsx", "utf8");

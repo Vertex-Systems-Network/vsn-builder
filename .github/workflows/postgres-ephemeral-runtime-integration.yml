@@ -1,0 +1,151 @@
+name: VSN PostgreSQL 18 Runtime Integration (Ephemeral CI Only)
+on:
+  push:
+    branches: [feat/builder-postgres-container-integration-20261013, feat/builder-postgres-restore-drill-20261013, feat/builder-edge-prisma-generator-20261013, feat/builder-neon-worker-adapter-20261013, feat/builder-worker-prisma-sessions-20261013, feat/builder-worker-real-shopify-sdk-20261013]
+  pull_request:
+    paths:
+      - "tests/worker-shopify-install-postgres-real.test.mjs"
+      - "tests/t024-shop-redact-postgres-real.test.mjs"
+      - "tests/postgres-ephemeral-integration.test.mjs"
+      - "tests/postgres-ephemeral-restore.test.mjs"
+      - "tests/t018-pg18-exact-ledger-rehearsal.test.mjs"
+      - "scripts/t018-staging-migration-ledger.mjs"
+      - "tests/shopify-prisma-storage-postgres.test.mjs"
+      - "tests/worker-real-shopify-sdk-postgres.test.mjs"
+      - "tests/worker-shopify-install-session-storage.test.mjs"
+      - "app/services/worker-shopify-install-session-storage.js"
+      - "app/services/worker-shopify-uninstall-session-revoke.js"
+      - "app/services/worker-shopify-admin-gate.js"
+      - "prisma/cloud/**"
+      - ".github/workflows/postgres-ephemeral-runtime-integration.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: builder-postgres-container-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  ephemeral-postgres:
+    name: Verify PostgreSQL migration and Prisma runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: builder_ci
+          POSTGRES_PASSWORD: local_ephemeral_only
+          POSTGRES_DB: builder_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U builder_ci -d builder_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/builder_ci?schema=public
+      DIRECT_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/builder_ci?schema=public
+      NODE_ENV: test
+    steps:
+      - name: Check out exact source without write credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Install exact lockfile
+        run: npm ci
+      - name: Enforce production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Validate parity and baseline migration
+        run: |
+          node scripts/verify-prisma-environment-parity.mjs
+          node scripts/validate-cloud-baseline.mjs
+          npx prisma validate --schema prisma/cloud/schema.prisma
+      - name: Generate isolated PostgreSQL Prisma Client
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Apply initial SQL to ephemeral PostgreSQL 18 only
+        run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+      - name: Validate Prisma migration history
+        run: npx prisma migrate status --schema prisma/cloud/schema.prisma
+      - name: Real PostgreSQL and Prisma integration tests
+        run: node --test tests/postgres-ephemeral-integration.test.mjs
+      - name: Verify migration deployment is idempotent
+        run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+      # This second local database is called neondb to match the reviewed
+      # T018 post-migration attestation. It is NOT hosted Neon and has no
+      # outside connection or credentials. The existing builder_ci test data
+      # and production systems are not modified.
+      - name: Rehearse protected T018 exact SQL ledger on second disposable PostgreSQL 18 neondb
+        shell: bash
+        env:
+          CI: "true"
+          NODE_ENV: test
+          T018_PG18_REHEARSAL: "1"
+          DATABASE_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/neondb?schema=public
+          DIRECT_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/neondb?schema=public
+        run: |
+          set -euo pipefail
+          test "${CI}" = true
+          test "${T018_PG18_REHEARSAL}" = 1
+          test -z "${NEON_API_KEY:-}"
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          docker run --rm --network host -e PGPASSWORD=local_ephemeral_only postgres:18 createdb --host=127.0.0.1 --username=builder_ci neondb
+          npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+          node --test tests/t018-pg18-exact-ledger-rehearsal.test.mjs
+          npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+          node --test tests/t018-pg18-exact-ledger-rehearsal.test.mjs
+      - name: Verify Local and Cloud generated clients stay separate
+        run: node scripts/verify-prisma-client-isolation.mjs --generated
+      - name: Confirm Worker Client generator does not affect Node runtime
+        run: node scripts/verify-prisma-worker-client.mjs --generated && node --test tests/prisma-worker-client.test.mjs
+
+      - name: Verify Neon Worker Client constructor with fake URL (no network)
+        run: node --test tests/worker-neon-factory.test.mjs
+      - name: Real Shopify Prisma SessionStorage persistence in disposable PostgreSQL
+        run: node --test tests/shopify-prisma-storage-postgres.test.mjs
+      - name: Official Shopify SDK with actual PostgreSQL Prisma session storage
+        run: node --test tests/worker-real-shopify-sdk-postgres.test.mjs
+      - name: Verify official Shopify generation fences, tenant revocation and merchant POST rollback in disposable PostgreSQL
+        env:
+          APP_ENV: development
+        run: node --test tests/worker-shopify-install-postgres-real.test.mjs
+      - name: Prove T024 GDPR redaction refuses active reinstall and atomically purges only inactive generation
+        env:
+          APP_ENV: development
+        run: node --test tests/t024-shop-redact-postgres-real.test.mjs
+      - name: Seed a disposable Shopify session before backup
+        run: node scripts/seed-postgres-restore-fixture.mjs
+      - name: Back up only disposable PostgreSQL database using PostgreSQL 18 pg_dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/vsn-pg-backup"
+          docker run --rm --network host \
+            -e PGPASSWORD=local_ephemeral_only \
+            -v "$RUNNER_TEMP/vsn-pg-backup:/backup" \
+            postgres:18 pg_dump --host=127.0.0.1 --username=builder_ci \
+              --dbname=builder_ci --format=custom --no-owner --no-acl \
+              --file=/backup/disposable-builder.dump
+          test -s "$RUNNER_TEMP/vsn-pg-backup/disposable-builder.dump"
+      - name: Create a second empty disposable database and restore backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm --network host -e PGPASSWORD=local_ephemeral_only \
+            postgres:18 createdb --host=127.0.0.1 --username=builder_ci builder_restore
+          docker run --rm --network host \
+            -e PGPASSWORD=local_ephemeral_only \
+            -v "$RUNNER_TEMP/vsn-pg-backup:/backup:ro" \
+            postgres:18 pg_restore --exit-on-error --no-owner --no-acl \
+              --host=127.0.0.1 --username=builder_ci --dbname=builder_restore \
+              /backup/disposable-builder.dump
+      - name: Verify restored schema, migration history, and seeded data
+        env:
+          RESTORE_DATABASE_URL: postgresql://builder_ci:local_ephemeral_only@127.0.0.1:5432/builder_restore?schema=public
+        run: node --test tests/postgres-ephemeral-restore.test.mjs

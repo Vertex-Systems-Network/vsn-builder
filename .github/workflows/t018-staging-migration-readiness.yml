@@ -1,0 +1,98 @@
+name: T018 Protected Staging Prisma Migration Readiness (Read Only, No Deploy)
+# Only inspect database identities and migration source. This workflow NEVER
+# executes prisma migrate deploy or creates backups, branches or snapshots.
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "scripts/t018-staging-migration-readiness.py"
+      - "tests/t018-staging-migration-readiness.test.py"
+      - "scripts/phase3-staging-migration-preflight.mjs"
+      - "scripts/phase3-staging-post-migrate-check.mjs"
+      - "scripts/t018-staging-migration-ledger.mjs"
+      - "prisma/cloud/migrations/**"
+      - "tests/t018-staging-migration-ledger.test.mjs"
+      - "tests/phase3-staging-migration-preflight.test.mjs"
+      - "tests/phase3-staging-neon-live-proof.test.mjs"
+      - ".github/workflows/phase3-staging-neon-migration.yml"
+      - ".github/workflows/t018-staging-migration-readiness.yml"
+  push:
+    branches: [development]
+    paths:
+      - "scripts/t018-staging-migration-readiness.py"
+      - "tests/t018-staging-migration-readiness.test.py"
+      - "scripts/phase3-staging-migration-preflight.mjs"
+      - "scripts/phase3-staging-post-migrate-check.mjs"
+      - "scripts/t018-staging-migration-ledger.mjs"
+      - "prisma/cloud/migrations/**"
+      - "tests/t018-staging-migration-ledger.test.mjs"
+      - "tests/phase3-staging-migration-preflight.test.mjs"
+      - "tests/phase3-staging-neon-live-proof.test.mjs"
+      - ".github/workflows/phase3-staging-neon-migration.yml"
+      - ".github/workflows/t018-staging-migration-readiness.yml"
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  synthetic:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Checkout proposed PR source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Run synthetic no-DDL migration readiness and identity tests
+        run: python3 tests/t018-staging-migration-readiness.test.py -v
+      - name: Setup Node for independent source-only Neon recovery contracts
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22.18.0
+      - name: Verify manual-only snapshot recovery policy and cross-db rejection without secrets
+        run: node --test tests/phase3-staging-migration-preflight.test.mjs tests/phase3-staging-neon-live-proof.test.mjs
+      - name: Verify exact reviewed Prisma SQL checksums and deny incomplete, rolled-back or cross-DB ledger
+        run: node --test tests/t018-staging-migration-ledger.test.mjs
+  protected-reference:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require protected VSN Builder development identity
+        env:
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REPO" = "Vertex-Systems-Network/vsn-builder"
+          test "$SOURCE_REF" = "refs/heads/development"
+          test "$SOURCE_PROTECTED" = "true"
+  real-staging-readonly-preflight:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    needs: protected-reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: cloudflare-staging
+    env:
+      APP_ENV: staging
+      NEON_PROJECT_ID: shiny-violet-61219572
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+    steps:
+      - name: Checkout exact protected development source without persisted token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Confirm native PostgreSQL read-only client and trust store
+        run: |
+          command -v psql >/dev/null
+          test -r /etc/ssl/certs/ca-certificates.crt
+      - name: Read-only Staging Neon zero-table baseline and two reviewed cloud migrations
+        run: |
+          set +x
+          python3 scripts/t018-staging-migration-readiness.py

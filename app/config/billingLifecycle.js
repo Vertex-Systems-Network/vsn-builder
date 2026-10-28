@@ -42,7 +42,7 @@ export function buildBillingLifecycle(plan, { now = new Date() } = {}) {
   if (pendingKey) {
     pendingKind = pendingRank > currentRank ? "upgrade" : pendingRank < currentRank ? "downgrade" : "plan-update";
   }
-  if (subscription?.cancelAtEndOfCycle && (!pendingKey || pendingKey === "core")) pendingKind = "cancellation";
+  if (subscription?.cancelAtEndOfCycle && (!pendingKey || pendingKey === "inactive")) pendingKind = "cancellation";
 
   const trialEndsAt = safeDate(subscription?.trialEndsAt);
   const currentCycleStart = safeDate(subscription?.currentCycleStart);

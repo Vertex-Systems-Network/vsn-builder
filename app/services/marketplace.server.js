@@ -78,7 +78,7 @@ function validCatalogRows(rows) {
 
 export function getLocalMarketplaceCatalogCount() {
   let starterItems = [];
-  try { starterItems = getDefaultMarketplaceCatalogItems(); } catch {}
+  try { starterItems = getDefaultMarketplaceCatalogItems(); } catch { /* best-effort */ }
   const merged = new Map();
   for (const raw of [...(Array.isArray(starterItems) ? starterItems : []), ...(Array.isArray(BUILTIN_MARKETPLACE_CATALOG) ? BUILTIN_MARKETPLACE_CATALOG : [])]) {
     const item = normalizeSuppliedCatalogItem(raw);
@@ -173,6 +173,7 @@ export async function rollbackMarketplaceInstall({ db, shop, catalogId }) {
   if(!install)throw new Error("Install record was not found.");
   const snapshot=parseJson(install.rollbackJson,null)?.libraryItem;
   if(snapshot){
+    // eslint-disable-next-line no-unused-vars -- omitted from rest
     const {id,shop:ignoredShop,createdAt,updatedAt,...data}=snapshot;
     await db.builderLibraryItem.update({where:{id:install.libraryItemId},data:{...data,deletedAt:data.deletedAt?new Date(data.deletedAt):null}});
   } else {

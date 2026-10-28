@@ -1,0 +1,142 @@
+name: T021 Staging Worker Deploy — Protected Manual Only
+# Deploys the EXACT protected development SHA to the Staging Worker
+# (vsn-builder-staging) only. Never runs on PRs, forks, main or Production.
+# Secret values are sourced from the protected cloudflare-staging GitHub environment
+# and passed to the Staging Worker through an ephemeral runner-only secrets file.
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type DEPLOY_DEVELOPMENT_SHA_TO_STAGING to deploy; anything else refuses"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: vsn-builder-staging-worker-deploy
+  cancel-in-progress: false
+jobs:
+  deploy-staging-worker:
+    if: github.ref == 'refs/heads/development' && github.ref_protected == true && inputs.confirmation == 'DEPLOY_DEVELOPMENT_SHA_TO_STAGING'
+    runs-on: ubuntu-24.04
+    environment: cloudflare-staging
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      APP_ENV: staging
+      WRANGLER_SEND_METRICS: "false"
+      STAGING_URL: https://vsn-builder-staging.vertexsystemsnetwork.workers.dev
+    steps:
+      - name: Checkout exact protected development SHA without GitHub write credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Use pinned Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Install exact dependency lockfile
+        run: npm ci
+      - name: Install isolated Cloudflare Wrangler via already-certified Vite plugin version
+        run: |
+          npm install --no-save --package-lock=false --no-audit @cloudflare/vite-plugin@1.64.0
+          test -x ./node_modules/.bin/wrangler
+          git diff --exit-code -- package.json package-lock.json
+      - name: Verify release artifact identity and deploy guard contracts
+        run: node --test tests/t021-staging-worker-bundle-policy.test.mjs tests/t021-staging-worker-deploy-policy.test.mjs
+      - name: Generate compiled hosted Prisma Edge client without real DB access
+        env:
+          DATABASE_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
+          DIRECT_URL: postgresql://ci:fake@localhost:5432/ci?sslmode=require
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Build the full Shopify React Router Staging Worker
+        env:
+          VSN_STAGING_FULL_APP_BUILD: "1"
+          DATABASE_URL: postgresql://build:unused@localhost:5432/build?sslmode=require
+          DIRECT_URL: postgresql://build:unused@localhost:5432/build?sslmode=require
+        run: |
+          ./node_modules/.bin/react-router build --config vite.staging-cloudflare.config.js
+          test -s dist/server/index.js
+          test -s dist/server/wrangler.json
+          test -d dist/client/assets
+          test -d dist/server/assets
+      - name: Deploy exact SHA to the Staging Worker only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STAGING_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STAGING_SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+          STAGING_SHOPIFY_API_SECRET: ${{ secrets.SHOPIFY_API_SECRET }}
+          STAGING_SHOPIFY_PARTNER_API_ACCESS_TOKEN: ${{ secrets.SHOPIFY_PARTNER_API_ACCESS_TOKEN }}
+        run: |
+          set +x
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          secret_file="$RUNNER_TEMP/vsn-staging-secrets.json"
+          umask 077
+          trap 'rm -f "$secret_file"' EXIT
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from "node:fs";
+          import { join } from "node:path";
+          const secrets = {
+            DATABASE_URL: process.env.STAGING_DATABASE_URL,
+            SHOPIFY_API_KEY: process.env.STAGING_SHOPIFY_API_KEY,
+            SHOPIFY_API_SECRET: process.env.STAGING_SHOPIFY_API_SECRET,
+            SHOPIFY_PARTNER_API_TOKEN: process.env.STAGING_SHOPIFY_PARTNER_API_ACCESS_TOKEN,
+          };
+          const missing = Object.entries(secrets).filter(([, value]) => !value).map(([name]) => name);
+          if (missing.length) {
+            console.error("Missing required GitHub cloudflare-staging environment secrets: " + missing.join(", "));
+            process.exit(1);
+          }
+          writeFileSync(join(process.env.RUNNER_TEMP, "vsn-staging-secrets.json"), JSON.stringify(secrets), { mode: 0o600 });
+          NODE
+          jq -e '.name == "vsn-builder-staging"' dist/server/wrangler.json >/dev/null
+          ./node_modules/.bin/wrangler deploy --config dist/server/wrangler.json --keep-vars --secrets-file "$secret_file" --message "development ${GITHUB_SHA}"
+      - name: Enforce and verify Shopify query-string redaction
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +x
+          response=$(curl -fsS --max-time 30 -X PATCH \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/vsn-builder-staging/script-settings" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"observability":{"enabled":true,"redact_query_string":true,"logs":{"enabled":true,"invocation_logs":true,"head_sampling_rate":1,"persist":true},"traces":{"enabled":true,"head_sampling_rate":1,"persist":true},"issues":{"enabled":true}}}')
+          printf '%s' "$response" | jq -r '"Cloudflare returned: success=" + (.success|tostring) + ", observability=" + ((.result.observability.enabled // false)|tostring) + ", redact_query_string=" + ((.result.observability.redact_query_string // false)|tostring) + ", logs=" + ((.result.observability.logs.enabled // false)|tostring) + ", traces=" + ((.result.observability.traces.enabled // false)|tostring) + ", issues=" + ((.result.observability.issues.enabled // false)|tostring)'
+          printf '%s' "$response" | jq -e '
+            .success == true and
+            .result.observability.enabled == true and
+            .result.observability.redact_query_string == true and
+            .result.observability.logs.enabled == true and
+            .result.observability.logs.invocation_logs == true and
+            .result.observability.logs.persist == true and
+            .result.observability.traces.enabled == true and
+            .result.observability.traces.persist == true and
+            .result.observability.issues.enabled == true
+          ' >/dev/null
+          echo "PASS: Staging logs, traces and Issues persist; request query strings are redacted"
+      - name: Confirm no dependency or config drift
+        if: always()
+        run: git diff --exit-code -- package.json package-lock.json wrangler.staging.jsonc wrangler.production.jsonc
+      - name: Probe hosted Staging health endpoints (evidence only)
+        if: success()
+        run: |
+          set +e
+          for path in healthz readyz app; do
+            code=""
+            for attempt in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -m 15 -w '%{http_code}' "$STAGING_URL/$path")
+              [ "$code" != "000" ] && break
+              sleep 10
+            done
+            echo "Staging /$path -> HTTP $code"
+            echo "| /$path | $code |" >> probe.md
+          done
+          {
+            echo "### Staging deploy ${GITHUB_SHA}"
+            echo "| Path | HTTP |"
+            echo "| --- | --- |"
+            cat probe.md
+          } >> "$GITHUB_STEP_SUMMARY"

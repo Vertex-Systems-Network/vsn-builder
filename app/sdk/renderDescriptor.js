@@ -24,13 +24,13 @@ function safeUrl(value, { image = false } = {}) {
     const url = new URL(raw);
     if (["https:", "http:"].includes(url.protocol)) return url.toString();
     if (!image && ["mailto:", "tel:"].includes(url.protocol)) return raw;
-  } catch {}
+  } catch { /* ignore */ }
   return "";
 }
 
 function safeStyleValue(value) {
   const text = String(value ?? "").slice(0, 500);
-  if (/expression\s*\(|javascript\s*:|@import|behavior\s*:|url\s*\(\s*['\"]?\s*(?:javascript|data):/i.test(text)) return "";
+  if (/expression\s*\(|javascript\s*:|@import|behavior\s*:|url\s*\(\s*['"]?\s*(?:javascript|data):/i.test(text)) return "";
   return text;
 }
 

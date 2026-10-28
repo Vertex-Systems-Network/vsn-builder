@@ -43,7 +43,7 @@ for(const label of ["Add Slide","Direction","Edge padding","Transition speed","A
 
 const canvas=fs.readFileSync("app/components/editor/Canvas.jsx","utf8");
 const preview=fs.readFileSync("app/components/editor/PreviewRenderer.jsx","utf8");
-const storefront=fs.readFileSync("app/routes/builder-proxy.$.jsx","utf8");
+const storefront=fs.readFileSync("app/routes/builder-proxy.$.jsx","utf8")+fs.readFileSync("app/storefront/extendedWidgets.js","utf8")+fs.readFileSync("app/storefront/phase10Widgets.js","utf8");
 const runtime=fs.readFileSync("extensions/vsn-page-builder-theme/assets/vsn-page-renderer.js","utf8");
 assert.ok(canvas.includes("GalleryCanvasWidget") && preview.includes("GalleryPreviewWidget") && storefront.includes("normalizeGalleryWidgetProps"),"Gallery must have Canvas/Preview/Storefront render paths");
 assert.ok(storefront.includes('data-vsn-lightbox="1"'),"Gallery lightbox must use storefront lightbox runtime");

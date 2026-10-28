@@ -16,8 +16,15 @@ Features live in `app/config/entitlements.js` under `ENTITLEMENT_FEATURES`. Capa
 
 Every decision includes a stable code, allowed flag, plan/source/verification metadata and a user-facing message when denied.
 
+## Paid-only storefront subscription contract (2026-10-14)
+
+There are eight merchant-visible IDs: `starter`, `solo`, `silver`, `gold`, `business`, `platinum`, `agency`, `scale`. The retired Shopify `sliver` handle maps to Silver only for verified subscription migration. Historical database keys remain readable through the verified Shopify handle; they must never replace the handle as billing authority. The old Shopify `free` handle is **not** a paid Starter contract. Unknown or canceled/frozen/unverified subscriptions produce `UNSUBSCRIBED_PLAN` (`inactive`) with no features and zero quotas; a verified Shopify trial enables the purchased plan only. All server-side mutation routes must continue enforcing entitlement checks; a display-only lock does not secure a mutation endpoint. Shopify Partner publication and live merchant acceptance of all eight contracts remain pending.
+
 ## Production rule
-In production, only the trusted Shopify App Pricing mirror from Q5.2 may grant a paid plan. `VSN_DEFAULT_PLAN` is development-only. If verification is absent or no longer trusted, authority fails closed to Free (internal key `core`).
+In production, only the trusted Shopify App Pricing mirror from Q5.2 may grant a paid plan. `VSN_DEFAULT_PLAN` is development-only. If verification is absent or no longer trusted, authority fails closed to the no-access `inactive` sentinel. Starter must never be granted without an active, verified Shopify contract.
+
+## Local billing simulation is explicit
+Only an explicitly marked **Local/Dev** Node runtime (`APP_ENV=development` or `APP_ENV=local`, never `NODE_ENV=production`) may use `VSN_DEFAULT_PLAN` for developer simulation. A Staging/Production/Live `APP_ENV`, Worker name or deployment tier marker always defeats the simulation, even when `NODE_ENV=test/development`; an absent tier is denied rather than silently defaulting to Platinum. Hosted merchants require a verified Shopify App Pricing mirror and one of the eight canonical paid IDs. `APP_ENV=development` is provided in `.env.example` solely for local testing. Never copy it to Staging/Live.
 
 ## Usage counters
 Usage must be stable commercial state, not transient UI/runtime activity. Collaboration seats therefore count the owner plus persisted role assignments, not browser presence rows. Monthly AI usage uses a UTC month boundary.

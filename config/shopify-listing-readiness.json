@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "public_app": "VSN | Builder",
+  "public_app_count": 1,
+  "developer": "Vertex Systems Network (Pvt.) Ltd.",
+  "state": "draft_not_submittable",
+  "commerce": {
+    "plan_ids": [
+      "starter",
+      "solo",
+      "silver",
+      "gold",
+      "business",
+      "platinum",
+      "agency",
+      "scale"
+    ],
+    "monthly_usd": {
+      "starter": 30,
+      "solo": 60,
+      "silver": 100,
+      "gold": 150,
+      "business": 250,
+      "platinum": 350,
+      "agency": 600,
+      "scale": 1000
+    },
+    "annual_usd": {
+      "platinum": 3000
+    },
+    "trial_days": 10,
+    "free_plan": false
+  },
+  "verified": {
+    "shopify_partner_ownership": false,
+    "public_app_identity": false,
+    "plan_publication": false,
+    "stable_live_https": false,
+    "privacy_policy_url": null,
+    "support_email": null,
+    "support_portal_url": null,
+    "screenshots": [],
+    "reviewer_access": false,
+    "real_shopify_oauth_e2e": false,
+    "real_shopify_billing_e2e": false,
+    "real_theme_browser_e2e": false,
+    "production_release_accepted": false
+  },
+  "release": {
+    "submission_allowed": false,
+    "submitted": false,
+    "shopify_review_response": null
+  }
+}

@@ -13,7 +13,7 @@ export async function action({ request }) {
   const route = sanitizePlainText(form.get('route') || 'client', 180);
   const message = sanitizePlainText(form.get('message') || 'Client runtime error', 1200);
   const stack = sanitizePlainText(form.get('stack') || '', 7000);
-  let href = ''; try { const parsed = new URL(String(form.get('href') || '')); href = `${parsed.origin}${parsed.pathname}`.slice(0,1600); } catch {}
+  let href = ''; try { const parsed = new URL(String(form.get('href') || '')); href = `${parsed.origin}${parsed.pathname}`.slice(0,1600); } catch { /* best-effort */ }
   await recordOperationalError({ shop: session.shop, code: 'CLIENT_RUNTIME', message, route, pageId, details: { release, widgetId, stack, href } });
   return Response.json({ ok: true });
 }

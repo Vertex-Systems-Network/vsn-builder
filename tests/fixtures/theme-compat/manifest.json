@@ -1,0 +1,41 @@
+{
+  "purpose": "Pinned upstream open-source theme sections, tested offline; NOT actual installed theme/browser evidence",
+  "sourceLicense": "MIT; copyright Shopify Inc. See upstream LICENSE.md at pinned commit.",
+  "targets": [
+    {
+      "name": "Dawn",
+      "repo": "Shopify/dawn",
+      "sha": "258f00f64365e2018ca4c62778a6bf55a5d3cd18",
+      "sections": [
+        {
+          "path": "sections/apps.liquid",
+          "acceptsApp": true,
+          "route": "Apps section"
+        },
+        {
+          "path": "sections/main-page.liquid",
+          "acceptsApp": false,
+          "route": "Does not render app blocks directly"
+        }
+      ]
+    },
+    {
+      "name": "Horizon",
+      "repo": "Shopify/horizon",
+      "sha": "dfad90d87be2408de52636315069fc998da28c9e",
+      "sections": [
+        {
+          "path": "sections/main-page.liquid",
+          "acceptsApp": true,
+          "route": "Main page blocks"
+        }
+      ]
+    }
+  ],
+  "unverifiedTargets": [
+    "Prestige",
+    "Impulse",
+    "Custom"
+  ],
+  "hostedCompatibilityVerified": false
+}

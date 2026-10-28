@@ -74,6 +74,7 @@ export const QUALITY_FIX_PLAN_OUTPUT_SCHEMA = Object.freeze({
 });
 
 function cleanText(value, max = 1200) {
+  // eslint-disable-next-line no-control-regex -- intentionally strips control characters
   return String(value ?? "").replace(/\u0000/g, "").trim().slice(0, max);
 }
 

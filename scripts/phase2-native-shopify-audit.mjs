@@ -27,7 +27,7 @@ const settings=fs.readFileSync('app/services/widget-settings.server.js','utf8');
 assert.ok(settings.includes('type: "boolean"') || settings.includes("type: 'boolean'"),'Widget settings must write boolean app metafields for available_if.');
 const props=fs.readFileSync('app/components/editor/PropertiesPanel.jsx','utf8');
 for (const token of ['Shopify Theme Section Bridge','themeSectionId','Render Mode']) assert.ok(props.includes(token),`Theme Section Bridge editor missing ${token}`);
-const proxy=fs.readFileSync('app/routes/builder-proxy.$.jsx','utf8');
+const proxy=fs.readFileSync('app/routes/builder-proxy.$.jsx','utf8')+fs.readFileSync('app/storefront/phase10Widgets.js','utf8');
 assert.ok(proxy.includes('data-vsn-theme-section-id'),'Storefront bridge marker missing.');
 const runtime=fs.readFileSync('extensions/vsn-page-builder-theme/assets/vsn-page-renderer.js','utf8');
 for(const token of ['initializeThemeSectionBridges','getElementById(`shopify-section-${sectionId}`)','searchParams.set("sections"','shopify:section:load','vsn:theme-section:loaded']) assert.ok(runtime.includes(token),`Theme section runtime missing ${token}`);

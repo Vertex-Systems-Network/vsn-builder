@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server.js";
 import db from "../db.server.js";
 import { canAccessBuilderEditor } from "../utils/builder-permissions.server.js";
@@ -41,18 +42,19 @@ async function boundedFormData(request) {
   const chunks = [];
   let total = 0;
   try {
+    // eslint-disable-next-line no-constant-condition -- intentional bounded loop
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
       total += value?.byteLength || 0;
       if (total > MAX_REQUEST_BYTES) {
-        try { await reader.cancel(); } catch {}
+        try { await reader.cancel(); } catch { /* best-effort */ }
         throw new Response("AI Builder request is too large.", { status: 413 });
       }
       if (value?.byteLength) chunks.push(Buffer.from(value));
     }
   } finally {
-    try { reader.releaseLock(); } catch {}
+    try { reader.releaseLock(); } catch { /* best-effort */ }
   }
   const replay = new Request(request.url, {
     method: request.method,
@@ -75,6 +77,7 @@ export async function action({ request }) {
   if (!aiEnabled()) return Response.json({ ok: false, code: "AI_DISABLED", error: "AI Builder is disabled." }, { status: 404 });
   const { session } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) return Response.json({ ok: false, error: "Your role cannot use AI Builder." }, { status: 403 });
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   if (!process.env.OPENAI_API_KEY) return Response.json({ ok: false, code: "AI_NOT_CONFIGURED", error: "AI Builder is not configured for this developer environment. Add OPENAI_API_KEY to your .env file and restart Shopify CLI." }, { status: 503 });
 
   try {

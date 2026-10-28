@@ -1,0 +1,7 @@
+# Official Shopify SDK bootstrap on a per-Worker-request session context
+
+`createWorkerShopifySdkContext` wires the **actual pinned** `@shopify/shopify-app-react-router/server` `shopifyApp` factory and `AppDistribution.AppStore` to the isolated, validated, Prisma-backed Worker session context. SDK initialization is dependency-injected only for negative/error-case tests; its default SDK is the real Shopify React Router package. The helper requires SDK `authenticate.admin`, `authenticate.webhook`, `addDocumentResponseHeaders`, and a usable per-request `close()` before returning success.
+
+CI runs real SDK initialization in Node 22 with synthetic Shopify IDs/URLs and a mock storage to check SDK framing CSP against React Web Streams; CI also tests the same real SDK with **actual Shopify PrismaSessionStorage and disposable PostgreSQL 18**, stores and loads a synthetic session, then deletes it. No fake authentication response is accepted as proof of OAuth or JWT validation.
+
+**Remaining:** verify this SDK+Prisma module imports/bundles in the Cloudflare runtime (Node compatibility/Workers Vite plugin), per-request React Router Cloudflare fetch handler, actual Shopify OAuth callback, verified Admin JWT and webhook signing, real Staging Neon migration, merchant installation and recovery. Existing Builder Worker resources remain 503 placeholders with public URLs disabled. Release gated; no Worker deploy, GitHub protected-environment secrets, Neon or Shopify API calls in CI.

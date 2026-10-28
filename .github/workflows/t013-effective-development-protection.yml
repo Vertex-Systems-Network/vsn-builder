@@ -1,0 +1,71 @@
+name: T013 Effective Development Protection (Read Only)
+on:
+  pull_request:
+    paths:
+      - "scripts/t013-effective-development-protection.mjs"
+      - "tests/t013-effective-development-protection.test.mjs"
+      - ".github/workflows/t013-effective-development-protection.yml"
+      - "tests/t013-protected-workflow-gate.test.mjs"
+  push:
+    branches: [development]
+  workflow_dispatch:
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  synthetic-policy-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout untrusted PR source with no persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Use pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Test read-only control-plane verifier without tokens or deployments
+        env:
+          GITHUB_TOKEN: ""
+        run: node --test tests/t013-effective-development-protection.test.mjs tests/t013-protected-workflow-gate.test.mjs
+  protected-ref-prerequisite:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require exact protected development ref before fetching ANY code with token
+        env:
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_PROTECTED: ${{ github.ref_protected }}
+          SOURCE_REPO: ${{ github.repository }}
+        run: |
+          test "$SOURCE_REPO" = "Vertex-Systems-Network/vsn-builder"
+          test "$SOURCE_REF" = "refs/heads/development"
+          test "$SOURCE_PROTECTED" = "true"
+  live-read-only-attestation:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    needs: protected-ref-prerequisite
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout only previously confirmed protected ref (no write credentials)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          ref: development
+      - name: Pinned Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Verify effective development branch protection through GET-only GitHub API
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/t013-effective-development-protection.mjs

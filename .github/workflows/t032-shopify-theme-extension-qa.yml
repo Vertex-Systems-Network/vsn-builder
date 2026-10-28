@@ -1,0 +1,79 @@
+name: T032 Shopify Theme Block Schema and Assets (No Deploy)
+on:
+  pull_request:
+    paths:
+      - "extensions/vsn-page-builder-theme/**"
+      - "config/theme-matrix.json"
+      - "scripts/t032-theme-extension-static-audit.mjs"
+      - "tests/t032-theme-extension-static-audit.test.mjs"
+      - "tests/fixtures/theme-compat/**"
+      - "scripts/t032-pinned-theme-fixtures.mjs"
+      - "tests/t032-pinned-theme-fixtures.test.mjs"
+      - "tests/t032-shopify-native-newsletter.test.mjs"
+      - "scripts/t032-newsletter-form-contract.mjs"
+      - "scripts/t032-native-product-cart-contract.mjs"
+      - "tests/t032-native-product-cart.test.mjs"
+      - "scripts/t032-native-links-contract.mjs"
+      - "tests/t032-native-links.test.mjs"
+      - "tests/t032-countdown-lifecycle.test.mjs"
+      - "scripts/t032-native-plain-output-contract.mjs"
+      - "tests/t032-native-plain-output-contract.test.mjs"
+      - "tests/t032-app-proxy-private-query.test.mjs"
+      - "tests/t032-wishlist-safe-urls.test.mjs"
+      - "tests/t032-page-builder-async-editor.test.mjs"
+      - "app/routes/builder-proxy.$.jsx"
+      - ".github/workflows/t032-shopify-theme-extension-qa.yml"
+  push:
+    branches: [development]
+  workflow_dispatch:
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  static-extension-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout immutable source (no credentials)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pinned Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Validate packaged Shopify theme blocks and assets
+        run: node scripts/t032-theme-extension-static-audit.mjs
+      - name: Test actual extension and failing adversarial fixtures
+        run: node --test tests/t032-theme-extension-static-audit.test.mjs
+      - name: Inspect pinned Dawn 16 and Horizon app-placement sections
+        run: node scripts/t032-pinned-theme-fixtures.mjs
+      - name: Reject incorrect theme placement and unsupported fixture claims
+        run: node --test tests/t032-pinned-theme-fixtures.test.mjs
+      - name: Verify native Shopify customer newsletter markup and feedback
+        run: node scripts/t032-newsletter-form-contract.mjs
+      - name: Adversarial test newsletter consent, escaping and multiple blocks
+        run: node --test tests/t032-shopify-native-newsletter.test.mjs
+      - name: Verify Shopify-native add-to-cart variant picker and quantity form contract
+        run: node scripts/t032-native-product-cart-contract.mjs
+      - name: Adversarial test selected variants, sold-out guards and large variant catalogues
+        run: node --test tests/t032-native-product-cart.test.mjs
+      - name: Validate storefront-safe native button and social links
+        run: node scripts/t032-native-links-contract.mjs
+      - name: Reject unescaped or unconfigured native links
+        run: node --test tests/t032-native-links.test.mjs
+      - name: Test ISO countdown updates and Shopify theme-editor section lifecycle
+        run: node --test tests/t032-countdown-lifecycle.test.mjs
+      - name: Inspect 20 native/theme block plain output escaping with richtext preservation
+        run: node scripts/t032-native-plain-output-contract.mjs
+      - name: Test source escaping, catalog metadata and editor attributes
+        run: node --test tests/t032-native-plain-output-contract.test.mjs
+      - name: Test no customer PII leaks into Shopify Builder app-proxy GET URLs
+        run: node --test tests/t032-app-proxy-private-query.test.mjs
+      - name: Reject unsafe wishlist click and image URLs from saved merchant data
+        run: node --test tests/t032-wishlist-safe-urls.test.mjs
+      - name: Verify Shopify theme editor async preview request cancellation and unload safety
+        run: node --test tests/t032-page-builder-async-editor.test.mjs

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-19T10:12:00.000Z",
+  "generatedAt": "2026-10-13T11:24:00.000Z",
   "version": "2.5.107",
   "milestone": "Q.6.4",
   "baselineName": "Hydration, UI Theme, Maps & Form Security — Q.6.4",
@@ -115,14 +115,14 @@
     "systems": 35,
     "permissionResources": 10,
     "permissionActions": 41,
-    "migrations": 36,
+    "migrations": 37,
     "routeModules": 53,
     "userDocs": 25,
     "developerDocs": 38,
-    "engineeringDocs": 16
+    "engineeringDocs": 17
   },
   "migrations": {
-    "latest": "20260919151000_p12_brand_profile",
+    "latest": "20261013_builder_shop_installation_fence",
     "all": [
       "20240530213853_create_session_table",
       "20260728222821_add_builder_pages",
@@ -159,7 +159,8 @@
       "20260810093000_milestone_q63_stock_image_hub",
       "20260810114500_milestone_q633_stock_usage_history",
       "20260919042500_p02_ai_provider_policy",
-      "20260919151000_p12_brand_profile"
+      "20260919151000_p12_brand_profile",
+      "20261013_builder_shop_installation_fence"
     ]
   },
   "documentation": {
@@ -240,6 +241,7 @@
       "docs/engineering/module-map.md",
       "docs/engineering/motion-catalog.md",
       "docs/engineering/motion-engine.md",
+      "docs/engineering/neon-single-branch-audit-20261016.md",
       "docs/engineering/performance.md",
       "docs/engineering/permissions.md",
       "docs/engineering/resource-packages.md",

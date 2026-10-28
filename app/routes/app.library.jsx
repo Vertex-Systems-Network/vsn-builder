@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -23,6 +24,8 @@ export async function loader({ request }) {
 export async function action({ request }) {
   const { session } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) throw new Response("Your role does not have access to the visual editor.", { status: 403 });
+  const paidDenial = await paidMutationDenied(db, session.shop);
+  if (paidDenial) return paidDenial;
   const role = getBuilderRole(session);
   if (!canBuilder(role, "edit")) return Response.json({ ok: false, error: "Your role cannot edit the library." }, { status: 403 });
   const form = await request.formData();
@@ -168,5 +171,5 @@ export async function action({ request }) {
 
 export default function LibraryRoute() {
   const data = useLoaderData();
-  return <s-page heading="Saved Library"><s-section><div className="rounded-xl border bg-white p-5"><h2 className="font-semibold">My Library is managed in the Builder workspace</h2><p className="mt-2 text-sm text-[#666]">Saved Library contains merchant-owned resources only. VSN supplied starter/default templates are available separately in Marketplace.</p><p className="mt-3 text-sm"><b>{data.items?.length||0}</b> saved resources · <b>{data.trash?.length||0}</b> in Trash.</p><div className="mt-4 flex gap-2"><s-button href="/app/pages?panel=library" variant="primary">Open My Library</s-button><s-button href="/app/pages?panel=marketplace">Open Marketplace</s-button></div></div></s-section></s-page>;
+  return <s-page heading="Saved Library"><s-section heading="My Library is managed in the Builder workspace"><s-stack direction="block" gap="base"><s-paragraph color="subdued">Saved Library contains merchant-owned resources only. VSN supplied starter/default templates are available separately in Marketplace.</s-paragraph><s-paragraph><s-text type="strong">{data.items?.length||0}</s-text> saved resources · <s-text type="strong">{data.trash?.length||0}</s-text> in Trash.</s-paragraph><s-stack direction="inline" gap="small-200"><s-button href="/app/pages?panel=library" variant="primary">Open My Library</s-button><s-button href="/app/pages?panel=marketplace">Open Marketplace</s-button></s-stack></s-stack></s-section></s-page>;
 }

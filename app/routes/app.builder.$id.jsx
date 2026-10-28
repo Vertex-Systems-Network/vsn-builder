@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useEffect, useRef } from "react";
 import {
 	isRouteErrorResponse,
@@ -14,6 +15,7 @@ import { builderActor, getBuilderRole, getRoleActionAccess } from "../utils/buil
 import { canAccessBuilderAction, getBuilderRoleAccess } from "../utils/builder-permissions.server.js";
 import { finishObservation, startObservation } from "../utils/observability.server";
 import { safeAdminGraphql } from "../utils/admin-graphql.server.js";
+import { loadBuilderBlogPreview, loadBuilderArticlePreview } from "../services/builder-content-preview.server.js";
 import { getWidgetDefinitions, loadWidgetSettings } from "../services/widget-settings.server";
 import { serializeLibraryItem } from "../services/library-presets.server";
 import { loadEditorTemplateBrowser, loadMerchantLibrary } from "../services/template-browser.server.js";
@@ -107,7 +109,7 @@ function collectComponentUsageFromPages(rows = []) {
 			walk(node?.children || [], page);
 		}
 	};
-	for (const page of rows || []) { let content = []; try { content = migrateBuilderContent(safeParseJson(page.contentJson, [])); } catch {} walk(content, page); }
+	for (const page of rows || []) { let content = []; try { content = migrateBuilderContent(safeParseJson(page.contentJson, [])); } catch { /* best-effort */ } walk(content, page); }
 	return Object.fromEntries(Object.entries(usage).map(([id, entry]) => [id, { count: entry.count, pages: entry.pageIds.size, titles: entry.titles.slice(0, 20) }]));
 }
 
@@ -172,35 +174,12 @@ export async function loader({
 		);
 	}
 
-	let previewBlog = null;
-	if (page.template === "blog") {
-		let handle = previewBlogHandle || page.resourceHandle || "";
-		if (!handle) {
-			const firstBlog = await safeAdminGraphql(admin, `#graphql\nquery FirstPreviewBlog { blogs(first:1, sortKey:TITLE){ nodes{ handle } } }`, {}, "first blog preview");
-			handle = firstBlog?.blogs?.nodes?.[0]?.handle || "";
-		}
-		if (handle) {
-			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewBlog($handle:String!){ blogByHandle(handle:$handle){ id title handle articles(first:12, sortKey:PUBLISHED_AT, reverse:true){ nodes{ id title handle excerpt publishedAt author{ name } image{ url altText } } } } }`, { handle }, "blog preview");
-			previewBlog = data?.blogByHandle || null;
-		}
-	}
-
-	let previewArticle = null;
-	if (page.template === "article") {
-		let resource = previewArticleHandle || page.resourceHandle || "";
-		if (!resource) {
-			const firstArticle = await safeAdminGraphql(admin, `#graphql\nquery FirstPreviewArticle { blogs(first:1, sortKey:TITLE){ nodes{ handle articles(first:1, sortKey:PUBLISHED_AT, reverse:true){ nodes{ handle } } } } }`, {}, "first article preview");
-			const blogNode = firstArticle?.blogs?.nodes?.[0];
-			const articleNode = blogNode?.articles?.nodes?.[0];
-			if (blogNode?.handle && articleNode?.handle) resource = `${blogNode.handle}/${articleNode.handle}`;
-		}
-		const [blogHandle, articleHandle] = resource.split("/");
-		if (blogHandle && articleHandle) {
-			const data = await safeAdminGraphql(admin, `#graphql\nquery PreviewArticle($blog:String!,$query:String!){ blogByHandle(handle:$blog){ title handle articles(first:20, query:$query){ nodes{ id title handle contentHtml excerpt publishedAt tags author{ name } image{ url altText } } } } }`, { blog: blogHandle, query: `handle:${articleHandle}` }, "article preview");
-			previewArticle = data?.blogByHandle?.articles?.nodes?.[0] || null;
-			if (previewArticle) previewArticle.blogHandle = blogHandle;
-		}
-	}
+	const previewBlog = page.template === "blog"
+		? await loadBuilderBlogPreview({ admin, requestedHandle: previewBlogHandle, resourceHandle: page.resourceHandle })
+		: null;
+	const previewArticle = page.template === "article"
+		? await loadBuilderArticlePreview({ admin, requestedHandle: previewArticleHandle, resourceHandle: page.resourceHandle })
+		: null;
 
 	let previewSearch = null;
 	if (page.template === "search") {
@@ -561,10 +540,9 @@ export async function action({
 	params,
 }) {
   assertTrustedMutationRequest(request);
-	const { admin, session } =
-		await authenticate.admin(request);
+	const { admin, session } = await authenticate.admin(request);
 	if (!(await canAccessBuilderAction(db, session, "pages", "view"))) throw new Response("Your role does not have permission to view the visual editor.", { status: 403 });
-
+	const paidDenial = await paidMutationDenied(db, session.shop); if (paidDenial) return paidDenial;
 	const builderRole = getBuilderRole(session);
 	const builderActorName = builderActor(session);
 	const rebuildPublishedAssets = async () => {
@@ -647,7 +625,7 @@ export async function action({
 			if (!row) return Response.json({ success:false, intent, error:"Translation record not found." }, { status:404 });
 			const translation = { id:row.id, locale:row.locale, marketKey:row.marketKey, seo:safeParseObject(row.seoJson,{}) };
 			const config = await db.builderLocalizationConfig.findUnique({ where:{ shop:session.shop } });
-			let market = null; try { const parsed = JSON.parse(config?.marketsJson || "[]"); market = Array.isArray(parsed) ? parsed.find((item)=>String(item?.handle||item?.key||item?.id||"")===translation.marketKey) || null : null; } catch {}
+			let market = null; try { const parsed = JSON.parse(config?.marketsJson || "[]"); market = Array.isArray(parsed) ? parsed.find((item)=>String(item?.handle||item?.key||item?.id||"")===translation.marketKey) || null : null; } catch { /* best-effort */ }
 			try {
 				const sync = await syncShopifyPageTranslation({ admin, db, shop:session.shop, page, translation, market });
 				return Response.json({ success:true, intent, translationId, nativeSyncedAt:new Date().toISOString(), sync });
@@ -1551,8 +1529,9 @@ export default function BuilderRoute() {
 			}}
 			onBack={() => {
 				const params = new URLSearchParams(window.location.search);
-				if (params.get("appWindow") === "1" && window.parent && window.parent !== window) {
-					window.parent.postMessage({ type: "vsn:close-editor" }, window.location.origin);
+				if (params.get("appWindow") === "1" && window.opener && window.opener !== window) {
+					// Shopify App Bridge src windows send messages to their opener.
+					window.opener.postMessage({ type: "vsn:close-editor" }, window.location.origin);
 					return;
 				}
 				["appWindow", "preview", "collection", "product", "blog", "article", "query"].forEach((key) => params.delete(key));

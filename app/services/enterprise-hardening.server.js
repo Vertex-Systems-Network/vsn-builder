@@ -20,7 +20,7 @@ export const ENTERPRISE_DEFAULTS = Object.freeze({
 export function parseEnterpriseSettings(value) {
   let parsed = {};
   if (value && typeof value === "object" && !Array.isArray(value)) parsed = value;
-  else try { parsed = JSON.parse(String(value || "{}")); } catch {}
+  else try { parsed = JSON.parse(String(value || "{}")); } catch { /* best-effort */ }
   const raw = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   const allowedEnvironment = ["development", "staging", "production"].includes(raw.environment) ? raw.environment : ENTERPRISE_DEFAULTS.environment;
   const allowedTarget = ["development", "staging", "production"].includes(raw.promotionTarget) ? raw.promotionTarget : ENTERPRISE_DEFAULTS.promotionTarget;

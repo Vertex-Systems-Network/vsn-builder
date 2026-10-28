@@ -1,0 +1,50 @@
+name: VSN Repository Integrity
+on:
+  pull_request:
+  push:
+    branches: [development, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  repository-integrity:
+    name: repository-integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout exact PR source without persisted token
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Node 22 pinned
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+      - name: Install lockfile-pinned dependencies, without environment secrets
+        run: npm ci
+      - name: Enforce immutable task closure and exact paid Shopify plans
+        run: |
+          node --test tests/task-dependency-check.test.mjs
+          node scripts/task-dependency-check.mjs
+      - name: Verify trusted Neon Staging source-only safety and single-branch contract
+        run: |
+          node --test tests/phase3-staging-neon-live-proof.test.mjs tests/phase3-staging-migration-preflight.test.mjs
+      - name: Reject stale generated ecosystem manifests
+        run: node scripts/milestone-o-docs-ecosystem-audit.mjs
+      - name: Verify packaged source integrity without deployment
+        run: node scripts/package-integrity.mjs
+      - name: Confirm CI never received production or staging secrets
+        env:
+          GIT_SOURCE_REF: ${{ github.sha }}
+        run: |
+          test -z "${NEON_API_KEY:-}"
+          test -z "${DATABASE_URL:-}"
+          test -z "${DIRECT_URL:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+          printf 'Repository source integrity PASS; source=%s; no live credentials or release permissions\n' "$GIT_SOURCE_REF"

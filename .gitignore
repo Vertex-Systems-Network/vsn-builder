@@ -33,3 +33,17 @@ shopify.app.production.toml
 
 # Generated AI eval comparison/result artifacts
 /artifacts/ai-evals/
+
+# Locally generated, dedicated Dev Shopify registration (never commit)
+/shopify.app.local.toml
+# Public sample remains tracked
+!.env.local.example
+
+# Prisma client generated for hosted PostgreSQL only; do not commit engines/types
+/generated/prisma-cloud/
+
+# Engine-less Cloudflare/Neon Prisma Worker Client (never commit generated code)
+/generated/prisma-worker/
+
+# Cloudflare Workerd-native TypeScript Prisma ESM Client
+/generated/prisma-edge/

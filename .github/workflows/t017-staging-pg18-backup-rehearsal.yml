@@ -1,0 +1,103 @@
+name: T017 Protected Staging PostgreSQL 18 Backup Restore Rehearsal (No Neon Writes)
+# Temporary full custom pg_dump restored only to disposable Postgres 18 on
+# GitHub runner. No backup artifact upload; snapshot quota is NOT bypassed.
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "scripts/t017-staging-pg18-backup-rehearsal.py"
+      - "tests/t017-staging-pg18-backup-rehearsal.test.py"
+      - ".github/workflows/t017-staging-pg18-backup-rehearsal.yml"
+  push:
+    branches: [development]
+    paths:
+      - "scripts/t017-staging-pg18-backup-rehearsal.py"
+      - "tests/t017-staging-pg18-backup-rehearsal.test.py"
+      - ".github/workflows/t017-staging-pg18-backup-rehearsal.yml"
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  synthetic-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - name: Checkout PR source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Validate isolated Postgres 18 read-only backup and ephemeral restore
+        run: python3 tests/t017-staging-pg18-backup-rehearsal.test.py -v
+      - name: Certify identical Postgres 18 Docker sandbox and trusted CA path without secrets
+        run: |
+          set -euo pipefail
+          test -r /etc/ssl/certs/ca-certificates.crt
+          private_dir="$(mktemp -d)"
+          trap 'rm -rf "$private_dir"' EXIT
+          test "$(stat -c %a "$private_dir")" = "700"
+          docker run --rm --network host --user "$(id -u):$(id -g)" --cap-drop ALL \
+            --security-opt no-new-privileges --read-only \
+            --tmpfs /tmp:rw,nosuid,noexec,size=64m \
+            --mount type=bind,src=/etc/ssl/certs/ca-certificates.crt,dst=/etc/ssl/certs/ca-certificates.crt,readonly \
+            --mount "type=bind,src=$private_dir,dst=/t017" \
+            postgres:18 sh -c 'psql --version >/dev/null && test -r /etc/ssl/certs/ca-certificates.crt && printf ok > /t017/uid-probe'
+          test "$(cat "$private_dir/uid-probe")" = "ok"
+          echo "T017 CA trust and Postgres 18 read-only container: PASS (zero Staging credentials)"
+  protected-reference:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Require trusted protected Builder development before any real secret access
+        env:
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REPO" = "Vertex-Systems-Network/vsn-builder"
+          test "$SOURCE_REF" = "refs/heads/development"
+          test "$SOURCE_PROTECTED" = "true"
+  real-staging-dump-rehearsal:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    needs: protected-reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: cloudflare-staging
+    services:
+      disposable-pg18:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: synthetic-ci-postgres-rehearsal-only
+          POSTGRES_USER: postgres
+          POSTGRES_DB: vsn_builder_t017_rehearsal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vsn_builder_t017_rehearsal"
+          --health-interval 5s
+          --health-timeout 4s
+          --health-retries 12
+    env:
+      APP_ENV: staging
+      NEON_PROJECT_ID: shiny-violet-61219572
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+    steps:
+      - name: Checkout exactly reviewed protected development commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Read-only dump of existing Staging Neon into temporary local runner
+        run: |
+          set +x
+          python3 scripts/t017-staging-pg18-backup-rehearsal.py
+      - name: Verify strict separation and temporary-only scope
+        run: |
+          echo "Only disposable local PostgreSQL 18 was restored; Neon branch untouched"
+          echo "This is an ephemeral restore rehearsal, not a persistent snapshot or migration"

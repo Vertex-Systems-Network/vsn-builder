@@ -4,7 +4,7 @@ Milestone Q4 separates development and production Shopify configuration instead 
 
 ## Contracts
 
-- Admin/Webhook API version: `2026-07`.
+- Admin/Webhook API version: `2026-10`.
 - OAuth callback: `<SHOPIFY_APP_URL>/auth/callback`.
 - App proxy: `/apps/vsn-builder` -> `/builder-proxy`.
 - App-specific webhooks: `app/uninstalled`, `app/scopes_update`, `orders/paid`.
@@ -24,4 +24,4 @@ npm run deploy:production
 
 ## API fall-forward detection
 
-System Health queries `publicApiVersions` and reads `X-Shopify-Api-Version`. If Shopify serves a version different from the configured `2026-07`, the release screen reports API fall-forward and the API version must be upgraded before production release.
+System Health queries `publicApiVersions` and reads `X-Shopify-Api-Version`. If Shopify serves a version different from the configured `2026-10`, the release screen reports API fall-forward and the API version must be upgraded before production release.

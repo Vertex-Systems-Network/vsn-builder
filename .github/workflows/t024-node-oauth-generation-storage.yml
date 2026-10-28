@@ -1,0 +1,67 @@
+name: T024 Node Shopify OAuth Generation Persistence (Disposable SQLite)
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "app/shopify.server.js"
+      - "app/services/shopify-node-generation-session-storage.server.js"
+      - "app/services/worker-shopify-install-session-storage.js"
+      - "tests/t024-node-oauth-generation-storage-sqlite.test.mjs"
+      - "tests/worker-shopify-install-session-storage.test.mjs"
+      - ".github/workflows/t024-node-oauth-generation-storage.yml"
+  push:
+    branches: [development]
+    paths:
+      - "app/shopify.server.js"
+      - "app/services/shopify-node-generation-session-storage.server.js"
+      - "app/services/worker-shopify-install-session-storage.js"
+      - "tests/t024-node-oauth-generation-storage-sqlite.test.mjs"
+      - "tests/worker-shopify-install-session-storage.test.mjs"
+      - ".github/workflows/t024-node-oauth-generation-storage.yml"
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  local-oauth-install-generation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      NODE_ENV: test
+      APP_ENV: development
+      DATABASE_URL: file:./t024-node-oauth-ci.sqlite
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Confirm no Neon, Cloudflare or real Shopify credentials
+        run: |
+          test "$APP_ENV" = development
+          test "$DATABASE_URL" = file:./t024-node-oauth-ci.sqlite
+          test -z "${DIRECT_URL:-}"
+          test -z "${NEON_API_KEY:-}"
+          test -z "${SHOPIFY_API_SECRET:-}"
+          test -z "${CLOUDFLARE_API_TOKEN:-}"
+      - name: Install source-locked dependencies
+        run: npm ci
+      - name: Generate real Local SQLite Prisma Client
+        run: npx prisma generate --schema prisma/schema.prisma
+      - name: Apply reviewed Local SQLite migrations to NEW disposable DB
+        run: npx prisma migrate deploy --schema prisma/schema.prisma
+      - name: Verify Worker SDK generation-fenced reads, races and isolation with synthetic Prisma
+        run: node --test tests/worker-shopify-install-session-storage.test.mjs
+      - name: Verify actual Shopify SDK Node SessionStorage install, refresh, revoke boundary
+        run: node --test tests/t024-node-oauth-generation-storage-sqlite.test.mjs
+      - name: Existing independent SQLite transaction regression
+        env:
+          DATABASE_URL: file:./worker-install-fence-ci.sqlite
+        run: |
+          npx prisma migrate deploy --schema prisma/schema.prisma
+          node --test tests/worker-shopify-install-sqlite-real.test.mjs

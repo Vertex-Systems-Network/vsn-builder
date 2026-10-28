@@ -48,7 +48,7 @@ export default function useEditorAppearance() {
     setDarkMode((current) => {
       const nextDark = !current;
       const nextPreference = nextDark ? "dark" : "light";
-      try { localStorage.setItem(APPEARANCE_KEY, nextPreference); } catch {}
+      try { localStorage.setItem(APPEARANCE_KEY, nextPreference); } catch { /* ignore: best-effort */ }
       applyDocumentTheme(nextDark);
       window.dispatchEvent(new CustomEvent(APPEARANCE_EVENT, { detail: { preference: nextPreference } }));
       return nextDark;

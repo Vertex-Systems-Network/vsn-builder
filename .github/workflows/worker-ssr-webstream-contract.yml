@@ -1,0 +1,33 @@
+name: VSN Worker Web Streams SSR Contract (No Deploy)
+on:
+  push:
+    branches: [feat/builder-worker-ssr-webstreams-20261013]
+permissions:
+  contents: read
+jobs:
+  worker-stream-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      NODE_ENV: test
+      DATABASE_URL: file:./ci.sqlite
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - run: npm ci
+      - name: Verify Web Streams SSR and mandatory Shopify CSP
+        run: node --test tests/worker-ssr-webstream.test.mjs
+      - name: Validate environment isolation and existing local code
+        run: npm run env:check && npm run env:test
+      - name: Enforce audited production dependency graph
+        run: npm audit --omit=dev --audit-level=high
+      - name: Verify no runnable Worker deploy contract introduced
+        run: |
+          test ! -e workers/app.js
+          test ! -e wrangler.staging.jsonc
+          test ! -e wrangler.production.jsonc

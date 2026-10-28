@@ -1,4 +1,4 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="height:{{ block.settings.height }}px" aria-hidden="true"></div>
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id | escape }}" {{ block.shopify_attributes }} style="height:{{ block.settings.height }}px" aria-hidden="true"></div>
 
 {% schema %}
 {

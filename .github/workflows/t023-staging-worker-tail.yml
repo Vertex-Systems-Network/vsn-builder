@@ -1,0 +1,46 @@
+name: T023 Staging Worker Log Tail — Protected Manual Read Only
+# Streams the Staging Worker's live logs for a bounded window while the owner
+# retries the app in Shopify admin. Read only: no deploy, no config change.
+# Prints ONLY the Worker's redacted vsn_req / vsn_diag breadcrumbs, uncaught
+# exception names and allowlisted route names; raw URLs, queries and headers are never printed.
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "How many minutes to stream (1-10)"
+        required: true
+        default: "5"
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: vsn-builder-staging-worker-tail
+  cancel-in-progress: true
+jobs:
+  tail-staging-worker:
+    if: github.ref == 'refs/heads/development' && github.ref_protected == true
+    runs-on: ubuntu-24.04
+    environment: cloudflare-staging
+    timeout-minutes: 15
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Install pinned Wrangler only
+        run: |
+          npm install --no-save --package-lock=false --no-audit --prefix "$RUNNER_TEMP/w" wrangler@4.45.0
+          test -x "$RUNNER_TEMP/w/node_modules/.bin/wrangler"
+      - name: Stream redacted Staging breadcrumbs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MINUTES: ${{ inputs.minutes }}
+        run: |
+          set +x
+          case "$MINUTES" in [1-9]|10) ;; *) echo "minutes must be 1-10"; exit 1;; esac
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          timeout "$((MINUTES*60))" "$RUNNER_TEMP/w/node_modules/.bin/wrangler" tail vsn-builder-staging --format json > tail.jsonl 2>/dev/null || true
+          jq -rc 'def safe_route: try (.event.request.url // "" | tostring | sub("\\?.*$";"") | sub("^https?://[^/]+";"") | sub("\\.data$";"")) catch ""; select(type=="object") | safe_route as $path | {outcome,route:(if ["/app","/app/pages","/app/plans","/app/dashboard-live","/app/stock-images","/app/stock-videos","/app/stock-audio","/app/developer-studio","/app/platform-intelligence"] | index($path) then $path elif ($path|startswith("/app/")) then "/app/:other" else "non-app" end),logs:[.logs[]?.message[]? | tostring | select(test("vsn_req|vsn_diag"))],exceptions:[.exceptions[]? | {name}]} | select((.logs|length)>0 or (.exceptions|length)>0)' tail.jsonl > crumbs.jsonl || true
+          echo "Captured $(wc -l < crumbs.jsonl) relevant events"
+          cat crumbs.jsonl
+          { echo "### Staging Worker breadcrumbs"; echo '```'; cat crumbs.jsonl; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          rm -f tail.jsonl

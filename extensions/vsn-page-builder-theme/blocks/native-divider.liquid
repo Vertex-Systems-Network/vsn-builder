@@ -1,4 +1,4 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><hr class="vsn-native-divider" style="--vsn-native-color:{{ block.settings.line_color }};--vsn-native-thickness:{{ block.settings.thickness }}px"></div>
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id | escape }}" {{ block.shopify_attributes }} style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><hr class="vsn-native-divider" style="--vsn-native-color:{{ block.settings.line_color }};--vsn-native-thickness:{{ block.settings.thickness }}px"></div>
 
 {% schema %}
 {

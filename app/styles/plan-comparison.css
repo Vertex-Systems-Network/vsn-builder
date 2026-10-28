@@ -1,0 +1,13 @@
+.plan-comparison-scroll{max-width:100%;overflow:auto;border:1px solid #e1e3e5;border-radius:10px;background:#fff;overscroll-behavior-inline:contain}
+.plan-comparison-table{width:100%;min-width:1440px;border-collapse:separate;border-spacing:0;font-size:13px}
+.plan-comparison-table th,.plan-comparison-table td{padding:12px 14px;border-bottom:1px solid #e1e3e5;border-right:1px solid #e1e3e5;text-align:center;vertical-align:middle}
+.plan-comparison-table thead th{position:sticky;top:0;z-index:2;background:#f6f6f7}
+.plan-comparison-table th:first-child{position:sticky;left:0;z-index:3;min-width:220px;text-align:left;background:#f6f6f7}
+.plan-comparison-table tbody th:first-child{z-index:1;background:#fff;font-weight:600}
+.plan-comparison-table tbody tr:last-child th,.plan-comparison-table tbody tr:last-child td{border-bottom:0}
+.plan-comparison-table tr>*:last-child{border-right:0}
+.plan-comparison-name,.plan-comparison-price,.plan-comparison-annual,.plan-comparison-handle{display:block}
+.plan-comparison-name{font-size:15px;font-weight:700}
+.plan-comparison-current{display:inline-block;margin:5px 0;padding:2px 7px;border-radius:999px;background:#e3f1df;color:#194d1c;font-size:11px}
+.plan-comparison-price{margin-top:7px;font-size:14px;font-weight:700}
+.plan-comparison-annual,.plan-comparison-handle{margin-top:4px;color:#616161;font-size:11px}

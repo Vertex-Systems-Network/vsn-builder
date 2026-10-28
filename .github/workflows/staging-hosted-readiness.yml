@@ -1,0 +1,90 @@
+name: VSN Builder Staging Hosted Readiness
+# Metafields parity: public Staging origin/Live client ID pinned in reviewed
+# source; real Cloudflare, Neon and Shopify secrets use GitHub Environment.
+# Schema/migration proof and live Worker HTTP checks remain mandatory.
+on:
+  pull_request:
+    paths:
+      - "scripts/staging-hosted-readiness.mjs"
+      - "scripts/staging-hosted-http-proof.mjs"
+      - "tests/staging-hosted-readiness.test.mjs"
+      - "tests/staging-hosted-http-proof.test.mjs"
+      - "tests/t028-hosted-protection-contract.test.mjs"
+      - "scripts/staging-shopify-config.mjs"
+      - "tests/hosted-neon-url-policy.test.mjs"
+      - "app/services/neon-target-policy.js"
+      - "config/deployment/environments.json"
+      - ".github/workflows/staging-hosted-readiness.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  readiness-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test Staging and isolated Neon connection safety contracts
+        run: node --test tests/staging-hosted-readiness.test.mjs tests/staging-hosted-http-proof.test.mjs tests/hosted-neon-url-policy.test.mjs tests/t028-hosted-protection-contract.test.mjs
+      - name: Report repository staging blockers without credentials
+        env:
+          VSN_TARGET_ENV: staging
+          VSN_STAGING_PLATFORM: cloudflare-worker
+        run: node scripts/staging-hosted-readiness.mjs
+      - name: Save non-secret staging-readiness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-hosted-readiness-audit
+          path: staging-hosted-readiness.json
+          if-no-files-found: warn
+  hosted-readiness:
+    # Never read privileged Staging secrets from a PR or unprotected branch.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/development' && github.ref_protected == true
+    runs-on: ubuntu-latest
+    environment: cloudflare-staging
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Materialize dedicated Staging Shopify app callback from protected identity
+        env:
+          VSN_TARGET_ENV: staging
+          SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+          SHOPIFY_PRODUCTION_CLIENT_ID: 997eae5a9961f21d131e5f31bbbe31d3
+          SHOPIFY_APP_URL: https://vsn-builder-staging.vertexsystemsnetwork.workers.dev
+        run: node scripts/staging-shopify-config.mjs --write
+      - name: Check real Staging hosting and protected credentials without deployment
+        env:
+          VSN_TARGET_ENV: staging
+          VSN_STAGING_PLATFORM: cloudflare-worker
+          VSN_STAGING_DATABASE_PROVIDER: neon-postgresql
+          NEON_PROJECT_ID: shiny-violet-61219572
+          VSN_STAGING_NEON_SCHEMA_VERIFIED: ${{ vars.VSN_STAGING_NEON_SCHEMA_VERIFIED }}
+          VSN_STAGING_NEON_MIGRATIONS_VERIFIED: ${{ vars.VSN_STAGING_NEON_MIGRATIONS_VERIFIED }}
+          SHOPIFY_APP_URL: https://vsn-builder-staging.vertexsystemsnetwork.workers.dev
+          SHOPIFY_API_KEY: ${{ secrets.SHOPIFY_API_KEY }}
+          SHOPIFY_API_SECRET: ${{ secrets.SHOPIFY_API_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/staging-hosted-readiness.mjs --require-ready
+      - name: Remove generated Staging Shopify identity before job exit
+        if: always()
+        run: rm -f shopify.app.staging.toml
+      - name: Save non-secret hosted readiness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-hosted-runtime-evidence
+          path: staging-hosted-readiness.json
+          if-no-files-found: warn

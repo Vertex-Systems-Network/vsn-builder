@@ -1,0 +1,58 @@
+name: VSN Dev GraphQL Dependency Security Certification (No Deploy)
+on:
+  push:
+    branches: [fix/builder-dev-graphql-tools-cve-20261013, development]
+  pull_request:
+    paths:
+      - ".graphqlrc.js"
+      - "scripts/check-shopify-graphql-codegen.mjs"
+      - "scripts/check-patched-graphql-tools.mjs"
+      - "tests/check-patched-graphql-tools.test.mjs"
+      - ".github/workflows/graphql-dev-security-certification.yml"
+      - "package.json"
+      - "package-lock.json"
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  dev-graphql-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 23
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      APP_ENV: development
+      DATABASE_URL: file:./ci.sqlite
+    steps:
+      - name: Checkout read-only without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Install exact audited dependency lockfile
+        run: npm ci
+      - name: Ensure every GraphQL Tools utility copy is fixed
+        run: node scripts/check-patched-graphql-tools.mjs
+      - name: Test removed dependency and nested vulnerable-copy rejection
+        run: node --test tests/check-patched-graphql-tools.test.mjs
+      - name: Preserve real Shopify GraphQL codegen compatibility
+        run: |
+          node scripts/check-shopify-graphql-codegen.mjs
+          node scripts/p11-runtime-parse-graphql-audit.mjs
+      - name: Prevent regressions in production dependency security
+        run: npm audit --omit=dev --audit-level=high
+      - name: Ensure application typechecking still passes
+        run: npm run typecheck
+      - name: Validate full dev audit with strict existing Production Confidence
+        run: |
+          # This targeted job does NOT suppress or replace the independent
+          # mandatory canonical Production Confidence development audit.
+          test -f .github/workflows/ci.yml
+          grep -F 'npm audit --include=dev --audit-level=high' .github/workflows/ci.yml

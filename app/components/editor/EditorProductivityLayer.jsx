@@ -1,4 +1,4 @@
-import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnColorField, VsnSearchField, VsnUrlField, VsnDateField, VsnSpinner } from "./EditorUi";
+import { VsnButton, VsnSearchField } from "./EditorUi";
 import { useEffect, useMemo, useState } from "react";
 import PolarisIcon from "../ui/PolarisIcon";
 import { ModalPortal, PointOverlay } from "./OverlayManager";
@@ -71,7 +71,7 @@ export default function EditorProductivityLayer({
       <VsnButton className={`${btn} text-[#b42318] hover:bg-red-50 hover:text-[#b42318]`} onClick={()=>{onDelete?.();onCloseContext?.();}}><PolarisIcon type="delete" size="small"/>Delete</VsnButton>
     </PointOverlay> : null}
 
-    {paletteOpen ? <ModalPortal><div className="vsn-editor-modal-backdrop flex items-start justify-center bg-black/30 px-4 pt-[12vh]" onMouseDown={(e)=>{if(e.currentTarget===e.target)setPaletteOpen(false)}}>
+    {paletteOpen ? <ModalPortal><div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop flex items-start justify-center bg-black/30 px-4 pt-[12vh]" onMouseDown={(e)=>{if(e.currentTarget===e.target)setPaletteOpen(false)}}>
       <div className="w-[620px] max-w-full overflow-hidden rounded-2xl border border-[#d9d9d9] bg-white shadow-2xl">
         <div className="flex items-center gap-2 border-b border-[#eee] px-4"><PolarisIcon type="search"/><div className="min-w-0 flex-1 py-2"><VsnSearchField label="Command" labelAccessibilityVisibility="exclusive" value={query} placeholder="Type a command…" onInput={(event)=>setQuery(event.currentTarget.value || "")} /></div><kbd className="rounded border bg-[#f6f6f7] px-1.5 py-0.5 text-[10px]">Esc</kbd></div>
         <div className="max-h-[55vh] overflow-y-auto p-2">{filtered.map(([label,icon,run])=><VsnButton key={label} variant="plain" className={btn} onClick={()=>{run?.();setPaletteOpen(false)}}><PolarisIcon type={icon} size="small"/><span className="flex-1">{label}</span></VsnButton>)}{!filtered.length?<div className="p-8 text-center text-xs text-[#8c9196]">No commands found.</div>:null}</div>

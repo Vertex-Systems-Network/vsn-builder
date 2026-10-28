@@ -1,15 +1,20 @@
+import { useId, useRef } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap.js';
 export default function Modal({ open, title, description, confirmLabel = 'Confirm', confirmDanger, onConfirm, onCancel, darkMode }) {
+    const dialogRef = useRef(null);
+    const titleId = useId();
+    useFocusTrap(dialogRef, Boolean(open), { onEscape: onCancel });
     if (!open)
         return null;
-    return (<div onClick={onCancel} style={{
-            position: 'fixed', inset: 0, zIndex: 500,
+    return (<div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ onClick={onCancel} style={{
+            position: 'fixed', inset: 0, zIndex: 'var(--vsn-z-modal)',
             background: 'rgba(0,0,0,0.4)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             backdropFilter: 'blur(2px)',
         }}>
-      <div onClick={e => e.stopPropagation()} style={{
-            background: darkMode ? '#1A1F2E' : '#FFFFFF',
+      <div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-element-interactions -- only stops event propagation; not an interactive control */ onClick={e => e.stopPropagation()} ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId} style={{
+            background: 'var(--vsn-surface)',
             borderRadius: 16,
             padding: 28,
             width: '100%',
@@ -32,9 +37,9 @@ export default function Modal({ open, title, description, confirmLabel = 'Confir
               <AlertTriangle size={18} color="#DC2626"/>
             </div>)}
           <div style={{ flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: darkMode ? '#F9FAFB' : '#1A1F36' }}>{title}</h3>
+            <h3 id={titleId} style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--vsn-ink)' }}>{title}</h3>
           </div>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 4, borderRadius: 6 }}>
+          <button type="button" aria-label="Close" onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--vsn-subtle)', padding: 4, borderRadius: 6 }}>
             <X size={16}/>
           </button>
         </div>
@@ -42,7 +47,7 @@ export default function Modal({ open, title, description, confirmLabel = 'Confir
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           <button onClick={onCancel} style={{
             padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-            border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
+            border: '1px solid var(--vsn-border)',
             background: 'transparent', cursor: 'pointer',
             color: darkMode ? '#9CA3AF' : '#4B5563',
         }}>

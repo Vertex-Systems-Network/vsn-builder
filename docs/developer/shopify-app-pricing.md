@@ -10,18 +10,26 @@ VSN generates the Shopify-hosted pricing page from the authenticated shop and ap
 
 Set `SHOPIFY_APP_HANDLE` to the App Home handle configured for the Shopify app. `SHOPIFY_APP_PRICING_URL` is an optional absolute HTTPS override. `SHOPIFY_MANAGED_PRICING_URL` is retained only as a temporary compatibility fallback.
 
-## Plan handles
+## Eight paid public plans (owner-directed expansion, 2026-10-26)
 
-Configure the Partner Dashboard plan handles to match the VSN mapping, or override them with:
+VSN | Builder is **one public Shopify app**. Development and Staging are internal test environments, not separate App Store listings. No Free plan is offered. Public Shopify plan IDs, displayed plan names, and default handles match **exactly**:
 
-- `SHOPIFY_APP_PRICING_PLAN_FREE_HANDLE=free`
-- `SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE=sliver`
-- `SHOPIFY_APP_PRICING_PLAN_GOLD_HANDLE=gold`
-- `SHOPIFY_APP_PRICING_PLAN_PLATINUM_HANDLE=platenium`
+| Public plan / canonical ID / handle | Monthly USD | Annual USD | Shopify free trial |
+| --- | ---: | ---: | ---: |
+| Starter (`starter`) | $30 | Not offered | 10 days |
+| Solo (`solo`) | $60 | Not offered | 10 days |
+| Silver (`silver`) | $100 | Not offered | 10 days |
+| Gold (`gold`) | $150 | Not offered | 10 days |
+| Business (`business`) | $250 | Not offered | 10 days |
+| Platinum (`platinum`) | $350 | $3,000 | 10 days |
+| Agency (`agency`) | $600 | Not offered | 10 days |
+| Scale (`scale`) | $1,000 | Not offered | 10 days |
 
-VSN intentionally preserves the Shopify handle spellings exactly as configured. The merchant-facing names are Free, Silver, Gold and Platinum, while the stable internal entitlement IDs remain `core`, `pro`, `cro` and `agency` for backward compatibility. Legacy `...CORE/PRO/CRO/AGENCY_HANDLE` environment names are still accepted, but the public plan env names above take precedence.
+The earlier four-plan contract is superseded by the owner-directed eight-plan catalog above. The monthly amounts for Solo, Business, Agency and Scale carry forward the previously proposed rates; Shopify Partner publication must be verified before live billing. The retired Shopify handle `sliver` and prior internal keys remain read aliases for Silver or their verified historical contract; `free` and an unknown Shopify paid handle never authorize Starter. Subscription-free merchants remain on a no-access `inactive` sentinel until a Shopify-verified trial or paid contract exists.
 
-The default Shopify handles are `free`, `sliver`, `gold`, and `platenium`.
+Environment handle names: `SHOPIFY_APP_PRICING_PLAN_STARTER_HANDLE`, `...SOLO_HANDLE`, `...SILVER_HANDLE`, `...GOLD_HANDLE`, `...BUSINESS_HANDLE`, `...PLATINUM_HANDLE`, `...AGENCY_HANDLE`, `...SCALE_HANDLE`. `...SLIVER_HANDLE` and legacy internal-key overrides remain migration fallbacks, not additional public tiers. Before Staging or Live billing is enabled, verify all eight exact handles and prices in the **Shopify Partner Dashboard** and complete a real billing acceptance run.
+
+Shopify App Pricing owns recurring charges and trial accounting; never fake an approved subscription locally in Production. Trial reinstallation limits are governed by Shopify. Do not submit the app while hosted runtime, branch protection, security CI, merchant OAuth, billing smoke or developer audit is blocked.
 
 ## Return contract
 

@@ -1,6 +1,8 @@
-import { COMMERCIAL_PLANS, normalizePlanKey, planAtLeast } from "../config/commercialPlans.js";
+import { isLocalBillingSimulation } from "../config/local-billing-simulation.js";
+import { COMMERCIAL_PLANS, UNSUBSCRIBED_PLAN, normalizePlanKey, planAtLeast, planRank } from "../config/commercialPlans.js";
 import { ENTITLEMENT_FEATURES, ENTITLEMENT_QUOTAS, ENTITLEMENT_VERSION, getEntitlementFeatureDefinition, getEntitlementQuotaDefinition } from "../config/entitlements.js";
 import { subscriptionMirrorIsTrusted } from "./shopify-subscription.server.js";
+import { resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
 
 function monthStart(now = new Date()) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -49,34 +51,43 @@ export class EntitlementDeniedError extends Error {
 
 export async function resolveEntitlementPlan(db, shop, { now = new Date() } = {}) {
   const row = await db.builderSubscription.findUnique({ where: { shop } }).catch(() => null);
-  const developerMode = process.env.NODE_ENV !== "production";
+  const developerMode = isLocalBillingSimulation();
   const configuredDefault = process.env.VSN_DEFAULT_PLAN ? normalizePlanKey(process.env.VSN_DEFAULT_PLAN) : null;
   const developerActive = developerMode && row?.status === "active";
   const mirrorTrusted = !developerMode && subscriptionMirrorIsTrusted(row, now);
   const verifiedPaidState = mirrorTrusted && ["active", "trialing", "canceling"].includes(String(row?.status || ""));
 
-  let key = "core";
-  let source = "production-core-fallback";
+  let key = "inactive";
+  let source = "production-no-subscription";
   let entitlementVerified = false;
 
   if (developerMode) {
-    key = developerActive ? normalizePlanKey(row.planKey) : (configuredDefault || "agency");
-    source = developerActive ? "developer-simulation" : configuredDefault ? "developer-default" : "developer-agency-default";
+    // Developer simulation has no merchant billing effects. Legacy keys are
+    // normalized to the public paid IDs, never to a public Free tier.
+    key = developerActive ? normalizePlanKey(row.planKey) : (configuredDefault || "platinum");
+    source = developerActive ? "developer-simulation" : configuredDefault ? "developer-default" : "developer-platinum-default";
     entitlementVerified = developerActive;
   } else if (verifiedPaidState) {
-    key = normalizePlanKey(row.planKey);
-    source = "shopify-verified";
-    entitlementVerified = true;
+    // The Partner-verified Shopify handle is authoritative. The mirrored key
+    // may be a historical internal alias (for example `agency` -> the old
+    // Platinum handle), so it must not override the actual verified contract.
+    const handleKey = resolveInternalPlanKeyFromHandle(row?.planHandle);
+    if (handleKey && normalizePlanKey(row.planKey) !== "inactive") {
+      key = handleKey;
+      source = "shopify-verified";
+      entitlementVerified = true;
+    } else {
+      source = "production-unrecognized-paid-contract";
+    }
   } else {
-    // Production must fail closed. VSN_DEFAULT_PLAN is intentionally ignored here;
-    // a server environment variable can never grant a paid merchant entitlement.
-    key = "core";
-    source = mirrorTrusted ? "shopify-verified-core" : "production-core-fallback";
+    // Without a verified paid Shopify contract, all features and quotas are
+    // disabled. Missing or canceled billing is NOT a Starter subscription.
+    source = mirrorTrusted ? "shopify-verified-inactive" : "production-no-subscription";
     entitlementVerified = mirrorTrusted;
   }
 
   return {
-    ...COMMERCIAL_PLANS[key],
+    ...(COMMERCIAL_PLANS[key] || UNSUBSCRIBED_PLAN),
     key,
     subscription: row || null,
     entitlementVerified,
@@ -89,17 +100,17 @@ export async function resolveEntitlementPlan(db, shop, { now = new Date() } = {}
 async function usageForQuota(db, shop, quotaKey, now = new Date()) {
   switch (quotaKey) {
     case "pages":
-      return db.builderPage.count({ where: { shop, deletedAt: null } }).catch(() => 0);
+      return db.builderPage.count({ where: { shop, deletedAt: null } });
     case "marketplaceInstalls":
-      return db.builderMarketplaceInstall.count({ where: { shop } }).catch(() => 0);
+      return db.builderMarketplaceInstall.count({ where: { shop } });
     case "aiGenerations": {
       const start = monthStart(now);
-      return db.builderAiUsage.count({ where: { shop, createdAt: { gte: start }, status: "completed" } }).catch(() => 0);
+      return db.builderAiUsage.count({ where: { shop, createdAt: { gte: start }, status: "completed" } });
     }
     case "croExperiments":
-      return db.builderExperiment.count({ where: { shop, status: { in: ["draft", "running", "paused"] } } }).catch(() => 0);
+      return db.builderExperiment.count({ where: { shop, status: { in: ["draft", "running", "paused"] } } });
     case "collaborationSeats": {
-      const setting = await db.builderShopSetting.findUnique({ where: { shop }, select: { collaborationRolesJson: true } }).catch(() => null);
+      const setting = await db.builderShopSetting.findUnique({ where: { shop }, select: { collaborationRolesJson: true } });
       const assignments = parseObject(setting?.collaborationRolesJson);
       // The store owner is always a seat. Assigned actors are stable seats; transient
       // presence is deliberately not used for commercial enforcement.
@@ -119,7 +130,7 @@ export async function getEntitlementUsage(db, shop, { quotaKeys = Object.keys(EN
 export function getFeatureDecisionFromPlan(plan, featureKey) {
   const definition = getEntitlementFeatureDefinition(featureKey);
   if (!definition) throw new Error(`Unknown entitlement feature: ${featureKey}`);
-  const allowed = planSupportsFeature(plan, definition);
+  const allowed = planRank(plan?.key) >= 0 && planSupportsFeature(plan, definition);
   return {
     type: "feature",
     key: definition.key,
@@ -127,8 +138,8 @@ export function getFeatureDecisionFromPlan(plan, featureKey) {
     allowed,
     code: allowed ? "VSN_ENTITLEMENT_ALLOWED" : "VSN_FEATURE_NOT_INCLUDED",
     requiredPlan: definition.requiredPlan,
-    planKey: plan?.key || "core",
-    planName: plan?.name || "Free",
+    planKey: plan?.key || "inactive",
+    planName: plan?.name || "No active subscription",
     source: plan?.entitlementSource || "unknown",
     verified: Boolean(plan?.entitlementVerified),
     message: allowed ? null : `${definition.label} is not included in the ${plan?.name || "current"} plan. Choose ${COMMERCIAL_PLANS[normalizePlanKey(definition.requiredPlan)]?.name || definition.requiredPlan} or higher in Plans & License.`,
@@ -138,13 +149,14 @@ export function getFeatureDecisionFromPlan(plan, featureKey) {
 export function getQuotaDecisionFromUsage(plan, quotaKey, used, { extra = 1, resetAt = null } = {}) {
   const definition = getEntitlementQuotaDefinition(quotaKey);
   if (!definition) throw new Error(`Unknown entitlement quota: ${quotaKey}`);
-  const limit = numericLimit(plan?.[definition.planField]);
+  const isPaidTier = planRank(plan?.key) >= 0;
+  const limit = isPaidTier ? numericLimit(plan?.[definition.planField]) : 0;
   const normalizedUsed = Math.max(0, Number(used || 0));
   const normalizedExtra = Math.max(0, Number(extra || 0));
   const unlimited = limit < 0;
-  const allowed = unlimited || normalizedUsed + normalizedExtra <= limit;
+  const allowed = isPaidTier && (unlimited || normalizedUsed + normalizedExtra <= limit);
   const unavailable = limit === 0;
-  const planName = plan?.name || "Free";
+  const planName = plan?.name || "No active subscription";
   const requiredPlanName = COMMERCIAL_PLANS[normalizePlanKey(definition.requiredPlan)]?.name || definition.requiredPlan;
   const message = allowed ? null : unavailable
     ? `${definition.label.replace(/^./, (c) => c.toUpperCase())} are not included in the ${planName} plan. Choose ${requiredPlanName} or higher in Plans & License.`
@@ -156,7 +168,7 @@ export function getQuotaDecisionFromUsage(plan, quotaKey, used, { extra = 1, res
     allowed,
     code: allowed ? "VSN_ENTITLEMENT_ALLOWED" : unavailable ? "VSN_QUOTA_NOT_INCLUDED" : "VSN_QUOTA_EXCEEDED",
     requiredPlan: definition.requiredPlan,
-    planKey: plan?.key || "core",
+    planKey: plan?.key || "inactive",
     planName,
     source: plan?.entitlementSource || "unknown",
     verified: Boolean(plan?.entitlementVerified),
@@ -171,7 +183,7 @@ export function getQuotaDecisionFromUsage(plan, quotaKey, used, { extra = 1, res
   };
 }
 
-export function getMinimumPlanDecisionFromPlan(plan, requiredPlan = "core", { label = "This feature" } = {}) {
+export function getMinimumPlanDecisionFromPlan(plan, requiredPlan = "starter", { label = "This feature" } = {}) {
   const normalizedRequired = normalizePlanKey(requiredPlan);
   const allowed = planAtLeast(plan, normalizedRequired);
   const requiredPlanName = COMMERCIAL_PLANS[normalizedRequired]?.name || normalizedRequired;
@@ -182,15 +194,15 @@ export function getMinimumPlanDecisionFromPlan(plan, requiredPlan = "core", { la
     allowed,
     code: allowed ? "VSN_ENTITLEMENT_ALLOWED" : "VSN_PLAN_TIER_REQUIRED",
     requiredPlan: normalizedRequired,
-    planKey: plan?.key || "core",
-    planName: plan?.name || "Free",
+    planKey: plan?.key || "inactive",
+    planName: plan?.name || "No active subscription",
     source: plan?.entitlementSource || "unknown",
     verified: Boolean(plan?.entitlementVerified),
-    message: allowed ? null : `${label} requires ${requiredPlanName} or higher. Current plan: ${plan?.name || "Free"}.`,
+    message: allowed ? null : `${label} requires ${requiredPlanName} or higher. Current plan: ${plan?.name || "No active subscription"}.`,
   };
 }
 
-export async function getMinimumPlanDecision(db, shop, requiredPlan = "core", options = {}) {
+export async function getMinimumPlanDecision(db, shop, requiredPlan = "starter", options = {}) {
   const plan = options.plan || await resolveEntitlementPlan(db, shop, options);
   return getMinimumPlanDecisionFromPlan(plan, requiredPlan, options);
 }
@@ -206,6 +218,33 @@ export async function getQuotaDecision(db, shop, quotaKey, { plan = null, used =
   const definition = getEntitlementQuotaDefinition(quotaKey);
   const resetAt = definition?.reset === "monthly" ? monthReset(now).toISOString() : null;
   return getQuotaDecisionFromUsage(resolvedPlan, quotaKey, resolvedUsed, { extra, resetAt });
+}
+
+// Serialize quota-sensitive writes for one shop. Callers must perform both
+// the quota read and the corresponding write inside this callback.
+export async function withShopQuotaLock(db, shop, callback) {
+  if (typeof db?.$transaction !== "function" || typeof callback !== "function") {
+    throw new TypeError("A transactional database and quota callback are required.");
+  }
+  return db.$transaction(async (tx) => {
+    if (typeof tx?.builderShopSetting?.upsert !== "function") {
+      throw new Error("Quota serialization is unavailable.");
+    }
+    await tx.builderShopSetting.upsert({
+      where: { shop },
+      create: { shop },
+      update: { updatedAt: new Date() },
+    });
+    return callback(tx);
+  });
+}
+
+export async function createPageWithQuota(db, shop, data, { extra = 1 } = {}) {
+  return withShopQuotaLock(db, shop, async (tx) => {
+    const quota = await getQuotaDecision(tx, shop, "pages", { extra });
+    if (!quota.allowed) return { quota };
+    return { page: await tx.builderPage.create({ data: { ...data, shop } }) };
+  });
 }
 
 export async function requireEntitlementFeature(db, shop, featureKey, options = {}) {

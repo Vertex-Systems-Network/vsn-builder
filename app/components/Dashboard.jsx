@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useFetcher, useLocation } from "react-router";
 import {
   BarChart3, CalendarDays, Check, CheckSquare2, Clock3, Copy, Download, Edit3, ExternalLink,
@@ -8,6 +8,7 @@ import {
 import Badge from "./ui/Badge";
 import Button from "./ui/Button";
 import { VsnNotice } from "./ui/VsnToolkit";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   normalizeDataViewConfig, VsnDataViewActionMenu, VsnDataViewBulkMenu, VsnDataViewPagination,
   VsnDataViewSettings, VsnDataViewSortControls, VsnDataViewToggle,
@@ -116,9 +117,11 @@ function TemplateThumb({ page, large = false }) {
 }
 
 function Modal({ title, children, onClose, footer }) {
+  const dialogRef = useRef(null); const titleId = useId();
+  useFocusTrap(dialogRef, true, { onEscape: onClose });
   return <div className="vsn-template-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose?.(); }}>
-    <section className="vsn-template-modal" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="vsn-template-modal-head"><strong>{title}</strong><button type="button" onClick={onClose} aria-label="Close"><X size={17} /></button></div>
+    <section ref={dialogRef} tabIndex={-1} className="vsn-template-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div className="vsn-template-modal-head"><strong id={titleId}>{title}</strong><button type="button" onClick={onClose} aria-label="Close"><X size={17} /></button></div>
       <div className="vsn-template-modal-body">{children}</div>
       {footer ? <div className="vsn-template-modal-foot">{footer}</div> : null}
     </section>
@@ -154,6 +157,7 @@ export default function Dashboard({
   const contentRef = useRef(null);
   const masterRef = useRef(null);
   const hydratedRef = useRef(false);
+  const skippedInitialSettingsSaveRef = useRef(false);
   const handledRefreshRef = useRef(null);
   const dataViewConfig = useMemo(() => normalizeDataViewConfig(dataViewOptions || {}), [dataViewOptions]);
 
@@ -215,14 +219,20 @@ export default function Dashboard({
       if (Array.isArray(parsed?.widgets)) setVisibleWidgets(new Set(parsed.widgets.filter((key) => DEFAULT_WIDGETS.includes(key))));
       if (Number.isFinite(Number(parsed?.pageSize)) && Number(parsed.pageSize) >= 1 && Number(parsed.pageSize) <= 100) setPageSize(Math.floor(Number(parsed.pageSize)));
       if (["list", "grid"].includes(parsed?.viewMode)) setViewMode(parsed.viewMode);
-    } catch {}
+    } catch { /* ignore: best-effort */ }
     hydratedRef.current = true;
   }, [savedViewSettings]);
 
   useEffect(() => {
     if (!hydratedRef.current) return;
+    // The loaded server settings are already persisted. Do not issue a write
+    // just because the Templates route mounted; save only after a user change.
+    if (!skippedInitialSettingsSaveRef.current) {
+      skippedInitialSettingsSaveRef.current = true;
+      return;
+    }
     const settings = { columns: [...visibleColumns], widgets: [...visibleWidgets], pageSize, viewMode };
-    try { window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+    try { window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch { /* ignore: best-effort */ }
     const timer = window.setTimeout(() => onSaveViewSettings?.(settings), 350);
     return () => window.clearTimeout(timer);
   }, [visibleColumns, visibleWidgets, pageSize, viewMode, onSaveViewSettings]);
@@ -244,6 +254,7 @@ export default function Dashboard({
     params.set("page", String(override.page ?? currentPage));
     params.set("pageSize", String(override.pageSize ?? pageSize));
     tableFetcher.load(`${location.pathname}?${params.toString()}`);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetcher object identity changes every render; adding it would loop table loads
   }, [location.pathname, location.search, search, activeFilter, templateFilter, seoFilter, authorFilter, dateFilter, dateFrom, dateTo, sortField, sortDirection, currentPage, pageSize]);
 
   useEffect(() => {
@@ -255,6 +266,7 @@ export default function Dashboard({
   useEffect(() => {
     const timer = window.setTimeout(() => loadTable(), search ? 260 : 40);
     return () => window.clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetcher object identity changes every render; adding it would loop table loads
   }, [loadTable]);
 
   useEffect(() => {
@@ -288,7 +300,7 @@ export default function Dashboard({
     const q = search.trim().toLowerCase();
     return records.filter((row) => `${row.title} ${row.handle} ${row.createdBy}`.toLowerCase().includes(q));
   }, [records, search, localSearchPending, nonSearchQueryPending]);
-  const displayRows = nonSearchQueryPending ? [] : (localSearchPending ? immediateRows : records);
+  const displayRows = useMemo(() => (nonSearchQueryPending ? [] : (localSearchPending ? immediateRows : records)), [nonSearchQueryPending, localSearchPending, immediateRows, records]);
   const dbLoading = tableFetcher.state !== "idle";
   const trashMode = activeFilter === "Trash";
 
@@ -475,7 +487,7 @@ export default function Dashboard({
       </div>
     </VsnDataViewSettings> : null}
 
-    {renameTarget ? <Modal title="Rename template" onClose={() => setRenameTarget(null)} footer={<><button type="button" className="vsn-button vsn-button--secondary vsn-button--sm" onClick={() => setRenameTarget(null)}>Cancel</button><button type="button" className="vsn-button vsn-button--primary vsn-button--sm" disabled={!renameValue.trim() || busy} onClick={submitRename}>Save changes</button></>}><label className="vsn-template-field"><span>Current Name</span><input value={renameTarget.title} disabled /></label><label className="vsn-template-field"><span>New Name</span><input autoFocus value={renameValue} onChange={(event) => setRenameValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitRename(); }} /></label></Modal> : null}
+    {renameTarget ? <Modal title="Rename template" onClose={() => setRenameTarget(null)} footer={<><button type="button" className="vsn-button vsn-button--secondary vsn-button--sm" onClick={() => setRenameTarget(null)}>Cancel</button><button type="button" className="vsn-button vsn-button--primary vsn-button--sm" disabled={!renameValue.trim() || busy} onClick={submitRename}>Save changes</button></>}><label className="vsn-template-field"><span>Current Name</span><input value={renameTarget.title} disabled /></label><label className="vsn-template-field"><span>New Name</span><input /* eslint-disable-line jsx-a11y/no-autofocus -- intentional focus when the picker/dialog opens */ autoFocus value={renameValue} onChange={(event) => setRenameValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitRename(); }} /></label></Modal> : null}
 
     {scheduleOpen ? <Modal title="Schedule selected templates" onClose={() => setScheduleOpen(false)} footer={<><button type="button" className="vsn-button vsn-button--secondary vsn-button--sm" onClick={() => setScheduleOpen(false)}>Cancel</button><button type="button" className="vsn-button vsn-button--primary vsn-button--sm" disabled={!scheduleDate || !scheduleTime || busy} onClick={submitSchedule}>Schedule {selectedIds.size}</button></>}><p className="vsn-template-modal-copy">Choose the future date and time that will be stored on all selected templates.</p><div className="vsn-template-field-grid"><label className="vsn-template-field"><span>Date</span><input type="date" value={scheduleDate} min={new Date().toISOString().slice(0, 10)} onChange={(event) => setScheduleDate(event.target.value)} /></label><label className="vsn-template-field"><span>Time</span><input type="time" value={scheduleTime} onChange={(event) => setScheduleTime(event.target.value)} /></label></div></Modal> : null}
 

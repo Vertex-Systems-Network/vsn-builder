@@ -33,15 +33,16 @@ import { getWidgetCapabilities } from "../../builder/widgetCapabilities";
 import { dynamicFieldsForWidget, dynamicSourcesForType, inspectDynamicBindings, normalizeBindings } from "../../builder/dynamicBindings.js";
 import { breakpointById, buildFluidClamp, createCustomBreakpoint, inheritedBreakpointSource, normalizeResponsiveBreakpoints } from "../../builder/responsiveEngine.js";
 
+// Same section chrome as the Style/Content tabs so all three inspector tabs read as one panel.
 function Panel({ title, children, defaultOpen = true, badge = "" }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="overflow-visible rounded-xl border border-[#e3e3e3] bg-white">
-      <VsnButton type="button" variant="plain" onClick={() => setOpen((v) => !v)} className="vsn-advanced-panel-toggle">
-        <span className="flex items-center gap-2 text-xs font-semibold text-[#303030]">{title}{badge ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-[#006e52]">{badge}</span> : null}</span>
-        <span className={open ? "rotate-90" : ""}><PolarisIcon type="chevron-right" size="small" /></span>
-      </VsnButton>
-      {open ? <div className="space-y-3 border-t border-[#f1f1f1] p-3">{children}</div> : null}
+    <section className="vsn-inspector-section">
+      <button type="button" className="vsn-inspector-section-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span className="flex items-center gap-2">{title}{badge ? <span className="rounded-full bg-[#F1F0FA] px-2 py-0.5 text-[9px] font-semibold text-[#4E4890]">{badge}</span> : null}</span>
+        <span className={`vsn-inspector-chevron ${open ? "is-open" : ""}`}><PolarisIcon type="chevron-right" size="small" /></span>
+      </button>
+      {open ? <div className="vsn-inspector-section-body space-y-3">{children}</div> : null}
     </section>
   );
 }
@@ -107,7 +108,7 @@ export function DynamicBindingInspector({ element, context = {} }) {
   const rows = inspectDynamicBindings(element, context);
   if (!rows.length) return null;
   return <Panel title="Data Binding Inspector" badge={`${rows.length} ACTIVE`} defaultOpen={false}>
-    <p className="text-[10px] leading-4 text-[#6d7175]">Inspect the selected element's source, resolved preview value and fallback behavior without changing the binding.</p>
+    <p className="text-[10px] leading-4 text-[#6d7175]">Inspect the selected element&apos;s source, resolved preview value and fallback behavior without changing the binding.</p>
     <div className="space-y-2">{rows.map((row)=><div key={`${row.path}:${row.source}`} className="rounded-lg border border-[#e3e3e3] bg-[#fafafa] p-2.5"><div className="flex items-start justify-between gap-2"><div><strong className="text-[11px] text-[#303030]">{row.label}</strong><div className="mt-0.5 font-mono text-[9px] text-[#8c9196]">{row.path}</div></div><span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${row.value==null||row.value===''?'bg-amber-50 text-amber-700':row.usedFallback?'bg-blue-50 text-blue-700':'bg-emerald-50 text-emerald-700'}`}>{row.value==null||row.value===''?'EMPTY':row.usedFallback?'FALLBACK':'RESOLVED'}</span></div><div className="mt-2 grid gap-1 text-[10px]"><div className="flex justify-between gap-2"><span className="text-[#8c9196]">Source</span><code className="max-w-[190px] truncate text-[#303030]">{row.source}</code></div><div className="flex justify-between gap-2"><span className="text-[#8c9196]">Preview</span><code className="max-w-[190px] truncate text-[#303030]">{row.value==null||row.value===''?'—':String(row.value)}</code></div>{row.fallback?<div className="flex justify-between gap-2"><span className="text-[#8c9196]">Fallback</span><code className="max-w-[190px] truncate text-[#303030]">{row.fallback}</code></div>:null}</div></div>)}</div>
   </Panel>;
 }
@@ -126,7 +127,7 @@ export function DynamicBindingsPanel({ element, onUpdate, context = {} }) {
         const binding = bindings[field.path] || {};
         const enabled = binding.enabled === true;
         const sources = [{value:"",label:`Select ${field.type} source`}, ...dynamicSourcesForType(field.type)];
-        return <div key={field.path} className={`rounded-lg border p-2.5 ${focusedPath===field.path?'border-[#95BF47] bg-[#f7fbef]':'border-[#e3e3e3] bg-[#fafafa]'}`}>
+        return <div key={field.path} className={`rounded-lg border p-2.5 ${focusedPath===field.path?'border-[#625BA8] bg-[#f7fbef]':'border-[#e3e3e3] bg-[#fafafa]'}`}>
           <div className="mb-2 flex items-center justify-between gap-2"><div><strong className="text-[11px] text-[#303030]">⚡ {field.label}</strong><div className="text-[9px] text-[#8c9196]">{field.path} · {field.type}</div></div><SwitcherControl label="" checked={enabled} onChange={(value)=>patchBinding(field.path,{enabled:value,type:field.type})}/></div>
           {enabled ? <div className="space-y-2">
             <SelectControl label="Source" value={binding.source || ""} onChange={(source)=>patchBinding(field.path,{source,type:field.type})} options={sources}/>
@@ -175,7 +176,6 @@ export function ConditionsBuilder({ element, onUpdate }) {
 
 export function ResponsivePanel({ element, deviceMode, onUpdate, capabilities, globalStyles = {} }) {
   const caps = capabilities || getWidgetCapabilities(element?.type);
-  const breakpoints = normalizeResponsiveBreakpoints(globalStyles);
   const active = breakpointById(globalStyles, deviceMode);
   const responsive = element?.responsive || {};
   const device = responsive?.[deviceMode] || {};
@@ -200,7 +200,7 @@ export function ResponsivePanel({ element, deviceMode, onUpdate, capabilities, g
       <div className="rounded-lg bg-[#fafafa] p-2"><div className="mb-2 text-[10px] font-medium text-[#6d7175]">Fluid clamp() generator</div><div className="grid grid-cols-2 gap-2"><NumberControl label="Min px" value={fluidMin} min={1} max={300} onChange={setFluidMin}/><NumberControl label="Max px" value={fluidMax} min={1} max={400} onChange={setFluidMax}/></div><VsnButton type="button" variant="tertiary" size="sm" className="mt-2 w-full" onClick={applyFluid}>Apply fluid font size</VsnButton></div>
     </div> : null}
     {caps.sizing ? <div className="rounded-lg border border-[#eee] p-2"><div className="mb-2 flex items-center justify-between"><strong className="text-[10px] uppercase tracking-wide text-[#6d7175]">Sizing</strong>{styles.size?<VsnButton type="button" variant="plain" size="slim" onClick={()=>resetSection('size')}>Reset</VsnButton>:null}</div><div className="grid grid-cols-2 gap-2"><CssLengthControl label="Width" value={styles.size?.width ?? ""} defaultUnit="%" keywords={["auto","fit-content","min-content","max-content"]} onChange={(width)=>styleSection("size",{width})}/><CssLengthControl label="Height" value={styles.size?.height ?? ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} onChange={(height)=>styleSection("size",{height})}/><CssLengthControl label="Min width" value={styles.size?.minWidth ?? ""} defaultUnit="px" onChange={(minWidth)=>styleSection("size",{minWidth})}/><CssLengthControl label="Max width" value={styles.size?.maxWidth ?? ""} defaultUnit="px" keywords={["none"]} onChange={(maxWidth)=>styleSection("size",{maxWidth})}/></div></div> : null}
-    {caps.spacing ? <div className="rounded-lg border border-[#eee] p-2"><div className="mb-2 flex items-center justify-between"><strong className="text-[10px] uppercase tracking-wide text-[#6d7175]">Spacing</strong>{styles.spacing?<VsnButton type="button" variant="plain" size="slim" onClick={()=>resetSection('spacing')}>Reset</VsnButton>:null}</div><LinkedDimensionsControl label="Margin" values={{top:styles.spacing?.marginTop||"",right:styles.spacing?.marginRight||"",bottom:styles.spacing?.marginBottom||"",left:styles.spacing?.marginLeft||""}} onChange={(v)=>styleSection("spacing",{marginTop:v.top,marginRight:v.right,marginBottom:v.bottom,marginLeft:v.left})}/><LinkedDimensionsControl label="Padding" values={{top:styles.spacing?.paddingTop||"",right:styles.spacing?.paddingRight||"",bottom:styles.spacing?.paddingBottom||"",left:styles.spacing?.paddingLeft||""}} onChange={(v)=>styleSection("spacing",{paddingTop:v.top,paddingRight:v.right,paddingBottom:v.bottom,paddingLeft:v.left})}/></div> : null}
+    {caps.spacing ? <div className="rounded-lg border border-[#eee] p-2"><div className="mb-2 flex items-center justify-between"><strong className="text-[10px] uppercase tracking-wide text-[#6d7175]">Spacing</strong>{styles.spacing?<VsnButton type="button" variant="plain" size="slim" onClick={()=>resetSection('spacing')}>Reset</VsnButton>:null}</div><LinkedDimensionsControl label="Margin" values={{top:styles.spacing?.marginTop||"",right:styles.spacing?.marginRight||"",bottom:styles.spacing?.marginBottom||"",left:styles.spacing?.marginLeft||""}} onChange={(v)=>styleSection("spacing",{marginTop:v.top,marginRight:v.right,marginBottom:v.bottom,marginLeft:v.left})}/><LinkedDimensionsControl label="Padding" min={0} values={{top:styles.spacing?.paddingTop||"",right:styles.spacing?.paddingRight||"",bottom:styles.spacing?.paddingBottom||"",left:styles.spacing?.paddingLeft||""}} onChange={(v)=>styleSection("spacing",{paddingTop:v.top,paddingRight:v.right,paddingBottom:v.bottom,paddingLeft:v.left})}/></div> : null}
     {caps.layout ? <div className="grid grid-cols-2 gap-2"><SelectControl label="Display" value={styles.layout?.display ?? ""} onChange={(display)=>styleSection("layout",{display})} options={[{value:"",label:"Inherit"},"block","flex","grid","inline-flex","inline-grid","none"]}/><SelectControl label="Overflow" value={styles.layout?.overflow ?? ""} onChange={(overflow)=>styleSection("layout",{overflow})} options={[{value:"",label:"Inherit"},"visible","hidden","clip","auto","scroll"]}/></div> : null}
     {element.type === "collection-product-grid" ? <NumberControl label="Grid columns" value={props.columns ?? ""} unit="" min={1} max={8} onChange={(columns)=>update({props:{...props,columns}})}/> : null}
     <div className="rounded-lg border border-[#e3e3e3] p-2 space-y-2"><strong className="text-[10px] uppercase tracking-wide text-[#6d7175]">Container Queries</strong><SwitcherControl label="Use this element as a query container" checked={container.enabled===true} onChange={(enabled)=>onUpdate?.(element.id,{responsiveContainer:{...container,enabled,name:container.name||`vsn-${element.id}`,type:container.type||'inline-size'}})}/>{container.enabled?<><TextControl label="Container name" value={container.name||`vsn-${element.id}`} onChange={(name)=>onUpdate?.(element.id,{responsiveContainer:{...container,enabled:true,name}})}/><SelectControl label="Container type" value={container.type||'inline-size'} onChange={(type)=>onUpdate?.(element.id,{responsiveContainer:{...container,enabled:true,type}})} options={[{value:'inline-size',label:'Inline Size'},{value:'size',label:'Size'}]}/></>:null}<SwitcherControl label="Style by parent container" checked={query.enabled===true} onChange={(enabled)=>onUpdate?.(element.id,{containerQuery:{...query,enabled,name:query.name||'vsn-container',styles:query.styles||{},props:query.props||{}}})}/>{query.enabled?<><TextControl label="Parent container name" value={query.name||'vsn-container'} onChange={(name)=>onUpdate?.(element.id,{containerQuery:{...query,enabled:true,name}})}/><div className="grid grid-cols-2 gap-2"><NumberControl label="Min width" value={query.minWidth??0} min={0} unit="px" onChange={(minWidth)=>onUpdate?.(element.id,{containerQuery:{...query,enabled:true,minWidth}})}/><NumberControl label="Max width" value={query.maxWidth??''} min={0} unit="px" onChange={(maxWidth)=>onUpdate?.(element.id,{containerQuery:{...query,enabled:true,maxWidth:maxWidth===''?null:maxWidth}})}/></div><CssLengthControl label="Width in query" value={query.styles?.size?.width||''} defaultUnit="%" onChange={(width)=>onUpdate?.(element.id,{containerQuery:{...query,enabled:true,styles:{...(query.styles||{}),size:{...(query.styles?.size||{}),width}}}})}/></>:null}</div>
@@ -227,12 +227,12 @@ export function AdvancedLayoutPanel({ element, onUpdate, capabilities }) {
     {(caps.layout || caps.sizing) ? <Panel title="Layout & Sizing" defaultOpen={true} badge={String(caps.family || "widget").toUpperCase()}>
       {caps.sizing ? <>
         <div className="grid grid-cols-2 gap-2">
-          <CssKeywordLengthControl label="Width" value={size.width ?? ""} defaultUnit="%" onChange={(width)=>patchSection("size",{width})}/>
-          <CssKeywordLengthControl label="Height" value={size.height ?? ""} defaultUnit="px" onChange={(height)=>patchSection("size",{height})}/>
-          <CssKeywordLengthControl label="Min width" value={size.minWidth ?? ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} onChange={(minWidth)=>patchSection("size",{minWidth})}/>
-          <CssKeywordLengthControl label="Min height" value={size.minHeight ?? ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} onChange={(minHeight)=>patchSection("size",{minHeight})}/>
-          <CssKeywordLengthControl label="Max width" value={size.maxWidth ?? ""} defaultUnit="px" keywords={["none","fit-content","min-content","max-content"]} onChange={(maxWidth)=>patchSection("size",{maxWidth})}/>
-          <CssKeywordLengthControl label="Max height" value={size.maxHeight ?? ""} defaultUnit="px" keywords={["none","fit-content","min-content","max-content"]} onChange={(maxHeight)=>patchSection("size",{maxHeight})}/>
+          <CssKeywordLengthControl label="Width" min={0} value={size.width ?? ""} defaultUnit="%" onChange={(width)=>patchSection("size",{width})}/>
+          <CssKeywordLengthControl label="Height" min={0} value={size.height ?? ""} defaultUnit="px" onChange={(height)=>patchSection("size",{height})}/>
+          <CssKeywordLengthControl label="Min width" min={0} value={size.minWidth ?? ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} onChange={(minWidth)=>patchSection("size",{minWidth})}/>
+          <CssKeywordLengthControl label="Min height" min={0} value={size.minHeight ?? ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} onChange={(minHeight)=>patchSection("size",{minHeight})}/>
+          <CssKeywordLengthControl label="Max width" min={0} value={size.maxWidth ?? ""} defaultUnit="px" keywords={["none","fit-content","min-content","max-content"]} onChange={(maxWidth)=>patchSection("size",{maxWidth})}/>
+          <CssKeywordLengthControl label="Max height" min={0} value={size.maxHeight ?? ""} defaultUnit="px" keywords={["none","fit-content","min-content","max-content"]} onChange={(maxHeight)=>patchSection("size",{maxHeight})}/>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <AspectRatioControl value={layout.aspectRatio || ""} onChange={(aspectRatio)=>patchSection("layout",{aspectRatio})}/>
@@ -259,9 +259,9 @@ export function AdvancedLayoutPanel({ element, onUpdate, capabilities }) {
       <LinkedDimensionsControl label="Margin" values={{top:spacing.marginTop||"",right:spacing.marginRight||"",bottom:spacing.marginBottom||"",left:spacing.marginLeft||""}} onChange={(v)=>patchSection("spacing",{marginTop:v.top,marginRight:v.right,marginBottom:v.bottom,marginLeft:v.left})}/>
       <LinkedDimensionsControl label="Padding" values={{top:spacing.paddingTop||"",right:spacing.paddingRight||"",bottom:spacing.paddingBottom||"",left:spacing.paddingLeft||""}} onChange={(v)=>patchSection("spacing",{paddingTop:v.top,paddingRight:v.right,paddingBottom:v.bottom,paddingLeft:v.left})}/>
       {(caps.flexContainer || caps.gridContainer) ? <div className="grid grid-cols-2 gap-2">
-        <CssLengthControl label="Gap" value={layout.gap ?? ""} defaultUnit="px" onChange={(gap)=>patchSection("layout",{gap})}/>
-        <CssLengthControl label="Row gap" value={layout.rowGap ?? ""} defaultUnit="px" onChange={(rowGap)=>patchSection("layout",{rowGap})}/>
-        <CssLengthControl label="Column gap" value={layout.columnGap ?? ""} defaultUnit="px" onChange={(columnGap)=>patchSection("layout",{columnGap})}/>
+        <CssLengthControl label="Gap" min={0} value={layout.gap ?? ""} defaultUnit="px" onChange={(gap)=>patchSection("layout",{gap})}/>
+        <CssLengthControl label="Row gap" min={0} value={layout.rowGap ?? ""} defaultUnit="px" onChange={(rowGap)=>patchSection("layout",{rowGap})}/>
+        <CssLengthControl label="Column gap" min={0} value={layout.columnGap ?? ""} defaultUnit="px" onChange={(columnGap)=>patchSection("layout",{columnGap})}/>
       </div> : null}
     </Panel> : null}
 
@@ -342,7 +342,7 @@ export function AdvancedLayoutPanel({ element, onUpdate, capabilities }) {
         <SelectControl label="Touch action" value={interaction.touchAction || "auto"} onChange={(touchAction)=>patchSection("interaction",{touchAction})} options={["auto","none","pan-x","pan-y","manipulation","pinch-zoom"]}/>
         <SelectControl label="Appearance" value={interaction.appearance || "auto"} onChange={(appearance)=>patchSection("interaction",{appearance})} options={["auto","none","menulist-button","textfield"]}/>
         <SelectControl label="Resize" value={interaction.resize || "none"} onChange={(resize)=>patchSection("interaction",{resize})} options={["none","both","horizontal","vertical","block","inline"]}/>
-        <ColorGradientControl solidOnly label="Accent color" value={{type:"color",color:interaction.accentColor || "#95BF47"}} onChange={(next)=>patchSection("interaction",{accentColor:next.color})}/>
+        <ColorGradientControl solidOnly label="Accent color" value={{type:"color",color:interaction.accentColor || "#625BA8"}} onChange={(next)=>patchSection("interaction",{accentColor:next.color})}/>
         <ColorGradientControl solidOnly label="Caret color" value={{type:"color",color:interaction.caretColor || "#111111"}} onChange={(next)=>patchSection("interaction",{caretColor:next.color})}/>
       </div>
     </Panel> : null}

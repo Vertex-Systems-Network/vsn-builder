@@ -8,10 +8,6 @@ const HOVER_TRANSFORMS = {
   rotate: "rotate(2deg)",
 };
 
-function present(value) {
-  return value !== undefined && value !== null && value !== "";
-}
-
 function escapeCssAttribute(value) {
   return String(value || "")
     .replace(/\\/g, "\\\\")

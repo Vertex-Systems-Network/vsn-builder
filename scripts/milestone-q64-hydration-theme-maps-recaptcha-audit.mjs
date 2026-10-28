@@ -23,7 +23,7 @@ const formEngine=read("app/builder/formEngine.js");
 const formSettingsRoute=read("app/routes/app.form-settings.jsx");
 const panelHost=read("app/components/BuilderPanelHost.jsx");
 const properties=read("app/components/editor/PropertiesPanel.jsx");
-const proxy=read("app/routes/builder-proxy.$.jsx");
+const proxy=read("app/routes/builder-proxy.$.jsx")+read("app/storefront/formWidgets.js")+read("app/storefront/phase10Widgets.js");
 const secureProxy=read("app/routes/builder-proxy-secure.$.jsx");
 const renderer=read("extensions/vsn-page-builder-theme/assets/vsn-page-renderer.js");
 const formSubmission=read("app/services/storefront-form-submission.server.js");
@@ -46,8 +46,8 @@ await check("Dashboard prop synchronization is transitioned",()=>{assert.ok(dash
 await check("Default Dashboard Home is outside lazy Suspense",()=>assert.ok(dashboard.includes("activePage === 'home' ? renderPage() : <Suspense")));
 await check("Lazy Dashboard destinations still retain Suspense",()=>assert.ok(dashboard.includes("<Suspense fallback={<DashboardPageFallback/>}")));
 
-await check("UI has seven presets plus Custom",()=>{assert.equal(UI_COLOR_SCHEMES.filter((row)=>row.id!=="custom").length,7);assert.ok(UI_COLOR_SCHEMES.some((row)=>row.id==="custom"))});
-await check("Unknown scheme safely falls to Lime",()=>assert.equal(normalizeUiColorScheme("not-real"),"lime"));
+await check("UI has nine presets (VSN Metafields default) plus Custom",()=>{assert.equal(UI_COLOR_SCHEMES.filter((row)=>row.id!=="custom").length,9);assert.ok(UI_COLOR_SCHEMES.some((row)=>row.id==="custom"))});
+await check("Unknown scheme safely falls to VSN Metafields palette",()=>assert.equal(normalizeUiColorScheme("not-real"),"vsn"));
 await check("Three-digit custom hex normalizes",()=>assert.equal(normalizeUiHex("#abc"),"#AABBCC"));
 await check("Invalid custom hex safely falls back",()=>assert.equal(normalizeUiHex("bad","#123456"),"#123456"));
 await check("Resolved theme derives usable CSS values",()=>{const value=resolveUiTheme("custom","#2563eb");assert.equal(value.accent,"#2563EB");assert.match(value.accentRgb,/^\d+,\d+,\d+$/);assert.ok(value.accentDark.startsWith("#"));assert.ok(value.accentSoft.startsWith("#"))});

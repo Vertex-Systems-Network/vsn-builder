@@ -1,4 +1,6 @@
-import { getShopifyPlanHandleMap, normalizePricingHandle, normalizeShopDomain, resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
+import { isLocalBillingSimulation } from "../config/local-billing-simulation.js";
+import { normalizePlanKey } from "../config/commercialPlans.js";
+import { normalizePricingHandle, normalizeShopDomain, resolveInternalPlanKeyFromHandle } from "./shopify-app-pricing.server.js";
 
 const API_VERSION_RE=/^2026-(07|10)$|^unstable$/;
 const ORG_RE=/^[A-Za-z0-9_-]{1,120}$/;
@@ -16,7 +18,18 @@ function isoDate(v){if(!v)return null;const d=new Date(v);return Number.isNaN(d.
 function serializeError(error){return String(error?.message||error||"Unknown Partner API error").replace(/\s+/g," ").slice(0,500);}
 function newestLifecycle(edges=[]){return edges.map((e)=>e?.node).filter(Boolean).sort((a,b)=>new Date(b.occurredAt||0)-new Date(a.occurredAt||0))[0]||null;}
 function mapPlanHandle(handle){return resolveInternalPlanKeyFromHandle(handle);}
-function planFromItems(items=[]){const matches=[];for(const item of items||[]){const key=mapPlanHandle(item?.handle);if(key&&!matches.includes(key))matches.push(key);}return matches.length===1?{key:matches[0],handle:normalizePricingHandle((items||[]).find(i=>mapPlanHandle(i?.handle)===matches[0])?.handle),ambiguous:false}:{key:null,handle:null,ambiguous:matches.length>1};}
+export function planFromItems(items=[]){
+  const handles=[...new Set((items||[]).map((item)=>normalizePricingHandle(item?.handle)).filter(Boolean))];
+  const matches=[];
+  for(const handle of handles){const key=mapPlanHandle(handle);if(key&&!matches.includes(key))matches.push(key);}
+  if(matches.length===1){
+    return {key:matches[0],handle:handles.find((handle)=>mapPlanHandle(handle)===matches[0])||null,ambiguous:false};
+  }
+  // Keep a single unknown handle in diagnostics only. Never persist it as the
+  // active entitlement handle, where it could be confused with a mapped plan.
+  if(matches.length===0&&handles.length===1)return {key:null,handle:null,diagnosticHandle:handles[0],ambiguous:false};
+  return {key:null,handle:null,ambiguous:matches.length>1||handles.length>1};
+}
 function wait(ms){return new Promise((resolve)=>setTimeout(resolve,ms));}
 function retryAfterMs(response){const raw=response?.headers?.get?.("retry-after");if(!raw)return null;const seconds=Number(raw);if(Number.isFinite(seconds))return Math.max(0,Math.min(5000,Math.round(seconds*1000)));const date=new Date(raw);if(Number.isNaN(date.getTime()))return null;return Math.max(0,Math.min(5000,date.getTime()-Date.now()));}
 function graphqlRetryable(errors=[]){return (errors||[]).some((error)=>RETRYABLE_GRAPHQL_CODES.has(String(error?.extensions?.code||"").toUpperCase())||/throttl|temporar|service unavailable|internal server/i.test(String(error?.message||"")));}
@@ -38,7 +51,7 @@ function statusFrom(active,event,now=new Date()){
 export function getShopifySubscriptionSyncConfig(){
   const organizationId=clean(process.env.SHOPIFY_PARTNER_ORGANIZATION_ID||process.env.SHOPIFY_PARTNER_ORG_ID);
   const accessToken=clean(process.env.SHOPIFY_PARTNER_API_TOKEN||process.env.SHOPIFY_PARTNER_ACCESS_TOKEN);
-  const apiVersion=clean(process.env.SHOPIFY_PARTNER_API_VERSION||"2026-07");
+  const apiVersion=clean(process.env.SHOPIFY_PARTNER_API_VERSION||"2026-10");
   const issues=[];
   if(!ORG_RE.test(organizationId))issues.push("SHOPIFY_PARTNER_ORGANIZATION_ID is required and must be a valid Partner organization identifier.");
   if(!accessToken)issues.push("SHOPIFY_PARTNER_API_TOKEN is required for verified Shopify subscription sync.");
@@ -114,20 +127,22 @@ export async function fetchShopifySubscriptionState({appId,shopId,expectedShop,f
   const status=statusFrom(active,event,now);
   let planKey=active?activePlan.key:eventKey;
   let planHandle=active?activePlan.handle:eventHandle;
-  if(["inactive","canceled","frozen"].includes(status)){planKey="core";planHandle=planHandle||eventHandle||null;}
-  if(!planKey)planKey="core";
+  if(["inactive","canceled","frozen"].includes(status)){planKey="inactive";planHandle=null;}
+  if(!planKey)planKey="inactive";
 
   const pending=planFromItems(active?.pendingUpdate?.items||[]);
-  const pendingEvent=status==="canceling"&&event?.cancelEffectiveOn?{planKey:"core",planHandle:getShopifyPlanHandleMap().core,billingPeriod:null}:null;
-  return {active,event,status,planKey,planHandle,billingPeriod:active?.billingPeriod||event?.plan?.billingPeriod||null,trialEndsAt:active?.trialEndsAt||null,currentCycleStart:active?.currentBillingCycle?.startTime||null,currentCycleEnd:active?.currentBillingCycle?.endTime||null,cancelAtEndOfCycle:Boolean(active?.cancelAtEndOfCycle||status==="canceling"),cancelEffectiveOn:event?.cancelEffectiveOn||null,pendingPlanKey:pendingEvent?.planKey||pending.key||null,pendingPlanHandle:pendingEvent?.planHandle||pending.handle||null,pendingBillingPeriod:active?.pendingUpdate?.billingPeriod||null,legacySubscriptionId:active?.legacySubscriptionId||null,verifiedShopId:active?.shop?.id||shopId,verifiedShop:activeDomain||eventDomain||expectedDomain,snapshot:json.data,diagnostics:{activePlanAmbiguous:Boolean(activePlan.ambiguous),pendingPlanAmbiguous:Boolean(pending.ambiguous),historicalPlanKey:eventKey||null,historicalPlanHandle:eventHandle||null}};
+  const pendingEvent=status==="canceling"&&event?.cancelEffectiveOn?{planKey:"inactive",planHandle:null,billingPeriod:null}:null;
+  return {active,event,status,planKey,planHandle,billingPeriod:active?.billingPeriod||event?.plan?.billingPeriod||null,trialEndsAt:active?.trialEndsAt||null,currentCycleStart:active?.currentBillingCycle?.startTime||null,currentCycleEnd:active?.currentBillingCycle?.endTime||null,cancelAtEndOfCycle:Boolean(active?.cancelAtEndOfCycle||status==="canceling"),cancelEffectiveOn:event?.cancelEffectiveOn||null,pendingPlanKey:pendingEvent?.planKey||pending.key||null,pendingPlanHandle:pendingEvent?.planHandle||pending.handle||null,pendingBillingPeriod:active?.pendingUpdate?.billingPeriod||null,legacySubscriptionId:active?.legacySubscriptionId||null,verifiedShopId:active?.shop?.id||shopId,verifiedShop:activeDomain||eventDomain||expectedDomain,snapshot:json.data,diagnostics:{activePlanAmbiguous:Boolean(activePlan.ambiguous),activePlanHandle:activePlan.diagnosticHandle||null,pendingPlanAmbiguous:Boolean(pending.ambiguous),historicalPlanKey:eventKey||null,historicalPlanHandle:eventHandle||null}};
 }
 
 export function subscriptionMirrorIsFresh(row,now=new Date()){if(!row?.verifiedAt)return false;return now.getTime()-new Date(row.verifiedAt).getTime()<=getShopifySubscriptionSyncConfig().cacheTtlSeconds*1000;}
-export function subscriptionMirrorMatchesCurrentPlanHandles(row){if(!row)return false;const status=String(row.status||"").toLowerCase();if(["inactive","canceled","frozen"].includes(status))return true;const mapped=resolveInternalPlanKeyFromHandle(row.planHandle);return Boolean(mapped&&mapped===String(row.planKey||"").toLowerCase());}
+export function subscriptionMirrorMatchesCurrentPlanHandles(row){if(!row)return false;const status=String(row.status||"").toLowerCase();if(["inactive","canceled","frozen"].includes(status))return true;const mapped=resolveInternalPlanKeyFromHandle(row.planHandle);return Boolean(mapped&&mapped===normalizePlanKey(row.planKey));}
 export function subscriptionMirrorIsTrusted(row,now=new Date()){if(!row?.verifiedAt||row?.provider!=="shopify-app-pricing")return false;return now.getTime()-new Date(row.verifiedAt).getTime()<=getShopifySubscriptionSyncConfig().maxStaleSeconds*1000;}
 
 async function syncInner({db,admin,shop,force=false,fetchImpl=fetch,sleepImpl=wait,now=new Date()}){
-  if(process.env.NODE_ENV!=="production"&&!/^(1|true|yes|on)$/i.test(clean(process.env.VSN_SYNC_SHOPIFY_BILLING_IN_DEVELOPMENT)))return {ok:true,skipped:true,reason:"developer-mode"};
+  if(isLocalBillingSimulation() &&
+     !/^(1|true|yes|on)$/i.test(clean(process.env.VSN_SYNC_SHOPIFY_BILLING_IN_DEVELOPMENT)))
+    return {ok:true,skipped:true,reason:"developer-mode"};
   const config=getShopifySubscriptionSyncConfig();if(!config.configured)return {ok:false,skipped:true,reason:"unconfigured",issues:config.issues};
   const existing=await db.builderSubscription.findUnique({where:{shop}}).catch(()=>null);
   if(!force&&subscriptionMirrorIsFresh(existing,now)&&subscriptionMirrorMatchesCurrentPlanHandles(existing))return {ok:true,skipped:true,reason:"fresh-cache",row:existing};

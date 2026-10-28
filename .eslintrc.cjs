@@ -17,7 +17,7 @@ module.exports = {
   env: {
     browser: true,
     commonjs: true,
-    es6: true,
+    es2022: true,
   },
   ignorePatterns: ["!**/.server", "!**/.client"],
 
@@ -50,6 +50,8 @@ module.exports = {
       },
       rules: {
         "react/no-unknown-property": ["error", { ignore: ["variant"] }],
+        // The codebase does not use PropTypes; props are validated by schemas/TypeScript.
+        "react/prop-types": "off",
       },
     },
 
@@ -84,10 +86,28 @@ module.exports = {
         ".graphqlrc.{js,ts}",
         "shopify.server.{js,ts}",
         "**/*.server.{js,ts}",
+        "react-router.config.js",
+        "app/root.jsx",
+        "app/routes/**",
+        "app/config/**",
+        "app/services/**",
+        "workers/**",
+        "scripts/**",
       ],
       env: {
         node: true,
       },
+    },
+
+    // Import attributes (`with { type: "json" }`) need a newer parser than ESLint 8's espree.
+    {
+      files: [
+        "app/services/db-worker-neon.js",
+        "app/services/neon-target-policy.js",
+        "app/services/shopify-worker-configuration.js",
+        "examples/plugins/**/*.{js,jsx}",
+      ],
+      parser: "@typescript-eslint/parser",
     },
   ],
   globals: {

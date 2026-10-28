@@ -23,12 +23,14 @@ function cleanUrl(value) {
 const appUrl = cleanUrl(process.env.SHOPIFY_PRODUCTION_APP_URL);
 const explicitClientId = String(process.env.SHOPIFY_PRODUCTION_CLIENT_ID || "").trim();
 const sourceClientId = source.match(/^client_id\s*=\s*"([^"]+)"/m)?.[1] || "";
-const allowCurrentClientId = String(process.env.VSN_PRODUCTION_USE_CURRENT_CLIENT_ID || "") === "1";
-const clientId = explicitClientId || (allowCurrentClientId ? sourceClientId : "");
-if (!clientId) fail("Set SHOPIFY_PRODUCTION_CLIENT_ID, or explicitly set VSN_PRODUCTION_USE_CURRENT_CLIENT_ID=1 when production uses the same Shopify app.");
+if (String(process.env.VSN_PRODUCTION_USE_CURRENT_CLIENT_ID || "") === "1") fail("Production requires an explicit verified SHOPIFY_PRODUCTION_CLIENT_ID rather than the old auto-reuse bypass.");
+const clientId = explicitClientId;
+if (!clientId) fail("Set the verified public VSN Builder SHOPIFY_PRODUCTION_CLIENT_ID explicitly; do not use a Dev or Staging app.");
+if (clientId.toLowerCase() !== sourceClientId.toLowerCase()) fail("Production client ID must match the canonical public VSN Builder Shopify app.");
 if (!/^[A-Za-z0-9_-]{16,}$/.test(clientId)) fail("SHOPIFY_PRODUCTION_CLIENT_ID does not look valid.");
 
-const appName = String(process.env.SHOPIFY_PRODUCTION_APP_NAME || "VSN Builder").trim() || "VSN Builder";
+const appName = "VSN | Builder";
+if (process.env.SHOPIFY_PRODUCTION_APP_NAME && process.env.SHOPIFY_PRODUCTION_APP_NAME.trim() !== appName) fail("Production Shopify app name must be VSN | Builder.");
 const appHandle = String(process.env.SHOPIFY_PRODUCTION_APP_HANDLE || process.env.SHOPIFY_APP_HANDLE || "").trim().toLowerCase();
 if (appHandle && !/^[a-z0-9][a-z0-9_-]{0,79}$/.test(appHandle)) fail("SHOPIFY_PRODUCTION_APP_HANDLE must contain only letters, numbers, hyphens or underscores.");
 let output = source;
@@ -39,12 +41,12 @@ if (appHandle) {
   else output = output.replace(/^name\s*=.*$/m, (line) => `${line}\nhandle = ${JSON.stringify(appHandle)}`);
 }
 output = output.replace(/^application_url\s*=.*$/m, `application_url = "${appUrl}"`);
-output = output.replace(/(^\[webhooks\][\s\S]*?^api_version\s*=\s*)"[^"]+"/m, `$1"2026-07"`);
+output = output.replace(/(^\[webhooks\][\s\S]*?^api_version\s*=\s*)"[^"]+"/m, `$1"2026-10"`);
 output = output.replace(/(^\[auth\][\s\S]*?^redirect_urls\s*=\s*)\[[^\]]*\]/m, `$1[ "${appUrl}/auth/callback" ]`);
 output = output.replace(/(^\[build\][\s\S]*?^automatically_update_urls_on_dev\s*=\s*)(true|false)/m, "$1false");
 
 if (output.includes('application_url = "https://example.com"')) fail("Failed to replace the development application_url.");
-if (!output.includes('api_version = "2026-07"')) fail("Production webhook API version must be 2026-07.");
+if (!output.includes('api_version = "2026-10"')) fail("Production webhook API version must be 2026-10.");
 if (!output.includes(`redirect_urls = [ "${appUrl}/auth/callback" ]`)) fail("Production OAuth callback could not be generated.");
 if (!output.includes('automatically_update_urls_on_dev = false')) fail("Production config must disable automatically_update_urls_on_dev.");
 
@@ -53,4 +55,4 @@ console.log(`VSN production Shopify config written: ${path.relative(process.cwd(
 console.log(`Application URL: ${appUrl}`);
 console.log(`OAuth callback: ${appUrl}/auth/callback`);
 if (appHandle) console.log(`App handle: ${appHandle}`);
-console.log("Next: npm run release:production:check, then npm run deploy:production");
+console.log("Production config generated for preflight only; direct deployment remains BLOCKED until approved release workflow and Staging acceptance.");

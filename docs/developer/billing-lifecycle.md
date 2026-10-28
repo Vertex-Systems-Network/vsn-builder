@@ -1,76 +1,43 @@
-# Billing Lifecycle UX — Q5.4
+# Billing Lifecycle UX — Paid-only Shopify App Pricing contract
 
-Q5.4 is the merchant-facing billing lifecycle layer on top of Q5.1 Shopify App Pricing, Q5.2 verified Partner API subscription sync, and Q5.3 Entitlement Engine 2.0.
+This document records the owner-directed eight-plan expansion from 2026-10-26. Earlier four-plan acceptance notes are historical; Shopify Partner publication remains a separate pending step.
 
-## Public plans and exact Shopify handles
+## Public plans and exact Shopify IDs
 
-Merchant-facing plan names are:
+| Public plan | Canonical ID and Shopify handle | USD monthly | USD yearly | Trial |
+| --- | --- | ---: | ---: | --- |
+| Starter | `starter` | $30 | — | 10 days |
+| Solo | `solo` | $60 | — | 10 days |
+| Silver | `silver` | $100 | — | 10 days |
+| Gold | `gold` | $150 | — | 10 days |
+| Business | `business` | $250 | — | 10 days |
+| Platinum | `platinum` | $350 | $3,000 | 10 days |
+| Agency | `agency` | $600 | — | 10 days |
+| Scale | `scale` | $1,000 | — | 10 days |
 
-| Public plan | Stable internal ID | Default Shopify plan handle |
-| --- | --- | --- |
-| Free | `core` | `free` |
-| Silver | `pro` | `sliver` |
-| Gold | `cro` | `gold` |
-| Platinum | `agency` | `platenium` |
+All eight plans are paid; there is no Free public plan. Their public plan IDs and display names match. The previous Shopify `sliver` handle and historical DB IDs are accepted as migration aliases only; `free` never maps to paid Starter.
 
-The Shopify handle spellings are intentional and must match Shopify exactly. Q5.4 does not rename `sliver` to `silver` or `platenium` to `platinum` at the billing boundary.
+## Environment configuration
 
-The stable internal IDs remain unchanged to preserve database history, entitlement definitions, marketplace gates, developer integrations and previous migrations.
-
-## Environment variables
-
-Preferred public plan variables:
-
-- `SHOPIFY_APP_PRICING_PLAN_FREE_HANDLE=free`
-- `SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE=sliver`
+- `SHOPIFY_APP_PRICING_PLAN_STARTER_HANDLE=starter`
+- `SHOPIFY_APP_PRICING_PLAN_SOLO_HANDLE=solo`
+- `SHOPIFY_APP_PRICING_PLAN_SILVER_HANDLE=silver`
 - `SHOPIFY_APP_PRICING_PLAN_GOLD_HANDLE=gold`
-- `SHOPIFY_APP_PRICING_PLAN_PLATINUM_HANDLE=platenium`
+- `SHOPIFY_APP_PRICING_PLAN_BUSINESS_HANDLE=business`
+- `SHOPIFY_APP_PRICING_PLAN_PLATINUM_HANDLE=platinum`
+- `SHOPIFY_APP_PRICING_PLAN_AGENCY_HANDLE=agency`
+- `SHOPIFY_APP_PRICING_PLAN_SCALE_HANDLE=scale`
 
-Legacy `CORE/PRO/CRO/AGENCY` handle variables remain accepted for existing deployments. Public plan variables take precedence.
+Older SILVER, CORE, PRO, CRO and AGENCY environment overrides can still be read during migration, but **do not create an extra public plan**. Verify that Live Partner Dashboard uses the canonical handles before publication.
 
-## Lifecycle states
+## Subscription lifecycle
 
-`app/config/billingLifecycle.js` converts the verified subscription mirror into a merchant-readable lifecycle:
+Shopify App Pricing is the source of billing authority; the Partner API `activeSubscription` response and shop identity must be verified. Production plan changes occur only on Shopify's hosted plan selection page. URL `plan_handle` query parameters cannot grant access.
 
-- Active
-- Trial
-- Cancellation scheduled
-- Frozen
-- Canceled
-- No active subscription
-- Developer simulation
+Active, trialing, and canceling contracts retain the verified tier until Shopify says otherwise. A trial is valid only when associated with an approved Shopify trial subscription, not merely because the store has been installed for fewer than 10 days. Shopify enforces trial eligibility/reinstallation proration. The UI may display the verified end date and remaining days.
 
-The UI also exposes:
+Absent, canceled, frozen, unverifiable, stale, unknown or ambiguous subscriptions fall back to **`inactive`**, a sentinel that grants **zero widgets, zero pages and no paid features**; the merchant can still navigate to Plans & License to subscribe. Existing content must not be deleted on downgrade/cancellation.
 
-- billing period
-- current billing-cycle start/end
-- trial end and days remaining
-- pending upgrade/downgrade
-- pending billing-period change
-- scheduled cancellation effective date
-- current and pending Shopify handles
-- last successful verification
-- last verification warning
+Manual `Refresh Shopify status` uses an authenticated server call; it does not create or cancel subscription contracts. `SHOPIFY_PARTNER_API_TOKEN` stays server-only. Staging and Live billing must undergo real acceptance before any App Store submission.
 
-## Recovery
-
-Production Plans & License surfaces include **Refresh Shopify status**. This performs a server-authenticated Partner API sync and never grants billing-change permission.
-
-The refresh action requires billing-view permission. Plan changes still require billing-manage permission and continue through Shopify's hosted App Pricing page.
-
-## Cache remap safety
-
-Q5.2 used a bounded verified subscription cache. Q5.4 adds a handle-compatibility check before reusing that cache. Active/trial/canceling mirrors are reused only when their stored Shopify handle still maps to their current internal plan under the current configuration.
-
-This protects upgrades from older VSN defaults (`core/pro/cro/agency`) when the real Shopify handles are `free/sliver/gold/platenium`: a mismatched fresh cache is re-verified instead of incorrectly persisting a Free fallback.
-
-Inactive, canceled and frozen mirrors remain safely reusable because those states fail closed to Free.
-
-## Security boundaries
-
-- `plan_handle` return parameters remain untrusted.
-- Partner API credentials remain server-only.
-- Manual refresh never creates/cancels a Shopify subscription.
-- Production paid access still requires the trusted Q5.2 mirror.
-- Q5.3 server-side entitlements remain the authorization authority.
-- Q5.4 adds no Prisma migration.
+Developer Mode plan simulation is not an authorization mechanism in production. No Live plan configuration, billing smoke or Shopify review submission is certified by this document.

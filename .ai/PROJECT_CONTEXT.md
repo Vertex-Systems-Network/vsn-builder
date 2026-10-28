@@ -19,7 +19,7 @@ The strategic target is not “a page builder with an AI button.” It is an AI-
 - Prisma 6.19.3; current datasource in `prisma/schema.prisma` is SQLite.
 - Node runtime contract in source: Node 22.18+ LTS, `<23`.
 - Playwright plus a large repository-specific QA/audit suite.
-- Shopify config currently targets webhook Admin API `2026-07`.
+- Shopify config currently targets webhook Admin API `2026-10`.
 - Current development-safe `shopify.app.toml` intentionally uses placeholder `example.com` URLs; production configuration is expected to be explicit/separate per `SRS.md`.
 
 ## Critical source locations

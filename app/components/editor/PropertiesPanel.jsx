@@ -3,8 +3,7 @@ import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router';
 import { DynamicSourcePanel, DynamicBindingsPanel, ConditionsBuilder, ResponsivePanel, AdvancedLayoutPanel, StateStylesPanel, BreakpointControls } from "./AdvancedBuilderControls";
 import PolarisIcon from '../ui/PolarisIcon';
-import { ColorGradientControl, CssLengthControl, DimensionsControl, SelectControl, SliderControl, TextControl, NumberControl, TypographyControl, DateTimeControl, TimeControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, BoxShadowControl, TextStrokeControl, BorderControl, BackgroundControl } from './EditorControls';
-import FilterEffectsControl from './FilterEffectsControl';
+import { ColorGradientControl, SliderControl, TextControl, NumberControl, TypographyControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, TextStrokeControl } from './EditorControls';
 import FontFamilyControl from './fonts/FontFamilyControl';
 import { getWidgetCapabilities } from '../../builder/widgetCapabilities';
 import WidgetSpecificStyleControls from './WidgetSpecificStyleControls';
@@ -304,40 +303,6 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
       },
     });
   };
-
-  const responsive = selectedElement?.responsive ?? {};
-  const deviceResponsive = responsive?.[deviceMode] ?? {};
-  const updateResponsiveStyle = (section, key, value) => {
-    if (!selectedElement) return;
-    onUpdate(selectedElement.id, {
-      responsive: {
-        ...responsive,
-        [deviceMode]: {
-          ...deviceResponsive,
-          styles: {
-            ...(deviceResponsive.styles || {}),
-            [section]: {
-              ...(deviceResponsive.styles?.[section] || {}),
-              [key]: value,
-            },
-          },
-        },
-      },
-    });
-  };
-
-  const updateResponsiveProp = (key, value) => {
-    if (!selectedElement) return;
-    onUpdate(selectedElement.id, {
-      responsive: {
-        ...responsive,
-        [deviceMode]: {
-          ...deviceResponsive,
-          props: { ...(deviceResponsive.props || {}), [key]: value },
-        },
-      },
-    });
-  };
   return (<div className="vsn-properties-panel" style={{ width }}>
     {!hideTabs ? <div className="vsn-inspector-tabs">
       {['content', 'style', 'advanced'].map(tab => (<button type="button" key={tab.charAt(0).toUpperCase()+tab.slice(1)} onClick={() => onTabChange(tab)} className={activeTab === tab ? 'is-active' : ''}>{tab.charAt(0).toUpperCase()+tab.slice(1)}</button>))}
@@ -346,10 +311,10 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
     {!selectedElement ? (<div className="flex-1 overflow-y-auto">
       <div className="px-4 py-3 border-b border-[#f1f1f1] bg-[#fafafa]">
         <p className="text-xs font-semibold text-[#1a1a1a]">Global Styles</p>
-        <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Select an element to edit that element instead.</p>
+        <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Selected element settings open in the left panel.</p>
       </div>
       <SectionHeader title="Colors">
-        <div><Label>Primary</Label><ColorInput value={globalStyles.primaryColor || "#95BF47"} onChange={(value) => onGlobalStylesChange?.({ primaryColor: value })} /></div>
+        <div><Label>Primary</Label><ColorInput value={globalStyles.primaryColor || "#625BA8"} onChange={(value) => onGlobalStylesChange?.({ primaryColor: value })} /></div>
         <div><Label>Text</Label><ColorInput value={globalStyles.textColor || "#1a1a1a"} onChange={(value) => onGlobalStylesChange?.({ textColor: value })} /></div>
         <div><Label>Background</Label><ColorInput value={globalStyles.backgroundColor || "#ffffff"} onChange={(value) => onGlobalStylesChange?.({ backgroundColor: value })} /></div>
       </SectionHeader>
@@ -357,14 +322,14 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         <FontFamilyControl label="Body font family" value={globalStyles.fontFamily || "Inter, system-ui, sans-serif"} onChange={(fontFamily)=>onGlobalStylesChange?.({fontFamily})} />
         <FontFamilyControl label="Heading font family" value={globalStyles.headingFontFamily || "inherit"} onChange={(headingFontFamily)=>onGlobalStylesChange?.({headingFontFamily})} />
       </SectionHeader>
-      <SectionHeader title="Motion Defaults"><MotionLibrarySelect label="Page motion preset" value={globalStyles.motionPresetId || ""} onChange={(motionPresetId)=>onGlobalStylesChange?.({motionPresetId})} onPreset={(preset)=>onGlobalStylesChange?.({motionPresetId:preset?.id||"",motionPresetTimeline:preset?.timeline||null})} /><div><Label>Reduced motion</Label><Select value={globalStyles.motionReducedMode || "system"} onChange={(motionReducedMode)=>onGlobalStylesChange?.({motionReducedMode})} options={[{value:"system",label:"Follow visitor preference"},{value:"reduce",label:"Prefer reduced motion"},{value:"full",label:"Allow full motion"}]} /></div><p className="text-[10px] leading-4 text-[#8c9196]">Saved Motion Library presets can be applied from any element's Advanced → Animation & Interaction panel. This page default is available there as a one-click preset.</p></SectionHeader>
+      <SectionHeader title="Motion Defaults"><MotionLibrarySelect label="Page motion preset" value={globalStyles.motionPresetId || ""} onChange={(motionPresetId)=>onGlobalStylesChange?.({motionPresetId})} onPreset={(preset)=>onGlobalStylesChange?.({motionPresetId:preset?.id||"",motionPresetTimeline:preset?.timeline||null})} /><div><Label>Reduced motion</Label><Select value={globalStyles.motionReducedMode || "system"} onChange={(motionReducedMode)=>onGlobalStylesChange?.({motionReducedMode})} options={[{value:"system",label:"Follow visitor preference"},{value:"reduce",label:"Prefer reduced motion"},{value:"full",label:"Allow full motion"}]} /></div><p className="text-[10px] leading-4 text-[#8c9196]">Saved Motion Library presets can be applied from any element&apos;s Advanced → Animation & Interaction panel. This page default is available there as a one-click preset.</p></SectionHeader>
       <SectionHeader title="Buttons">
         <div><Label>Background</Label><ColorInput value={globalStyles.buttonBackground || "#1a1a1a"} onChange={(value) => onGlobalStylesChange?.({ buttonBackground: value })} /></div>
         <div><Label>Text</Label><ColorInput value={globalStyles.buttonTextColor || "#ffffff"} onChange={(value) => onGlobalStylesChange?.({ buttonTextColor: value })} /></div>
         <div><Label>Radius</Label><VsnTextField label="Button radius" labelAccessibilityVisibility="exclusive" value={globalStyles.buttonRadius || "8px"} onInput={(e) => onGlobalStylesChange?.({ buttonRadius: e.currentTarget.value })} /></div>
       </SectionHeader>
       <SectionHeader title="Design Tokens">
-        <div className="grid grid-cols-2 gap-2"><div><Label>Secondary</Label><ColorInput value={globalStyles.secondaryColor || "#6d7175"} onChange={(value)=>onGlobalStylesChange?.({secondaryColor:value})}/></div><div><Label>Accent</Label><ColorInput value={globalStyles.accentColor || "#95BF47"} onChange={(value)=>onGlobalStylesChange?.({accentColor:value})}/></div></div>
+        <div className="grid grid-cols-2 gap-2"><div><Label>Secondary</Label><ColorInput value={globalStyles.secondaryColor || "#6d7175"} onChange={(value)=>onGlobalStylesChange?.({secondaryColor:value})}/></div><div><Label>Accent</Label><ColorInput value={globalStyles.accentColor || "#625BA8"} onChange={(value)=>onGlobalStylesChange?.({accentColor:value})}/></div></div>
         <div className="grid grid-cols-2 gap-2"><div><Label>Surface</Label><ColorInput value={globalStyles.surfaceColor || "#ffffff"} onChange={(value)=>onGlobalStylesChange?.({surfaceColor:value})}/></div><div><Label>Muted</Label><ColorInput value={globalStyles.mutedSurfaceColor || "#f6f6f7"} onChange={(value)=>onGlobalStylesChange?.({mutedSurfaceColor:value})}/></div></div>
         <div><Label>Border</Label><ColorInput value={globalStyles.borderColor || "#e3e3e3"} onChange={(value)=>onGlobalStylesChange?.({borderColor:value})}/></div>
         <div className="grid grid-cols-3 gap-2"><div><Label>Radius S</Label><VsnTextField label="Value" labelAccessibilityVisibility="exclusive" value={globalStyles.radiusSm || "6px"} onInput={(e)=>onGlobalStylesChange?.({radiusSm:e.currentTarget.value})} className="w-full px-2 py-1.5 text-xs border rounded-lg"/></div><div><Label>Radius M</Label><VsnTextField label="Value" labelAccessibilityVisibility="exclusive" value={globalStyles.radiusMd || "12px"} onInput={(e)=>onGlobalStylesChange?.({radiusMd:e.currentTarget.value})} className="w-full px-2 py-1.5 text-xs border rounded-lg"/></div><div><Label>Radius L</Label><VsnTextField label="Value" labelAccessibilityVisibility="exclusive" value={globalStyles.radiusLg || "20px"} onInput={(e)=>onGlobalStylesChange?.({radiusLg:e.currentTarget.value})} className="w-full px-2 py-1.5 text-xs border rounded-lg"/></div></div>
@@ -396,8 +361,8 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
       {/* Element info */}
       <div className="px-4 py-3 border-b border-[#f1f1f1] bg-[#fafafa]">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#95BF47]/10 rounded-lg flex items-center justify-center">
-            <span className="text-[#95BF47] text-xs font-bold">{selectedElement.type[0].toUpperCase()}</span>
+          <div className="w-7 h-7 bg-[#625BA8]/10 rounded-lg flex items-center justify-center">
+            <span className="text-[#625BA8] text-xs font-bold">{selectedElement.type[0].toUpperCase()}</span>
           </div>
           <div>
             <p className="text-xs font-semibold text-[#1a1a1a]">{selectedElement.label}</p>
@@ -512,7 +477,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
           {selectedElement.type === "video" && <VideoSettingsPanel props={props} updateProps={updateProps} />}
           {selectedElement.type === "slider" && <SliderSettingsPanel selectedElement={selectedElement} props={props} onUpdate={onUpdate} />}
           {selectedElement.type === "html" && <><div><Label>Render Mode</Label><Select value={props.mode || "html"} onChange={(v)=>updateProp("mode",v)} options={[{value:"html",label:"Custom HTML"},{value:"theme-section",label:"Shopify Theme Section Bridge"}]} /></div>{(props.mode || "html") === "theme-section" ? <><div><Label>Theme section ID</Label><VsnTextField label="Theme section ID" labelAccessibilityVisibility="exclusive" value={props.themeSectionId || ""} placeholder="Example: template--123456789__main" onInput={(e)=>updateProp("themeSectionId",e.currentTarget.value)} /></div><p className="text-[10px] leading-4 text-[#6d7175]">Renders an existing section instance from the current Shopify JSON template through the Section Rendering API. If that section contains third-party app blocks, they render with the section.</p></> : <div><Label>HTML</Label><VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={props.code || props.html || props.content || ""} onInput={(e)=>updateProp("code",e.currentTarget.value)} className="min-h-48 w-full rounded-lg border border-[#e3e3e3] bg-[#111] px-2.5 py-2 text-xs font-mono text-white" /></div>}</>}
-          {selectedElement.type === "liquid" && <div><Label>Liquid</Label><VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={props.code || props.liquid || props.content || ""} onInput={(e)=>updateProp("code",e.currentTarget.value)} className="min-h-48 w-full rounded-lg border border-[#e3e3e3] bg-[#111] px-2.5 py-2 text-xs font-mono text-white" /></div>}
+          {selectedElement.type === "liquid" && <div><Label>Liquid</Label><VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={props.code || props.liquid || props.content || ""} onInput={(e)=>updateProp("code",e.currentTarget.value)} className="min-h-48 w-full rounded-lg border border-[#e3e3e3] bg-[#111] px-2.5 py-2 text-xs font-mono text-white" /><p className="mt-1.5 text-[11px] text-[#6d7175]">Runs as Shopify Liquid on the live storefront. The editor shows the code; Safe Mode disables it.</p></div>}
         </SectionHeader>
       )}
 
@@ -1073,54 +1038,15 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
           />
         </SectionHeader> : null}
 
-        {capabilities.background ? <SectionHeader title="Background">
-          <BackgroundControl
-            value={styles.background || { type: "color", color: "#ffffff" }}
-            onChange={(next) => onUpdate(selectedElement.id, { styles: { ...styles, background: next } })}
-          />
+
+        {capabilities.textEffects ? <SectionHeader title="Text Effects">
+          <TextShadowControl value={styles.effects?.textShadow || {}} onChange={(value) => updateStyle("effects", "textShadow", value)} />
+          <TextStrokeControl value={styles.effects?.textStroke || {}} onChange={(value) => updateStyle("effects", "textStroke", value)} />
         </SectionHeader> : null}
 
-        {capabilities.border ? <SectionHeader title="Border">
-          <BorderControl
-            value={styles.border || { width: "0px", style: "solid", color: "#e3e3e3", radius: "0px", sides: "all" }}
-            onChange={(next) => onUpdate(selectedElement.id, { styles: { ...styles, border: next } })}
-          />
-        </SectionHeader> : null}
+      </>)}
 
-        {capabilities.spacing ? <SectionHeader title="Spacing">
-          <DimensionsControl
-            label="Margin"
-            values={{ top: styles.spacing?.marginTop, right: styles.spacing?.marginRight, bottom: styles.spacing?.marginBottom, left: styles.spacing?.marginLeft }}
-            onChange={(next) => onUpdate(selectedElement.id, { styles: { ...styles, spacing: { ...(styles.spacing || {}), marginTop: next.top, marginRight: next.right, marginBottom: next.bottom, marginLeft: next.left } } })}
-          />
-          <DimensionsControl
-            label="Padding"
-            values={{ top: styles.spacing?.paddingTop, right: styles.spacing?.paddingRight, bottom: styles.spacing?.paddingBottom, left: styles.spacing?.paddingLeft }}
-            onChange={(next) => onUpdate(selectedElement.id, { styles: { ...styles, spacing: { ...(styles.spacing || {}), paddingTop: next.top, paddingRight: next.right, paddingBottom: next.bottom, paddingLeft: next.left } } })}
-          />
-        </SectionHeader> : null}
-
-        {capabilities.sizing ? <SectionHeader title="Size">
-          <div className="grid grid-cols-2 gap-2">
-            <CssLengthControl label="Width" value={styles.size?.width || ""} defaultUnit="%" keywords={["auto","fit-content","min-content","max-content"]} placeholder="100" onChange={(v) => updateStyle("size", "width", v)} />
-            <CssLengthControl label="Height" value={styles.size?.height || ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} placeholder="auto" onChange={(v) => updateStyle("size", "height", v)} />
-            <CssLengthControl label="Min width" value={styles.size?.minWidth || ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} placeholder="0" onChange={(v) => updateStyle("size", "minWidth", v)} />
-            <CssLengthControl label="Min height" value={styles.size?.minHeight || ""} defaultUnit="px" keywords={["auto","fit-content","min-content","max-content"]} placeholder="0" onChange={(v) => updateStyle("size", "minHeight", v)} />
-            <CssLengthControl label="Max width" value={styles.size?.maxWidth || ""} defaultUnit="px" keywords={["none","fit-content","min-content","max-content"]} placeholder="none" onChange={(v) => updateStyle("size", "maxWidth", v)} />
-            <CssLengthControl label="Max height" value={styles.size?.maxHeight || ""} defaultUnit="px" keywords={["none","fit-content","min-content","max-content"]} placeholder="none" onChange={(v) => updateStyle("size", "maxHeight", v)} />
-          </div>
-        </SectionHeader> : null}
-
-        {capabilities.effects ? <SectionHeader title="Effects">
-          {capabilities.textEffects ? <>
-            <TextShadowControl value={styles.effects?.textShadow || {}} onChange={(value) => updateStyle("effects", "textShadow", value)} />
-            <TextStrokeControl value={styles.effects?.textStroke || {}} onChange={(value) => updateStyle("effects", "textStroke", value)} />
-          </> : null}
-          <BoxShadowControl value={styles.effects?.boxShadow || {}} onChange={(value) => updateStyle("effects", "boxShadow", value)} />
-          <FilterEffectsControl value={styles.effects?.filters || {}} onChange={(value) => updateStyle("effects", "filters", value)} />
-          <SliderControl label="Opacity" value={Number.isFinite(parseFloat(String(styles.effects?.opacity ?? "100").replace("%", ""))) ? parseFloat(String(styles.effects?.opacity ?? "100").replace("%", "")) : 100} min={0} max={100} suffix="%" onChange={(v) => updateStyle("effects", "opacity", `${v}%`)} />
-        </SectionHeader> : null}
-
+      {activeTab === 'content' && (<>
         {(capabilities.media || capabilities.imageDimensions || capabilities.icon || capabilities.backgroundGallery) ? <SectionHeader title="Widget Media">
           {capabilities.media && selectedElement.type !== "image" ? <MediaControl
             label="Element Media"
@@ -1154,8 +1080,6 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
             onChange={(value) => updateStyle("advanced", "link", value)}
           />
         </SectionHeader> : null}
-
-
       </>)}
 
       {activeTab === 'content' && (<div className="p-4 space-y-3">
@@ -1165,9 +1089,9 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         </div>
         <div>
           <Label>Label</Label>
-          <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={selectedElement.label} onInput={e => onUpdate(selectedElement.id, { label: e.currentTarget.value })} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]" />
+          <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={selectedElement.label} onInput={e => onUpdate(selectedElement.id, { label: e.currentTarget.value })} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]" />
         </div>
-        {capabilities.dynamicSource ? <VsnButton type="button" onClick={() => onTabChange('advanced')} className={`flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-[10px] font-semibold ${selectedElement.dynamicSource?.enabled && selectedElement.dynamicSource?.source ? "border-emerald-200 bg-emerald-50 text-[#6AAB1F]" : "border-[#e3e3e3] bg-white text-[#6d7175] hover:border-[#95BF47]/40 hover:text-[#6AAB1F]"}`}><span>{selectedElement.dynamicSource?.enabled && selectedElement.dynamicSource?.source ? `Dynamic: ${selectedElement.dynamicSource.source}` : "Add dynamic source"}</span><PolarisIcon type={selectedElement.dynamicSource?.enabled ? "edit" : "plus"} size="small" /></VsnButton> : null}
+        {capabilities.dynamicSource ? <VsnButton type="button" onClick={() => onTabChange('advanced')} className={`flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-[10px] font-semibold ${selectedElement.dynamicSource?.enabled && selectedElement.dynamicSource?.source ? "border-emerald-200 bg-emerald-50 text-[#4E4890]" : "border-[#e3e3e3] bg-white text-[#6d7175] hover:border-[#625BA8]/40 hover:text-[#4E4890]"}`}><span>{selectedElement.dynamicSource?.enabled && selectedElement.dynamicSource?.source ? `Dynamic: ${selectedElement.dynamicSource.source}` : "Add dynamic source"}</span><PolarisIcon type={selectedElement.dynamicSource?.enabled ? "edit" : "plus"} size="small" /></VsnButton> : null}
         {selectedElement.type === "image" && (() => {
           const imageProps = normalizeImageWidgetProps(props);
           const mediaValue = imageProps.media?.url ? imageProps.media : (imageProps.sourceType === "shopify" && imageProps.src ? { url: imageProps.src, alt: imageProps.alt || "" } : {});
@@ -1326,12 +1250,12 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
 
                 <div>
                   <Label>Filter Heading</Label>
-                  <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={props.filterLabel ?? "Filter products"} onInput={(event) => updateProp("filterLabel", event.currentTarget.value)} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]" />
+                  <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={props.filterLabel ?? "Filter products"} onInput={(event) => updateProp("filterLabel", event.currentTarget.value)} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]" />
                 </div>
 
                 <div>
                   <Label>Clear Button Text</Label>
-                  <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={props.clearFiltersText ?? "Clear filters"} onInput={(event) => updateProp("clearFiltersText", event.currentTarget.value)} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]" />
+                  <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={props.clearFiltersText ?? "Clear filters"} onInput={(event) => updateProp("clearFiltersText", event.currentTarget.value)} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]" />
                 </div>
               </>
             )}
@@ -1358,7 +1282,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     ),
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1386,7 +1310,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     ),
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1414,7 +1338,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     ),
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1442,7 +1366,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     ),
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1535,7 +1459,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     event.currentTarget.value,
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1553,7 +1477,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     event.currentTarget.value,
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1642,17 +1566,14 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         )}
         {selectedElement.type === 'heading' || selectedElement.type === 'text' ? (<div>
           <Label>Text Content</Label>
-          <VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={selectedElement.props.text ?? ''} onInput={e => onUpdate(selectedElement.id, { props: { text: e.currentTarget.value } })} rows={4} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47] resize-none" />
-          {dynamicFieldsForWidget(selectedElement.type).some((field)=>field.path==='props.text') ? <VsnButton type="button" onClick={() => { onUpdate(selectedElement.id,{meta:{...(selectedElement.meta||{}),dynamicFocusPath:'props.text'}}); onTabChange('advanced'); }} className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#6AAB1F]"><span aria-hidden="true">⚡</span> Dynamic content</VsnButton> : null}
+          <VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={selectedElement.props.text ?? ''} onInput={e => onUpdate(selectedElement.id, { props: { text: e.currentTarget.value } })} rows={4} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8] resize-none" />
+          {dynamicFieldsForWidget(selectedElement.type).some((field)=>field.path==='props.text') ? <VsnButton type="button" onClick={() => { onUpdate(selectedElement.id,{meta:{...(selectedElement.meta||{}),dynamicFocusPath:'props.text'}}); onTabChange('advanced'); }} className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#4E4890]"><span aria-hidden="true">⚡</span> Dynamic content</VsnButton> : null}
         </div>) : null}
       </div>)}
 
       {activeTab === 'advanced' && selectedElement && (
-        <div className="flex-1 space-y-3 overflow-y-auto p-3">
-          {dynamicFieldsForWidget(selectedElement.type).length ? <DynamicBindingsPanel element={selectedElement} onUpdate={onUpdate} context={bindingContext} /> : null}
-          {selectedElement.dynamicSource?.enabled ? <DynamicSourcePanel element={selectedElement} onUpdate={onUpdate} /> : null}
-          {capabilities.conditions ? <ConditionsBuilder element={selectedElement} onUpdate={onUpdate} /> : null}
-          {capabilities.responsive ? <ResponsivePanel element={selectedElement} deviceMode={deviceMode} onUpdate={onUpdate} capabilities={capabilities} globalStyles={globalStyles} /> : null}
+        <div className="flex-1 overflow-y-auto">
+          {/* Elementor-style order: layout first, then motion, responsive, conditions, data and code. */}
           <AdvancedLayoutPanel element={selectedElement} onUpdate={onUpdate} capabilities={capabilities} />
           {capabilities.stateStyles ? <StateStylesPanel element={selectedElement} onUpdate={onUpdate} capabilities={capabilities} /> : null}
           {capabilities.animations ? <SectionHeader title="Animation & Interaction">
@@ -1694,6 +1615,10 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
             <CheckboxControl label="Parallax" checked={interactions.parallax} onChange={(value)=>updateInteraction({parallax:value})} />
             <div className="mt-3 border-t border-[#e3e3e3] pt-3"><InteractionTimelinePanel value={interactions} elementId={selectedElement.id} onChange={updateInteraction} globalMotionTimeline={globalStyles.motionPresetTimeline || null} /></div>
           </SectionHeader> : null}
+          {capabilities.responsive ? <ResponsivePanel element={selectedElement} deviceMode={deviceMode} onUpdate={onUpdate} capabilities={capabilities} globalStyles={globalStyles} /> : null}
+          {capabilities.conditions ? <ConditionsBuilder element={selectedElement} onUpdate={onUpdate} /> : null}
+          {dynamicFieldsForWidget(selectedElement.type).length ? <DynamicBindingsPanel element={selectedElement} onUpdate={onUpdate} context={bindingContext} /> : null}
+          {selectedElement.dynamicSource?.enabled ? <DynamicSourcePanel element={selectedElement} onUpdate={onUpdate} /> : null}
           {capabilities.cssVariables ? <SectionHeader title="CSS Variables">
             <RepeaterControl
               label="Variables"

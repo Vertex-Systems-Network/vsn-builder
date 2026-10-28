@@ -46,7 +46,7 @@ if (!codeCss.includes("vsn-code-surface") || !codeCss.includes("max-height:420px
 const contentCss = buildWidgetSpecificCss("team-grid", "css5-team", { contentCollection: { background: "#ffffff", radius: "12px", titleColor: "#111111" } });
 if (!contentCss.includes("vsn-team-card") || !contentCss.includes("border-radius:12px")) throw new Error("Content collection CSS missing");
 
-const proxy = fs.readFileSync(new URL("../app/routes/builder-proxy.$.jsx", import.meta.url), "utf8");
+const proxy = fs.readFileSync(new URL("../app/routes/builder-proxy.$.jsx", import.meta.url), "utf8") + fs.readFileSync(new URL("../app/storefront/contentWidgets.js", import.meta.url), "utf8") + fs.readFileSync(new URL("../app/storefront/extendedWidgets.js", import.meta.url), "utf8") + fs.readFileSync(new URL("../app/storefront/phase10Widgets.js", import.meta.url), "utf8");
 const preview = fs.readFileSync(new URL("../app/components/editor/PreviewRenderer.jsx", import.meta.url), "utf8");
 for (const token of ["vsn-search-card-title", "vsn-article-card", "vsn-article-tag", "vsn-customer-name-value", "vsn-code-surface", "vsn-team-card"]) {
   if (!proxy.includes(token)) throw new Error(`Storefront semantic hook missing: ${token}`);

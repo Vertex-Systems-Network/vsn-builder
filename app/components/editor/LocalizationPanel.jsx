@@ -24,6 +24,7 @@ export default function LocalizationPanel({ open, onClose, data = {}, elements =
     setOverrides(record?.overrides || {});
     setSeo(record?.seo || {});
     setStatus(record?.status || "draft");
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reset form only when the record identity/locale changes, not on each record object refresh
   }, [open, record?.id, locale, marketKey]);
 
   useEffect(() => {
@@ -62,14 +63,14 @@ export default function LocalizationPanel({ open, onClose, data = {}, elements =
           <label className="text-[10px] font-semibold text-[#555]">Market<VsnSelect value={marketKey} onChange={(event)=>setMarketKey(event.currentTarget.value)}><VsnOption value="*">All markets</VsnOption>{(config.markets||[]).map((item)=><VsnOption key={item.key} value={item.key}>{item.name}</VsnOption>)}</VsnSelect></label>
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#ececec]"><div className="h-full bg-[#95BF47]" style={{ width:`${completion.percent}%` }}/></div><span className="text-[10px] font-semibold text-[#555]">{completion.percent}%</span>
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#ececec]"><div className="h-full bg-[#625BA8]" style={{ width:`${completion.percent}%` }}/></div><span className="text-[10px] font-semibold text-[#555]">{completion.percent}%</span>
           <span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${outdated?"bg-amber-50 text-amber-700":record?"bg-emerald-50 text-emerald-700":"bg-[#f1f1f1] text-[#666]"}`}>{outdated?"Outdated":record?.status||"Missing"}</span>
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <section className="rounded-xl border border-[#e3e3e3] p-3">
-          <div className="flex items-center justify-between gap-3"><div><div className="text-xs font-semibold text-[#303030]">Locale preview</div><div className="mt-0.5 text-[10px] text-[#888]">Apply overrides to the canvas without changing base content.</div></div><button type="button" onClick={()=>setPreview((value)=>!value)} className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold ${preview?"bg-[#95BF47] text-white":"bg-[#f3f4f6] text-[#555]"}`}>{preview?"Previewing":"Preview"}</button></div>
+          <div className="flex items-center justify-between gap-3"><div><div className="text-xs font-semibold text-[#303030]">Locale preview</div><div className="mt-0.5 text-[10px] text-[#888]">Apply overrides to the canvas without changing base content.</div></div><button type="button" onClick={()=>setPreview((value)=>!value)} className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold ${preview?"bg-[#625BA8] text-white":"bg-[#f3f4f6] text-[#555]"}`}>{preview?"Previewing":"Preview"}</button></div>
           <div className="mt-2 text-[10px] text-[#777]">Direction: <strong>{localeDirection(locale).toUpperCase()}</strong>{market?` · ${market.name}`:" · inherited by every market"}</div>
         </section>
 

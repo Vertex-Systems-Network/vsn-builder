@@ -1,10 +1,11 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { builderActor, getBuilderRole } from "../utils/builder-permissions.js";
 import { canAccessBuilderAction } from "../utils/builder-permissions.server.js";
 import { getPlan, getPlanUsage } from "../utils/plan.server.js";
-import { getMinimumPlanDecision, getQuotaDecision } from "../services/entitlements.server.js";
+import { getMinimumPlanDecision, getQuotaDecision, withShopQuotaLock } from "../services/entitlements.server.js";
 import { findCatalogItem, getMarketplaceCatalog, installMarketplaceItem, rollbackMarketplaceInstall, toggleMarketplaceFavorite } from "../services/marketplace.server.js";
 import { VSN_BASELINE } from "../config/baseline.js";
 
@@ -18,6 +19,7 @@ export async function loader({request}) {
 
 export async function action({request}) {
   const {session}=await authenticate.admin(request); if(!(await canAccessBuilderAction(db,session,"marketplace","browse")))return Response.json({ok:false,error:"Marketplace access denied."},{status:403});
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   const role=getBuilderRole(session); const form=await request.formData(); const intent=String(form.get("intent")||""); const catalogId=String(form.get("catalogId")||"");
   if(!catalogId)return Response.json({ok:false,error:"Template ID is required."},{status:400});
   if(intent==="favorite"){
@@ -32,14 +34,19 @@ export async function action({request}) {
   if(!(await canAccessBuilderAction(db,session,"marketplace","install")))return Response.json({ok:false,error:"Your role cannot install or update templates."},{status:403});
   const [catalog,plan]=await Promise.all([getMarketplaceCatalog({db,shop:session.shop,currentVersion:CURRENT_VERSION}),getPlan(db,session.shop)]); const item=findCatalogItem(catalog,catalogId);
   if(!item)return Response.json({ok:false,error:"Template is no longer available in the catalog."},{status:404});
-  const tierDecision=await getMinimumPlanDecision(db,session.shop,item.planTier||"core",{plan,label:`${item.title} Marketplace template`});
+  const requiredPlan=item.planTier==="pro"?"silver":"starter";
+  const tierDecision=await getMinimumPlanDecision(db,session.shop,requiredPlan,{plan,label:`${item.title} Marketplace template`});
   if(!tierDecision.allowed)return Response.json({ok:false,error:tierDecision.message,code:tierDecision.code,entitlement:tierDecision},{status:403});
-  const existingInstall=await db.builderMarketplaceInstall.findUnique({where:{shop_catalogId:{shop:session.shop,catalogId}}}).catch(()=>null);
-  if(!existingInstall){const quota=await getQuotaDecision(db,session.shop,"marketplaceInstalls",{plan});if(!quota.allowed)return Response.json({ok:false,error:quota.message,code:quota.code,entitlement:quota},{status:403});}
   if(!item.compatible)return Response.json({ok:false,error:"This template requires a newer builder version."},{status:409});
-  const result=await installMarketplaceItem({db,shop:session.shop,item,actor:builderActor(session)});
+	const installation = await withShopQuotaLock(db, session.shop, async (tx) => {
+		const existingInstall=await tx.builderMarketplaceInstall.findUnique({where:{shop_catalogId:{shop:session.shop,catalogId}}});
+		if(!existingInstall){const quota=await getQuotaDecision(tx,session.shop,"marketplaceInstalls");if(!quota.allowed)return {quota};}
+		return {result:await installMarketplaceItem({db:tx,shop:session.shop,item,actor:builderActor(session)})};
+	});
+	if(installation.quota)return Response.json({ok:false,error:installation.quota.message,code:installation.quota.code,entitlement:installation.quota},{status:403});
+	const result=installation.result;
   await db.builderAuditLog.create({data:{shop:session.shop,actor:builderActor(session),role,action:result.updated?"marketplace.updated":"marketplace.installed",details:JSON.stringify({catalogId,itemVersion:item.version,libraryItemId:result.libraryItem.id,assetsDeduplicated:result.assetCount})}}).catch(()=>{});
   return Response.json({ok:true,intent,catalogId,libraryItemId:result.libraryItem.id,updated:result.updated,message:result.updated?"Marketplace template updated. The previous installed version can be rolled back.":"Marketplace template installed for editor use. It remains separate from My Library."});
 }
 
-export default function MarketplaceRoute(){const data=useLoaderData();return <s-page heading="Template Marketplace"><s-section><div className="rounded-xl border bg-white p-5"><h2 className="font-semibold">Marketplace is integrated into Builder workspace</h2><p className="mt-2 text-sm text-[#666]">Open Builder → Marketplace for filters, live preview, favorites, recommendations and safe installs.</p><p className="mt-3 text-sm">Available catalog: <b>{data.counts?.pages||0}</b> page templates · <b>{data.counts?.sections||0}</b> sections.</p><s-button href="/app/pages?panel=marketplace" variant="primary">Open in Builder</s-button></div></s-section></s-page>}
+export default function MarketplaceRoute(){const data=useLoaderData();return <s-page heading="Template Marketplace"><s-section heading="Marketplace is integrated into Builder workspace"><s-stack direction="block" gap="base"><s-paragraph color="subdued">Open Builder → Marketplace for filters, live preview, favorites, recommendations and safe installs.</s-paragraph><s-paragraph>Available catalog: <s-text type="strong">{data.counts?.pages||0}</s-text> page templates · <s-text type="strong">{data.counts?.sections||0}</s-text> sections.</s-paragraph><s-stack direction="inline"><s-button href="/app/pages?panel=marketplace" variant="primary">Open in Builder</s-button></s-stack></s-stack></s-section></s-page>}

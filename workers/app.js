@@ -1,0 +1,277 @@
+import "@shopify/shopify-app-react-router/adapters/node";
+// VSN Builder hosted Worker entry — gated Staging integration boundary.
+// This is NOT the React Router merchant UI and is not authorized for Live.
+// Draft save is explicitly enabled only on Staging; no billing or Shopify review.
+import { inspectWorkerNeonEnvironment, createWorkerNeonPrisma } from "../app/services/db-worker-neon.js";
+import { inspectWorkerShopifyConfiguration } from "../app/services/shopify-worker-configuration.js";
+import { isVerifiedWorkerSchemaMetadata } from "../app/services/worker-schema-metadata-health.js";
+import { acceptWorkerShopifyAdminRequest, acceptWorkerShopifyAdminMutation } from "../app/services/worker-shopify-admin-gate.js";
+import { handleVerifiedWorkerDraftSave } from "../app/services/worker-shopify-draft-save-request.js";
+import { handleVerifiedWorkerPageCreate } from "../app/services/worker-shopify-page-create.js";
+import { STAGING_EDITOR_UI_SCRIPT } from "./staging-editor-ui.js";
+import { handleVerifiedStagingMerchantDashboard, handleVerifiedStagingPageInspection } from "../app/services/worker-shopify-staging-dashboard.js";
+import { handleVerifiedStagingPlanPage } from "../app/services/worker-shopify-staging-plans.js";
+import { handleVerifiedStagingShopifyAuth } from "../app/services/worker-shopify-staging-auth.js";
+import { handleVerifiedStagingShopifyLogin } from "../app/services/worker-shopify-staging-login.js";
+import { acceptWorkerShopifyUninstallWebhook, normalizeWorkerWebhookFailure } from "../app/services/worker-shopify-webhook-gate.js";
+import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
+import { logStagingRequest } from "../app/services/worker-diagnostics.js";
+import { isHostedTier } from "../app/services/worker-hosted-tier.js";
+
+const LOCKED = Object.freeze({
+  "cache-control": "no-store",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "no-referrer",
+});
+function locked(status = 503) {
+  return new Response(null, { status, headers: LOCKED });
+}
+function safeJson(value,status=200) {
+  return new Response(JSON.stringify(value),{
+    status,headers:{...LOCKED,"content-type":"application/json; charset=utf-8"},
+  });
+}
+function tierIdentity(env) {
+  const tier = env?.APP_ENV;
+  const expected = tier === "staging" ? "vsn-builder-staging" :
+    tier === "production" ? "vsn-builder-production" : "";
+  return Boolean(expected && env?.VSN_WORKER_NAME === expected);
+}
+
+// Return health of the *actual* PostgreSQL schema, not a synthetic mock.
+// A healthy database is NOT readiness of the user-facing Shopify app.
+async function databaseHealth(request,env) {
+  if (!inspectWorkerShopifyConfiguration(request,env).ready ||
+      !inspectWorkerNeonEnvironment(env).ready) return locked();
+  let prisma;
+  try {
+    prisma=createWorkerNeonPrisma(env);
+    // A canonical database with 52+ arbitrary tables and two unrelated
+    // finished migrations is NOT the reviewed Builder cloud schema.
+    // Inspect fixed PostgreSQL/Prisma metadata only; never query merchant rows.
+    const [metrics,records]=await Promise.all([
+      prisma.$queryRawUnsafe(
+        "SELECT current_database()::text AS database, "+
+        "(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') AS tables, "+
+        "(SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('Session','BuilderPage','BuilderSubscription','BuilderShopInstallation')) AS essential_tables"
+      ),
+      prisma.$queryRawUnsafe(
+        'SELECT migration_name, checksum, started_at, finished_at, rolled_back_at FROM public."_prisma_migrations" ORDER BY migration_name'
+      ),
+    ]);
+    if(!isVerifiedWorkerSchemaMetadata({summary:metrics?.[0],records}))
+      return locked();
+    return safeJson({database:"healthy",tier:env.APP_ENV,schemaVerified:true,sourceChecksumAttested:false,merchantAppReady:false});
+  }catch{
+    return locked();
+  }finally{
+    try{await prisma?.$disconnect?.()}catch{/* Do not leak connection data */}
+  }
+}
+
+// Report readiness only when Staging's configured Shopify SDK boundary and
+// persistent Neon session schema are actually available. This is a protected,
+// read-only check; it does not authenticate a merchant or inspect their data.
+async function merchantReadiness(request,env) {
+  if(!isHostedTier(env) ||
+     env?.VSN_STAGING_OAUTH_ENABLED!=="true" ||
+     env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")return locked();
+  const database=await databaseHealth(request,env);
+  if(database.status!==200)return locked();
+  try {
+    const proof=await database.json();
+    if(proof?.database!=="healthy" || proof?.schemaVerified!==true)
+      return locked();
+  }catch {
+    return locked();
+  }
+  return safeJson({
+    service:"VSN Builder",
+    tier:"staging",
+    merchantAppReady:true,
+    shopifyOauthReady:true,
+    persistentSessionsReady:true,
+    merchantRoutesReady:true,
+  });
+}
+
+
+export default {
+  async fetch(request,env) {
+    const response=await route(request,env);
+    // Staging-only safe response breadcrumbs; signed launch query is omitted.
+    logStagingRequest(env,request,response);
+    return response;
+  },
+};
+async function route(request,env) {
+  {
+    if(!(request instanceof Request) || !tierIdentity(env))return locked();
+    const url=new URL(request.url);
+    if(url.search && ["/healthz","/readyz","/__vsn/database-health"].includes(url.pathname))return locked(404);
+    // Static first-party client logic contains NO merchant/session secrets.
+    // It is exposed only in opted-in Staging, never as a Production route.
+    if(url.pathname==="/__vsn/staging-editor-ui.js") {
+      if(!isHostedTier(env) ||
+         env.VSN_STAGING_DASHBOARD_ENABLED!=="true" ||
+         env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
+      if(request.method!=="GET")return locked(405);
+      if(url.search || url.hash)return locked(404);
+      return new Response(STAGING_EDITOR_UI_SCRIPT,{status:200,headers:{
+        ...LOCKED,"content-type":"text/javascript; charset=utf-8",
+        "content-security-policy":"default-src 'none'; frame-ancestors 'none'",
+      }});
+    }
+    // Shopify opens the App URL origin inside Admin. Forward the original
+    // signed launch query to the authenticated /app route so the official SDK
+    // can perform embedded token exchange and App Bridge reauthorization.
+    // /auth/login is only for standalone browser visits without a shop.
+    if(url.pathname==="/" && request.method==="GET" && isHostedTier(env)) {
+      const shop=url.searchParams.get("shop");
+      const embedded=shop && /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop);
+      const location=embedded?"/app"+url.search:"/auth/login";
+      return new Response(null,{status:302,headers:{...LOCKED,location}});
+    }
+    if(url.pathname==="/healthz" && request.method==="GET")
+      return safeJson({service:"VSN Builder",tier:env.APP_ENV,liveness:true,merchantAppReady:false});
+    if(url.pathname==="/readyz" && request.method==="GET")
+      return merchantReadiness(request,env);
+    if(url.pathname==="/__vsn/database-health" && request.method==="GET")
+      return databaseHealth(request,env);
+    // Billing comparison must remain reachable after install even when Shopify
+    // has not yet confirmed a paid plan. The hosted pricing page owns checkout.
+    if(url.pathname==="/app/plans")
+      return handleVerifiedStagingPlanPage(request,env);
+    // Stage-only real Shopify App Bridge overview. Every request reuses the
+    // official SDK + verified session + Partner-paid + pages/view gates.
+    // Production and unconfigured Staging always return 503.
+    // Stage-only official Shopify SDK OAuth/callback bridge. The SDK verifies
+    // signatures/tokens and stores sessions through a generation-fenced Neon
+    // adapter. Disabled by default; GET /auth/login remains blocked until a
+    // a matching SDK-owned /auth/login request is explicitly authorized.
+    // Official Shopify SDK login owns OAuth state/redirect generation.
+    // GET-only form and callback both require explicit Staging opt-in.
+    if(url.pathname==="/auth/login" && request.method==="GET")
+      return handleVerifiedStagingShopifyLogin(request,env);
+    if(/^\/auth\/(?!login(?:\/|$))[a-z0-9-]{1,64}$/.test(url.pathname) &&
+       request.method==="GET")
+      return handleVerifiedStagingShopifyAuth(request,env);
+    if(url.pathname==="/app" && request.method==="GET") {
+      // Readiness probes and direct browser visits without a Shopify shop
+      // hint should start at the SDK-owned login screen. Embedded requests
+      // with a shop continue through normal official SDK authentication.
+      if(!url.searchParams.has("shop") &&
+         inspectWorkerShopifyConfiguration(request,env).ready &&
+         inspectWorkerNeonEnvironment(env).ready)
+        return new Response(null,{status:302,headers:{...LOCKED,location:"/auth/login"}});
+      return handleVerifiedStagingMerchantDashboard(request,env);
+    }
+    if(url.pathname==="/app/__vsn/verified-session" && request.method==="GET") {
+      // A real Shopify SDK and durable Neon installation/session authorization
+      // must succeed before returning any authenticated information.
+      return acceptWorkerShopifyAdminRequest(request,env,{
+        onAuthenticated:async ({shop})=>safeJson({authenticated:true,shop,tier:env.APP_ENV}),
+      });
+    }
+    if(url.pathname==="/app/__vsn/page-summary" && request.method==="GET") {
+      // An incremental REAL read-only hosted route (not the merchant UI).
+      // Only the official Shopify SDK, persisted installation and the
+      // request-scoped Neon session can authorize this capability.
+      if([...url.searchParams.keys()].some(key=>key!=="shop") ||
+         url.searchParams.getAll("shop").length>1)return locked(404);
+      return acceptWorkerShopifyAdminRequest(request,env,{
+        enablePageSummary:true,
+        requireVerifiedPaidRead:true,
+        requirePageViewPermission:true,
+        onAuthenticated:async ({shop,pageSummary})=>{
+          const pages=await pageSummary();
+          return safeJson({shop,tier:env.APP_ENV,pages});
+        },
+      });
+    }
+    if(url.pathname==="/app/__vsn/pages/create" && request.method==="POST") {
+      // MVP blank-draft create is exposed ONLY after an explicit Staging
+      // enablement; paid-page quotas and pages.create RBAC execute in the
+      // same uninstall-serialized Shopify SDK mutation transaction.
+      if(!isHostedTier(env) ||
+         env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
+      if([...url.searchParams.keys()].some(key=>key!=="shop") ||
+         url.searchParams.getAll("shop").length>1)return locked(404);
+      return acceptWorkerShopifyAdminMutation(request,env,{
+        onAuthenticated:({request:authorizedRequest,session,shop,transaction})=>
+          handleVerifiedWorkerPageCreate({
+            request:authorizedRequest,session,shop,transaction,
+          }),
+      });
+    }
+    if(url.pathname.startsWith("/app/__vsn/pages/") && request.method==="POST") {
+      // Source-integrated save contract is intentionally unavailable without
+      // an EXPLICIT Staging-only activation. Never enable for Production.
+      // The current Staging Worker has no secret/binding for this switch.
+      if(!isHostedTier(env) ||
+         env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
+      const match=/^\/app\/__vsn\/pages\/([a-zA-Z0-9_-]{1,64})\/content$/.exec(url.pathname);
+      if(!match || [...url.searchParams.keys()].some(key=>key!=="shop") ||
+         url.searchParams.getAll("shop").length>1)return locked(404);
+      return acceptWorkerShopifyAdminMutation(request,env,{
+        onAuthenticated:({request:authorizedRequest,session,shop,transaction})=>
+          handleVerifiedWorkerDraftSave({
+            request:authorizedRequest,session,shop,transaction,pageId:match[1],
+          }),
+      });
+    }
+    // Staging-only read-only HTML inspection of persisted page metadata
+    // and bounded editor draft. The verified paid/RBAC Shopify SDK guard
+    // re-authenticates every request before either tenant-scoped read.
+    if(/^\/app\/__vsn\/pages\/[a-zA-Z0-9_-]{1,64}\/view$/.test(url.pathname) &&
+       request.method==="GET")
+      return handleVerifiedStagingPageInspection(request,env);
+    if(url.pathname.startsWith("/app/__vsn/pages/") && request.method==="GET") {
+      // Authenticated, paid, RBAC-protected page metadata or editor hydration.
+      // No public draft contents are exposed; POST stays Staging flag-locked.
+      const rawPath=url.pathname.slice("/app/__vsn/pages/".length);
+      const isContent=rawPath.endsWith("/content");
+      const rawId=isContent?rawPath.slice(0,-"/content".length):rawPath;
+      if(!/^[a-zA-Z0-9_-]{1,64}$/.test(rawId) ||
+         [...url.searchParams.keys()].some(key=>key!=="shop") ||
+         url.searchParams.getAll("shop").length>1)return locked(404);
+      if(isContent) {
+        return acceptWorkerShopifyAdminRequest(request,env,{
+          enablePageContent:true,
+          requireVerifiedPaidRead:true,
+          requirePageViewPermission:true,
+          onAuthenticated:async ({pageContent})=>{
+            const record=await pageContent(rawId);
+            return record===null?locked(404):safeJson({page:record});
+          },
+        });
+      }
+      return acceptWorkerShopifyAdminRequest(request,env,{
+        enablePageMetadata:true,
+        requireVerifiedPaidRead:true,
+        requirePageViewPermission:true,
+        onAuthenticated:async ({pageMetadata})=>{
+          const record=await pageMetadata(rawId);
+          return record===null?locked(404):safeJson({page:record});
+        },
+      });
+    }
+    if(url.pathname==="/webhooks/app/uninstalled") {
+      try {
+        return await acceptWorkerShopifyUninstallWebhook(request,env,{
+          onVerified:revokeVerifiedWorkerShopifySessions,
+        });
+      }catch(error){
+        // Preserve only OUR gate's own typed pre-verification denial.
+        // SDK/DB/cleanup Response exceptions cannot forge cookies, redirects,
+        // response bodies or arbitrary merchant-facing status.
+        return normalizeWorkerWebhookFailure(error);
+      }
+    }
+    // No storefront, OAuth, public merchant editor, or billing routes are
+    // enabled until full Cloudflare React Router/Shopify integration is proved.
+    if(url.pathname==="/app" || url.pathname.startsWith("/app/") ||
+       url.pathname.startsWith("/auth/"))return locked();
+    return locked(404);
+  }
+}

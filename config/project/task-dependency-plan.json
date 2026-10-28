@@ -1,0 +1,821 @@
+{
+  "schema_version": 1,
+  "policy": "dependency_driven_evidence_first_no_phase_gating",
+  "updated_on": "2026-10-18",
+  "product": "VSN | Builder",
+  "public_shopify_apps": 1,
+  "commercial_plans": [
+    {
+      "name": "Starter",
+      "id": "starter",
+      "monthly_usd": 30,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
+      "name": "Solo",
+      "id": "solo",
+      "monthly_usd": 60,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
+      "name": "Silver",
+      "id": "silver",
+      "monthly_usd": 100,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
+      "name": "Gold",
+      "id": "gold",
+      "monthly_usd": 150,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
+      "name": "Business",
+      "id": "business",
+      "monthly_usd": 250,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
+      "name": "Platinum",
+      "id": "platinum",
+      "monthly_usd": 350,
+      "annual_usd": 3000,
+      "trial_days": 10
+    },
+    {
+      "name": "Agency",
+      "id": "agency",
+      "monthly_usd": 600,
+      "annual_usd": null,
+      "trial_days": 10
+    },
+    {
+      "name": "Scale",
+      "id": "scale",
+      "monthly_usd": 1000,
+      "annual_usd": null,
+      "trial_days": 10
+    }
+  ],
+  "notes": [
+    "CLOSED is final/immutable for its exact written acceptance scope. It is excluded from every active task queue while retained as audit history and as a satisfied prerequisite.",
+    "Closed local/CI tasks do NOT certify Shopify hosted merchant functionality or a completed release.",
+    "The legacy eight-phase manifest stays archival only; phases never determine work order.",
+    "Ready tasks are computed from direct dependencies, never manually forced by phase.",
+    "GitHub issue and PR links are evidence pointers only; do not infer live deployment or merge.",
+    "Production/Shopify submission requires real exact-source security, Shopify, billing and E2E gates."
+  ],
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Environment isolation and fail-closed config templates",
+      "workstream": "Infrastructure",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/94",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/94"
+      ],
+      "acceptance": "Historical configuration/synthetic identity checks only; no external Shopify account or secret proof",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Historical configuration/synthetic identity checks only; no external Shopify account or secret proof. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T002",
+      "title": "Local SQLite migration and synthetic desktop/mobile browser acceptance",
+      "workstream": "Local QA",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/114",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/114"
+      ],
+      "acceptance": "Local CI only, real Dev test-store not included",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Local CI only, real Dev test-store not included. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T003",
+      "title": "PostgreSQL schema parity, disposable SQL CRUD/rollback",
+      "workstream": "Database",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/141",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/141"
+      ],
+      "acceptance": "Disposable PostgreSQL acceptance, not Neon primary migration",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Disposable PostgreSQL acceptance, not Neon primary migration. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T004",
+      "title": "Local Workerd SDK/Prisma SSR and Wrangler dry-run compile",
+      "workstream": "Runtime",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/155",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38475181411"
+      ],
+      "acceptance": "Actual CI Workerd + disposable Postgres success; NO deployed Worker",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Actual CI Workerd + disposable Postgres success; NO deployed Worker. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T005",
+      "title": "Neon Staging shadow-branch SQL migration/savepoint rollback",
+      "workstream": "Database",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155"
+      ],
+      "acceptance": "171 SQL statements on isolated QA branch; 52 tables; NOT Prisma migration history/default branch",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: 171 SQL statements on isolated QA branch; 52 tables; NOT Prisma migration history/default branch. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T006",
+      "title": "Staging pre-migration root snapshot and empty-baseline restore",
+      "workstream": "Database",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155"
+      ],
+      "acceptance": "Real snapshot and default-branch switch; restore contains 0 app tables, not migrated schema",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Real snapshot and default-branch switch; restore contains 0 app tables, not migrated schema. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T007",
+      "title": "Shopify official SDK synthetic session and tenant gate",
+      "workstream": "Shopify Auth",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/162",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/135"
+      ],
+      "acceptance": "Synthetic SDK CI tests only; no real merchant login",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Synthetic SDK CI tests only; no real merchant login. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T008",
+      "title": "Webhook HMAC and transactional mutation synthetic security",
+      "workstream": "Security",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/163",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/141"
+      ],
+      "acceptance": "Synthetic signed-webhook and rollback tests only; trusted install attestation not implemented",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Synthetic signed-webhook and rollback tests only; trusted install attestation not implemented. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T009",
+      "title": "Internal editor/components/AI QA scripts",
+      "workstream": "Merchant Features",
+      "priority": "P1",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38411932985"
+      ],
+      "acceptance": "Internal code QA only; real merchant create/publish not accepted",
+      "closure_note": "Final acceptance of explicitly stated narrow task scope only: Internal code QA only; real merchant create/publish not accepted. Any wider hosted, merchant or release work remains separately tracked under its own active task ID.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T010",
+      "title": "Adopt dependency-based task board, validator, issue mapping",
+      "workstream": "Engineering Planning",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/156",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/156",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38729990514"
+      ],
+      "acceptance": "Plan PR must pass task graph tests; no silent phase-based scheduling",
+      "closure_note": "Dependency-driven 41-task manifest, deterministic validator, exact four-plan contract, and release gate tests passed on integration candidate. This closes ONLY the planning/validator implementation; the board remains open for outstanding deliverables.",
+      "closed_on": "2026-10-15"
+    },
+    {
+      "id": "T011",
+      "title": "Resolve mandatory full-dev dependency security audit (braces)",
+      "workstream": "Security",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/96",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746335819",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746335978",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746336058"
+      ],
+      "acceptance": "npm audit --include=dev --audit-level=high and post-Playwright audit PASS on exact SHA; no bypass",
+      "closed_on": "2026-10-15",
+      "closure_note": "FINAL source-security acceptance: on exact source candidate SHA 356b321, npm ci, both full-dev and production high-severity audits, mandatory post-Playwright dependency audit, audited GraphQL codegen and ESLint runtime remediation PASS without waivers. T012 separately governs merging protected development; no Shopify/hosted readiness implied."
+    },
+    {
+      "id": "T012",
+      "title": "Review/rebase/merge stacked PRs with mandatory exact-SHA CI",
+      "workstream": "Integration",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/157",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/207",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38809667953",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/157"
+      ],
+      "acceptance": "Reconcile PR #152/#153/#155; no merge with red mandatory checks, retain protected release gates",
+      "closed_on": "2026-10-16",
+      "closure_note": "FINAL source integration: reviewed and squash merged 339-file consolidated PR #190 into development at 15a6736 after 15/15 exact-head green PR workflows. PR #152/#153/#155 independently reconciled, redundant branches closed as superseded; billing reinstall mirror note preserved. Postmerge GitHub push exposed previously unrun strict GraphQL dependency/codegen checks; source fixes PR #207 merged at 3c523e2 after 5/5 exact-head green PR workflows, and dev GraphQL push workflow #38809667953 passed. No Cloudflare/Shopify/Neon migration or Live release. T013 branch protection and all external hosted/release acceptance stay OPEN independent tasks."
+    },
+    {
+      "id": "T013",
+      "title": "Protect development with automated AI-led PR and CI review gates",
+      "workstream": "Infrastructure",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/158",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/194",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38737803817",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/250",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38909028455",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/253",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38921068981"
+      ],
+      "acceptance": "Live protected development branch has required pull-request rule, enforced repository-integrity status, non-fast-forward/deletion protection and no human/code-owner review prerequisite; GET-only protected push attestation passes. Environment secrets/deployment permissions remain T014.",
+      "progress_note": "FINAL CLOSED (2026-10-16) after source PR #253 5/5 exact-head PASS merged as 2c4ee6cd62a2c7c55586c0137dd3223ff8060257 and protected development push T013 run #38921068981 live read-only attestation PASS. Human PR approvals must remain zero; required repository-integrity, PR, no force-push and deletion remain enforced. Exclude from active queues. Host releases still blocked on T014 onwards.",
+      "closed_on": "2026-10-16",
+      "closure_note": "Live authenticated GitHub GET-only rules verified development protected=true, required PR rule, enforced repository-integrity, no force-push/deletion, zero required human/code-owner approval. User-approved AI-led review + mandatory exact-head CI source policy. No Environment secrets, model reviewer bot, Cloudflare/Neon/Shopify hosted or production deployment acceptance; those belong to T014 and other independent tasks."
+    },
+    {
+      "id": "T014",
+      "title": "Verify protected GitHub cloudflare-staging Environment secrets and tier identity",
+      "workstream": "Infrastructure",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/158",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38757462226",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/205",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/233",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/258",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/259",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38948913652"
+      ],
+      "acceptance": "Staging-only T014: live protected development GitHub Actions Environment cloudflare-staging has correct named scope secrets and public tier-identity constants; supported owner-provided Environment settings show deployment branch restricted to development, no required human reviewers or wait timer. Actual protected push identity attestation validates scoped secret presence and cross-tier Shopify/Neon/Cloudflare identities, without logging values or deploying. Worker runtime bindings and real Staging OAuth/Neon migrations belong to T019/T021/T023/T018; Production readiness belongs to later release tasks.",
+      "progress_note": "FINAL CLOSED for protected GitHub STAGING Environment only (2026-10-16). User screenshot shows cloudflare-staging secret names, deployment branch development, no required reviewers/wait timer. Verified real protected development workflow run #38948913652 PASS: six scoped secrets present + validated (Neon pooled/direct host pair, Shopify staging ID, Cloudflare account), four repository-pinned public staging config identifiers PASS; Metafields-style secret-only GitHub Environment implementation PR #259 merged after 4/4 PR CI green, synthetic isolated regression. No new vars required; no values disclosed. Runtime Worker secrets remain T019, hosted migration T018, OAuth T023; Production not certified. Permanently remove T014 from active list.",
+      "closed_on": "2026-10-16",
+      "closure_note": "User-provided screenshots of staging GitHub Environment policies and secret-name inventory, plus actual protected development Staging GitHub Environment attestation #38948913652 SUCCESS after security-reviewed PR #259. Exactly six secret values validated by workflow without logging, four nonsecret stage constants pinned in source, protected branch gating and staging environment isolation. GitHub API does not independently expose Environment admin settings; this proof relies on owner screenshot for branch filter and human approval settings. Cloudflare staging Worker secrets, URL/public route, Shopify OAuth, Neon migration, and all Production readiness explicitly excluded and remain separately gated."
+    },
+    {
+      "id": "T015",
+      "title": "Verify single public Shopify Builder app and internal Dev/Staging identities",
+      "workstream": "Shopify Auth",
+      "priority": "P0",
+      "status": "in_review",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/159",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/159",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/190",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/264",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/265",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38981453811"
+      ],
+      "acceptance": "One public VSN | Builder listing; Dev/Staging internal testing safely isolated; actual Partner app identity/ownership verified",
+      "progress_note": "2026-10-17 verified EXISTING connected Shopify stores: local-testing-iashboek.myshopify.com = Development/Local, staging-oath3rth.myshopify.com = Staging, vertex-systems-network.myshopify.com = Live (owner calls it vertexsystemsnetwork). Shopify Admin appByKey read-only: distinct real Dev app VSN Builder (Development) registered on Local but app installation=NULL; Staging VSN | Builder (Staging) has a real installation ID, and Live VSN Builder has a real installation ID. Owner explicitly forbids creation of new Dev store or duplicate installation; reuse existing stores only. PRs #264/#265 passed real protected Staging scoped Shopify key and secret identity. Installed does NOT imply Worker OAuth session/merchant E2E. T015 stays IN_REVIEW for Local Dev app installation/OAuth and Partner ownership; do not create or connect any new store, and do not modify Live."
+    },
+    {
+      "id": "T016",
+      "title": "Real Neon Staging pooled/direct credentials and connectivity",
+      "workstream": "Database",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [
+        "T014"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/261",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38975207040"
+      ],
+      "acceptance": "Staging pinned pooled runtime and direct migration URLs authenticate to same correct DB/role with TLS, no Prod bleed",
+      "progress_note": "FINAL CLOSED on 2026-10-17 (Asia/Karachi). Source PR #261 passed 4/4 required exact-head CI checks, merged into protected development af5364a3bb4b1d81d6c5e38403274efb965c5b42. Actual scoped cloudflare-staging GitHub Actions native libpq run #38975207040 passed authenticated READ ONLY transactions against exact Neon pooled runtime and direct migration hosts with verify-full TLS, same database and PostgreSQL role/table inventory. No secrets printed, no DDL/migrations/production access. Provider Neon read-only default branch neondb exists and currently has zero app tables. Staging project also contains a preserved Brovexa QA branch with data; it was not modified. T017/T018 remain independent.",
+      "closed_on": "2026-10-17",
+      "closure_note": "T016 narrowly certifies real Staging GitHub-scoped Neon DATABASE_URL pooled host and DIRECT_URL direct host credentials, native PostgreSQL auth/TLS verify-full, read-only transactions, same database and role, without Production bleed. Evidence is protected exact source SHA GitHub Actions run #38975207040 following PR #261 all required checks PASS. T017 backup/single-branch/compute constraints and T018 actual Prisma migrations/restoration are NOT covered; extra unrelated Brovexa data branch remains untouched."
+    },
+    {
+      "id": "T017",
+      "title": "Attest live Staging Neon snapshot/default/compute and pre-migration restore",
+      "workstream": "Database",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [
+        "T006"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/155",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/247",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/263",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/271",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/272",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/273",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/274",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38986914868"
+      ],
+      "acceptance": "T017 scoped pre-migration read-only Neon control-plane attestation: exactly one Builder default Staging branch, verified historical snapshot actually restored into this default with zero writes since restore, exact compute/transaction pooler, scoped protected source, and independently successful real PostgreSQL 18 custom dump and ephemeral restore without Neon writes. Fresh provider snapshot quota and actual Staging migration, durable post-migration backup/restore remain T018/T036 obligations, NOT part of this closed identity task.",
+      "progress_note": "FINAL CLOSED within pre-migration identity and observed restore scope only (2026-10-17). Provider independently verified project shiny-violet-61219572 has exactly one active original default br-square-mountain-b3ij6q2s; protected=false under documented reviewed Free-plan policy; restore_status finalized, restored_from retained snapshot snap-green-bar-b3m1btfb, restored_as historic branch br-wandering-queen-b3mmztjy, written_data_bytes=0. Exact endpoint ep-little-dream-b3g6puj2 transaction pooler enabled and separate Production identity. Actual protected `development` GH run #38986914868 SUCCESS: scoped pooled+direct URLs cross-checked; source Neon PG18 read-only query; pg_dump custom archive restored successfully into disposable local Postgres 18; schema/table counts matched; no remote DDL, no credential logging. Brovexa QA 50-table secondary branch was previously user-authorized deleted, and no new branches exist. Provider fresh snapshot quota HTTP 422 persists: do NOT claim a new snapshot. Actual Staging migrations and durable post-migration data restoration stay T018/T036 separate open tasks.",
+      "closed_on": "2026-10-17",
+      "closure_note": "T017 narrowly certifies existing retained pre-migration snapshot authenticity and current-default successful historical restore, one active branch, exact isolated Neon transaction pooler and genuine read-only full pg_dump/ephemeral PostgreSQL 18 roundtrip on GitHub protected Staging. Zero data written since snapshot-restore according to live Neon provider `written_data_bytes=0`; Staging currently has no user table data. Source PRs #271-#274 CI-green and protected read-only run #38986914868 successful. Does NOT certify fresh snapshot creation (Neon quota 422), persistent separate encrypted backup, Prisma migration, post-migration rollback, hosted Shopify OAuth, or Production. These remain separate downstream acceptance including T018 and T036. User authorized deleting only foreign Brovexa QA branch; no other branch, Worker or Production mutation."
+    },
+    {
+      "id": "T018",
+      "title": "Protected Staging Prisma migrate deploy and data restore drill",
+      "workstream": "Database",
+      "priority": "P0",
+      "status": "in_review",
+      "depends_on": [
+        "T011",
+        "T012",
+        "T013",
+        "T014",
+        "T016",
+        "T017"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/160",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/277",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/278",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38988697490",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/304",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/305",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/317",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/353",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/40039297234"
+      ],
+      "acceptance": "Protected/manual-only reviewed Staging Neon neondb migration with sole default branch, pinned historical restore snapshot, verified pooled/direct connectivity, 2 exact Prisma SQL checksums, 52 exact Builder model tables plus _prisma_migrations (53 public tables), and real restore/rollback acceptance; no Production or Live modifications. R2 optional before first empty-data migration, mandatory durable recovery controls before merchant writes/release.",
+      "progress_note": "2026-10-23: Protected Staging migration run 40039297234 PASS on development 510f490: preflight, authenticated Neon control-plane proof, 0-table readiness, prisma migrate deploy and post-migrate verification. Data restore drill not yet executed, so T018 stays IN_REVIEW."
+    },
+    {
+      "id": "T019",
+      "title": "Bind and verify real Cloudflare Staging secrets and tier variables",
+      "workstream": "Runtime",
+      "priority": "P0",
+      "status": "in_review",
+      "depends_on": [
+        "T014",
+        "T015",
+        "T016"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/161",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/268",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487397",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38983487380"
+      ],
+      "acceptance": "Actual Worker secret names, OAuth config and Staging identity/HTTPS bindings exist; no secret value disclosure",
+      "progress_note": "2026-10-18: Independently inspected real Cloudflare Worker API settings and secret-name metadata (GET only): vsn-builder-staging exists, binding types include secret_text DATABASE_URL, SHOPIFY_API_KEY, SHOPIFY_API_SECRET; reviewed APP_ENV, VSN_WORKER_NAME, NEON_PROJECT_ID, SHOPIFY_BILLING_TEST_MODE, HTTPS SHOPIFY_APP_URL and SCOPES. No credentials printed, no changes. OAuth enable flag is not true and remains fail-closed while T018 Neon migration unexecuted. vsn-builder-production also exists but 0 runtime bindings; Live untouched. Earlier protected GitHub secret-name sync #268 remains verified. T019 IN_REVIEW until real hosted acceptance."
+    },
+    {
+      "id": "T020",
+      "title": "Implement functional hosted React Router/Shopify Worker adapter",
+      "workstream": "Runtime",
+      "priority": "P0",
+      "status": "in_review",
+      "depends_on": [
+        "T004"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/161",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/172",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/173",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/174",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/175",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/176",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/234",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/241",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/251",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/281",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/301",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/302",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/311",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/313"
+      ],
+      "acceptance": "Full Cloudflare Vite-built VSN Builder merchant route graph; real Shopify OAuth/App Bridge and valid persisted PrismaNeon sessions after Staging migrations; signed webhooks, paid-only mutations, tenant isolation and actual Staging store E2E. PRs #172–#176 prove synthetic CI-only SSR, router, SDK/Neon compilation and an authenticated-gate-to-loader bridge using synthetic sessions; not actual merchant acceptance.",
+      "progress_note": "2026-10-18: T020 PR #311 exactly 7/7 required PR CI PASS with AI review, squash merged protected development be12d64168db9fc44c58f5057d9abbc08fa2d8da. Merchant POST callback 4xx rolls back and redacts response body/headers; unsafe returned redirect/cookies blocked; only exact official Shopify authenticate.admin-thrown Response passes through. PR #313 exactly 7/7 required PR CI PASS with AI review, squash merged protected development 6a9e29c49060f2c958dbd806d4fd841dd25113be. All merchant GET routes now buffer then revalidate exact installation generation and persisted session/token/expiry; six async race regressions, paid-plan mock stable persisted generation. Old conflicted #312 closed unmerged/superseded by #313. Source-level local CI, NOT real hosted merchant E2E or Shopify verified OAuth. Staging Worker metadata correct but OAuth disabled; Neon Staging 0 app tables, T018 protected migration unexecuted; T019/T020 IN_REVIEW, T021/T023 WAITING, Live untouched."
+    },
+    {
+      "id": "T021",
+      "title": "Staging Worker deploy and stable HTTPS callback acceptance",
+      "workstream": "Runtime",
+      "priority": "P0",
+      "status": "in_review",
+      "depends_on": [
+        "T011",
+        "T012",
+        "T013",
+        "T018",
+        "T019",
+        "T020"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/161",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/353",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/40039297234",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/40039390730"
+      ],
+      "acceptance": "Reviewed protected Staging SHA deployed; health/ready route and OAuth callback respond correctly; rollback is available",
+      "progress_note": "2026-10-23: Protected Staging Worker deploy run 40039390730 PASS for development 510f490 after protected migration run 40039297234 PASS. /healthz 200 (tier staging, liveness true); /readyz 503 by design; /app 503 without verified Shopify session (Staging OAuth opt-in disabled). OAuth callback acceptance and rollback proof pending (T023/T036). Production untouched."
+    },
+    {
+      "id": "T022",
+      "title": "Real Dev Shopify test-store install, OAuth and session acceptance",
+      "workstream": "Shopify Auth",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T002",
+        "T015"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/162",
+      "evidence": [],
+      "acceptance": "Real Dev test store first install, token exchange and stale/wrong-store denial proven"
+    },
+    {
+      "id": "T023",
+      "title": "Real Staging Shopify OAuth, App Bridge ID token and session lifecycle",
+      "workstream": "Shopify Auth",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T015",
+        "T021",
+        "T022"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/162",
+      "evidence": [],
+      "acceptance": "Staging signed merchant session, reauth, install/reinstall token flow proven on real test store"
+    },
+    {
+      "id": "T024",
+      "title": "Trusted uninstall-generation provenance and safe replay handling",
+      "workstream": "Security",
+      "priority": "P0",
+      "status": "in_review",
+      "depends_on": [
+        "T008"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/163",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/193",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38734908129",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/237",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/249",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/280",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/307",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/309",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/315",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/319"
+      ],
+      "acceptance": "Independent signed install-generation attestation; unsigned timestamps/replay cannot revoke new sessions",
+      "progress_note": "2026-10-18: T024 PR #319 AI reviewed, 7/7 exact-head CI PASS including real disposable SQLite Local OAuth & existing generation regression, full Workerd merchant build, repository integrity, security, environment and both Production Confidence. Squash merged protected development a4f812712e5a4646ae853b540861228ee5336a94. Node/Local SDK loadSession/findSessionsByShop now deny expired persisted credentials and isOnline/expiry-only changes before/after awaited SDK reads, in addition to #307/#309 installedAt/token read fences. Worker SDK equivalent hardened via #315. No independently authenticated uninstall-generation issuer or real Shopify webhook retry/reinstall E2E, so T024 IN_REVIEW, T025 WAITING. Existing sole Neon Staging branch ready but neondb 0 app tables, T018 protected migration not executed, Live untouched."
+    },
+    {
+      "id": "T025",
+      "title": "Real signed Shopify webhook retry/uninstall/reinstall E2E",
+      "workstream": "Security",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T018",
+        "T023",
+        "T024"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/163",
+      "evidence": [],
+      "acceptance": "Shopify signed app/uninstalled; idempotent retries; stale webhook cannot delete fresh install; shop isolation verified"
+    },
+    {
+      "id": "T026",
+      "title": "Enforce paid-tier authorization across every server-side merchant mutation",
+      "workstream": "Security",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [
+        "T007"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/164",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/170",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/196",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38744497246",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746336058",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38747097492"
+      ],
+      "acceptance": "Create/save/publish/widgets/forms/AI protected by trusted paid trial/subscription; no Free fallback",
+      "progress_note": "Fix for paid write bypasses in app proxy and review link merged into PR #190 candidate, tests PASS; actual merchant paid E2E and protected release acceptance remain pending.",
+      "closed_on": "2026-10-15",
+      "closure_note": "FINAL source-code paid-mutation enforcement scope: every discovered authenticated merchant action has a server-side verified Shopify paid entitlement check or a narrowly documented pre-billing exemption; storefront app proxy and public review-link writes deny unpaid, canceled, frozen and retired Free subscriptions. Exact-head 30+ route inventory, static bypass tests, trusted subscription mirror and four-plan tests PASS without audit waiver. Real Shopify Partner billing publication, OAuth and subscription lifecycle E2E remain separately T023/T028/T029; no hosted readiness is claimed."
+    },
+    {
+      "id": "T027",
+      "title": "Review and integrate exact four-plan pricing code PR #153",
+      "workstream": "Billing",
+      "priority": "P0",
+      "status": "closed",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/164",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/153",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746336058",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/196"
+      ],
+      "acceptance": "Starter/sliver/gold/platinum handles and 30/100/150/350 USD; Platinum 3000/year; 10-day trial, no Free",
+      "closed_on": "2026-10-15",
+      "closure_note": "FINAL code-contract acceptance: exactly four merchant-facing canonical public handles starter/sliver/gold/platinum with 30/100/150/350 USD monthly, platinum 3000 USD yearly, 10-day official trial, no Free fallback; source integration candidate and four-plan/paid guard tests PASS. Partner publication is separately T028; actual Shopify billing E2E is T029; protected mainline merge remains T012."
+    },
+    {
+      "id": "T028",
+      "title": "Create/verify all eight paid plans in Shopify Partner Dashboard",
+      "workstream": "Billing",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T015"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/164",
+      "evidence": [],
+      "acceptance": "ONE Live listing; verify eight exact canonical handles starter/solo/silver/gold/business/platinum/agency/scale, approved prices and 10-day trial; retain Platinum annual 3000"
+    },
+    {
+      "id": "T029",
+      "title": "Real subscription/trial lifecycle and plan limits E2E",
+      "workstream": "Billing",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T023",
+        "T026",
+        "T027",
+        "T028"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/164",
+      "evidence": [],
+      "acceptance": "Real Shopify trial/upgrade/yearly/cancel/frozen/reinstall; quotas verified and zero unapproved access"
+    },
+    {
+      "id": "T030",
+      "title": "Real Dev create/edit/save/preview and reload persistence",
+      "workstream": "Merchant Features",
+      "priority": "P1",
+      "status": "todo",
+      "depends_on": [
+        "T022"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
+      "evidence": [],
+      "acceptance": "Authenticated Dev test store can create/edit/save/reload draft with real persistence"
+    },
+    {
+      "id": "T031",
+      "title": "Real Staging create/edit/save/publish Shopify page persistence",
+      "workstream": "Merchant Features",
+      "priority": "P1",
+      "status": "todo",
+      "depends_on": [
+        "T018",
+        "T023",
+        "T026",
+        "T030"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
+      "evidence": [],
+      "acceptance": "Staging publish/restoration and Shopify Admin storefront page persisted with correct shop ownership"
+    },
+    {
+      "id": "T032",
+      "title": "Templates/Widgets/theme app assets implementation and synthetic QA",
+      "workstream": "Merchant Features",
+      "priority": "P1",
+      "status": "closed",
+      "depends_on": [
+        "T009"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/197",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38745149442",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/232",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/236",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/238",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/240",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/243",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/244",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/257"
+      ],
+      "acceptance": "Template/widgets/form and theme app extension code/test verified on supported fixture themes",
+      "progress_note": "FINAL CLOSED for T032 narrow SOURCE/fixture QA, 2026-10-16: dedicated theme extension CI suite exercises pinned Dawn 16 and Horizon fixture placement, 20+ native Liquid app blocks and asset dependencies, newsletter consent-safe form, variant/quantity cart, link/escaping, app-proxy privacy, wishlist URL safety and async editor cancellation. Protected development postmerge verification through automatic T032 theme QA is separate from PR green. Real Shopify merchant theme/install browser E2E remains T033 WAITING and not implied by closure.",
+      "closed_on": "2026-10-16",
+      "closure_note": "Only T032 standalone synthetic theme-extension asset/widget/template/form QA certified: actual Liquid block schema/files, real pinned upstream open-source Dawn and Horizon fixture section placement, Shopify native newsletter/product cart/buttons, escaping, proxy privacy/async editor tests. NO real merchant installed Shopify theme, premium Prestige/Impulse/Custom fixture, published extension, customer consent or storefront/mobile E2E. Hosted acceptance remains expressly T033, T031/T035. Single Shopify public app remains unsubmitted."
+    },
+    {
+      "id": "T033",
+      "title": "Real Shopify theme extension storefront/mobile E2E",
+      "workstream": "Merchant Features",
+      "priority": "P1",
+      "status": "todo",
+      "depends_on": [
+        "T031",
+        "T032"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
+      "evidence": [],
+      "acceptance": "Storefront app-proxy/theme assets/responsive browser acceptance on real Shopify test store"
+    },
+    {
+      "id": "T034",
+      "title": "AI/widgets/pages/seats quotas across all eight paid plans",
+      "workstream": "Merchant Features",
+      "priority": "P1",
+      "status": "todo",
+      "depends_on": [
+        "T026",
+        "T027",
+        "T031"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/165",
+      "evidence": [],
+      "acceptance": "Real plan quota tier boundaries, templates and AI paid access; graceful paywall without data loss"
+    },
+    {
+      "id": "T035",
+      "title": "Full Staging test-store browser/device/billing/webhook E2E",
+      "workstream": "Merchant QA",
+      "priority": "P1",
+      "status": "todo",
+      "depends_on": [
+        "T025",
+        "T029",
+        "T033",
+        "T034"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/166",
+      "evidence": [],
+      "acceptance": "Complete real Staging merchant E2E with exact source SHA and screenshots/repro evidence"
+    },
+    {
+      "id": "T036",
+      "title": "Staging deployment rollback and post-migration restore acceptance",
+      "workstream": "Merchant QA",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T018",
+        "T021",
+        "T035"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/166",
+      "evidence": [],
+      "acceptance": "Proven rollback to accepted Staging SHA plus recovery of migrated test data; no merchant loss"
+    },
+    {
+      "id": "T037",
+      "title": "Production Neon isolated migration, backup and recovery proof",
+      "workstream": "Production Release",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T011",
+        "T012",
+        "T013",
+        "T014",
+        "T035",
+        "T036"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/167",
+      "evidence": [],
+      "acceptance": "Production protected Neon project migration and independent recovery accepted after Staging; no cross-tier secret reuse"
+    },
+    {
+      "id": "T038",
+      "title": "Authorized production Worker/promoted exact SHA and secrets",
+      "workstream": "Production Release",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T011",
+        "T012",
+        "T014",
+        "T020",
+        "T036",
+        "T037"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/167",
+      "evidence": [],
+      "acceptance": "Actual protected release approval, prod Worker secrets, deploy, Shopify Live OAuth and version rollback"
+    },
+    {
+      "id": "T039",
+      "title": "Live merchant smoke, safety rollback and payment verification",
+      "workstream": "Production Release",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T029",
+        "T038"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/167",
+      "evidence": [],
+      "acceptance": "Real Live OAuth, paid subscription, page read/publish and rollback smoke, exact-SHA proof"
+    },
+    {
+      "id": "T040",
+      "title": "Shopify listing screenshots, privacy, support, scopes and review assets",
+      "workstream": "App Store Review",
+      "priority": "P1",
+      "status": "in_review",
+      "depends_on": [],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/168",
+      "evidence": [
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/199",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/38746201729",
+        "https://github.com/Vertex-Systems-Network/vsn-builder/pull/283"
+      ],
+      "acceptance": "One public Builder listing with compliant privacy/support/screenshots, eight-plan details, test instructions",
+      "progress_note": "2026-10-17 T040 screenshot ingestion source-contract hardened in PR #283 (all 4 exact-head CI PASS, merged as 1e555f82412269713bb0a11851d79695ea579144). Exactly five real private 1600×900 PNG source captures now required by the listing metadata validator; rejects absent files, symlinks, unsafe path traversal, invalid IHDR/decompression/CRC, mis-sized images, exact-content duplicate SHA256s, and reserved fake support email hostnames. Synthetic fixture image integrity/tampering/security tests and no-deploy listing gate PASS; temporary CI fixture images deleted and NEVER represented as merchant screenshots. This change does not make UI/screenshots authentic, does not certify external Partner/account/privacy/support or Shopify real E2E, and NEVER allows listing submission. Current manifest has ZERO real screenshots, no verified privacy/support and no external issuer. T040 stays IN_REVIEW. Existing single public app and four paid plan drafts retained; no new Shopify stores/Production changes."
+    },
+    {
+      "id": "T041",
+      "title": "Attempt Shopify App Store submission only after release certification",
+      "workstream": "App Store Review",
+      "priority": "P0",
+      "status": "todo",
+      "depends_on": [
+        "T011",
+        "T025",
+        "T029",
+        "T035",
+        "T039",
+        "T040"
+      ],
+      "github_issue": "https://github.com/Vertex-Systems-Network/vsn-builder/issues/168",
+      "evidence": [],
+      "acceptance": "Actual authorized Partner Dashboard review submit attempt + captured Shopify response; never claim approval before confirmed"
+    }
+  ],
+  "closed_task_ids": [
+    "T001",
+    "T002",
+    "T003",
+    "T004",
+    "T005",
+    "T006",
+    "T007",
+    "T008",
+    "T009",
+    "T010",
+    "T011",
+    "T012",
+    "T013",
+    "T014",
+    "T016",
+    "T017",
+    "T026",
+    "T027",
+    "T032"
+  ]
+}

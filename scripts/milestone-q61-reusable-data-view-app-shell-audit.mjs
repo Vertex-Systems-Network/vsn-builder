@@ -92,7 +92,7 @@ await check("Anchored popover repositions on nested scroll",()=>assert.ok(toolki
 await check("Portal popovers detect dark mode outside dashboard DOM tree",()=>assert.ok(toolkit.includes('dataset?.vsnTheme === "dark"')&&css.includes(".vsn-anchored-popover.is-dark")));
 
 await check("Sidebar Pages menu is merchant-facing Templates",()=>assert.ok(sidebar.includes("id: 'pages', label: 'Templates'")));
-await check("Dashboard primary Pages navigation is merchant-facing Templates",()=>assert.ok(home.includes('<PanelsTopLeft size={15}/> Templates</button>')));
+await check("Dashboard primary Pages navigation is merchant-facing Templates",()=>assert.ok(home.includes("onClick={()=>onNavigate('pages')}>Templates</s-button>")));
 await check("Command palette navigation is merchant-facing Templates",()=>assert.ok(read("app/components/dashboard/AppCommandPalette.jsx").includes("['pages','Templates'")));
 await check("Duplicate VSN Builder sidebar brand text is removed",()=>assert.doesNotMatch(sidebar,/VSN Builder<\/|>VSN Builder</));
 await check("VSN Builder brand appears immediately before search in topbar",()=>{assert.ok(topNav.indexOf("vsn-topbar-brand")>=0);assert.ok(topNav.indexOf("vsn-topbar-brand")<topNav.indexOf("vsn-pages-search")||topNav.indexOf("vsn-topbar-brand")<topNav.indexOf("Search VSN Builder"))});
@@ -102,8 +102,8 @@ await check("Profile dropdown has Shopify sign-out guidance with icon",()=>asser
 await check("Custom profile dropdown contains no Manage App entry",()=>assert.doesNotMatch(topNav,/Manage App|Manage app/));
 
 await check("Profile uninstall requires typed consent",()=>assert.ok(topNav.includes("requireText:'UNINSTALL'")&&topNav.includes("app-uninstall")));
-await check("Settings uninstall requires typed consent",()=>assert.ok(settings.includes("requireText:'UNINSTALL'")&&settings.includes("vsn-settings-danger-card")));
-await check("Settings uninstall uses danger action styling",()=>assert.ok(settings.includes("vsn-danger-action")&&settings.includes("Danger zone")));
+await check("Settings uninstall requires typed consent",()=>assert.ok(settings.includes("requireText:'UNINSTALL'")&&settings.includes('heading="Danger zone"')));
+await check("Settings uninstall uses danger action styling",()=>assert.ok(settings.includes('tone="critical"')&&settings.includes("Danger zone")));
 await check("Server uninstall is owner-only",()=>assert.ok(dashboardActions.includes("if (!isBuilderOwner(session))")));
 await check("Server uninstall uses Shopify appUninstall mutation",()=>assert.ok(dashboardActions.includes("mutation VsnAppUninstall")&&dashboardActions.includes("appUninstall")));
 await check("Server uninstall redirects out to Shopify admin",()=>assert.ok(dashboardActions.includes("https://admin.shopify.com/store/")));
@@ -121,10 +121,10 @@ await check("Dashboard Home no longer uses useLayoutEffect",()=>{const imports=h
 await check("React Router v8 future flags were not enabled blindly",()=>{const config=["react-router.config.js","react-router.config.ts","vite.config.js","vite.config.ts"].filter(exists).map(read).join("\n");assert.doesNotMatch(config,/v8_middleware|v8_splitRouteModules|v8_viteEnvironmentApi|v8_passThroughRequests|v8_trailingSlashAwareDataRequests/)});
 
 await check("No Q6.1 Prisma migration was added",()=>assert.equal(fs.readdirSync("prisma/migrations").some((name)=>/q61|reusable_data_view|app_shell_qa/i.test(name)),false));
-await check("Exact Shopify Free handle remains free",()=>assert.ok(plans.includes('shopifyHandle: "free"')));
-await check("Exact Shopify Silver key remains sliver",()=>assert.ok(plans.includes('shopifyHandle: "sliver"')));
+await check("Paid-only Starter Shopify handle is starter, not Free",()=>{assert.ok(plans.includes('shopifyHandle: "starter"'));assert.ok(!plans.includes('shopifyHandle: "free"'))});
+await check("Exact Shopify Silver key matches its public name and retains legacy alias",()=>assert.ok(plans.includes('key: "silver", publicKey: "silver"')&&plans.includes('shopifyHandle: "silver"')&&plans.includes('sliver')));
 await check("Exact Shopify Gold handle remains gold",()=>assert.ok(plans.includes('shopifyHandle: "gold"')));
-await check("Exact Shopify Platinum key remains platenium",()=>assert.ok(plans.includes('shopifyHandle: "platenium"')));
+await check("Exact Shopify Platinum handle uses corrected platinum spelling",()=>{assert.ok(plans.includes('shopifyHandle: "platinum"'));assert.ok(!plans.includes('shopifyHandle: "platenium"'))});
 await check("App route passes owner state to profile controls",()=>assert.ok(appRoute.includes("isOwner={isOwner}")));
 
 const failed=checks.filter(([,ok])=>!ok);

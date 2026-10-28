@@ -560,6 +560,78 @@ if(!storefrontProxy.includes('from "../storefront/customJsBundle.js"'))fail("P1.
 if(storefrontProxy.includes('from "../builder/customCode.js"'))fail("P1.6n builder proxy must not retain direct custom-code collection/validation ownership");
 if(storefrontProxy.includes("function buildCustomJsBundle("))fail("P1.6n builder proxy retained extracted custom-JS helper");
 if(!storefrontProxy.includes('if (enterpriseSettings.safeMode) return javascriptResponse("/* VSN Safe Mode: custom JavaScript disabled. */");'))fail("P1.6n safe-mode custom-JS gate missing");
+const storefrontServerConditions=fs.readFileSync(path.join(root,"app/storefront/serverConditions.js"),"utf8");
+if(!storefrontServerConditions.includes('from "../builder/commerceConditions.js"'))fail("P1.6o server-conditions boundary must delegate commerce rules");
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontServerConditions.includes(forbidden))fail(`P1.6o server-conditions boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/serverConditions.js"'))fail("P1.6o builder proxy must consume extracted server-conditions boundary");
+if(storefrontProxy.includes("function serverConditionMatches(")||storefrontProxy.includes("function conditionRuleMatches("))fail("P1.6o builder proxy retained extracted server-conditions helpers");
+if(!storefrontProxy.includes('if (!serverConditionMatches(node, renderContext)) return "";'))fail("P1.6o server-side condition gate missing from renderNode");
+const storefrontDynamicSource=fs.readFileSync(path.join(root,"app/storefront/dynamicSource.js"),"utf8");
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontDynamicSource.includes(forbidden))fail(`P1.6p dynamic-source boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/dynamicSource.js"'))fail("P1.6p builder proxy must consume extracted dynamic-source boundary");
+if(["formatMoney","readPath","applyDynamicSource"].some((name)=>storefrontProxy.includes(`function ${name}(`)))fail("P1.6p builder proxy retained extracted dynamic-source helpers");
+const storefrontSafeCss=fs.readFileSync(path.join(root,"app/storefront/safeCss.js"),"utf8");
+for(const marker of ['parsed.protocol === "https:"','.replaceAll("<", "&lt;")','.replaceAll(\'"\', "&quot;")','/^#[0-9a-f]{3,8}$/i']){
+  if(!storefrontSafeCss.includes(marker))fail(`P1.6q safe-CSS sanitizer regression detected: ${marker}`);
+}
+for(const forbidden of ["import ","db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","process.env"]){
+  if(storefrontSafeCss.includes(forbidden))fail(`P1.6q safe-CSS boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/safeCss.js"'))fail("P1.6q builder proxy must consume extracted safe-CSS boundary");
+if(["safeUrl","safeColor","escapeHtml","escapeAttribute","cssSize"].some((name)=>storefrontProxy.includes(`function ${name}(`)))fail("P1.6q builder proxy retained extracted sanitizer helpers");
+const storefrontNodeBehavior=fs.readFileSync(path.join(root,"app/storefront/nodeBehavior.js"),"utf8");
+if(!storefrontNodeBehavior.includes('import { escapeAttribute } from "./safeCss.js";'))fail("P1.6r node-behavior boundary must escape attributes via the safe-CSS boundary");
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontNodeBehavior.includes(forbidden))fail(`P1.6r node-behavior boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/nodeBehavior.js"'))fail("P1.6r builder proxy must consume extracted node-behavior boundary");
+if(storefrontProxy.includes("function injectNodeBehavior("))fail("P1.6r builder proxy retained extracted node-behavior helper");
+const storefrontProductWidgets=fs.readFileSync(path.join(root,"app/storefront/productWidgets.js"),"utf8");
+if(!storefrontProductWidgets.includes('import { escapeAttribute, escapeHtml } from "./safeCss.js";'))fail("P1.6s product widgets must escape through the safe-CSS boundary");
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontProductWidgets.includes(forbidden))fail(`P1.6s product-widget boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/productWidgets.js"'))fail("P1.6s builder proxy must consume extracted product-widget boundary");
+const storefrontContentWidgets=fs.readFileSync(path.join(root,"app/storefront/contentWidgets.js"),"utf8");
+for(const marker of ['import { escapeAttribute, escapeHtml } from "./safeCss.js";','BLOCKED_RICH_TAGS = new Set(["script", "style", "iframe", "object", "embed", "form"])',"javascript|vbscript","sanitizeRichHtml(a.contentHtml)"]){
+  if(!storefrontContentWidgets.includes(marker))fail(`P1.6t content-widget sanitizer regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontContentWidgets.includes(forbidden))fail(`P1.6t content-widget boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/contentWidgets.js"'))fail("P1.6t builder proxy must consume extracted content-widget boundary");
+const storefrontFormWidgets=fs.readFileSync(path.join(root,"app/storefront/formWidgets.js"),"utf8");
+for(const marker of ['import { escapeAttribute, escapeHtml } from "./safeCss.js";','name="website"','replace(/[^a-zA-Z0-9_-]/g,"_")','replace(/[^A-Za-z0-9_/]/g,"")']){
+  if(!storefrontFormWidgets.includes(marker))fail(`P1.6u form-widget safety regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontFormWidgets.includes(forbidden))fail(`P1.6u form-widget boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/formWidgets.js"'))fail("P1.6u builder proxy must consume extracted form-widget boundary");
+const storefrontExtendedWidgets=fs.readFileSync(path.join(root,"app/storefront/extendedWidgets.js"),"utf8");
+for(const marker of ['import { escapeAttribute, escapeHtml } from "./safeCss.js";',"sanitizeRichHtml(product.descriptionHtml)"]){
+  if(!storefrontExtendedWidgets.includes(marker))fail(`P1.6v extended-widget safety regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","renderNode","shopify.server","process.env"]){
+  if(storefrontExtendedWidgets.includes(forbidden))fail(`P1.6v extended-widget boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/extendedWidgets.js"'))fail("P1.6v builder proxy must consume extracted extended-widget boundary");
+const storefrontPhase10Widgets=fs.readFileSync(path.join(root,"app/storefront/phase10Widgets.js"),"utf8");
+// Liquid widget code may only reach the storefront through the raw-wrapped app proxy Liquid body, and Safe Mode must disable it.
+const liquidOutputSource=fs.readFileSync(path.join(root,"app/storefront/liquidOutput.js"),"utf8");
+for(const marker of ["{% layout none %}","{% raw %}","{% endraw %}","if (!enabled)"]){if(!liquidOutputSource.includes(marker))fail(`Liquid output raw-wrapping regression detected: ${marker}`);}
+if(!storefrontProxy.includes("buildLiquidBody(html, { enabled: !enterpriseSettings.safeMode })"))fail("Liquid output must respect enterprise Safe Mode");
+for(const marker of ['import { escapeAttribute, escapeHtml } from "./safeCss.js";','sanitizeRichHtml(props.code||props.html||props.content||"")','liquidPlaceholder(props.code||props.liquid||props.content||"")']){
+  if(!storefrontPhase10Widgets.includes(marker))fail(`P1.6w Phase-10 widget safety regression detected: ${marker}`);
+}
+for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","shopify.server","process.env"]){
+  if(storefrontPhase10Widgets.includes(forbidden))fail(`P1.6w Phase-10 widget boundary gained unrelated authority: ${forbidden}`);
+}
+if(!storefrontProxy.includes('from "../storefront/phase10Widgets.js"'))fail("P1.6w builder proxy must consume extracted Phase-10 widget boundary");
 const runnerBenchmark=fs.readFileSync(path.join(root,".ai/RUNNER_BENCHMARK.md"),"utf8");
 for(const marker of ["Issue: #76","Current runner inventory","Deferred benchmark backlog","Required protected security/quality checks are **not** deferred","dedicated runner-optimization milestone"]){
   if(!runnerBenchmark.includes(marker))fail(`Runner benchmark plan regression detected: ${marker}`);

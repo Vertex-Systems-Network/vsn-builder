@@ -30,6 +30,7 @@ const MAX_CONTEXT_JSON_CHARS = 90000;
 const MAX_TOOL_CONTEXT_JSON_CHARS = 30000;
 
 function cleanText(value, max) {
+  // eslint-disable-next-line no-control-regex -- intentional control-char sanitizer
   return String(value ?? "").replace(/\u0000/g, "").trim().slice(0, max);
 }
 

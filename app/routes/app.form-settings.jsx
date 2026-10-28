@@ -1,3 +1,4 @@
+import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -38,6 +39,7 @@ export async function loader({ request }) {
 export async function action({ request }) {
   assertTrustedMutationRequest(request);
   const { session } = await authenticate.admin(request);
+  const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
   const role = getBuilderRole(session);
   if (!canBuilder(role, "settings")) return Response.json({ ok: false, error: "Only the store owner can change form security and integration settings." }, { status: 403 });
 
@@ -116,5 +118,5 @@ export async function action({ request }) {
 export default function FormSettings() {
   const data = useLoaderData();
   const f = useFetcher();
-  return <s-page heading="Forms 2.0 & Integrations"><s-section><p className="text-sm text-[#666]">Configure file uploads, validation/security, retention, success actions and automation providers. The same controls are available inside the Builder sidebar.</p><div className="mt-3 rounded-xl border bg-white p-4"><b>{data.configs.length}</b> form configuration(s) · <b>{data.integrations.length}</b> integrations · <b>{data.logs.length}</b> recent delivery log entries.</div>{f.data?.error ? <div className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-700">{f.data.error}</div> : null}</s-section></s-page>;
+  return <s-page heading="Forms 2.0 & Integrations"><s-section><s-stack direction="block" gap="base"><s-paragraph color="subdued">Configure file uploads, validation/security, retention, success actions and automation providers. The same controls are available inside the Builder sidebar.</s-paragraph><s-box border="base" borderRadius="base" padding="base"><s-text type="strong">{data.configs.length}</s-text> form configuration(s) · <s-text type="strong">{data.integrations.length}</s-text> integrations · <s-text type="strong">{data.logs.length}</s-text> recent delivery log entries.</s-box>{f.data?.error ? <s-banner tone="critical">{f.data.error}</s-banner> : null}</s-stack></s-section></s-page>;
 }

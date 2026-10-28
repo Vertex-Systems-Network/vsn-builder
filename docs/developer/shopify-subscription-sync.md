@@ -20,7 +20,7 @@ The Shopify pricing return parameter `plan_handle` is never treated as proof of 
 ```env
 SHOPIFY_PARTNER_ORGANIZATION_ID=
 SHOPIFY_PARTNER_API_TOKEN=
-SHOPIFY_PARTNER_API_VERSION=2026-07
+SHOPIFY_PARTNER_API_VERSION=2026-10
 SHOPIFY_SUBSCRIPTION_CACHE_TTL_SECONDS=300
 SHOPIFY_SUBSCRIPTION_MAX_STALE_SECONDS=86400
 SHOPIFY_PARTNER_API_TIMEOUT_MS=8000
@@ -28,6 +28,8 @@ SHOPIFY_PARTNER_API_RETRY_COUNT=2
 SHOPIFY_PARTNER_API_RETRY_BASE_MS=250
 VSN_SYNC_SHOPIFY_BILLING_IN_DEVELOPMENT=false
 ```
+
+The sync skip for developer simulation applies **only** when `APP_ENV=local/development` and no Staging/Production/Live Worker/tier marker is present. An unmarked or hosted runtime must never silently use this skip; with no Partner credentials it reports an unconfigured sync and paid entitlements fail closed. `NODE_ENV=test/development` alone is not a merchant billing authority.
 
 The Partner API token must stay server-side. The browser receives only a redacted sync configuration.
 

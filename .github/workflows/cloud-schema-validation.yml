@@ -1,0 +1,62 @@
+name: VSN PostgreSQL Schema Certification (No Deploy)
+
+on:
+  push:
+    branches: [development, feat/builder-postgres-parity-20261012, feat/builder-isolated-cloud-prisma-client-20261013, feat/builder-postgres-schema-health-20261013, feat/builder-cloud-baseline-migration-20261013, feat/builder-edge-prisma-generator-20261013, feat/builder-neon-worker-adapter-20261013]
+    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, scripts/verify-prisma-client-isolation.mjs, scripts/validate-cloud-baseline.mjs, scripts/verify-prisma-worker-client.mjs, app/services/db-worker-neon.js, tests/worker-neon-factory.test.mjs, package.json, package-lock.json, .github/workflows/cloud-schema-validation.yml]
+  pull_request:
+    branches: [development, main]
+    paths: [prisma/**, scripts/verify-prisma-environment-parity.mjs, app/services/db-worker-neon.js, tests/worker-neon-factory.test.mjs, package.json, package-lock.json, .github/workflows/cloud-schema-validation.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  cloud-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DATABASE_URL: postgresql://schema-validation:unused@localhost:5432/schema
+      DIRECT_URL: postgresql://schema-validation:unused@localhost:5432/schema
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Compare all Local and Cloud Prisma model contracts
+        run: node scripts/verify-prisma-environment-parity.mjs
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: Validate PostgreSQL schema without connecting to a database
+        run: npx prisma validate --schema prisma/cloud/schema.prisma
+      - name: Generate isolated PostgreSQL Prisma Client (no DB connection)
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Prove cloud generation did not clobber SQLite Client
+        run: node scripts/verify-prisma-client-isolation.mjs --generated
+      - name: Prove separately generated engine-less Worker Client
+        run: node scripts/verify-prisma-worker-client.mjs --generated && node --test tests/prisma-worker-client.test.mjs
+      - name: Prove Worker-side Neon adapter binds only to matching environment identities
+        run: node --test tests/worker-neon-factory.test.mjs
+      - name: Generate additive empty-to-schema SQL proposal (no DB connection)
+        shell: bash
+        run: |
+          mkdir -p artifacts/cloud-schema
+          npx prisma migrate diff --from-empty --to-schema-datamodel prisma/cloud/schema.prisma --script > artifacts/cloud-schema/proposed-initial-schema.sql
+          test -s artifacts/cloud-schema/proposed-initial-schema.sql
+      - name: Verify checked-in baseline matches Prisma generated proposal
+        run: node scripts/validate-cloud-baseline.mjs && node --test tests/cloud-baseline-integrity.test.mjs
+      - name: Upload SQL for manual migration design review only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: builder-cloud-schema-proposal
+          path: artifacts/cloud-schema/proposed-initial-schema.sql
+          if-no-files-found: error
+          retention-days: 7

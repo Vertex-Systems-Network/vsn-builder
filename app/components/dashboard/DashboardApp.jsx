@@ -56,7 +56,6 @@ export default function DashboardApp({ session, ownerInfo, widgetSettings, dashb
   useEffect(() => { startTransition(()=>setActivePage(normalizeView(new URLSearchParams(location.search).get('view')))); }, [location.search]);
 
   const widgetsFeatcher = useMemo(() => ({ state: 'idle', data: { settings } }), [settings]);
-  const unreadCount = notifications.filter((item) => !item.readAt).length;
 
   const addToast = useCallback((toast) => {
     const id = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
@@ -99,12 +98,12 @@ export default function DashboardApp({ session, ownerInfo, widgetSettings, dashb
       case 'localization': return <Localization darkMode={darkMode} data={dashboard?.localization} />;
       case 'documentation': return <Documentation darkMode={darkMode} />;
       case 'pricing': return <Pricing darkMode={darkMode} currentPlan={dashboard?.plan} entitlements={dashboard?.entitlements} billingUrl={dashboard?.billingUrl} pricing={dashboard?.shopifyPricing} pricingReturn={dashboard?.pricingReturn} subscriptionSync={dashboard?.subscriptionSync} shop={session?.shop || ''} canManageBilling={shell.actionAccess?.billing?.manage === true} />;
-      case 'settings': return <Settings darkMode={darkMode} themePreference={shell.themePreference || 'system'} onThemePreferenceChange={shell.setThemePreference} colorSchemePreference={shell.colorSchemePreference||'lime'} customAccent={shell.customAccent||'#95BF47'} onColorSchemeChange={shell.setColorSchemePreference} onCustomAccentChange={shell.setCustomAccent} onToast={addToast} ownerInfo={ownerInfo} settings={dashboard?.settings} isOwner={shell.isOwner === true} />;
+      case 'settings': return <Settings darkMode={darkMode} themePreference={shell.themePreference || 'system'} onThemePreferenceChange={shell.setThemePreference} colorSchemePreference={shell.colorSchemePreference||'vsn'} customAccent={shell.customAccent||'#625BA8'} onColorSchemeChange={shell.setColorSchemePreference} onCustomAccentChange={shell.setCustomAccent} onToast={addToast} ownerInfo={ownerInfo} settings={dashboard?.settings} isOwner={shell.isOwner === true} />;
       case 'license': return <Pricing darkMode={darkMode} currentPlan={dashboard?.plan} entitlements={dashboard?.entitlements} billingUrl={dashboard?.billingUrl} pricing={dashboard?.shopifyPricing} pricingReturn={dashboard?.pricingReturn} subscriptionSync={dashboard?.subscriptionSync} shop={session?.shop || ''} canManageBilling={shell.actionAccess?.billing?.manage === true} />;
       case 'support': return <Support onNavigate={handleNavigate} darkMode={darkMode} onToast={addToast} tickets={tickets} onTicketsChange={setTickets} onNotificationCreated={(item) => setNotifications((current) => item && !current.some((row) => row.id === item.id) ? [item, ...current] : current)} userName={userFullName} initialTicketId={focusTarget?.type === 'ticket' ? focusTarget.ticketId : null} />;
       case 'changelog': return <Changelog darkMode={darkMode} releases={dashboard?.releases || []} currentVersion={dashboard?.appVersion} />;
       case 'notifications': return <Notifications darkMode={darkMode} notifications={notifications} onNotificationsChange={setNotifications} onNavigate={handleNavigate} />;
-      case 'about': return <About darkMode={darkMode} />;
+      case 'about': return <About version={dashboard?.appVersion} onNavigate={handleNavigate} />;
       case 'profile': return <Profile ownerImage={ownerImage} fullName={userFullName} emailAddress={emailAddress} shopUrl={session?.shop || ''} shopProfile={shopProfile} plan={dashboard?.plan} darkMode={darkMode} onToast={addToast} />;
       case 'home':
       default: return <Home userName={userName} version={dashboard?.appVersion} darkMode={darkMode} onNavigate={handleNavigate} activities={dashboard?.activities || []} releases={dashboard?.releases || []} summary={dashboard?.workspaceSummary || {}} plan={dashboard?.plan} planUsage={dashboard?.planUsage} dashboardPreferences={dashboard?.dashboardPreferences} />;

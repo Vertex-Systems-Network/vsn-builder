@@ -1,0 +1,73 @@
+name: T014 Cloudflare Staging Binding Audit (Read Only)
+on:
+  pull_request:
+    paths:
+      - "scripts/t014-staging-worker-bindings.mjs"
+      - "tests/t014-staging-worker-bindings.test.mjs"
+      - "tests/t014-protected-staging-push-gate.test.mjs"
+      - "tests/t014-github-environment-scoped-secrets.test.mjs"
+      - ".github/workflows/t014-protected-github-staging-environment.yml"
+      - ".github/workflows/t014-cloudflare-staging-binding-audit.yml"
+  push:
+    branches: [development]
+  workflow_dispatch:
+permissions:
+  contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  synthetic-inventory:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact PR source with no persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Pin Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Prove secrets stay hidden and empty Cloudflare inventory fails closed
+        run: node --test tests/t014-staging-worker-bindings.test.mjs tests/t014-protected-staging-push-gate.test.mjs tests/t014-github-environment-scoped-secrets.test.mjs
+  protected-reference:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Require protected development before any scoped secrets enter a job
+        env:
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_REF: ${{ github.ref }}
+          SOURCE_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          test "$SOURCE_REPO" = "Vertex-Systems-Network/vsn-builder"
+          test "$SOURCE_REF" = "refs/heads/development"
+          test "$SOURCE_PROTECTED" = "true"
+  live-metadata-readonly:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    needs: protected-reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: cloudflare-staging
+    steps:
+      - name: Checkout only the verified protected development branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: development
+          persist-credentials: false
+      - name: Pin Node runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22.18.0"
+      - name: Read only Cloudflare names and tier variables without showing values
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+        run: node scripts/t014-staging-worker-bindings.mjs

@@ -11,7 +11,7 @@ npm run config:production
 npm run release:production:check
 ```
 
-This generates `shopify.app.production.toml` with the production application URL, `/auth/callback`, API version `2026-07`, the VSN app proxy and the same declared app-specific/compliance webhooks.
+This generates `shopify.app.production.toml` with the production application URL, `/auth/callback`, API version `2026-10`, the VSN app proxy and the same declared app-specific/compliance webhooks.
 
 Deploy only after the readiness check passes:
 

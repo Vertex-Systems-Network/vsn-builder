@@ -1,38 +1,27 @@
-import fs from "fs";
-import { ApiVersion } from "@shopify/shopify-app-react-router/server";
-import { shopifyApiProject, ApiType } from "@shopify/api-codegen-preset";
-function getConfig() {
-  const config = {
-    projects: {
-      default: shopifyApiProject({
-        apiType: ApiType.Admin,
-        apiVersion: ApiVersion.July26,
-        documents: [
-          "./app/**/*.{js,ts,jsx,tsx}",
-          "./app/.server/**/*.{js,ts,jsx,tsx}",
-        ],
-        outputDir: "./app/types",
-      }),
-    },
+// Shopify Admin schema and extension projects. Extension names become
+// GraphQL glob paths: reject untrusted filesystem names and symlinks before
+// interpolation. Do not rely on glob libraries to escape nested braces.
+import fs from "node:fs";
+const projects={
+  default:{
+    schema:"https://shopify.dev/admin-graphql-direct-proxy/2026-10",
+    documents:["./app/**/*.{js,jsx,ts,tsx}"],
+    extensions:{vsn:{operationTypegen:"scripts/t011-graphql-typegen.mjs"}},
+  },
+};
+const SAFE_NAME=/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+let folders;
+try{folders=fs.readdirSync("./extensions",{withFileTypes:true})}
+catch(error){if(error?.code!=="ENOENT")throw error;folders=[]}
+for(const item of folders){
+  if(!item.isDirectory() || !SAFE_NAME.test(item.name))continue;
+  const schema="./extensions/"+item.name+"/schema.graphql";
+  // lstat (not stat): a symlink to a schema outside the extension is unsafe.
+  try{if(!fs.lstatSync(schema).isFile())continue}
+  catch(error){if(error?.code==="ENOENT")continue;throw error}
+  projects[item.name]={
+    schema,
+    documents:["./extensions/"+item.name+"/**/*.graphql"],
   };
-  let extensions = [];
-  try {
-    extensions = fs.readdirSync("./extensions");
-  } catch {
-    // ignore if no extensions
-  }
-  for (const entry of extensions) {
-    const extensionPath = `./extensions/${entry}`;
-    const schema = `${extensionPath}/schema.graphql`;
-    if (!fs.existsSync(schema)) {
-      continue;
-    }
-    config.projects[entry] = {
-      schema,
-      documents: [`${extensionPath}/**/*.graphql`],
-    };
-  }
-  return config;
 }
-const config = getConfig();
-export default config;
+export default {projects};

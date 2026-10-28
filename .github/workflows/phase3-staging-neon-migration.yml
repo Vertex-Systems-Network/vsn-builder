@@ -1,0 +1,64 @@
+name: VSN Phase 3 Staging Neon Migration — Protected Manual Only
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type APPLY_EMPTY_BUILDER_STAGING_ONLY for irreversible Staging schema DDL; otherwise dry-run blocks"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: vsn-builder-staging-neon-migrate
+  cancel-in-progress: false
+jobs:
+  migrate-staging:
+    # Source must be genuinely protected; no PR, main, or Live credential access.
+    # This manual migration is distinct from optional R2 off-platform backups.
+    if: github.ref == 'refs/heads/development' && github.ref_protected == true
+    environment: cloudflare-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: staging
+      # Non-secret reviewed Staging identity, pinned like T014/T016 (no repo variables are configured).
+      NEON_PROJECT_ID: shiny-violet-61219572
+      SHOPIFY_BILLING_TEST_MODE: "true"
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+      STAGING_MIGRATION_APPROVED: ${{ inputs.confirmation == 'APPLY_EMPTY_BUILDER_STAGING_ONLY' && 'true' || 'false' }}
+      # Public snapshot ID is immutable in reviewed source, then revalidated via
+      # authenticated GET for source branch and current-default provenance.
+      VSN_STAGING_BACKUP_EVIDENCE: snap-green-bar-b3m1btfb
+      # Read-only control-plane token; accept the common secret names for the same Staging-scoped Neon key.
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY || secrets.NEON_API_TOKEN || secrets.NEON_TOKEN }}
+      # Same existing cloudflare-staging names independently tested by T016.
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.18.0
+          cache: npm
+      - name: Validate protected tier, branch, snapshot evidence and Neon identity without exposing credentials
+        run: node scripts/phase3-staging-migration-preflight.mjs
+      - name: Independently verify real Staging Neon snapshot, restored default and pooled endpoint (GET only)
+        run: node scripts/phase3-staging-neon-live-proof.mjs
+      - name: Query exact pooled and direct neondb under read-only TLS transactions and assert 0 tables
+        run: |
+          set +x
+          python3 scripts/t018-staging-migration-readiness.py
+      - name: Install deterministic dependencies
+        run: npm ci
+      - name: Enforce mandatory development dependency security audit
+        run: npm audit --include=dev --audit-level=high
+      - name: Apply ONLY reviewed Staging Prisma cloud migrations
+        run: npx prisma migrate deploy --schema prisma/cloud/schema.prisma
+      - name: Generate isolated hosted Prisma Client
+        run: npx prisma generate --schema prisma/cloud/schema.prisma
+      - name: Verify Staging migration history and required tables read-only
+        run: node scripts/phase3-staging-post-migrate-check.mjs
+      - name: Report evidence boundary
+        run: echo "Empty Staging schema migration verified. Historical Neon snapshot is rollback source; do not enable merchant writes or Live until hosted acceptance and T036 recovery proof."

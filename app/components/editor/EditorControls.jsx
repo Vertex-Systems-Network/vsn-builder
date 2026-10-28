@@ -1,4 +1,4 @@
-import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnSearchField, VsnUrlField, VsnDateField, VsnSpinner, VsnUnitField } from "./EditorUi";
+import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnSearchField, VsnUrlField, VsnDateField, VsnUnitField } from "./EditorUi";
 import ColorStudio, { gradientToCss } from "./color/ColorStudio";
 import FontFamilyControl from "./fonts/FontFamilyControl";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -6,8 +6,6 @@ import PolarisIcon from "../ui/PolarisIcon";
 import { AnchoredOverlay, ModalPortal } from "./OverlayManager";
 import { normalizeColorCapabilities, normalizeControlOptions, resolveColorMode } from "../../builder/controlSchema";
 import EditorSuggestionMenu from "./EditorSuggestionMenu";
-
-const fieldClass = "w-full rounded-lg border border-[#d9d9d9] bg-white px-2.5 py-2 text-xs text-[#202223] outline-none transition focus:border-[#95BF47] focus:ring-2 focus:ring-[#95BF47]/15";
 
 const CSS_LENGTH_UNITS = [
   "px", "%", "em", "rem", "vw", "vh", "vmin", "vmax",
@@ -34,6 +32,7 @@ function detectLengthUnit(value, fallback = "px") {
   if (match) return normalizeLengthUnit(match[2], fallback);
   return "css";
 }
+// eslint-disable-next-line no-unused-vars -- callers pass a fallback unit; kept for signature compatibility
 function lengthInputValue(value, unit, fallback = "px") {
   if (value === null || value === undefined || value === "") return "";
   const text = String(value).trim();
@@ -46,19 +45,34 @@ function lengthInputValue(value, unit, fallback = "px") {
   const numeric = Number.parseFloat(text);
   return Number.isFinite(numeric) ? String(numeric) : "";
 }
-function composeLengthValue(raw, unit, fallback = "px") {
+// Elementor-style limits per unit: absolute caps keep typos like 99999 from breaking layouts.
+const LENGTH_UNIT_LIMITS = { px: 10000, "%": 1000, em: 100, rem: 100, vw: 1000, vh: 1000, vmin: 1000, vmax: 1000, ch: 1000, ex: 1000, lh: 100, rlh: 100, pt: 7500, pc: 625, cm: 265, mm: 2650, Q: 10600, in: 105 };
+
+function clampLengthNumber(text, unit, min) {
+  const limit = LENGTH_UNIT_LIMITS[unit] ?? 1000;
+  const lower = Number.isFinite(min) ? min : -limit;
+  const number = Number(text);
+  if (number < lower) return String(lower);
+  if (number > limit) return String(limit);
+  return text;
+}
+
+function composeLengthValue(raw, unit, fallback = "px", min) {
   const normalizedUnit = unit || fallback;
   if (CSS_LENGTH_KEYWORDS.has(normalizedUnit)) return normalizedUnit;
   const text = String(raw ?? "").trim();
   if (!text) return "";
   if (normalizedUnit === "css") return text;
-  if (/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) return `${text}${normalizeLengthUnit(normalizedUnit, fallback)}`;
+  const finalUnit = normalizeLengthUnit(normalizedUnit, fallback);
+  if (/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) return `${clampLengthNumber(text, finalUnit, min)}${finalUnit}`;
   // If a complete CSS value was pasted, preserve it instead of corrupting it.
   if (CSS_LENGTH_KEYWORDS.has(text) || CSS_LENGTH_UNIT_PATTERN.test(text) || /^(?:calc|min|max|clamp|var)\(/i.test(text)) return text;
-  return `${text}${normalizeLengthUnit(normalizedUnit, fallback)}`;
+  // Keep half-typed numbers ("-", ".", "-.") editable; drop anything that can never be a length.
+  if (/^-?\.?$/.test(text)) return Number.isFinite(min) && min >= 0 ? "" : text;
+  return "";
 }
 
-export function CssLengthControl({ label, value = "", onChange, defaultUnit = "px", keywords = [], placeholder = "0" }) {
+export function CssLengthControl({ label, value = "", onChange, defaultUnit = "px", keywords = [], placeholder = "0", min }) {
   const allowedKeywords = keywords.filter((item) => CSS_LENGTH_KEYWORDS.has(item));
   const detected = detectLengthUnit(value, defaultUnit);
   const [unit, setUnit] = useState(detected);
@@ -72,7 +86,7 @@ export function CssLengthControl({ label, value = "", onChange, defaultUnit = "p
     setUnit(nextUnit);
     if (CSS_LENGTH_KEYWORDS.has(nextUnit)) { onChange?.(nextUnit); return; }
     const current = lengthInputValue(value, unit, defaultUnit);
-    if (current !== "") onChange?.(composeLengthValue(current, nextUnit, defaultUnit));
+    if (current !== "") onChange?.(composeLengthValue(current, nextUnit, defaultUnit, min));
     else if (CSS_LENGTH_KEYWORDS.has(String(value || ""))) onChange?.("");
   };
   return <div className="vsn-css-length-control">
@@ -85,7 +99,7 @@ export function CssLengthControl({ label, value = "", onChange, defaultUnit = "p
         value={keywordMode ? "" : lengthInputValue(value, unit, defaultUnit)}
         placeholder={keywordMode ? unit : placeholder}
         disabled={keywordMode}
-        onInput={(event) => onChange?.(composeLengthValue(event.currentTarget.value, unit, defaultUnit))}
+        onInput={(event) => onChange?.(composeLengthValue(event.currentTarget.value, unit, defaultUnit, min))}
         aria-label={label || "CSS length"}
       />
       <select className="vsn-css-unit-select" value={unit} onChange={(event) => changeUnit(event.currentTarget.value)} aria-label={`${label || "Length"} unit`}>
@@ -164,7 +178,7 @@ export function ButtonSetControl({ label, value, onChange, options = [] }) {
   );
 }
 
-export function DimensionsControl({ label, values = {}, onChange, unit = "px" }) {
+export function DimensionsControl({ label, values = {}, onChange, unit = "px", min }) {
   const [linked, setLinked] = useState(false);
   const sides = ["top", "right", "bottom", "left"];
   const inferredUnit = useMemo(() => {
@@ -176,11 +190,12 @@ export function DimensionsControl({ label, values = {}, onChange, unit = "px" })
       }
     }
     return unit;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on individual side values to avoid recompute on new object identities
   }, [values?.top, values?.right, values?.bottom, values?.left, unit]);
   const [selectedUnit, setSelectedUnit] = useState(inferredUnit);
   useEffect(() => { setSelectedUnit(inferredUnit); }, [inferredUnit]);
   const change = (side, raw) => {
-    const next = composeLengthValue(raw, selectedUnit, unit);
+    const next = composeLengthValue(raw, selectedUnit, unit, min);
     if (linked) {
       onChange?.(Object.fromEntries(sides.map((key) => [key, next])));
     } else {
@@ -194,7 +209,7 @@ export function DimensionsControl({ label, values = {}, onChange, unit = "px" })
       const current = values?.[side];
       if (current === undefined || current === null || current === "") continue;
       const raw = lengthInputValue(current, detectLengthUnit(current, unit), unit);
-      patch[side] = nextUnit === "css" ? String(current) : composeLengthValue(raw, nextUnit, unit);
+      patch[side] = nextUnit === "css" ? String(current) : composeLengthValue(raw, nextUnit, unit, min);
     }
     onChange?.(patch);
   };
@@ -462,7 +477,7 @@ export function OutlineControl({ value = {}, onChange }) {
       <CssLengthControl label="Outline width" value={current.width ?? ""} defaultUnit="px" onChange={(width)=>patch({width})}/>
       <SelectControl label="Outline style" value={current.style || "none"} onChange={(style)=>patch({style})} options={["none","solid","dashed","dotted","double","groove","ridge","inset","outset"]}/>
     </div>
-    <ColorGradientControl solidOnly label="Outline color" value={{type:"color",color:current.color || "#95BF47"}} onChange={(next)=>patch({color:next.color})}/>
+    <ColorGradientControl solidOnly label="Outline color" value={{type:"color",color:current.color || "#625BA8"}} onChange={(next)=>patch({color:next.color})}/>
     <CssLengthControl label="Outline offset" value={current.offset ?? ""} defaultUnit="px" onChange={(offset)=>patch({offset})}/>
   </div>;
 }
@@ -539,7 +554,9 @@ export function ColorGradientControl({
   const triggerRef = useRef(null);
   const colorCapabilities = normalizeColorCapabilities(capabilities, { solidOnly, gradientOnly });
   const type = resolveColorMode(value, colorCapabilities);
-  const isEnabled = enabled ?? value?.enabled !== false;
+  // An optional (toggleable) colour with nothing saved is Off; it must not pretend a white fill is applied.
+  const hasSavedColor = Boolean(value?.color || value?.type === "gradient" || value?.stops?.length);
+  const isEnabled = enabled ?? (toggleable && value?.enabled === undefined ? hasSavedColor : value?.enabled !== false);
   const normalizedValue = type === "gradient" ? { ...value, type: "gradient" } : { ...value, type: "color" };
   useEffect(() => { if (!isEnabled && open) setOpen(false); }, [isEnabled, open]);
   const setEnabled = (nextEnabled) => {
@@ -547,7 +564,7 @@ export function ColorGradientControl({
     if (!onEnabledChange) onChange?.({ ...value, enabled: nextEnabled });
   };
   const preview = isEnabled ? gradientToCss(normalizedValue) : "transparent";
-  const display = !isEnabled ? "Off" : type === "gradient" ? `${value?.gradientType === "radial" ? "Radial" : "Linear"} Gradient` : String(value?.color || "#ffffff").toUpperCase();
+  const display = !isEnabled ? "Off" : type === "gradient" ? `${value?.gradientType === "radial" ? "Radial" : "Linear"} Gradient` : value?.color ? String(value.color).toUpperCase() : "Default";
   return (
     <div className={`vsn-control-block vsn-color-control ${!isEnabled ? "is-disabled" : ""}`}>
       {label ? <div className="flex items-center justify-between gap-2"><FieldLabel>{label}</FieldLabel>{toggleable ? <VsnCheckbox checked={isEnabled} onChange={(event) => setEnabled(event.currentTarget.checked)}>On</VsnCheckbox> : null}</div> : toggleable ? <VsnCheckbox checked={isEnabled} onChange={(event) => setEnabled(event.currentTarget.checked)}>Enable color</VsnCheckbox> : null}
@@ -893,7 +910,7 @@ export function SwitcherControl({ label, checked = false, onChange, description 
       className="flex w-full items-center justify-between gap-3 rounded-lg border border-[#e3e3e3] bg-white px-3 py-2 text-left"
     >
       <span><span className="block text-xs font-medium text-[#303030]">{label}</span>{description ? <span className="mt-0.5 block text-[10px] text-[#8c9196]">{description}</span> : null}</span>
-      <span className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? "bg-[#95BF47]" : "bg-[#b5b5b5]"}`}>
+      <span className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? "bg-[#625BA8]" : "bg-[#b5b5b5]"}`}>
         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${checked ? "left-[18px]" : "left-0.5"}`} />
       </span>
     </VsnButton>
@@ -1161,7 +1178,7 @@ export function GalleryControl({ label = "Gallery", value = [], onChange, max = 
             </div>
           ))}
           {items.length < max ? (
-            <VsnButton type="button" title="Add images" onClick={() => choose({ append: true })} disabled={busy} className="flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-[#c9cccf] bg-[#f6f6f7] text-[#426b84] hover:border-[#95BF47] hover:bg-[#eaf7f2]">
+            <VsnButton type="button" title="Add images" onClick={() => choose({ append: true })} disabled={busy} className="flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-[#c9cccf] bg-[#f6f6f7] text-[#426b84] hover:border-[#625BA8] hover:bg-[#eaf7f2]">
               <PolarisIcon type="plus" size="base" />
             </VsnButton>
           ) : null}
@@ -1188,30 +1205,7 @@ export function RepeaterControl({ label = "Items", value = [], onChange, createI
   );
 }
 
-
-
-
-function sanitizeInlineSvg(value = "") {
-  return String(value || "")
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/\son[a-z]+\s*=\s*(["']).*?\1/gi, "")
-    .replace(/javascript:/gi, "");
-}
-
-const ICON_LIBRARY = [
-  { value: "star", label: "Star", glyph: "★", polarisType: "star", fa: "fa-solid fa-star" },
-  { value: "heart", label: "Heart", glyph: "♥", polarisType: "star", fa: "fa-solid fa-heart" },
-  { value: "check", label: "Check", glyph: "✓", polarisType: "check", fa: "fa-solid fa-check" },
-  { value: "plus", label: "Plus", glyph: "+", polarisType: "plus", fa: "fa-solid fa-plus" },
-  { value: "arrow-right", label: "Arrow Right", glyph: "→", polarisType: "arrow-right", fa: "fa-solid fa-arrow-right" },
-  { value: "cart", label: "Cart", glyph: "🛒", polarisType: "cart", fa: "fa-solid fa-cart-shopping" },
-  { value: "user", label: "User", glyph: "●", polarisType: "profile", fa: "fa-solid fa-user" },
-  { value: "search", label: "Search", glyph: "⌕", polarisType: "search", fa: "fa-solid fa-magnifying-glass" },
-  { value: "info", label: "Info", glyph: "ⓘ", polarisType: "info", fa: "fa-solid fa-circle-info" },
-  { value: "warning", label: "Warning", glyph: "⚠", polarisType: "info", fa: "fa-solid fa-triangle-exclamation" },
-];
-
-export function MediaControl({ label = "Choose Image", value = {}, onChange, accept = "image/*", mediaTypes = ["MediaImage"] }) {
+export function MediaControl({ label = "Choose Image", value = {}, onChange, mediaTypes = ["MediaImage"] }) {
   const externalCurrent = typeof value === "string" ? { url: value } : (value || {});
   const [current, setCurrent] = useState(externalCurrent);
   const [busy, setBusy] = useState(false);
@@ -1326,16 +1320,16 @@ function IconLibraryDialog({ open, onClose, onSelect, libraries = EXTENDED_ICON_
   if (!open) return null;
   const items = (libraries[library] || []).filter((item) => `${item.label} ${item.name}`.toLowerCase().includes(query.toLowerCase()));
   return (
-    <ModalPortal><div className="vsn-editor-modal-backdrop flex items-center justify-center bg-black/35 p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+    <ModalPortal><div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop flex items-center justify-center bg-black/35 p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
       <div className="flex h-[min(620px,85vh)] w-[min(820px,92vw)] overflow-hidden rounded-xl bg-white shadow-2xl">
         <aside className="w-44 shrink-0 border-r border-[#e3e3e3] bg-[#f6f6f7] p-2">
           <div className="px-2 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#6d7175]">Libraries</div>
-          {names.map((name) => <VsnButton key={name} type="button" onClick={() => setLibrary(name)} className={`mb-1 block w-full rounded-md px-2 py-2 text-left text-xs ${library === name ? "bg-white font-semibold text-[#6AAB1F] shadow-sm" : "text-[#4a4a4a] hover:bg-white"}`}>{name}</VsnButton>)}
+          {names.map((name) => <VsnButton key={name} type="button" onClick={() => setLibrary(name)} className={`mb-1 block w-full rounded-md px-2 py-2 text-left text-xs ${library === name ? "bg-white font-semibold text-[#4E4890] shadow-sm" : "text-[#4a4a4a] hover:bg-white"}`}>{name}</VsnButton>)}
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center gap-2 border-b border-[#e3e3e3] p-3"><div className="flex-1"><VsnSearchField label="Search icons" labelAccessibilityVisibility="exclusive" value={query} placeholder="Search icons" onInput={(event) => setQuery(event.currentTarget.value || "")} /></div><VsnButton type="button" variant="icon" size="sm" accessibilityLabel="Close" title="Close" onClick={onClose}><PolarisIcon type="x" size={15} /></VsnButton></div>
           <div className="grid flex-1 grid-cols-5 content-start gap-2 overflow-auto p-3 sm:grid-cols-6 md:grid-cols-7">
-            {items.map((item) => <VsnButton key={`${library}-${item.name}`} type="button" title={item.label} onClick={() => onSelect?.({ source: "library", library, name: item.name, label: item.label, polarisType: item.polarisType, glyph: item.glyph })} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-[#e3e3e3] bg-white text-[#303030] transition hover:border-[#95BF47] hover:bg-[#eaf7f2] hover:text-[#6AAB1F]"><PolarisIcon type={item.polarisType || "star"} size="base" /><span className="max-w-full truncate px-1 text-[9px]">{item.label}</span></VsnButton>)}
+            {items.map((item) => <VsnButton key={`${library}-${item.name}`} type="button" title={item.label} onClick={() => onSelect?.({ source: "library", library, name: item.name, label: item.label, polarisType: item.polarisType, glyph: item.glyph })} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-[#e3e3e3] bg-white text-[#303030] transition hover:border-[#625BA8] hover:bg-[#eaf7f2] hover:text-[#4E4890]"><PolarisIcon type={item.polarisType || "star"} size="base" /><span className="max-w-full truncate px-1 text-[9px]">{item.label}</span></VsnButton>)}
             {!items.length ? <div className="col-span-full py-12 text-center text-xs text-[#8c9196]">No icons found.</div> : null}
           </div>
         </div>
@@ -1427,7 +1421,7 @@ function SvgLibraryDialog({ open, onClose, onSelect }) {
   };
 
   return (
-    <ModalPortal><div className="vsn-editor-modal-backdrop flex items-center justify-center bg-black/35 p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+    <ModalPortal><div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- modal backdrop dismiss / propagation guard, not a focusable control */ className="vsn-editor-modal-backdrop flex items-center justify-center bg-black/35 p-6" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
       <div className="flex h-[min(640px,88vh)] w-[min(860px,94vw)] flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
         <div className="flex items-center gap-2 border-b border-[#e3e3e3] p-3">
           <div className="min-w-0 flex-1">
@@ -1450,7 +1444,7 @@ function SvgLibraryDialog({ open, onClose, onSelect }) {
           {!loading && visible.length ? (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
               {visible.map((item) => (
-                <VsnButton key={item.id} type="button" title={item.fileName || "SVG"} onClick={() => { onSelect?.(item); onClose?.(); }} className="group overflow-hidden rounded-lg border border-[#e3e3e3] bg-white text-left transition hover:border-[#95BF47] hover:shadow-sm">
+                <VsnButton key={item.id} type="button" title={item.fileName || "SVG"} onClick={() => { onSelect?.(item); onClose?.(); }} className="group overflow-hidden rounded-lg border border-[#e3e3e3] bg-white text-left transition hover:border-[#625BA8] hover:shadow-sm">
                   <div className="flex aspect-square items-center justify-center bg-[#f6f6f7] p-3">
                     {(item.editorUrl || item.url) ? <img src={item.editorUrl || item.url} alt={item.alt || ""} className="max-h-full max-w-full object-contain" /> : <PolarisIcon type="image" size="large" />}
                   </div>
@@ -1626,7 +1620,7 @@ export function UrlControl({ label = "Link", value = {}, onChange }) {
   return (
     <div className="space-y-2">
       <FieldLabel>{label}</FieldLabel>
-      <div className="flex items-end gap-1"><div className="min-w-0 flex-1"><VsnUrlField label="URL" labelAccessibilityVisibility="exclusive" value={current.url || ""} placeholder="Paste URL or type" onInput={(event) => patch({ url: event.currentTarget.value || "" })} /></div><VsnButton type="button" title="Link settings" aria-expanded={advanced} onClick={() => setAdvanced((v) => !v)} className={`flex w-10 items-center justify-center rounded-r-lg border border-l-0 border-[#d9d9d9] ${advanced ? "bg-[#eaf7f2] text-[#6AAB1F]" : "bg-[#f6f6f7] text-[#6d7175]"}`}><PolarisIcon type="settings" size="small" /></VsnButton></div>
+      <div className="flex items-end gap-1"><div className="min-w-0 flex-1"><VsnUrlField label="URL" labelAccessibilityVisibility="exclusive" value={current.url || ""} placeholder="Paste URL or type" onInput={(event) => patch({ url: event.currentTarget.value || "" })} /></div><VsnButton type="button" title="Link settings" aria-expanded={advanced} onClick={() => setAdvanced((v) => !v)} className={`flex w-10 items-center justify-center rounded-r-lg border border-l-0 border-[#d9d9d9] ${advanced ? "bg-[#eaf7f2] text-[#4E4890]" : "bg-[#f6f6f7] text-[#6d7175]"}`}><PolarisIcon type="settings" size="small" /></VsnButton></div>
       {advanced ? <div className="space-y-2 rounded-lg border border-[#e3e3e3] bg-[#fafafa] p-2"><SwitcherControl label="Open in new window" checked={current.newWindow === true} onChange={(checked) => patch({ newWindow: checked })} /><SwitcherControl label="Add nofollow" checked={current.nofollow === true} onChange={(checked) => patch({ nofollow: checked })} /><TextControl label="Custom Attributes" value={current.customAttributes || ""} placeholder="key|value, aria-label|Example" onChange={(next) => patch({ customAttributes: next })} /></div> : null}
     </div>
   );

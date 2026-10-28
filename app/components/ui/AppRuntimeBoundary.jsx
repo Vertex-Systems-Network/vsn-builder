@@ -28,7 +28,7 @@ export default class AppRuntimeBoundary extends Component {
       body.set("stack", String(error?.stack || componentStack || "").slice(0, 7000));
       body.set("href", String(window.location.href || "").slice(0, 1600));
       fetch("/app/client-errors", { method: "POST", body, credentials: "same-origin", keepalive: true }).catch(() => {});
-    } catch {}
+    } catch { /* ignore: best-effort */ }
   }
 
   render() {

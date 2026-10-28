@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { COMMERCIAL_PLANS, PLAN_ORDER, normalizePlanKey, planAtLeast } from "../app/config/commercialPlans.js";
 import { ONBOARDING_TRACKS } from "../app/services/commercialization.server.js";
+import { isLocalBillingSimulation } from "../app/config/local-billing-simulation.js";
 
 const read=(file)=>fs.readFileSync(file,"utf8");
 let pass=0,fail=0;
@@ -35,25 +36,37 @@ check("Commercialization feature flag is centralized",flags.includes("commercial
 check("Developer default-plan override is documented without forcing a paid tier",env.includes("VSN_DEFAULT_PLAN=")&&!env.includes("VSN_DEFAULT_PLAN=agency"));
 check("Shopify App Pricing destination is configurable",env.includes("SHOPIFY_APP_HANDLE=")&&env.includes("SHOPIFY_APP_PRICING_URL=")&&appPricing.includes("pricing_plans"));
 
-check("Four commercial tiers are defined",JSON.stringify(PLAN_ORDER)==='["core","pro","cro","agency"]');
-check("Core internal tier maps to merchant Free plan",COMMERCIAL_PLANS.core?.name==="Free");
-check("Pro internal tier maps to merchant Silver plan",COMMERCIAL_PLANS.pro?.name==="Silver");
-check("CRO internal tier maps to merchant Gold plan",COMMERCIAL_PLANS.cro?.name==="Gold");
-check("Agency internal tier maps to merchant Platinum plan",COMMERCIAL_PLANS.agency?.name==="Platinum");
+check("Eight commercial tiers are defined",JSON.stringify(PLAN_ORDER)==='["starter","solo","silver","gold","business","platinum","agency","scale"]');
+check("Starter is the first paid public tier",COMMERCIAL_PLANS.starter?.name==="Starter");
+check("Silver key matches merchant-facing plan name",COMMERCIAL_PLANS.silver?.name==="Silver"&&normalizePlanKey("sliver")==="silver");
+check("Gold ID matches merchant-facing plan name",COMMERCIAL_PLANS.gold?.name==="Gold");
+check("Platinum ID matches merchant-facing plan name",COMMERCIAL_PLANS.platinum?.name==="Platinum");
+check("Public commercial catalog has eight paid plans and no free plan",!PLAN_ORDER.includes("free")&&Object.keys(COMMERCIAL_PLANS).length===8);
+check("Paid USD prices match the eight-tier catalog",PLAN_ORDER.map(k=>COMMERCIAL_PLANS[k].monthlyUsd).join(",")==="30,60,100,150,250,350,600,1000");
+check("Platinum annual USD rate is 3000",COMMERCIAL_PLANS.platinum.annualUsd===3000);
+check("Every paid plan has a Shopify-managed 10-day trial",PLAN_ORDER.every(k=>COMMERCIAL_PLANS[k].trialDays===10));
 check("Every plan includes all widgets",PLAN_ORDER.every((key)=>COMMERCIAL_PLANS[key]?.allWidgets===true));
 check("Plans differentiate Marketplace capacity",new Set(PLAN_ORDER.map((key)=>COMMERCIAL_PLANS[key].templateQuota)).size>=3);
-check("Plans differentiate AI quota",new Set(PLAN_ORDER.map((key)=>COMMERCIAL_PLANS[key].aiMonthly)).size===4);
+check("Plans differentiate AI quota",new Set(PLAN_ORDER.map((key)=>COMMERCIAL_PLANS[key].aiMonthly)).size===8);
 check("CRO experiments begin at CRO tier",COMMERCIAL_PLANS.core.croExperiments===0&&COMMERCIAL_PLANS.pro.croExperiments===0&&COMMERCIAL_PLANS.cro.croExperiments>0);
 check("Collaboration begins at Pro tier",COMMERCIAL_PLANS.core.collaboration===false&&COMMERCIAL_PLANS.pro.collaboration===true);
-check("Team capacity increases across tiers",COMMERCIAL_PLANS.core.teamMembers<COMMERCIAL_PLANS.pro.teamMembers&&COMMERCIAL_PLANS.pro.teamMembers<COMMERCIAL_PLANS.cro.teamMembers&&COMMERCIAL_PLANS.cro.teamMembers<COMMERCIAL_PLANS.agency.teamMembers);
-check("Enterprise controls are Agency-only",PLAN_ORDER.filter((key)=>COMMERCIAL_PLANS[key].enterpriseControls).join(",")==="agency");
-check("Legacy Free aliases to Core",normalizePlanKey("free")==="core");
-check("Legacy Enterprise aliases to Agency",normalizePlanKey("enterprise")==="agency");
-check("Plan ranking supports higher-tier entitlements",planAtLeast("agency","pro")&&planAtLeast("cro","pro")&&!planAtLeast("core","pro"));
+check("Team capacity increases across tiers",PLAN_ORDER.every((key,index)=>index===0||COMMERCIAL_PLANS[PLAN_ORDER[index-1]].teamMembers<=COMMERCIAL_PLANS[key].teamMembers));
+check("Enterprise controls begin at Platinum",PLAN_ORDER.filter((key)=>COMMERCIAL_PLANS[key].enterpriseControls).join(",")==="platinum,agency,scale");
+check("Retired Free handle never aliases to paid Starter",normalizePlanKey("free")==="inactive");
+check("Legacy Enterprise internal alias resolves to Scale",normalizePlanKey("enterprise")==="scale");
+check("Plan ranking supports higher-tier entitlements",planAtLeast("agency","silver")&&planAtLeast("gold","silver")&&!planAtLeast("starter","silver"));
 
 check("Plan usage covers pages, Marketplace, AI, CRO and team",["pages:","templates:","ai:","experiments:","team:"].every((token)=>planServer.includes(token)));
-check("Developer Mode defaults to full testing access unless explicitly overridden",entitlementService.includes('process.env.NODE_ENV !== "production"')&&entitlementService.includes('configuredDefault || "agency"'));
-check("Production fallback is Core",entitlementService.includes('key = "core"')&&entitlementService.includes('source = "production-core-fallback"'));
+check("Developer Mode defaults to full testing access only with explicit Local tier",entitlementService.includes('isLocalBillingSimulation()') &&
+  entitlementService.includes('configuredDefault || "platinum"') &&
+  env.includes("APP_ENV=development") &&
+  isLocalBillingSimulation({NODE_ENV:"development",APP_ENV:"development"}) &&
+  isLocalBillingSimulation({NODE_ENV:"test",APP_ENV:"local"}) &&
+  !isLocalBillingSimulation({NODE_ENV:"test"}) &&
+  !isLocalBillingSimulation({NODE_ENV:"development",APP_ENV:"staging"}) &&
+  !isLocalBillingSimulation({NODE_ENV:"development",APP_ENV:"development",VSN_WORKER_NAME:"vsn-builder-staging"}) &&
+  !isLocalBillingSimulation({NODE_ENV:"production",APP_ENV:"development"}));
+check("Production fallback is no-access inactive",entitlementService.includes('key = "inactive"')&&entitlementService.includes('source = "production-no-subscription"'));
 check("Page creation enforces plan capacity",pagesRoute.includes("getQuotaDecision")&&pagesRoute.includes('"pages"'));
 check("Marketplace enforces install quota",marketplace.includes("getQuotaDecision")&&marketplace.includes('"marketplaceInstalls"'));
 check("Marketplace Pro content accepts Pro-or-higher",marketplace.includes("getMinimumPlanDecision")&&marketplace.includes("item.planTier"));
@@ -78,7 +91,7 @@ check("CRO demo creates control and variation drafts",read("app/services/commerc
 check("Campaign demo creates an editable popup draft",read("app/services/commercialization.server.js").includes("VSN Demo — Campaign Popup")&&read("app/services/commercialization.server.js").includes('template:"popup"'));
 
 check("Builder sidebar Setup uses adaptive Launchpad UI",host.includes("Launchpad & Onboarding")&&host.includes("vsn-onboarding-track-grid"));
-check("Dashboard Plans UI remains the authoritative four-tier commercial screen",dashboardPricing.includes("PLAN_ORDER.map")&&dashboardPricing.includes("All widgets included")&&dashboardPricing.includes("CRO experiments")&&dashboardPricing.includes("collaboration seats")&&host.includes("one authoritative Plans screen"));
+check("Dashboard Plans UI displays all eight tiers and comparison",dashboardPricing.includes("PLAN_ORDER.map")&&dashboardPricing.includes("PlanComparison")&&dashboardPricing.includes("All widgets included")&&host.includes("one authoritative Plans screen"));
 check("Builder Plans is usage-only and delegates billing/plan changes to Dashboard",host.includes('title="Plan usage"')&&host.includes('href="/app?view=pricing"')&&dashboardPricing.includes("Review plans in Shopify"));
 check("System Health has Plans & Launch tab",host.includes('value:"commercial"')&&host.includes('label:"Plans & Launch"'));
 check("System Health reports commercialization engine",control.includes('commercialization:"Plans + quotas + onboarding + launch demos + go-to-market docs"'));

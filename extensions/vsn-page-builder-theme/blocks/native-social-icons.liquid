@@ -1,4 +1,15 @@
-<div class="vsn-native-block" data-vsn-native-instance="{{ block.id }}" style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px"><div class="vsn-native-social">{% if block.settings.instagram != blank %}<a href="{{ block.settings.instagram }}">Instagram</a>{% endif %}{% if block.settings.facebook != blank %}<a href="{{ block.settings.facebook }}">Facebook</a>{% endif %}{% if block.settings.tiktok != blank %}<a href="{{ block.settings.tiktok }}">TikTok</a>{% endif %}</div></div>
+{% comment %}T032: escape Shopify URL settings before storefront link attributes.{% endcomment %}
+<div class="vsn-native-block" data-vsn-native-instance="{{ block.id | escape }}" {{ block.shopify_attributes }} style="--vsn-native-color:{{ block.settings.color }};--vsn-native-bg:{{ block.settings.background }};--vsn-native-py:{{ block.settings.padding_y }}px;--vsn-native-px:{{ block.settings.padding_x }}px">
+  {% if block.settings.instagram != blank or block.settings.facebook != blank or block.settings.tiktok != blank %}
+    <nav class="vsn-native-social" aria-label="Social media">
+      {% if block.settings.instagram != blank %}<a href="{{ block.settings.instagram | escape }}">Instagram</a>{% endif %}
+      {% if block.settings.facebook != blank %}<a href="{{ block.settings.facebook | escape }}">Facebook</a>{% endif %}
+      {% if block.settings.tiktok != blank %}<a href="{{ block.settings.tiktok | escape }}">TikTok</a>{% endif %}
+    </nav>
+  {% elsif request.design_mode %}
+    <span class="vsn-native-muted" role="status">Add a social profile URL in the theme editor.</span>
+  {% endif %}
+</div>
 
 {% schema %}
 {
