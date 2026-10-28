@@ -1,3 +1,4 @@
+import { previewSecret, signPreviewToken } from "../services/preview-token.server.js";
 import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { useEffect, useRef } from "react";
 import {
@@ -116,6 +117,7 @@ function collectComponentUsageFromPages(rows = []) {
 export async function loader({
 	request,
 	params,
+	context,
 }) {
 	const { admin, session } =
 		await authenticate.admin(request);
@@ -534,6 +536,7 @@ export async function loader({
 		previewArticle,
 		previewSearch,
 		shop: session.shop,
+		previewToken: await signPreviewToken({ shop: session.shop, pageId: page.id, secret: previewSecret(context) }),
 		enabledWidgetIds,
 		widgetPlatform,
 		fontCatalog,
@@ -1414,6 +1417,7 @@ export default function BuilderRoute() {
 		previewArticle = null,
 		previewSearch = null,
 		shop = "",
+		previewToken = "",
 		designTokens = {},
 		serverRevisions = [],
 		featureFlags = {},
@@ -1484,6 +1488,7 @@ export default function BuilderRoute() {
 			designTokens={designTokens}
 			serverRevisions={serverRevisions}
 			shop={shop}
+			previewToken={previewToken}
 			enabledWidgetIds={enabledWidgetIds}
 			widgetPlatform={widgetPlatform}
 			collections={collections}
