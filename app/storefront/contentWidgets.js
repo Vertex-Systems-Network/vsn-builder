@@ -54,14 +54,15 @@ function sanitizeRichHtmlOnce(value) {
 }
 
 // Repeat until stable: removing one tag can splice a new one together (e.g. "<scr<script>ipt>").
+// Each pass only removes text, so the loop always terminates.
 export function sanitizeRichHtml(value) {
 	let current = String(value || "");
-	for (let pass = 0; pass < 10; pass += 1) {
-		const next = sanitizeRichHtmlOnce(current);
-		if (next === current) return next;
-		current = next;
-	}
-	return current.replace(/[<>]/g, "");
+	let previous;
+	do {
+		previous = current;
+		current = sanitizeRichHtmlOnce(current);
+	} while (current !== previous);
+	return current;
 }
 
 export function contentTypography(styles={}, fallback={}) { return productTypographyStyle(styles, fallback); }
