@@ -68,6 +68,16 @@ QA method:
    - Layout: content width, gaps, breakpoints.
    - Widgets reference globals by token and update live when the kit changes. The storefront output is the same.
 8. **Ongoing deep QA.** After items 1–7, sweep every module for remaining defects. Add each finding here before fixing it.
+   - Round 1 (PR #414):
+     - Hosted shop-less `/`, `/app` and `/auth/login` returned 500; they now go to the legacy login flow.
+     - `/preview` now carries `shop`, so the SDK sets its CSP.
+     - 3 stale audits re-pointed; all 138 audit scripts pass.
+     - Blog and article inline prerender added. Product and collection stay live on purpose.
+     - Storefront sweep: all 117 widgets and 440 templates render without errors.
+     - Offer CTAs are centred, and a countdown with no end date is hidden.
+   - Decisions:
+     - The Staging offline token refreshes itself on the next app-proxy request (SDK `ensureValidOfflineSession`).
+     - Template media stays a gradient block. App-hosted stock images do not load on the shop domain, so merchants set their own image.
 
 ## Owner queue — 2026-10-28 (strict FIFO, one item finished before the next)
 
