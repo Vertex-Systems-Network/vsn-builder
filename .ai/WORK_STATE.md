@@ -24,6 +24,20 @@ updated_at: 2026-10-28
 - Pre-existing, unchanged by this deploy (run 46 on `9c84af6` probed the same): a bare `/app` request without Shopify `shop` params returns 500. T023 tail run 36 shows the Shopify auth layer throwing a 410 that escapes as React Router's plain-text 500; `/app?shop=...` returns the expected 410 HTML. Real Admin traffic always carries `shop`/`host`/`hmac`.
 - Not yet certified: Tier 2 exit still needs real Shopify Admin E2E on a Staging test store (install/OAuth, editor save/publish, theme embed, Liquid widget, webhooks, test billing) and a rollback drill. Production promotion stays blocked until that evidence and explicit owner approval exist.
 
+## Owner queue — 2026-10-28 (strict FIFO, one item finished before the next)
+
+0. DONE when merged: `/readyz` reported tier "staging" on Production (hardcoded label).
+1. Editor dark mode styling.
+2. Grid layouts on pages no longer render as grids.
+3. Preview opens in its own page without the Shopify admin shell.
+4. Audit every module: options, systems, behaviour, logic.
+5. App and page load time.
+6. Editor UI issues.
+7. Storefront: no loader flash — widget output files installed in the theme on activation, content renders with the Shopify page.
+8. Setup page appears on app activation and walks required steps one by one.
+
+Production went live 2026-10-28 via T041 run 1 (main 74cf6b7): Neon backup branch, migrate deploy, Worker deploy; /healthz and /readyz 200.
+
 ## Polaris cards, Liquid widget, editor browser QA and CI runners — 2026-10-28
 
 - Merged into `development`: #404 (palette, storefront carousels), #405 (template device preview), #406 (superseded pull_request runs cancelled across 28 workflows; push runs never cancelled; `tests/ci-runner-concurrency.test.mjs`).

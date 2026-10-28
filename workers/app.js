@@ -87,7 +87,7 @@ async function merchantReadiness(request,env) {
   }
   return safeJson({
     service:"VSN Builder",
-    tier:"staging",
+    tier:env.APP_ENV,
     merchantAppReady:true,
     shopifyOauthReady:true,
     persistentSessionsReady:true,
