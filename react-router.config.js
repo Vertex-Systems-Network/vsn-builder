@@ -8,7 +8,9 @@ const ci = process.env.CI === "true" &&
   process.env.NODE_ENV === "test";
 const stagingWorker = process.env.APP_ENV === "staging" &&
   process.env.VSN_STAGING_FULL_APP_BUILD === "1";
+const productionWorker = process.env.APP_ENV === "production" &&
+  process.env.VSN_PRODUCTION_FULL_APP_BUILD === "1";
 export default {
   ssr: true,
-  buildDirectory: ci || stagingWorker ? "dist" : "build",
+  buildDirectory: ci || stagingWorker || productionWorker ? "dist" : "build",
 };
