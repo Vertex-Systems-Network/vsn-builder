@@ -18,6 +18,17 @@ export function htmlResponse(html, status = 200) {
   });
 }
 
+export function liquidResponse(body, status = 200) {
+  return new Response(body, {
+    status,
+    headers: secureHeaders({
+      "Content-Type": "application/liquid; charset=utf-8",
+      "Cache-Control": "no-store",
+      Vary: "Accept-Encoding",
+    }),
+  });
+}
+
 export function javascriptResponse(source, status = 200) {
   return new Response(String(source || ""), {
     status,
