@@ -61,7 +61,7 @@ QA method:
    - Check entrance, scroll and hover animations for wrong behaviour: replays, flicker, wrong origin, not stopping, and differences between editor and storefront.
    - The library preview must match the runtime (`vsn-interactions.js`).
    - Respect `prefers-reduced-motion`.
-7. **Global Style Kit (Elementor-like Site Settings).**
+7. DONE: **Global Style Kit (Elementor-like Site Settings).**
    - Global colours: primary, secondary, text, accent and custom colours.
    - Global typography presets: H1–H6, body, button.
    - Global styles for buttons, form fields and images.

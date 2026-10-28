@@ -52,6 +52,8 @@ import useTemplateBrowser from "./hooks/useTemplateBrowser.js";
 import useEditorAppearance from "./hooks/useEditorAppearance.js";
 import useAgentEditorSync from "./hooks/useAgentEditorSync.js";
 import useCanvasAutoFit from "./hooks/useCanvasAutoFit.js";
+import { GlobalColorsContext } from "./color/globalColorsContext.js";
+import { listGlobalColors } from "../../builder/styleKit.js";
 import usePreviewWindow from "./hooks/usePreviewWindow.js";
 
 
@@ -1348,6 +1350,7 @@ export default function PageEditor({
     reusableSections, componentDefinitions, widgetPlatform,
     previewCollection, previewProduct, previewBlog, previewArticle, previewSearch,
   };
+  const globalColorList = useMemo(() => listGlobalColors(globalStyles), [globalStyles]);
   const openPreviewWindow = usePreviewWindow(previewPayload, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id]);
 
   /*
@@ -1420,6 +1423,7 @@ export default function PageEditor({
   }
 
   return (
+    <GlobalColorsContext.Provider value={globalColorList}>
     <div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */ ref={editorRootRef} data-vsn-editor-root="true" data-vsn-ui-profile="editor" data-vsn-baseline="milestone-a-phase-0" data-vsn-experimental={Object.values(featureFlags || {}).some(Boolean) ? "1" : "0"} className={`flex h-screen flex-col overflow-hidden ${editorDarkMode?"vsn-editor-dark":"vsn-editor-light"}`} style={{ "--vsn-left-panel": `${leftPanelWidth}px`, "--vsn-right-panel": `${rightPanelWidth}px` }} onMouseDown={() => setContextMenu(null)} onContextMenu={(event) => { const target = event.target?.closest?.("[data-vsn-id]"); const id = target?.getAttribute?.("data-vsn-id"); if (!id || !findNode(elements, id)) return; event.preventDefault(); event.stopPropagation(); handleSelect(id, null); setContextMenu({ x: event.clientX, y: event.clientY, id }); }}>
       <ClientErrorReporter pageId={page?.id || ""} widgetId={selectedId || ""} />
       <EditorTooltipLayer />
@@ -1681,5 +1685,6 @@ export default function PageEditor({
         </> : null}
       </div>
     </div>
+    </GlobalColorsContext.Provider>
   );
 }

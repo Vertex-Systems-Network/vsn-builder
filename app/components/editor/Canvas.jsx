@@ -1,3 +1,4 @@
+import { styleKitCss } from "../../builder/styleKit.js";
 import { isHiddenOnDevice } from "../../builder/visibility.js";
 import { Component, createContext, memo, useContext, useEffect, useRef, useState } from 'react';
 import SectionInserter from './SectionInserter';
@@ -1435,7 +1436,7 @@ export default function Canvas({
     >
       <style
         dangerouslySetInnerHTML={{
-          __html: `${widgetPlatform.customCss ? `${widgetPlatform.customCss}\n` : ""}.vsn-canvas-page h1,.vsn-canvas-page h2,.vsn-canvas-page h3,.vsn-canvas-page h4,.vsn-canvas-page h5,.vsn-canvas-page h6{font-family:var(--vsn-canvas-heading-font,inherit);}\n${buildStyleBundleCss(
+          __html: `${styleKitCss('[data-vsn-page-boundary="1"]')}\n${widgetPlatform.customCss ? `${widgetPlatform.customCss}\n` : ""}.vsn-canvas-page h1,.vsn-canvas-page h2,.vsn-canvas-page h3,.vsn-canvas-page h4,.vsn-canvas-page h5,.vsn-canvas-page h6{font-family:var(--vsn-canvas-heading-font,inherit);}\n${buildStyleBundleCss(
             [
               applyResponsiveTree(elements, previewMode, globalStyles),
               ...reusableSections.map((section) => applyResponsiveTree(Array.isArray(section?.content) ? section.content : [], previewMode, globalStyles)),

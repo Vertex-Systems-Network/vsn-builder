@@ -1,3 +1,4 @@
+import { styleKitCss } from "../../builder/styleKit.js";
 import { hideOnCss } from "../../builder/visibility.js";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { ContentPolarisIcon } from "../ui/PolarisIcon";
@@ -1176,6 +1177,7 @@ export default function PreviewRenderer({
 				minHeight: "100vh",
 			}}
 		>
+			<style dangerouslySetInnerHTML={{ __html: styleKitCss(".vsn-preview-root") }} />
 			{staticPreview ? null : <CustomJsRuntime rootRef={previewRootRef} elements={elements} mode="preview" />}
 			{elements.map((element) => (
 				<RenderNode

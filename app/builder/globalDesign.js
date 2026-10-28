@@ -1,3 +1,4 @@
+import { styleKitVariables } from "./styleKit.js";
 import { defaultResponsiveBreakpoints } from "./responsiveEngine.js";
 export const GLOBAL_DESIGN_DEFAULTS = {
   primaryColor: "#008060", secondaryColor: "#6d7175", accentColor: "#008060",
@@ -23,6 +24,7 @@ export function globalCssVariables(input = {}) {
     "--vsn-radius-sm": g.radiusSm, "--vsn-radius-md": g.radiusMd, "--vsn-radius-lg": g.radiusLg,
     "--vsn-space": `${Math.max(1, Number(g.spacingBase || 4))}px`, "--vsn-shadow-sm": g.shadowSm, "--vsn-shadow-md": g.shadowMd, "--vsn-shadow-lg": g.shadowLg,
     "--vsn-container-max": g.containerMaxWidth,
+    ...styleKitVariables(g),
   };
 }
 

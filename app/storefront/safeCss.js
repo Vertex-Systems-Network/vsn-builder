@@ -226,7 +226,9 @@ export function safeColor(value, fallback) {
 		/^hsla?\([0-9.,%\s]+\)$/i.test(
 			color,
 		) ||
-		color === "transparent"
+		color === "transparent" ||
+		// Global Style Kit colour token, e.g. var(--vsn-color-primary, #111111)
+		/^var\(--vsn-[a-z0-9-]{1,48}(\s*,\s*#[0-9a-f]{3,8})?\)$/i.test(color)
 	) {
 		return color;
 	}

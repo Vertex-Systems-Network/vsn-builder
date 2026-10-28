@@ -1,6 +1,7 @@
 import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnUnitField } from "./EditorUi";
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router';
+import StyleKitPanel from "./StyleKitPanel";
 import { DynamicSourcePanel, DynamicBindingsPanel, ConditionsBuilder, VisibilityPanel, ResponsivePanel, AdvancedLayoutPanel, StateStylesPanel, BreakpointControls } from "./AdvancedBuilderControls";
 import PolarisIcon from '../ui/PolarisIcon';
 import { ColorGradientControl, SliderControl, TextControl, NumberControl, TypographyControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, TextStrokeControl } from './EditorControls';
@@ -314,9 +315,8 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         <p className="text-xs font-semibold text-[#1a1a1a]">Global Styles</p>
         <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Selected element settings open in the left panel.</p>
       </div>
-      <SectionHeader title="Colors">
-        <div><Label>Primary</Label><ColorInput value={globalStyles.primaryColor || "#625BA8"} onChange={(value) => onGlobalStylesChange?.({ primaryColor: value })} /></div>
-        <div><Label>Text</Label><ColorInput value={globalStyles.textColor || "#1a1a1a"} onChange={(value) => onGlobalStylesChange?.({ textColor: value })} /></div>
+      <StyleKitPanel globalStyles={globalStyles} onChange={onGlobalStylesChange} Section={SectionHeader} ColorInput={ColorInput} />
+      <SectionHeader title="Page Colors">
         <div><Label>Background</Label><ColorInput value={globalStyles.backgroundColor || "#ffffff"} onChange={(value) => onGlobalStylesChange?.({ backgroundColor: value })} /></div>
       </SectionHeader>
       <SectionHeader title="Typography">

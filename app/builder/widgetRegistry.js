@@ -24,8 +24,9 @@ export const widgetRegistry = {
   "product-inquiry-form": base("Product Inquiry Form", false, { heading: "Product inquiry", submitText: "Send inquiry", successText: "Thanks. Your inquiry has been received.", errorText: "Please check the form and try again.", showPhone: true }, { spacing: { gap: "12px" } }),
 
   banner: base('Banner', true, {}, { background: { type: 'color', color: '#f6f6f7' }, spacing: { paddingTop: '60px', paddingRight: '48px', paddingBottom: '60px', paddingLeft: '48px' } }),
-  heading: base('Heading', false, { text: 'New Heading', tag: 'h2' }, { typography: { fontSize: '32px', fontWeight: '700', color: '#1a1a1a', lineHeight: '1.2' } }),
-  text: base('Text', false, { text: 'Add your text content here.' }, { typography: { fontSize: '16px', color: '#4a4a4a', lineHeight: '1.6' } }),
+  // Typography comes from the Global Style Kit presets (H1-H6, Body) until the merchant sets it per widget.
+  heading: base('Heading', false, { text: 'New Heading', tag: 'h2' }, { typography: {} }),
+  text: base('Text', false, { text: 'Add your text content here.' }, { typography: {} }),
   button: base('Button', false, { text: 'Click me', url: '#', variant: 'primary' }),
   image: base('Image', false, {
     sourceType: 'shopify',
