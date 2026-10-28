@@ -20,6 +20,10 @@ on:
       - ".github/workflows/t024-node-oauth-generation-storage.yml"
 permissions:
   contents: read
+# Cancel superseded pull_request runs only; protected-branch pushes always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   local-oauth-install-generation:
     runs-on: ubuntu-24.04

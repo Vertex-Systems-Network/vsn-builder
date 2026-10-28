@@ -83,8 +83,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: vsn-workerd-local-${{ github.ref }}
-  cancel-in-progress: true
+  group: vsn-workerd-local-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   local-workerd:
     runs-on: ubuntu-latest

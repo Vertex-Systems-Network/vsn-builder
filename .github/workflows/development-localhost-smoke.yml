@@ -15,8 +15,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: builder-local-smoke-${{ github.ref }}
-  cancel-in-progress: true
+  group: builder-local-smoke-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   local-development:
     name: Clean checkout + disposable SQLite + localhost auth boundary

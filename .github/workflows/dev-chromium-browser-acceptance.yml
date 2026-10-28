@@ -16,8 +16,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: vsn-builder-dev-chromium-${{ github.ref }}
-  cancel-in-progress: true
+  group: vsn-builder-dev-chromium-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   chromium-local:
     name: Built SQLite Dev app in real Chromium

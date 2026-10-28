@@ -22,8 +22,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: builder-postgres-container-${{ github.ref }}
-  cancel-in-progress: true
+  group: builder-postgres-container-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   ephemeral-postgres:
     name: Verify PostgreSQL migration and Prisma runtime
