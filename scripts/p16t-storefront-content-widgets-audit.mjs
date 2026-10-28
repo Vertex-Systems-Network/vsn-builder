@@ -30,6 +30,8 @@ const clean = sanitizeRichHtml(dirty);
 ok(!/<script|<iframe/i.test(clean), "sanitizeRichHtml strips script and iframe tags");
 ok(!/\son\w+=/i.test(clean), "sanitizeRichHtml strips inline event handlers");
 ok(!/javascript:/i.test(clean), "sanitizeRichHtml neutralises javascript: URLs");
+const spliced = sanitizeRichHtml("<scr<script>ipt>alert(1)</scr</script>ipt><img src=x onerror=alert(1)><a href=\"java\tscript:x\">y</a>");
+ok(!/<script/i.test(spliced) && !/onerror/i.test(spliced) && !/javascript/i.test(spliced), "sanitizeRichHtml cannot be spliced into a new script tag or handler");
 ok(clean.includes("<p>Hi</p>"), "sanitizeRichHtml keeps safe markup");
 equal(sanitizeRichHtml(null), "", "sanitizeRichHtml tolerates nullish input");
 

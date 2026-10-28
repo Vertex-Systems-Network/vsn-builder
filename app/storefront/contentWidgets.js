@@ -46,23 +46,41 @@ export function getNodeSpacing(styles = {}) {
 	};
 }
 
-function sanitizeRichHtmlOnce(value) {
-	return value
-		.replace(/<\/?(?:script|style|iframe|object|embed|form)[^>]*>/gi, "")
-		.replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-		.replace(/(?:href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\1/gi, 'href="#"');
+const BLOCKED_RICH_TAGS = new Set(["script", "style", "iframe", "object", "embed", "form"]);
+const UNSAFE_URL = /^(?:javascript|vbscript|data\s*:\s*text\/html)/i;
+
+function sanitizeRichAttributes(raw) {
+	let out = "";
+	const attrPattern = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+	for (const match of raw.matchAll(attrPattern)) {
+		const name = match[1].toLowerCase();
+		if (name.startsWith("on")) continue;
+		const hasValue = match[2] !== undefined || match[3] !== undefined || match[4] !== undefined;
+		let attrValue = match[2] ?? match[3] ?? match[4] ?? "";
+		if ((name === "href" || name === "src" || name === "xlink:href" || name === "action" || name === "formaction") &&
+			UNSAFE_URL.test([...attrValue].filter((char) => char.charCodeAt(0) > 32).join(""))) attrValue = "#";
+		out += hasValue ? ` ${name}="${attrValue.replace(/"/g, "&quot;")}"` : ` ${name}`;
+	}
+	return out;
 }
 
-// Repeat until stable: removing one tag can splice a new one together (e.g. "<scr<script>ipt>").
-// Each pass only removes text, so the loop always terminates.
+// Allowlist rebuild: every tag is parsed and re-emitted, so removed fragments can never splice a new tag together.
 export function sanitizeRichHtml(value) {
-	let current = String(value || "");
-	let previous;
-	do {
-		previous = current;
-		current = sanitizeRichHtmlOnce(current);
-	} while (current !== previous);
-	return current;
+	const input = String(value || "");
+	const tagPattern = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)([^<>]*)>/g;
+	const escapeText = (text) => text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+	let out = "";
+	let cursor = 0;
+	for (const match of input.matchAll(tagPattern)) {
+		out += escapeText(input.slice(cursor, match.index));
+		cursor = match.index + match[0].length;
+		const name = match[2].toLowerCase();
+		if (BLOCKED_RICH_TAGS.has(name)) continue;
+		if (match[1]) { out += `</${name}>`; continue; }
+		const selfClosing = /\/\s*$/.test(match[3]);
+		out += `<${name}${sanitizeRichAttributes(match[3].replace(/\/\s*$/, ""))}${selfClosing ? " /" : ""}>`;
+	}
+	return out + escapeText(input.slice(cursor));
 }
 
 export function contentTypography(styles={}, fallback={}) { return productTypographyStyle(styles, fallback); }
