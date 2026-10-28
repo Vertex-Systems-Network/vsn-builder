@@ -17,6 +17,16 @@ approval_needed_now: false
 updated_at: 2026-10-28
 ---
 
+## Metafields palette, storefront carousel fix and template device preview — 2026-10-28
+
+- Branch `claude/eloquent-ride-hp6lsp`, PR #404 into `development` (Tier 1 only; no Staging/Production action).
+- Default admin/editor palette now matches vsn-metafields (#625BA8 / #5CC9D7 / #6488C6); Lime stays selectable.
+- Storefront bug fixed: Carousel, Slides and Testimonials Carousel were not routed to the slider renderer and rendered empty; `global-section` gained a renderer fallback. CSS-6 audit now reads delegated storefront modules (117/117).
+- Marketplace template preview fits its container and offers Desktop/Tablet/Mobile in an iframe at real device width; grid previews honour tablet/mobile columns.
+- QA evidence (Node 22): typecheck, lint on touched files, `npm run qa`, full `qa:release` audit chain (after `prisma generate` + `db:prepare`), CSS-1..6. 117-widget storefront render harness: no throws; 8 widgets empty only when their data is absent. `node --test tests/*.test.mjs`: 33 failures, identical set on `development` (need Postgres/Worker client).
+- Plan catalog checked: feature/quota tiers consistent; CRO, backups, library, collaboration, developer SDK and enterprise controls enforced server-side.
+- Known limitation, not changed: the `liquid` widget prints code as text because page HTML is fetched by JS from the app proxy; executing merchant Liquid needs an `application/liquid` proxy-page architecture and a security review.
+
 ## Eight paid plan catalog — 2026-10-26
 
 - Public plan keys and labels: Starter, Solo, Silver, Gold, Business, Platinum, Agency, Scale. No public Free plan; inactive stores receive no entitlement.
