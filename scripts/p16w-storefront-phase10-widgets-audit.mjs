@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { PHASE10_SERVER_WIDGET_TYPES, renderPhase10Widget } from "../app/storefront/phase10Widgets.js";
+import { buildLiquidBody, hasLiquidPlaceholders } from "../app/storefront/liquidOutput.js";
 
 let checks = 0;
 const ok = (value, message) => {
@@ -21,7 +22,10 @@ for (const type of PHASE10_SERVER_WIDGET_TYPES) {
 const html = render("html", { code: `<p onclick="x()">Hi</p><script>bad()</script>` });
 ok(html.includes("<p>Hi</p>") && !html.includes("<script>") && !/onclick=/i.test(html), "HTML widget sanitizes merchant markup");
 const liquid = render("liquid", { code: "<b>{{ x }}</b>" });
-ok(liquid.includes("&lt;b&gt;{{ x }}&lt;/b&gt;"), "Liquid widget escapes code as text");
+ok(!liquid.includes("{{ x }}") && hasLiquidPlaceholders(liquid), "Liquid widget emits an encoded placeholder, never inline code");
+const liquidBody = buildLiquidBody(`<p>{{ shop.name }}</p>${liquid}`).body;
+ok(liquidBody.startsWith("{% layout none %}{% raw %}<p>{{ shop.name }}</p>") && liquidBody.includes("{% endraw %}<b>{{ x }}</b>{% raw %}"), "Only Liquid widget code runs; all other page content stays inside raw blocks");
+ok(!buildLiquidBody(liquid, { enabled: false }).body.includes("{{"), "Safe Mode strips Liquid widget code");
 const theme = render("html", { mode: "theme-section", themeSectionId: '"><x>' });
 ok(theme.includes('data-vsn-theme-section-id="&quot;&gt;&lt;x&gt;"'), "Theme-section bridge escapes the section id");
 

@@ -621,7 +621,11 @@ for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Re
 }
 if(!storefrontProxy.includes('from "../storefront/extendedWidgets.js"'))fail("P1.6v builder proxy must consume extracted extended-widget boundary");
 const storefrontPhase10Widgets=fs.readFileSync(path.join(root,"app/storefront/phase10Widgets.js"),"utf8");
-for(const marker of ['import { escapeAttribute, escapeHtml } from "./safeCss.js";','sanitizeRichHtml(props.code||props.html||props.content||"")','escapeHtml(props.code||props.liquid||props.content||"{{ product.title }}")']){
+// Liquid widget code may only reach the storefront through the raw-wrapped app proxy Liquid body, and Safe Mode must disable it.
+const liquidOutputSource=fs.readFileSync(path.join(root,"app/storefront/liquidOutput.js"),"utf8");
+for(const marker of ["{% layout none %}","{% raw %}","{% endraw %}","if (!enabled)"]){if(!liquidOutputSource.includes(marker))fail(`Liquid output raw-wrapping regression detected: ${marker}`);}
+if(!storefrontProxy.includes("buildLiquidBody(html, { enabled: !enterpriseSettings.safeMode })"))fail("Liquid output must respect enterprise Safe Mode");
+for(const marker of ['import { escapeAttribute, escapeHtml } from "./safeCss.js";','sanitizeRichHtml(props.code||props.html||props.content||"")','liquidPlaceholder(props.code||props.liquid||props.content||"")']){
   if(!storefrontPhase10Widgets.includes(marker))fail(`P1.6w Phase-10 widget safety regression detected: ${marker}`);
 }
 for(const forbidden of ["db.","fetch(","graphql(","authenticate.","session.","Response(","shopify.server","process.env"]){

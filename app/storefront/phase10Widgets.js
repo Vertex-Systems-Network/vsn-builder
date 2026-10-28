@@ -1,4 +1,5 @@
 import { buildImageRenderUrl } from "../builder/imageWidget.js";
+import { liquidPlaceholder } from "./liquidOutput.js";
 import { NESTED_SLIDER_TYPES, isNestedSliderType, normalizeNestedSliderProps } from "../builder/nestedCarouselWidget.js";
 import { normalizeSliderProps } from "../builder/sliderWidget.js";
 import { normalizeVideoWidgetProps, videoEmbedUrl } from "../builder/videoWidget.js";
@@ -78,6 +79,6 @@ export function renderPhase10Widget(node, props, styles, renderContext, renderCh
   }
   if(type==="html" && props.mode==="theme-section") { const sectionId=escapeAttribute(String(props.themeSectionId||"")); return `<div data-vsn-id="${id}" class="vsn-theme-section-bridge" data-vsn-theme-section-id="${sectionId}"><span class="vsn-builder-loading">Loading Shopify theme section…</span></div>`; }
   if(type==="html") return `<div data-vsn-id="${id}" class="vsn-code-surface vsn-html-output">${sanitizeRichHtml(props.code||props.html||props.content||"")}</div>`;
-  if(type==="liquid") return `<pre data-vsn-id="${id}" class="vsn-code-surface vsn-liquid-output" style="white-space:pre-wrap;background:#f6f6f7;padding:12px;border-radius:8px;">${escapeHtml(props.code||props.liquid||props.content||"{{ product.title }}")}</pre>`;
+  if(type==="liquid") return `<div data-vsn-id="${id}" class="vsn-liquid-output">${liquidPlaceholder(props.code||props.liquid||props.content||"")}</div>`;
   return "";
 }

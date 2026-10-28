@@ -58,7 +58,8 @@ import { renderNavigationMenu, renderFormWidget, renderIconWidget } from "../sto
 import { renderExtendedWidget } from "../storefront/extendedWidgets.js";
 import { PHASE10_SERVER_WIDGET_TYPES, renderPhase10Widget } from "../storefront/phase10Widgets.js";
 import { responsiveValue, cssSize, individualSpacingCss, spacingCss, safeNumber, allowedValue, safeColor, safeUrl, escapeHtml, escapeAttribute } from "../storefront/safeCss.js";
-import { htmlResponse, javascriptResponse, jsonResponse } from "../storefront/responses.server.js";
+import { htmlResponse, javascriptResponse, jsonResponse, liquidResponse } from "../storefront/responses.server.js";
+import { buildLiquidBody, hasLiquidPlaceholders } from "../storefront/liquidOutput.js";
 import {
 	clampProductPageSize,
 	findCollectionProductPageSize,
@@ -638,6 +639,10 @@ export async function loader({ request, params }) {
 			localization: { locale: localizationRender.locale || requestedLocale, marketKey: requestedMarketKey, direction: localizationRender.direction || "ltr" },
 		});
 
+	if (hasLiquidPlaceholders(html)) {
+		const liquid = buildLiquidBody(html, { enabled: !enterpriseSettings.safeMode });
+		return liquid.liquid ? liquidResponse(liquid.body, 200) : htmlResponse(liquid.body, 200);
+	}
 	return htmlResponse(html, 200);
 }
 

@@ -14,13 +14,16 @@ export function VsnPage({ title, subtitle = "", actions = null, children, compac
   </div>;
 }
 
+// Cards render through the Polaris section component; the outer section keeps the workspace layout rules.
 export function VsnCard({ title, subtitle = "", actions = null, children, className = "" }) {
   return <section className={`vsn-workspace-card ${className}`}>
-    {(title || subtitle || actions) ? <div className="vsn-workspace-card-head">
-      <div>{title ? <h2>{title}</h2> : null}{subtitle ? <p>{subtitle}</p> : null}</div>
-      {actions ? <div className="vsn-workspace-card-actions">{actions}</div> : null}
-    </div> : null}
-    <div className="vsn-workspace-card-body">{children}</div>
+    <s-section padding="none" accessibilityLabel={typeof title === "string" ? title : undefined}>
+      {(title || subtitle || actions) ? <div className="vsn-workspace-card-head">
+        <s-stack gap="small-400">{title ? <s-heading>{title}</s-heading> : null}{subtitle ? <s-text color="subdued">{subtitle}</s-text> : null}</s-stack>
+        {actions ? <div className="vsn-workspace-card-actions">{actions}</div> : null}
+      </div> : null}
+      <div className="vsn-workspace-card-body">{children}</div>
+    </s-section>
   </section>;
 }
 

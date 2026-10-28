@@ -312,7 +312,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
     {!selectedElement ? (<div className="flex-1 overflow-y-auto">
       <div className="px-4 py-3 border-b border-[#f1f1f1] bg-[#fafafa]">
         <p className="text-xs font-semibold text-[#1a1a1a]">Global Styles</p>
-        <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Select an element to edit that element instead.</p>
+        <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Selected element settings open in the left panel.</p>
       </div>
       <SectionHeader title="Colors">
         <div><Label>Primary</Label><ColorInput value={globalStyles.primaryColor || "#625BA8"} onChange={(value) => onGlobalStylesChange?.({ primaryColor: value })} /></div>
@@ -478,7 +478,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
           {selectedElement.type === "video" && <VideoSettingsPanel props={props} updateProps={updateProps} />}
           {selectedElement.type === "slider" && <SliderSettingsPanel selectedElement={selectedElement} props={props} onUpdate={onUpdate} />}
           {selectedElement.type === "html" && <><div><Label>Render Mode</Label><Select value={props.mode || "html"} onChange={(v)=>updateProp("mode",v)} options={[{value:"html",label:"Custom HTML"},{value:"theme-section",label:"Shopify Theme Section Bridge"}]} /></div>{(props.mode || "html") === "theme-section" ? <><div><Label>Theme section ID</Label><VsnTextField label="Theme section ID" labelAccessibilityVisibility="exclusive" value={props.themeSectionId || ""} placeholder="Example: template--123456789__main" onInput={(e)=>updateProp("themeSectionId",e.currentTarget.value)} /></div><p className="text-[10px] leading-4 text-[#6d7175]">Renders an existing section instance from the current Shopify JSON template through the Section Rendering API. If that section contains third-party app blocks, they render with the section.</p></> : <div><Label>HTML</Label><VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={props.code || props.html || props.content || ""} onInput={(e)=>updateProp("code",e.currentTarget.value)} className="min-h-48 w-full rounded-lg border border-[#e3e3e3] bg-[#111] px-2.5 py-2 text-xs font-mono text-white" /></div>}</>}
-          {selectedElement.type === "liquid" && <div><Label>Liquid</Label><VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={props.code || props.liquid || props.content || ""} onInput={(e)=>updateProp("code",e.currentTarget.value)} className="min-h-48 w-full rounded-lg border border-[#e3e3e3] bg-[#111] px-2.5 py-2 text-xs font-mono text-white" /></div>}
+          {selectedElement.type === "liquid" && <div><Label>Liquid</Label><VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={props.code || props.liquid || props.content || ""} onInput={(e)=>updateProp("code",e.currentTarget.value)} className="min-h-48 w-full rounded-lg border border-[#e3e3e3] bg-[#111] px-2.5 py-2 text-xs font-mono text-white" /><p className="mt-1.5 text-[11px] text-[#6d7175]">Runs as Shopify Liquid on the live storefront. The editor shows the code; Safe Mode disables it.</p></div>}
         </SectionHeader>
       )}
 

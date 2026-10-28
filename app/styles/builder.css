@@ -5,7 +5,7 @@
   --color-foreground: #1a1a1a;
   --color-card: #ffffff;
   --color-card-foreground: #1a1a1a;
-  --color-primary: #008060;
+  --color-primary: #625BA8;
   --color-primary-foreground: #ffffff;
   --color-secondary: #f1f1f1;
   --color-secondary-foreground: #4a4a4a;
@@ -14,7 +14,7 @@
   --color-accent: #00a67e;
   --color-accent-foreground: #ffffff;
   --color-border: #e3e3e3;
-  --color-ring: #008060;
+  --color-ring: #625BA8;
   --color-destructive: #d72c0d;
   --color-warning: #ffc453;
   --color-info: #0091ff;
@@ -64,18 +64,18 @@ body {
 }
 
 .canvas-element:hover {
-  outline: 2px dashed #008060;
+  outline: 2px dashed #625BA8;
   outline-offset: 2px;
 }
 
 .canvas-element.selected {
-  outline: 2px solid #008060;
+  outline: 2px solid #625BA8;
   outline-offset: 2px;
 }
 
 .drag-over {
-  background-color: rgba(0, 128, 96, 0.06);
-  outline: 2px dashed #008060;
+  background-color: rgba(98, 91, 168, 0.06);
+  outline: 2px dashed #625BA8;
   outline-offset: -2px;
 }
 
@@ -152,7 +152,7 @@ textarea {
 .vsn-mini-button:hover:not(:disabled),
 .vsn-toolbar-button:hover:not(:disabled),
 .vsn-editor-action:hover:not(:disabled) {
-  border-color: rgba(0, 128, 96, .42);
+  border-color: rgba(98, 91, 168, .42);
   background-color: #eaf7f2;
   color: #006e52;
 }
@@ -168,7 +168,7 @@ textarea {
 }
 
 .vsn-panel-resizer:hover > div {
-  background: #008060;
+  background: #625BA8;
 }
 
 body.vsn-resizing-panels,
@@ -178,11 +178,11 @@ body.vsn-resizing-panels * {
 }
 
 .canvas-element:not(.cursor-not-allowed):hover {
-  background-color: rgba(0, 128, 96, .018);
+  background-color: rgba(98, 91, 168, .018);
 }
 
 .canvas-element[draggable="true"]:hover {
-  box-shadow: inset 0 0 0 1px rgba(0, 128, 96, .12);
+  box-shadow: inset 0 0 0 1px rgba(98, 91, 168, .12);
 }
 
 .vsn-toolbar-button {
@@ -552,8 +552,8 @@ body {
 .vsn-editor-width-control{display:flex;align-items:center;gap:2px;height:32px;margin-left:4px;padding:0 6px;border:1px solid #d9d9d9;border-radius:8px;background:#fff;color:#6d7175;font-size:10px}
 .vsn-editor-width-control input{width:52px;border:0;outline:0;background:transparent;color:#202223;font:600 11px/1 Inter,system-ui,sans-serif;text-align:right}
 .vsn-editor-width-control input::-webkit-inner-spin-button{opacity:.55}
-.vsn-canvas-resize-handle{position:absolute;right:-11px;top:50%;z-index:35;display:grid;place-items:center;width:22px;height:42px;transform:translateY(-50%);border:1px solid #b7bdc1;border-radius:999px;background:#fff;color:#008060;box-shadow:0 2px 8px rgba(0,0,0,.12);cursor:ew-resize;font-size:12px;font-weight:700}
-.vsn-canvas-resize-handle:hover{border-color:#008060;background:#eaf7f2}
+.vsn-canvas-resize-handle{position:absolute;right:-11px;top:50%;z-index:35;display:grid;place-items:center;width:22px;height:42px;transform:translateY(-50%);border:1px solid #b7bdc1;border-radius:999px;background:#fff;color:#625BA8;box-shadow:0 2px 8px rgba(0,0,0,.12);cursor:ew-resize;font-size:12px;font-weight:700}
+.vsn-canvas-resize-handle:hover{border-color:#625BA8;background:#f1f0fa}
 /* Phase 9 — AI Builder */
 .vsn-ai-backdrop{display:grid;place-items:center;padding:22px;background:rgba(20,22,24,.46)}
 .vsn-ai-panel{display:grid;grid-template-rows:auto minmax(0,1fr);width:min(1180px,calc(100vw - 44px));height:min(820px,calc(100vh - 44px));overflow:hidden;border:1px solid var(--vsn-e-border,#e1e3e5);border-radius:16px;background:#fff;box-shadow:0 24px 80px rgba(0,0,0,.22)}
@@ -592,7 +592,8 @@ body {
 .vsn-canvas-resize-handle{touch-action:none;user-select:none}
 [data-vsn-ui-profile="editor"] .vsn-editor-topbar,[data-vsn-ui-profile="editor"] .vsn-properties-panel{--vsn-editor-density:compact}
 @media (max-width:1100px){.vsn-editor-zoom-control .vsn-editor-zoom-value{min-width:46px}.vsn-editor-width-control{max-width:82px}}
-.vsn-canvas-pan-surface{cursor:default}.vsn-canvas-pan-surface.is-panning{cursor:grabbing!important;user-select:none}.vsn-canvas-pan-surface.is-panning *{cursor:grabbing!important}
+/* Safe centering keeps a canvas wider than the viewport scrollable from its left edge. */
+.vsn-canvas-pan-surface{cursor:default;align-items:center;align-items:safe center}.vsn-canvas-pan-surface.is-panning{cursor:grabbing!important;user-select:none}.vsn-canvas-pan-surface.is-panning *{cursor:grabbing!important}
 .vsn-editor-zoom-control .vsn-editor-zoom-fit{min-width:34px;padding:0 7px;font-size:10px;font-weight:700;color:#557d1e}
 
 /* VSN v2.5.57 — Milestone H template-source separation */
