@@ -462,7 +462,7 @@ export function OutlineControl({ value = {}, onChange }) {
       <CssLengthControl label="Outline width" value={current.width ?? ""} defaultUnit="px" onChange={(width)=>patch({width})}/>
       <SelectControl label="Outline style" value={current.style || "none"} onChange={(style)=>patch({style})} options={["none","solid","dashed","dotted","double","groove","ridge","inset","outset"]}/>
     </div>
-    <ColorGradientControl solidOnly label="Outline color" value={{type:"color",color:current.color || "#95BF47"}} onChange={(next)=>patch({color:next.color})}/>
+    <ColorGradientControl solidOnly label="Outline color" value={{type:"color",color:current.color || "#625BA8"}} onChange={(next)=>patch({color:next.color})}/>
     <CssLengthControl label="Outline offset" value={current.offset ?? ""} defaultUnit="px" onChange={(offset)=>patch({offset})}/>
   </div>;
 }
@@ -893,7 +893,7 @@ export function SwitcherControl({ label, checked = false, onChange, description 
       className="flex w-full items-center justify-between gap-3 rounded-lg border border-[#e3e3e3] bg-white px-3 py-2 text-left"
     >
       <span><span className="block text-xs font-medium text-[#303030]">{label}</span>{description ? <span className="mt-0.5 block text-[10px] text-[#8c9196]">{description}</span> : null}</span>
-      <span className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? "bg-[#95BF47]" : "bg-[#b5b5b5]"}`}>
+      <span className={`relative h-5 w-9 shrink-0 rounded-full transition ${checked ? "bg-[#625BA8]" : "bg-[#b5b5b5]"}`}>
         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${checked ? "left-[18px]" : "left-0.5"}`} />
       </span>
     </VsnButton>
@@ -1161,7 +1161,7 @@ export function GalleryControl({ label = "Gallery", value = [], onChange, max = 
             </div>
           ))}
           {items.length < max ? (
-            <VsnButton type="button" title="Add images" onClick={() => choose({ append: true })} disabled={busy} className="flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-[#c9cccf] bg-[#f6f6f7] text-[#426b84] hover:border-[#95BF47] hover:bg-[#eaf7f2]">
+            <VsnButton type="button" title="Add images" onClick={() => choose({ append: true })} disabled={busy} className="flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-[#c9cccf] bg-[#f6f6f7] text-[#426b84] hover:border-[#625BA8] hover:bg-[#eaf7f2]">
               <PolarisIcon type="plus" size="base" />
             </VsnButton>
           ) : null}
@@ -1307,12 +1307,12 @@ function IconLibraryDialog({ open, onClose, onSelect, libraries = EXTENDED_ICON_
       <div className="flex h-[min(620px,85vh)] w-[min(820px,92vw)] overflow-hidden rounded-xl bg-white shadow-2xl">
         <aside className="w-44 shrink-0 border-r border-[#e3e3e3] bg-[#f6f6f7] p-2">
           <div className="px-2 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[#6d7175]">Libraries</div>
-          {names.map((name) => <VsnButton key={name} type="button" onClick={() => setLibrary(name)} className={`mb-1 block w-full rounded-md px-2 py-2 text-left text-xs ${library === name ? "bg-white font-semibold text-[#6AAB1F] shadow-sm" : "text-[#4a4a4a] hover:bg-white"}`}>{name}</VsnButton>)}
+          {names.map((name) => <VsnButton key={name} type="button" onClick={() => setLibrary(name)} className={`mb-1 block w-full rounded-md px-2 py-2 text-left text-xs ${library === name ? "bg-white font-semibold text-[#4E4890] shadow-sm" : "text-[#4a4a4a] hover:bg-white"}`}>{name}</VsnButton>)}
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center gap-2 border-b border-[#e3e3e3] p-3"><div className="flex-1"><VsnSearchField label="Search icons" labelAccessibilityVisibility="exclusive" value={query} placeholder="Search icons" onInput={(event) => setQuery(event.currentTarget.value || "")} /></div><VsnButton type="button" variant="icon" size="sm" accessibilityLabel="Close" title="Close" onClick={onClose}><PolarisIcon type="x" size={15} /></VsnButton></div>
           <div className="grid flex-1 grid-cols-5 content-start gap-2 overflow-auto p-3 sm:grid-cols-6 md:grid-cols-7">
-            {items.map((item) => <VsnButton key={`${library}-${item.name}`} type="button" title={item.label} onClick={() => onSelect?.({ source: "library", library, name: item.name, label: item.label, polarisType: item.polarisType, glyph: item.glyph })} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-[#e3e3e3] bg-white text-[#303030] transition hover:border-[#95BF47] hover:bg-[#eaf7f2] hover:text-[#6AAB1F]"><PolarisIcon type={item.polarisType || "star"} size="base" /><span className="max-w-full truncate px-1 text-[9px]">{item.label}</span></VsnButton>)}
+            {items.map((item) => <VsnButton key={`${library}-${item.name}`} type="button" title={item.label} onClick={() => onSelect?.({ source: "library", library, name: item.name, label: item.label, polarisType: item.polarisType, glyph: item.glyph })} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-[#e3e3e3] bg-white text-[#303030] transition hover:border-[#625BA8] hover:bg-[#eaf7f2] hover:text-[#4E4890]"><PolarisIcon type={item.polarisType || "star"} size="base" /><span className="max-w-full truncate px-1 text-[9px]">{item.label}</span></VsnButton>)}
             {!items.length ? <div className="col-span-full py-12 text-center text-xs text-[#8c9196]">No icons found.</div> : null}
           </div>
         </div>
@@ -1427,7 +1427,7 @@ function SvgLibraryDialog({ open, onClose, onSelect }) {
           {!loading && visible.length ? (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
               {visible.map((item) => (
-                <VsnButton key={item.id} type="button" title={item.fileName || "SVG"} onClick={() => { onSelect?.(item); onClose?.(); }} className="group overflow-hidden rounded-lg border border-[#e3e3e3] bg-white text-left transition hover:border-[#95BF47] hover:shadow-sm">
+                <VsnButton key={item.id} type="button" title={item.fileName || "SVG"} onClick={() => { onSelect?.(item); onClose?.(); }} className="group overflow-hidden rounded-lg border border-[#e3e3e3] bg-white text-left transition hover:border-[#625BA8] hover:shadow-sm">
                   <div className="flex aspect-square items-center justify-center bg-[#f6f6f7] p-3">
                     {(item.editorUrl || item.url) ? <img src={item.editorUrl || item.url} alt={item.alt || ""} className="max-h-full max-w-full object-contain" /> : <PolarisIcon type="image" size="large" />}
                   </div>
@@ -1603,7 +1603,7 @@ export function UrlControl({ label = "Link", value = {}, onChange }) {
   return (
     <div className="space-y-2">
       <FieldLabel>{label}</FieldLabel>
-      <div className="flex items-end gap-1"><div className="min-w-0 flex-1"><VsnUrlField label="URL" labelAccessibilityVisibility="exclusive" value={current.url || ""} placeholder="Paste URL or type" onInput={(event) => patch({ url: event.currentTarget.value || "" })} /></div><VsnButton type="button" title="Link settings" aria-expanded={advanced} onClick={() => setAdvanced((v) => !v)} className={`flex w-10 items-center justify-center rounded-r-lg border border-l-0 border-[#d9d9d9] ${advanced ? "bg-[#eaf7f2] text-[#6AAB1F]" : "bg-[#f6f6f7] text-[#6d7175]"}`}><PolarisIcon type="settings" size="small" /></VsnButton></div>
+      <div className="flex items-end gap-1"><div className="min-w-0 flex-1"><VsnUrlField label="URL" labelAccessibilityVisibility="exclusive" value={current.url || ""} placeholder="Paste URL or type" onInput={(event) => patch({ url: event.currentTarget.value || "" })} /></div><VsnButton type="button" title="Link settings" aria-expanded={advanced} onClick={() => setAdvanced((v) => !v)} className={`flex w-10 items-center justify-center rounded-r-lg border border-l-0 border-[#d9d9d9] ${advanced ? "bg-[#eaf7f2] text-[#4E4890]" : "bg-[#f6f6f7] text-[#6d7175]"}`}><PolarisIcon type="settings" size="small" /></VsnButton></div>
       {advanced ? <div className="space-y-2 rounded-lg border border-[#e3e3e3] bg-[#fafafa] p-2"><SwitcherControl label="Open in new window" checked={current.newWindow === true} onChange={(checked) => patch({ newWindow: checked })} /><SwitcherControl label="Add nofollow" checked={current.nofollow === true} onChange={(checked) => patch({ nofollow: checked })} /><TextControl label="Custom Attributes" value={current.customAttributes || ""} placeholder="key|value, aria-label|Example" onChange={(next) => patch({ customAttributes: next })} /></div> : null}
     </div>
   );

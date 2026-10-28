@@ -11,7 +11,7 @@ const EMPTY_STOCK_CREDENTIALS=Object.freeze({unsplash:{accessKey:'',secretKey:''
 const freshStockCredentials=()=>Object.fromEntries(Object.entries(EMPTY_STOCK_CREDENTIALS).map(([provider,value])=>[provider,{...value}]));
 const cloneStock=(value)=>Object.fromEntries(Object.entries(value||{}).map(([key,item])=>[key,{...(item||{}),config:{...(item?.config||{})}}]));
 
-export default function Settings({ themePreference='system', onThemePreferenceChange, colorSchemePreference='lime', customAccent='#95BF47', onColorSchemeChange, onCustomAccentChange, onToast, ownerInfo={}, settings={}, isOwner=false }) {
+export default function Settings({ themePreference='system', onThemePreferenceChange, colorSchemePreference='vsn', customAccent='#625BA8', onColorSchemeChange, onCustomAccentChange, onToast, ownerInfo={}, settings={}, isOwner=false }) {
   const [enterprise,setEnterprise]=useState({...ENTERPRISE_DEFAULTS,...(settings?.enterprise||{})});
   const [app,setApp]=useState({...APP_DEFAULTS,...(settings?.app||{})});
   const [stock,setStock]=useState(()=>cloneStock(settings?.stockImages||{}));

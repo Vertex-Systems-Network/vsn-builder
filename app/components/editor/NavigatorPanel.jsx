@@ -91,7 +91,7 @@ function TreeRow({
   return (
     <div>
       <div
-        className={`group relative flex items-center gap-1 rounded-md border px-1.5 py-1.5 transition ${selectedId === node.id ? "border-[#95BF47]/40 bg-emerald-50 text-[#95BF47]" : dropState === "inside" ? "border-[#95BF47] bg-emerald-50/70" : "border-transparent hover:bg-[#f6f6f7]"}`}
+        className={`group relative flex items-center gap-1 rounded-md border px-1.5 py-1.5 transition ${selectedId === node.id ? "border-[#625BA8]/40 bg-emerald-50 text-[#625BA8]" : dropState === "inside" ? "border-[#625BA8] bg-emerald-50/70" : "border-transparent hover:bg-[#f6f6f7]"}`}
         style={{ marginLeft: depth * 12 }}
         draggable={!locked}
         onDragStart={onDragStart}
@@ -104,8 +104,8 @@ function TreeRow({
         onDragLeave={() => setDropState("")}
         onDrop={performDrop}
       >
-        {dropState === "before" ? <span className="pointer-events-none absolute -top-0.5 left-0 right-0 h-0.5 bg-[#95BF47]" /> : null}
-        {dropState === "after" ? <span className="pointer-events-none absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#95BF47]" /> : null}
+        {dropState === "before" ? <span className="pointer-events-none absolute -top-0.5 left-0 right-0 h-0.5 bg-[#625BA8]" /> : null}
+        {dropState === "after" ? <span className="pointer-events-none absolute -bottom-0.5 left-0 right-0 h-0.5 bg-[#625BA8]" /> : null}
 
         <VsnButton
           type="button"
@@ -118,7 +118,7 @@ function TreeRow({
           {hasChildren ? <span className={`transition-transform ${collapsed ? "" : "rotate-90"}`}><PolarisIcon type="chevron-right" size="small" /></span> : <span className="w-3" />}
         </VsnButton>
 
-        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#f3f3f3] text-[#666] ${selectedId === node.id ? "bg-white text-[#95BF47]" : ""}`}>
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#f3f3f3] text-[#666] ${selectedId === node.id ? "bg-white text-[#625BA8]" : ""}`}>
           <WidgetPolarisIcon widgetType={node.type} size="small" />
         </span>
 

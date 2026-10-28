@@ -30,7 +30,7 @@ export default function PanelResizeHandle({ side = "left", value, onChange, min 
       aria-orientation="vertical"
       aria-label={`Resize ${side} editor panel`}
       onPointerDown={startResize}
-      className="vsn-panel-resizer relative z-20 w-1.5 shrink-0 cursor-col-resize bg-transparent transition hover:bg-[#95BF47]/20"
+      className="vsn-panel-resizer relative z-20 w-1.5 shrink-0 cursor-col-resize bg-transparent transition hover:bg-[#625BA8]/20"
       title="Drag to resize panel"
     >
       <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-[#e3e3e3]" />

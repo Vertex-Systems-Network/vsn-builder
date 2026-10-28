@@ -1780,6 +1780,7 @@ function renderNodeCore(
 
 		case "container":
 		case "section":
+		case "global-section":
 		case "banner":
 			return renderContainer(
 				node,
