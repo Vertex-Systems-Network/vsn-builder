@@ -30,7 +30,7 @@ updated_at: 2026-10-28
 1. Editor dark mode styling.
 2. Grid layouts on pages no longer render as grids.
 3. DONE (PR #412): Preview opens `/preview` in its own tab outside the Shopify admin shell; the editor streams live (unsaved) state to it via same-origin postMessage.
-4. Audit every module: options, systems, behaviour, logic.
+4. DONE (PR #412): 134/138 module audits pass; ecosystem manifest regenerated; remaining 4 are stale source-marker checks (fonts, Trash now in table filter, carousel markers) with working behaviour. Audit every module: options, systems, behaviour, logic.
 5. App and page load time.
 6. Editor UI issues.
 7. Storefront: no loader flash — widget output files installed in the theme on activation, content renders with the Shopify page.
@@ -86,7 +86,7 @@ Instead it must:
 1. read `.ai/README.md`, this file, and `.ai/CHECKPOINT.md`;
 2. inspect current Git branch/status, recent commits, referenced PR/issue and the task-relevant source;
 3. compare repository evidence with the fields above;
-4. reconcile stale state silently when the answer is recoverable from Git/repository evidence;
+4. DONE (PR #412): 134/138 module audits pass; ecosystem manifest regenerated; remaining 4 are stale source-marker checks (fonts, Trash now in table filter, carousel markers) with working behaviour. reconcile stale state silently when the answer is recoverable from Git/repository evidence;
 5. verify whether any `in_flight_step` actually completed before repeating it;
 6. continue from `next_exact_action` or the earliest unverified sub-step;
 7. ask the owner only when a genuinely material product/security/data-loss decision cannot be resolved from repository evidence.
