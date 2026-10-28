@@ -34,7 +34,7 @@ updated_at: 2026-10-28
 5. DONE (PR #412): editor loader runs 9 independent DB/Admin reads in parallel instead of serially; client bundles measured (editor 163 KB gzip). App and page load time.
 6. DONE (PR #412): SSR sweep of 117 widgets x Content/Style/Advanced + preview renders clean; fixed SDK key-spread and fetchPriority React warnings; storefront buttons no longer stretch full width. Editor UI issues.
 7. DONE (PR #412): home builder fragment is cached in an app metafield by the proxy and printed inline by the app embed (Liquid), so it swaps in with zero network requests and no loader; publish clears the cache, 6h TTL; personalised/experiment/localized/dynamic pages keep the live fetch. Storefront: no loader flash — widget output files installed in the theme on activation, content renders with the Shopify page.
-8. Setup page appears on app activation and walks required steps one by one.
+8. DONE (PR #412): /app/setup wizard opens on first activation (home redirects until finished or skipped): plan, app embed (verified from settings_data.json), theme files install, first page; one step at a time, each verified against the store. Setup page appears on app activation and walks required steps one by one.
 
 Production went live 2026-10-28 via T041 run 1 (main 74cf6b7): Neon backup branch, migrate deploy, Worker deploy; /healthz and /readyz 200.
 

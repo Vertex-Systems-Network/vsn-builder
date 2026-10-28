@@ -1,4 +1,5 @@
-import { useLoaderData } from "react-router";
+import { redirect, useLoaderData } from "react-router";
+import { setupIsPending } from "../utils/setup-state.js";
 import packageJson from "../../package.json";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -163,6 +164,12 @@ async function loadDashboardData(session, request, syncResult = null) {
 export async function loader({ request }) {
   const { admin, session } = await authenticate.admin(request);
   const view = new URL(request.url).searchParams.get("view") || "home";
+  if (view === "home") {
+    // First activation: walk the merchant through required setup before the dashboard.
+    const setting = await db.builderShopSetting.findUnique({ where: { shop: session.shop }, select: { onboardingJson: true } }).catch(() => null);
+    let onboarding = {}; try { onboarding = JSON.parse(setting?.onboardingJson || "{}") || {}; } catch { onboarding = {}; }
+    if (setupIsPending(onboarding)) throw redirect(`/app/setup${new URL(request.url).search}`);
+  }
   const ownerInfo = loadOwnerInfo(session);
   const defaultWidgets = () => summarizeWidgets(getWidgetDefinitions());
 
