@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 // Pure helpers are mirrored here from the source to stay import-free (JSX module).
-const source = readFileSync("app/components/editor/EditorControls.jsx", "utf8");
+const source = readFileSync("app/components/editor/BoxShorthandControl.jsx", "utf8");
 test("box shorthand control exists and is used for widget box values", () => {
   assert.match(source, /export function BoxShorthandControl/);
   assert.match(source, /export function parseBoxShorthand/);

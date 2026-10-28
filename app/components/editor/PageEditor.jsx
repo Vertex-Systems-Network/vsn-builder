@@ -51,6 +51,8 @@ import { applyLocalizationOverrides } from "../../builder/localizationEngine.js"
 import useTemplateBrowser from "./hooks/useTemplateBrowser.js";
 import useEditorAppearance from "./hooks/useEditorAppearance.js";
 import useAgentEditorSync from "./hooks/useAgentEditorSync.js";
+import useCanvasAutoFit from "./hooks/useCanvasAutoFit.js";
+import usePreviewWindow from "./hooks/usePreviewWindow.js";
 
 
 const DEFAULT_GLOBAL_STYLES = {
@@ -327,11 +329,6 @@ export default function PageEditor({
   const [deviceMode, setDeviceMode] =
     useState("desktop");
   const [previewWidth, setPreviewWidth] = useState(() => breakpointById(globalStyles, "desktop")?.previewWidth || 1440);
-  const [canvasZoom, setCanvasZoomState] = useState(1);
-  // Auto-fit is the default: the design scales to the visible canvas until the
-  // merchant zooms manually; switching device or pressing Fit re-enables it.
-  const [autoFit, setAutoFit] = useState(true);
-  const setCanvasZoom = useCallback((value) => { setAutoFit(false); setCanvasZoomState(value); }, []);
 
   const [isSaved, setIsSaved] =
     useState(true);
@@ -356,6 +353,7 @@ export default function PageEditor({
     try { const saved = localStorage.getItem("vsn-builder:site-settings-open"); setShowSiteSettings(saved === null ? window.innerWidth >= 1600 : saved === "1"); } catch { setShowSiteSettings(window.innerWidth >= 1600); }
   }, []);
   const toggleSiteSettings = useCallback(() => setShowSiteSettings((current) => { const next = !current; try { localStorage.setItem("vsn-builder:site-settings-open", next ? "1" : "0"); } catch { /* ignore: best-effort */ } return next; }), []);
+  const { canvasZoom, setCanvasZoom, setAutoFit } = useCanvasAutoFit({ deviceMode, previewWidth, disabled: isPreview, layoutKey: `${leftPanelWidth}:${rightPanelWidth}:${showSiteSettings}` });
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
@@ -535,7 +533,7 @@ export default function PageEditor({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [setCanvasZoom]);
+  }, [setCanvasZoom, setAutoFit]);
 
   useEffect(() => {
     setEditorReady(false);
@@ -1338,23 +1336,7 @@ export default function PageEditor({
     ? (pageSettings.footerId ? footers.find((item) => item.id === pageSettings.footerId) : footers.find((item) => item.isDefault) || footers[0])
     : null;
 
-  useEffect(() => { setAutoFit(true); }, [deviceMode]);
-  useEffect(() => {
-    if (!autoFit || isPreview || typeof window === "undefined") return undefined;
-    const surface = document.querySelector(".vsn-canvas-pan-surface");
-    const fit = () => {
-      const available = (surface?.clientWidth || (window.innerWidth - leftPanelWidth - rightPanelWidth)) - 48;
-      const next = Math.max(.25, Math.min(1, Number((Math.max(240, available) / Math.max(240, Number(previewWidth) || 1440)).toFixed(3))));
-      setCanvasZoomState((value) => (Math.abs(value - next) < .002 ? value : next));
-    };
-    fit();
-    const observer = typeof ResizeObserver !== "undefined" && surface ? new ResizeObserver(fit) : null;
-    observer?.observe(surface);
-    window.addEventListener("resize", fit);
-    return () => { observer?.disconnect(); window.removeEventListener("resize", fit); };
-  }, [autoFit, isPreview, previewWidth, leftPanelWidth, rightPanelWidth, showSiteSettings]);
 
-  const previewWindowRef = useRef(null);
   const previewPayload = {
     title: pageTitle,
     elements: displayElements,
@@ -1366,22 +1348,7 @@ export default function PageEditor({
     reusableSections, componentDefinitions, widgetPlatform,
     previewCollection, previewProduct, previewBlog, previewArticle, previewSearch,
   };
-  const previewPayloadRef = useRef(previewPayload);
-  previewPayloadRef.current = previewPayload;
-  const sendPreview = () => {
-    const target = previewWindowRef.current;
-    if (!target || target.closed) return;
-    try { target.postMessage({ type: "vsn:preview-payload", payload: JSON.parse(JSON.stringify(previewPayloadRef.current)) }, window.location.origin); } catch (error) { console.warn("VSN preview sync failed:", error); }
-  };
-  useEffect(() => {
-    const onMessage = (event) => {
-      if (event.origin !== window.location.origin || event.source !== previewWindowRef.current) return;
-      if (event.data?.type === "vsn:preview-ready") sendPreview();
-    };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, []);
-  useEffect(() => { sendPreview(); }, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id]);
+  const openPreviewWindow = usePreviewWindow(previewPayload, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id]);
 
   /*
    * Dedicated preview route:
@@ -1480,7 +1447,7 @@ export default function PageEditor({
         onPublish={handlePublish}
         onPreview={() => {
           // Standalone tab outside the Shopify admin shell; it receives live state via postMessage.
-          previewWindowRef.current = window.open("/preview", "vsn-preview");
+          openPreviewWindow();
         }}
         onUndo={handleUndo}
         onRedo={handleRedo}

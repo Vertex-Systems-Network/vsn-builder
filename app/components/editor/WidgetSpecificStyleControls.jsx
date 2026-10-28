@@ -3,12 +3,12 @@ import { useState } from "react";
 import {
   AspectRatioControl,
   ColorGradientControl,
-  BoxShorthandControl,
   CssLengthControl,
   NumberControl,
   SelectControl,
   TextControl,
 } from "./EditorControls";
+import { BoxShorthandControl } from "./BoxShorthandControl";
 import FilterEffectsControl from "./FilterEffectsControl";
 import { getWidgetStyleProfile } from "../../builder/widgetStyleProfiles.js";
 
