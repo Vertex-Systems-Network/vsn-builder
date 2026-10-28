@@ -97,7 +97,10 @@ function headingStack(node, copy, theme, { title, align = "left", compact = fals
   const typo = (extra) => ({ textAlign: align, ...extra });
   return [
     node("text", "Eyebrow", { text: String(eyebrow || "").toUpperCase() }, { typography: typo({ fontSize: "12px", fontWeight: "700", color: theme.brand, letterSpacing: "1.6px" }), spacing: { marginBottom: "12px" } }),
-    node("heading", "Headline", { text: title, tag: compact ? "h2" : "h1" }, { typography: typo({ fontSize: compact ? "36px" : "52px", fontWeight: "700", color: theme.text, lineHeight: "1.08" }), spacing: { marginBottom: "16px" } }),
+    withResponsive(node("heading", "Headline", { text: title, tag: compact ? "h2" : "h1" }, { typography: typo({ fontSize: compact ? "36px" : "52px", fontWeight: "700", color: theme.text, lineHeight: "1.08" }), spacing: { marginBottom: "16px" } }), {
+      tablet: { typography: { fontSize: compact ? "32px" : "42px" } },
+      mobile: { typography: { fontSize: compact ? "26px" : "32px", lineHeight: "1.15" } },
+    }),
     node("text", "Description", { text: body || copy.body }, { typography: typo({ fontSize: "17px", color: theme.muted, lineHeight: "1.6" }), spacing: { marginBottom: "24px" } }),
   ];
 }
@@ -118,8 +121,17 @@ function plainContainer(node, label, children, extra = {}) {
   return node("container", label, {}, { spacing: { paddingTop: "0px", paddingRight: "0px", paddingBottom: "0px", paddingLeft: "0px", ...spacing }, border: { width: "0px" }, ...rest }, children);
 }
 
+// Tablet/mobile overrides so templates read well on small screens (responsive[device].styles).
+function withResponsive(target, devices) {
+  target.responsive = Object.fromEntries(Object.entries(devices).map(([device, styles]) => [device, { styles }]));
+  return target;
+}
+
 function sectionWrap(node, industry, label, theme, children, compact) {
-  return node("section", label, {}, { background: { type: "color", color: theme.background }, spacing: { paddingTop: compact ? "64px" : "96px", paddingRight: "48px", paddingBottom: compact ? "64px" : "96px", paddingLeft: "48px" }, border: { radius: "0px" } }, children);
+  return withResponsive(node("section", label, {}, { background: { type: "color", color: theme.background }, spacing: { paddingTop: compact ? "64px" : "96px", paddingRight: "48px", paddingBottom: compact ? "64px" : "96px", paddingLeft: "48px" }, border: { radius: "0px" } }, children), {
+    tablet: { spacing: { paddingRight: "32px", paddingLeft: "32px" } },
+    mobile: { spacing: { paddingTop: compact ? "44px" : "56px", paddingRight: "20px", paddingBottom: compact ? "44px" : "56px", paddingLeft: "20px" } },
+  });
 }
 
 function makeSection({ prefix, industry, pattern, palette, compact = false, dark = false }) {
