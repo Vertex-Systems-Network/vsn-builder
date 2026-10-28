@@ -17,6 +17,13 @@ approval_needed_now: false
 updated_at: 2026-10-28
 ---
 
+## Staging deploy of f4b24e3 — 2026-10-28
+
+- Protected T021 run 47 (https://github.com/Vertex-Systems-Network/vsn-builder/actions/runs/40667781058) deployed exact `development` SHA `f4b24e30f761b5dc4be767f6a6f4a5bcdf46cf56` (PRs #404-#407) to `vsn-builder-staging`. No Prisma changes since the previous Staging SHA `9c84af6`, so no migration or snapshot was needed.
+- Hosted probe: `/healthz` 200, `/readyz` 200 (`merchantAppReady`, `shopifyOauthReady`, `persistentSessionsReady`, `merchantRoutesReady` all true).
+- Pre-existing, unchanged by this deploy (run 46 on `9c84af6` probed the same): a bare `/app` request without Shopify `shop` params returns 500. T023 tail run 36 shows the Shopify auth layer throwing a 410 that escapes as React Router's plain-text 500; `/app?shop=...` returns the expected 410 HTML. Real Admin traffic always carries `shop`/`host`/`hmac`.
+- Not yet certified: Tier 2 exit still needs real Shopify Admin E2E on a Staging test store (install/OAuth, editor save/publish, theme embed, Liquid widget, webhooks, test billing) and a rollback drill. Production promotion stays blocked until that evidence and explicit owner approval exist.
+
 ## Polaris cards, Liquid widget, editor browser QA and CI runners — 2026-10-28
 
 - Merged into `development`: #404 (palette, storefront carousels), #405 (template device preview), #406 (superseded pull_request runs cancelled across 28 workflows; push runs never cancelled; `tests/ci-runner-concurrency.test.mjs`).
