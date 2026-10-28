@@ -2,6 +2,7 @@
 // Shopify's hosted App Pricing page; this route never activates entitlement.
 import { COMMERCIAL_PLANS, PLAN_FEATURE_ROWS, PLAN_ORDER, quotaLabel } from "../config/commercialPlans.js";
 import { acceptWorkerShopifyAdminRequest } from "./worker-shopify-admin-gate.js";
+import { isHostedWorker } from "./worker-hosted-tier.js";
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const KEY=/^[a-f0-9]{32}$/i;
@@ -61,8 +62,7 @@ export function renderStagingPlanPage({shop,apiKey,appHandle}={}) {
 }
 
 export function handleVerifiedStagingPlanPage(request,env,{createSdkContext}={}) {
-  if(!(request instanceof Request) || env?.APP_ENV!=="staging" ||
-     env?.VSN_WORKER_NAME!=="vsn-builder-staging" ||
+  if(!(request instanceof Request) || !isHostedWorker(env) ||
      env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")
     return new Response(null,{status:503,headers:{"cache-control":"no-store","x-content-type-options":"nosniff"}});
   const url=new URL(request.url);

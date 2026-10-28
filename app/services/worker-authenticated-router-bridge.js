@@ -3,6 +3,7 @@
 // NOT the merchant application entrypoint; workers/app.js stays 503 locked.
 // Do not generalize its one CI-only URL into a route dispatcher.
 import {acceptWorkerShopifyAdminRequest} from "./worker-shopify-admin-gate.js";
+import { isHostedTier } from "./worker-hosted-tier.js";
 
 const ROUTE="/app/__vsn-auth-smoke";
 const HEADERS=Object.freeze({
@@ -69,7 +70,7 @@ export function createAuthenticatedWorkerRouterBridge({
          url.searchParams.size>1 ||
          [...url.searchParams.keys()].some(key=>key!=="shop"))
         return failed(404);
-      if(env?.APP_ENV!=="staging" || typeof makeRequestHandler!=="function" ||
+      if(!isHostedTier(env) || typeof makeRequestHandler!=="function" ||
          typeof loadServerBuild!=="function")
         return failed();
       // Official Shopify authenticates first; persisted token/installation and

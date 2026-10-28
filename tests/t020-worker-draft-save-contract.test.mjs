@@ -133,7 +133,8 @@ test("concurrent edits compare-and-swap; exactly one wins and no lost update",as
 
 test("Staging draft POST requires explicit opt-in and SDK-locked transactional authorization",()=>{
  const worker=readFileSync("workers/app.js","utf8");
- assert.match(worker,/env.APP_ENV!=="staging"/);
+ assert.match(worker,/!isHostedTier\(env\)/);
+ assert.match(readFileSync("app/services/worker-hosted-tier.js","utf8"),/VSN_PRODUCTION_ENABLED === "true"/);
  assert.match(worker,/env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true"/);
  assert.match(worker,/acceptWorkerShopifyAdminMutation\(request,env/);
  assert.match(worker,/handleVerifiedWorkerDraftSave/);

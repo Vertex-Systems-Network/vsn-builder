@@ -6,6 +6,7 @@ import { inspectWorkerShopifyConfiguration } from "./shopify-worker-configuratio
 import { inspectWorkerNeonEnvironment } from "./db-worker-neon.js";
 import { createWorkerShopifySdkContext } from "./shopify-worker-sdk-context.js";
 import { hasCanonicalStagingOAuthQuery } from "./worker-shopify-auth-query.js";
+import { isHostedWorker } from "./worker-hosted-tier.js";
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
 const AUTH_ROUTE=/^\/auth\/(?!login(?:\/|$))[a-z0-9-]{1,64}$/;
@@ -42,8 +43,7 @@ export async function handleVerifiedStagingShopifyAuth(request,env,{
 }={}){
   if(!(request instanceof Request) ||
      request.method!=="GET"||
-     env?.APP_ENV!=="staging"||
-     env?.VSN_WORKER_NAME!=="vsn-builder-staging"||
+     !isHostedWorker(env)||
      env?.VSN_STAGING_OAUTH_ENABLED!=="true")
     return denied();
   const url=new URL(request.url);
