@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 // Standalone /preview tab: opens outside the Shopify admin shell and receives the
 // live (unsaved) editor state over same-origin postMessage, re-sent on every change.
-export default function usePreviewWindow(payload, deps = []) {
+export default function usePreviewWindow(payload, deps = [], { shop = "" } = {}) {
   const windowRef = useRef(null);
   const payloadRef = useRef(payload);
   payloadRef.current = payload;
@@ -20,5 +20,6 @@ export default function usePreviewWindow(payload, deps = []) {
     return () => window.removeEventListener("message", onMessage);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- send reads the latest payload from a ref
   useEffect(() => { send(); }, deps); // eslint-disable-line react-hooks/exhaustive-deps -- caller passes the change keys
-  return () => { windowRef.current = window.open("/preview", "vsn-preview"); };
+  // The shop lets the Shopify SDK issue the document CSP on hosted Workers.
+  return () => { windowRef.current = window.open(shop ? `/preview?shop=${encodeURIComponent(shop)}` : "/preview", "vsn-preview"); };
 }

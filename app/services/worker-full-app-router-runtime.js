@@ -63,6 +63,12 @@ export function createStagingFullAppRouterWorker({
          env?.VSN_STAGING_REACT_ROUTER_ENABLED!=="true")
         return legacyWorker.fetch(request,env,ctx);
       if(bypassToLegacy(url.pathname))return legacyWorker.fetch(request,env,ctx);
+      // Shop-less entry points cannot be rendered as an embedded document (the SDK
+      // only issues frame-ancestors for a known shop). The legacy Worker owns them:
+      // "/" and "/app" redirect to the SDK login form, which has its own strict CSP.
+      if(request.method==="GET"&&!url.searchParams.has("shop")&&
+         (url.pathname==="/"||url.pathname==="/app"||url.pathname==="/auth/login"))
+        return legacyWorker.fetch(request,env,ctx);
       if(isStaticAsset(url.pathname)){
         if(!env?.ASSETS||typeof env.ASSETS.fetch!=="function")return locked(404);
         try{return await env.ASSETS.fetch(request)}catch{return locked()}
