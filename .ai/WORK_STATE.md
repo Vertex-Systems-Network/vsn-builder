@@ -17,6 +17,14 @@ approval_needed_now: false
 updated_at: 2026-10-28
 ---
 
+## Polaris cards, Liquid widget, editor browser QA and CI runners — 2026-10-28
+
+- Merged into `development`: #404 (palette, storefront carousels), #405 (template device preview), #406 (superseded pull_request runs cancelled across 28 workflows; push runs never cancelled; `tests/ci-runner-concurrency.test.mjs`).
+- PR #407: `VsnCard` renders through Polaris `s-section`; the Liquid widget runs on the storefront via an `application/liquid` app-proxy body with all other content inside `{% raw %}` and Safe Mode stripping it (security invariant replaced in P1.6w and `security-audit`, flagged for review); editor fixes from browser QA (safe-centered canvas, VSN-themed editor chrome, Global Styles hint).
+- Editor browser QA method: `PageEditor` mounted with a memory router and a marketplace template in Chromium against the built CSS; add/undo/redo, text edit, delete, save, publish confirm, devices, search, preview and Fit all pass with no page errors.
+- Verified: full `qa:release` chain passes; `node --test tests/*.test.mjs` has no new failures relative to `development`. Inactive stores have zero features/quotas; paid-guard tests 15/15.
+- Still blocked outside the repository: Staging Worker secrets/bindings, Neon Staging, Shopify Partner plan publication and live billing, real Dev/Staging store OAuth E2E, Production approval (Issues #158-#168, #184).
+
 ## Metafields palette, storefront carousel fix and template device preview — 2026-10-28
 
 - Branch `claude/eloquent-ride-hp6lsp`, PR #404 into `development` (Tier 1 only; no Staging/Production action).
