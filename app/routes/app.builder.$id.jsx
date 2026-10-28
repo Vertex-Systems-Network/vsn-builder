@@ -174,6 +174,22 @@ export async function loader({
 		);
 	}
 
+	// Start independent DB/Admin reads together; each is awaited where it was
+	// used before, so error handling and ordering of side effects are unchanged.
+	const settle = (factory) => { try { return Promise.resolve(factory()).then((value) => ({ value }), (error) => ({ error })); } catch (error) { return Promise.resolve({ error }); } };
+	const unwrap = async (pending) => { const result = await pending; if ("error" in result) throw result.error; return result.value; };
+	const prefetched = {
+		globalPages: settle(() => db.builderPage.findMany({ where: { shop: session.shop, deletedAt: null, template: { in: ["header", "footer", "section"] } }, orderBy: { updatedAt: "desc" } })),
+		entitlements: settle(() => getBuilderRuntimeEntitlements(db, session.shop)),
+		setting: settle(() => db.builderShopSetting.findUnique({ where: { shop: session.shop } })),
+		widgetSettings: settle(() => loadWidgetSettings(admin)),
+		customWidgets: settle(() => loadCustomWidgets(db, session.shop)),
+		widgetTemplates: settle(() => loadWidgetTemplateMap(db, session.shop)),
+		fonts: settle(() => getCustomFontCatalog(db, session.shop)),
+		revisions: settle(() => db.builderRevision.findMany({ where: { shop: session.shop, pageId: page.id }, orderBy: { createdAt: "desc" }, take: 50 })),
+		library: settle(() => loadMerchantLibrary(db, session.shop)),
+	};
+
 	const previewBlog = page.template === "blog"
 		? await loadBuilderBlogPreview({ admin, requestedHandle: previewBlogHandle, resourceHandle: page.resourceHandle })
 		: null;
@@ -388,14 +404,7 @@ export async function loader({
 	let footers = [];
 	let reusableSections = [];
 	try {
-		const globalPages = await db.builderPage.findMany({
-			where: {
-				shop: session.shop,
-				deletedAt: null,
-				template: { in: ["header", "footer", "section"] },
-			},
-			orderBy: { updatedAt: "desc" },
-		});
+		const globalPages = await unwrap(prefetched.globalPages);
 		const normalizeBuilderAsset = (item) => ({
 			id: item.id,
 			title: item.title,
@@ -411,35 +420,31 @@ export async function loader({
 		console.error("VSN reusable/global template list failed:", error);
 	}
 
-	const runtimeEntitlements = await getBuilderRuntimeEntitlements(db, session.shop);
-	const builderSetting = await db.builderShopSetting.findUnique({ where: { shop: session.shop } });
+	const runtimeEntitlements = await unwrap(prefetched.entitlements);
+	const builderSetting = await unwrap(prefetched.setting);
 	let designTokens = {};
 	try { designTokens = JSON.parse(builderSetting?.designTokensJson || "{}"); } catch { designTokens = {}; }
 
 	let enabledWidgetIds = getWidgetDefinitions().map((widget) => widget.id);
 	try {
-		const widgetSettings = await loadWidgetSettings(admin);
+		const widgetSettings = await unwrap(prefetched.widgetSettings);
 		enabledWidgetIds = widgetSettings.widgets.filter((widget) => widget.enabled).map((widget) => widget.id);
 	} catch (error) {
 		console.error("VSN editor widget settings lookup failed:", error);
 	}
 
-	const customWidgets = await loadCustomWidgets(db, session.shop).catch((error)=>{ console.error("VSN custom widget load failed:",error); return []; });
+	const customWidgets = await unwrap(prefetched.customWidgets).catch((error)=>{ console.error("VSN custom widget load failed:",error); return []; });
 	registerVisualWidgetDefinitions(customWidgets);
 	enabledWidgetIds = [...new Set([...enabledWidgetIds, ...customWidgets.map((row)=>row.type)])];
-	const widgetTemplates = await loadWidgetTemplateMap(db, session.shop).catch(()=>({}));
+	const widgetTemplates = await unwrap(prefetched.widgetTemplates).catch(()=>({}));
 	const widgetPlatform = { customWidgets, templates:widgetTemplates, customCss:visualWidgetCss(customWidgets) };
 
 	let fontCatalog = { custom: [], google: FALLBACK_GOOGLE_FONTS, system: SYSTEM_FONTS };
-	try { fontCatalog.custom = await getCustomFontCatalog(db, session.shop); } catch (error) { console.error("VSN custom font catalog load failed:", error); }
+	try { fontCatalog.custom = await unwrap(prefetched.fonts); } catch (error) { console.error("VSN custom font catalog load failed:", error); }
 
-	const serverRevisions = await db.builderRevision.findMany({
-		where: { shop: session.shop, pageId: page.id },
-		orderBy: { createdAt: "desc" },
-		take: 50,
-	});
+	const serverRevisions = await unwrap(prefetched.revisions);
 	let libraryItems = [];
-	try { libraryItems = await loadMerchantLibrary(db, session.shop); } catch (error) { console.error("VSN builder library lookup failed:", error); }
+	try { libraryItems = await unwrap(prefetched.library); } catch (error) { console.error("VSN builder library lookup failed:", error); }
 
 	let componentUsage = {};
 	try {

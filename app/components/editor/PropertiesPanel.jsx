@@ -1,12 +1,14 @@
 import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnUnitField } from "./EditorUi";
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router';
-import { DynamicSourcePanel, DynamicBindingsPanel, ConditionsBuilder, ResponsivePanel, AdvancedLayoutPanel, StateStylesPanel, BreakpointControls } from "./AdvancedBuilderControls";
+import StyleKitPanel from "./StyleKitPanel";
+import { DynamicSourcePanel, DynamicBindingsPanel, ConditionsBuilder, VisibilityPanel, ResponsivePanel, AdvancedLayoutPanel, StateStylesPanel, BreakpointControls } from "./AdvancedBuilderControls";
 import PolarisIcon from '../ui/PolarisIcon';
 import { ColorGradientControl, SliderControl, TextControl, NumberControl, TypographyControl, CustomCssControl, CustomJsControl, GalleryControl, RepeaterControl, UrlControl, MediaControl, ImageDimensionsControl, IconControl, TextShadowControl, TextStrokeControl } from './EditorControls';
 import FontFamilyControl from './fonts/FontFamilyControl';
 import { getWidgetCapabilities } from '../../builder/widgetCapabilities';
 import WidgetSpecificStyleControls from './WidgetSpecificStyleControls';
+import { normalizeColumnsProps, syncColumnCells } from '../../builder/columnsWidget.js';
 import { normalizeControlOptions } from '../../builder/controlSchema';
 import { normalizeElementInteractions, mergeElementInteractions } from '../../builder/interactionSchema.js';
 import { IMAGE_SOURCE_OPTIONS, IMAGE_RESOLUTION_OPTIONS, normalizeImageWidgetProps } from '../../builder/imageWidget.js';
@@ -313,9 +315,8 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         <p className="text-xs font-semibold text-[#1a1a1a]">Global Styles</p>
         <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Selected element settings open in the left panel.</p>
       </div>
-      <SectionHeader title="Colors">
-        <div><Label>Primary</Label><ColorInput value={globalStyles.primaryColor || "#625BA8"} onChange={(value) => onGlobalStylesChange?.({ primaryColor: value })} /></div>
-        <div><Label>Text</Label><ColorInput value={globalStyles.textColor || "#1a1a1a"} onChange={(value) => onGlobalStylesChange?.({ textColor: value })} /></div>
+      <StyleKitPanel globalStyles={globalStyles} onChange={onGlobalStylesChange} Section={SectionHeader} ColorInput={ColorInput} />
+      <SectionHeader title="Page Colors">
         <div><Label>Background</Label><ColorInput value={globalStyles.backgroundColor || "#ffffff"} onChange={(value) => onGlobalStylesChange?.({ backgroundColor: value })} /></div>
       </SectionHeader>
       <SectionHeader title="Typography">
@@ -1047,6 +1048,21 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
       </>)}
 
       {activeTab === 'content' && (<>
+        {selectedElement.type === "columns" ? (() => {
+          const cols = normalizeColumnsProps(props, (selectedElement.children || []).length);
+          const setCount = (key, value) => {
+            const next = { ...cols, [key]: Math.max(1, Math.min(6, Number(value) || 1)) };
+            onUpdate(selectedElement.id, key === "columns" ? { props: next, children: syncColumnCells(selectedElement.children || [], next.columns) } : { props: next });
+          };
+          return <SectionHeader title="Columns">
+            <div className="grid grid-cols-3 gap-2">
+              <NumberControl label="Desktop" value={cols.columns} min={1} max={6} onChange={(value) => setCount("columns", value)} />
+              <NumberControl label="Tablet" value={cols.columnsTablet} min={1} max={6} onChange={(value) => setCount("columnsTablet", value)} />
+              <NumberControl label="Mobile" value={cols.columnsMobile} min={1} max={6} onChange={(value) => setCount("columnsMobile", value)} />
+            </div>
+            <p className="text-[11px] text-[#6d7175]">Desktop adds or removes column cells; only empty trailing cells are removed.</p>
+          </SectionHeader>;
+        })() : null}
         {(capabilities.media || capabilities.imageDimensions || capabilities.icon || capabilities.backgroundGallery) ? <SectionHeader title="Widget Media">
           {capabilities.media && selectedElement.type !== "image" ? <MediaControl
             label="Element Media"
@@ -1615,6 +1631,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
             <CheckboxControl label="Parallax" checked={interactions.parallax} onChange={(value)=>updateInteraction({parallax:value})} />
             <div className="mt-3 border-t border-[#e3e3e3] pt-3"><InteractionTimelinePanel value={interactions} elementId={selectedElement.id} onChange={updateInteraction} globalMotionTimeline={globalStyles.motionPresetTimeline || null} /></div>
           </SectionHeader> : null}
+          <SectionHeader title="Visibility"><VisibilityPanel element={selectedElement} onUpdate={onUpdate} /></SectionHeader>
           {capabilities.responsive ? <ResponsivePanel element={selectedElement} deviceMode={deviceMode} onUpdate={onUpdate} capabilities={capabilities} globalStyles={globalStyles} /> : null}
           {capabilities.conditions ? <ConditionsBuilder element={selectedElement} onUpdate={onUpdate} /> : null}
           {dynamicFieldsForWidget(selectedElement.type).length ? <DynamicBindingsPanel element={selectedElement} onUpdate={onUpdate} context={bindingContext} /> : null}

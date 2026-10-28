@@ -1,3 +1,5 @@
+import { styleKitCss, styleKitVariables } from "../builder/styleKit.js";
+import { clearPrerenders } from "./storefront-prerender.server.js";
 import { createHash } from "node:crypto";
 import { buildStyleBundleCss, dedupeGeneratedCss } from "../builder/stylePipeline.js";
 import { GLOBAL_DESIGN_DEFAULTS } from "../builder/globalDesign.js";
@@ -81,6 +83,7 @@ function cssVariables(pageId, globals, designTokens = {}) {
     `--vsn-shadow-lg:${designTokens.shadowLg || globals.shadowLg}`,
     `--vsn-space-unit:${Math.max(1, Number(globals.spacingBase || 4))}px`,
     ...Object.entries(semantic).map(([key,value])=>`${key}:${value}`),
+    ...Object.entries(styleKitVariables(globals)).map(([key,value])=>`${key}:${value}`),
   ];
   const root = `[data-vsn-page-id=${q}]`;
   const dark = tokenDoc.modes?.dark || {};
@@ -106,6 +109,7 @@ function templateBaseCss(pageId, globals) {
     `${root} h1,${root} h2,${root} h3,${root} h4,${root} h5,${root} h6{font-family:${globals.headingFontFamily};}`,
     `${root} button,${root} .vsn-button{border-radius:var(--vsn-button-radius);}`,
     `${root} input:not([type="checkbox"]):not([type="radio"]),${root} textarea,${root} select{background:var(--vsn-form-bg);color:var(--vsn-form-color);border-color:var(--vsn-form-border);border-radius:var(--vsn-form-radius);}`,
+    styleKitCss(root),
   ].join("\n");
 }
 
@@ -534,6 +538,8 @@ export async function rebuildThemeAssets({ admin, session, db }) {
   ]);
   const designTokens = parseJson(setting?.designTokensJson, {});
   const compiled = compileThemeAssets(pages, { designTokens, customFonts, enterprise: parseJson(setting?.enterpriseJson, {}) });
+  // Published content changed: inline storefront prerenders are now stale.
+  await clearPrerenders(admin).catch((error) => console.warn("VSN prerender clear failed:", error?.message || error));
 
   if (missingScopes.length) {
     await setAssetState(admin, { ready: false }).catch(()=>{});

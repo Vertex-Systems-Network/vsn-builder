@@ -50,7 +50,7 @@ const NAV_TARGETS = Object.freeze({
   "developer-sdk": "/app/pages?panel=developer-sdk",
   "platform-intelligence": "/app/platform-intelligence",
   "widget-studio": "/app/pages?panel=widget-studio",
-  onboarding: "/app/pages?panel=onboarding",
+  onboarding: "/app/setup",
   backups: "/app/pages?panel=backups",
   "role-manager": "/app/pages?panel=role-manager",
   "control-center": "/app/pages?panel=control-center",

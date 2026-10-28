@@ -1,3 +1,5 @@
+import { hideOnCss } from "../builder/visibility.js";
+import { isPrerenderCacheable, prerenderKey, PRERENDER_TEMPLATES, storePrerender } from "../services/storefront-prerender.server.js";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
 import { buildNodeStyle } from "../builder/styleEngine.js";
@@ -36,6 +38,7 @@ import {
 import { loadWidgetGridData } from "../storefront/widgetGridData.server.js";
 import { getTemplateSettings } from "../storefront/templateSettings.js";
 import { getGlobalSection, resolveReusableSections } from "../storefront/reusableSections.server.js";
+import { columnsResponsiveCss, normalizeColumnsProps } from "../builder/columnsWidget.js";
 import {
 	buildSchemaMarkup,
 	buildSeoPayload,
@@ -638,6 +641,15 @@ export async function loader({ request, params }) {
 			googleMapsApiKey, googleCaptcha, formConfigs,
 			localization: { locale: localizationRender.locale || requestedLocale, marketKey: requestedMarketKey, direction: localizationRender.direction || "ltr" },
 		});
+
+	if (fragmentMode && admin && PRERENDER_TEMPLATES.includes(requestedTemplate)) {
+		try {
+			const ruleCount = await db.builderTemplateRule.count({ where: { shop: session.shop, template: requestedTemplate, enabled: true } });
+			if (isPrerenderCacheable({ template: requestedTemplate, html, experiment: experimentMeta, localizationEnabled, hasLiquid: hasLiquidPlaceholders(html), dynamicData: [dynamicMetaobjects, widgetQueries, loopQueries], elementGroups: [resolvedElements, globalHeader?.elements || [], globalFooter?.elements || []], ruleCount })) {
+				await storePrerender(admin, { key: prerenderKey(requestedTemplate, requestedResourceHandle), html });
+			}
+		} catch (error) { console.warn("VSN prerender cache skipped:", error?.message || error); }
+	}
 
 	if (hasLiquidPlaceholders(html)) {
 		const liquid = buildLiquidBody(html, { enabled: !enterpriseSettings.safeMode });
@@ -1994,7 +2006,19 @@ function renderNodeCore(
 }
 
 function renderNode(node, renderContext = {}) {
-	if (!node || typeof node !== "object" || node.hidden === true) return "";
+	if (!node || typeof node !== "object" || node.hidden === true || node.meta?.hidden === true) return "";
+	const visibilityCss = hideOnCss(node.id, node.meta);
+	if (visibilityCss) {
+		const html = renderNodeVisible(node, renderContext);
+		if (!html) return "";
+		// Widgets whose root carries no data-vsn-id get a layout-neutral wrapper so the rule applies.
+		const targeted = html.includes(`data-vsn-id="${escapeAttribute(node.id || "")}"`) ? html : `<div data-vsn-id="${escapeAttribute(node.id || "")}" style="display:contents">${html}</div>`;
+		return `<style>${visibilityCss}</style>${targeted}`;
+	}
+	return renderNodeVisible(node, renderContext);
+}
+
+function renderNodeVisible(node, renderContext = {}) {
 	if (!serverConditionMatches(node, renderContext)) return "";
 	const legacyResolvedNode = applyDynamicSource(node, renderContext);
 	const resolvedNode = applyDynamicBindings(legacyResolvedNode, renderContext);
@@ -2026,11 +2050,11 @@ function renderProductRecommendations(node, props, styles, renderContext) {
 }
 
 function renderColumns(node, props, styles, children, renderContext) {
-	const columns = Math.max(1, Math.min(6, Number(props.columns || styles.columns || children.length || 2)));
+	const columns = normalizeColumnsProps({ ...props, columns: props.columns || styles.columns }, children.length).columns;
 	const gap = toCssSize(styles.gap || styles.grid?.gap, "24px");
 	const spacing = getNodeSpacing(styles);
 	const content = children.map((child, index) => `<div class="vsn-column-cell" data-vsn-column-cell="1" data-vsn-column-index="${index}" style="min-width:0;align-self:stretch;">${renderNode(child, renderContext)}</div>`).join("");
-	return `<div class="vsn-columns" data-vsn-id="${escapeAttribute(node.id || "")}" style="display:grid;grid-template-columns:repeat(${columns},minmax(0,1fr));gap:${gap};width:100%;margin:${spacing.margin};padding:${spacing.padding};">${content}</div>`;
+	return `<style>${columnsResponsiveCss(node.id || "", props, children.length)}</style><div class="vsn-columns" data-vsn-id="${escapeAttribute(node.id || "")}" style="display:grid;grid-template-columns:repeat(${columns},minmax(0,1fr));gap:${gap};width:100%;margin:${spacing.margin};padding:${spacing.padding};">${content}</div>`;
 }
 
 function renderContainer(

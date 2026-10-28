@@ -1,6 +1,28 @@
 (function () {
 	console.log("VSN Page Renderer loaded");
 
+	// Inline prerender: the app embed prints the cached fragment with the page
+	// itself, so the first matching fragment request is answered locally with no
+	// network round trip. Everything else falls through to the real fetch.
+	const nativeFetch = window.fetch.bind(window);
+	function takePrerendered(input, init) {
+		const holder = document.getElementById("vsn-prerendered");
+		if (!holder || holder.dataset.vsnUsed === "1") return null;
+		if (init && init.method && String(init.method).toUpperCase() !== "GET") return null;
+		let url;
+		try { url = new URL(typeof input === "string" ? input : input.url, window.location.origin); } catch { return null; }
+		const params = url.searchParams;
+		if (!url.pathname.startsWith("/apps/vsn-builder/") || params.get("fragment") !== "1") return null;
+		if (params.get("template") !== holder.dataset.vsnTemplate || ["loopQuery", "customJs", "campaigns", "globalCode", "formSubmit"].some((name) => params.has(name))) return null;
+		holder.dataset.vsnUsed = "1";
+		return holder.innerHTML;
+	}
+	function fetch(input, init) {
+		const html = takePrerendered(input, init);
+		if (html) return Promise.resolve(new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "x-vsn-prerendered": "1" } }));
+		return nativeFetch(input, init);
+	}
+
 	function getContext() {
 		const context =
 			window.VSN_PAGE_CONTEXT || {};

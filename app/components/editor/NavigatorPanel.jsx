@@ -180,6 +180,7 @@ export default function NavigatorPanel({
   onToggleLocked,
   onDuplicate,
   onDelete,
+  globalSections = [],
 }) {
   const [query, setQuery] = useState("");
   const [collapsedIds, setCollapsedIds] = useState(() => new Set());
@@ -226,6 +227,12 @@ export default function NavigatorPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
+        {globalSections.map((section) => (
+          <div key={section.key} className="vsn-nav-global-row flex items-center justify-between rounded-md px-2 py-1 text-xs" data-vsn-global-section={section.key}>
+            <span className={`flex items-center gap-1.5 ${section.visible ? "" : "opacity-45"}`}><PolarisIcon type="navigator" size="small" />{section.label}<span className="text-[10px] text-[#8a8a8a]">Global</span></span>
+            <VsnButton type="button" variant="icon" size="sm" title={section.visible ? `Hide ${section.label}` : `Show ${section.label}`} onClick={() => section.onToggle?.()} className="vsn-icon-button"><PolarisIcon type={section.visible ? "eye-off" : "eye"} size="small" /></VsnButton>
+          </div>
+        ))}
         {visibleElements.map((node) => (
           <TreeRow
             key={node.id}

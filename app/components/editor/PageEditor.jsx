@@ -51,6 +51,10 @@ import { applyLocalizationOverrides } from "../../builder/localizationEngine.js"
 import useTemplateBrowser from "./hooks/useTemplateBrowser.js";
 import useEditorAppearance from "./hooks/useEditorAppearance.js";
 import useAgentEditorSync from "./hooks/useAgentEditorSync.js";
+import useCanvasAutoFit from "./hooks/useCanvasAutoFit.js";
+import { GlobalColorsContext } from "./color/globalColorsContext.js";
+import { listGlobalColors } from "../../builder/styleKit.js";
+import usePreviewWindow from "./hooks/usePreviewWindow.js";
 
 
 const DEFAULT_GLOBAL_STYLES = {
@@ -328,7 +332,6 @@ export default function PageEditor({
   const [deviceMode, setDeviceMode] =
     useState("desktop");
   const [previewWidth, setPreviewWidth] = useState(() => breakpointById(globalStyles, "desktop")?.previewWidth || 1440);
-  const [canvasZoom, setCanvasZoom] = useState(1);
 
   const [isSaved, setIsSaved] =
     useState(true);
@@ -345,8 +348,15 @@ export default function PageEditor({
   const [revisionRows, setRevisionRows] = useState(serverRevisions || []);
   const [revisionDiff, setRevisionDiff] = useState(null);
   const [stagedRevisionId, setStagedRevisionId] = useState("");
-  const [leftPanelWidth, setLeftPanelWidth] = useState(384);
-  const [rightPanelWidth, setRightPanelWidth] = useState(384);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(340);
+  const [rightPanelWidth, setRightPanelWidth] = useState(340);
+  // Site settings (global styles) panel: open on wide screens, closed on laptops; remembered per browser.
+  const [showSiteSettings, setShowSiteSettings] = useState(true);
+  useEffect(() => {
+    try { const saved = localStorage.getItem("vsn-builder:site-settings-open"); setShowSiteSettings(saved === null ? window.innerWidth >= 1600 : saved === "1"); } catch { setShowSiteSettings(window.innerWidth >= 1600); }
+  }, []);
+  const toggleSiteSettings = useCallback(() => setShowSiteSettings((current) => { const next = !current; try { localStorage.setItem("vsn-builder:site-settings-open", next ? "1" : "0"); } catch { /* ignore: best-effort */ } return next; }), []);
+  const { canvasZoom, setCanvasZoom, setAutoFit } = useCanvasAutoFit({ deviceMode, previewWidth, disabled: isPreview, layoutKey: `${leftPanelWidth}:${rightPanelWidth}:${showSiteSettings}` });
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
@@ -499,8 +509,10 @@ export default function PageEditor({
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("vsn-builder:panel-widths") || "{}");
-      if (Number(saved.left) >= 320 && Number(saved.left) <= 768) setLeftPanelWidth(Number(saved.left));
-      if (Number(saved.right) >= 320 && Number(saved.right) <= 768) setRightPanelWidth(Number(saved.right));
+      // Narrower default panels on laptop widths so the canvas keeps a usable scale.
+      const fallback = window.innerWidth < 1600 ? 288 : 340;
+      setLeftPanelWidth(Number(saved.left) >= 280 && Number(saved.left) <= 768 ? Number(saved.left) : fallback);
+      setRightPanelWidth(Number(saved.right) >= 280 && Number(saved.right) <= 768 ? Number(saved.right) : fallback);
     } catch { /* ignore: best-effort */ }
   }, []);
   useEffect(() => { try { localStorage.setItem("vsn-builder:panel-widths", JSON.stringify({ left:leftPanelWidth, right:rightPanelWidth })); } catch { /* ignore: best-effort */ } }, [leftPanelWidth, rightPanelWidth]);
@@ -518,13 +530,13 @@ export default function PageEditor({
       if (target?.closest?.("input,textarea,select,[contenteditable='true']")) return;
       if (!["+","=","-","0"].includes(event.key)) return;
       event.preventDefault();
-      if (event.key === "0") setCanvasZoom(1);
+      if (event.key === "0") { setAutoFit(true); return; }
       else if (event.key === "-" ) setCanvasZoom((value)=>Math.max(.25,Number((value-.1).toFixed(2))));
       else setCanvasZoom((value)=>Math.min(2,Number((value+.1).toFixed(2))));
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [setCanvasZoom, setAutoFit]);
 
   useEffect(() => {
     setEditorReady(false);
@@ -1327,6 +1339,21 @@ export default function PageEditor({
     ? (pageSettings.footerId ? footers.find((item) => item.id === pageSettings.footerId) : footers.find((item) => item.isDefault) || footers[0])
     : null;
 
+
+  const previewPayload = {
+    title: pageTitle,
+    elements: displayElements,
+    globalStyles,
+    previewWidth: deviceMode === "desktop" ? 0 : previewWidth,
+    direction: localizationPreview?.direction,
+    header: !["header", "footer"].includes(page?.template) && selectedHeader ? { content: selectedHeader.content || [], globalStyles: readGlobalStyles(selectedHeader.content || []), sticky: Boolean(readPageSettings(selectedHeader.content).sticky) } : null,
+    footer: !["header", "footer"].includes(page?.template) && selectedFooter ? { content: selectedFooter.content || [], globalStyles: readGlobalStyles(selectedFooter.content || []) } : null,
+    reusableSections, componentDefinitions, widgetPlatform,
+    previewCollection, previewProduct, previewBlog, previewArticle, previewSearch,
+  };
+  const globalColorList = useMemo(() => listGlobalColors(globalStyles), [globalStyles]);
+  const openPreviewWindow = usePreviewWindow(previewPayload, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id], { shop });
+
   /*
    * Dedicated preview route:
    * /app/builder/:id?preview=true
@@ -1397,6 +1424,7 @@ export default function PageEditor({
   }
 
   return (
+    <GlobalColorsContext.Provider value={globalColorList}>
     <div /* eslint-disable-line jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */ ref={editorRootRef} data-vsn-editor-root="true" data-vsn-ui-profile="editor" data-vsn-baseline="milestone-a-phase-0" data-vsn-experimental={Object.values(featureFlags || {}).some(Boolean) ? "1" : "0"} className={`flex h-screen flex-col overflow-hidden ${editorDarkMode?"vsn-editor-dark":"vsn-editor-light"}`} style={{ "--vsn-left-panel": `${leftPanelWidth}px`, "--vsn-right-panel": `${rightPanelWidth}px` }} onMouseDown={() => setContextMenu(null)} onContextMenu={(event) => { const target = event.target?.closest?.("[data-vsn-id]"); const id = target?.getAttribute?.("data-vsn-id"); if (!id || !findNode(elements, id)) return; event.preventDefault(); event.stopPropagation(); handleSelect(id, null); setContextMenu({ x: event.clientX, y: event.clientY, id }); }}>
       <ClientErrorReporter pageId={page?.id || ""} widgetId={selectedId || ""} />
       <EditorTooltipLayer />
@@ -1423,37 +1451,8 @@ export default function PageEditor({
         onSave={handleSave}
         onPublish={handlePublish}
         onPreview={() => {
-          const currentParams =
-            new URLSearchParams(
-              window.location.search,
-            );
-
-          currentParams.set(
-            "preview",
-            "true",
-          );
-          currentParams.delete("embedded");
-
-          if (shop) {
-            currentParams.set("shop", shop);
-          }
-
-          currentParams.set(
-            "collection",
-            previewCollectionHandle || "",
-          );
-
-          currentParams.set("product", previewProductHandle || "");
-          if (page?.template === "blog") currentParams.set("blog", previewBlog?.handle || page?.resourceHandle || "");
-          if (page?.template === "article") currentParams.set("article", previewArticle?.blogHandle && previewArticle?.handle ? `${previewArticle.blogHandle}/${previewArticle.handle}` : page?.resourceHandle || "");
-          if (page?.template === "search") currentParams.set("query", previewSearch?.query || "shirt");
-          if (localizationPreview?.enabled && localizationPreview.locale) currentParams.set("language", localizationPreview.locale);
-          if (localizationPreview?.enabled && localizationPreview.marketKey && localizationPreview.marketKey !== "*") currentParams.set("market", localizationPreview.marketKey);
-
-          window.open(
-            `/app/builder/${page.id}?${currentParams.toString()}`,
-            "_blank",
-          );
+          // Standalone tab outside the Shopify admin shell; it receives live state via postMessage.
+          openPreviewWindow();
         }}
         onUndo={handleUndo}
         onRedo={handleRedo}
@@ -1472,6 +1471,8 @@ export default function PageEditor({
         canSaveTemplate={pagePermissions.edit === true}
         canDelete={pagePermissions.delete === true}
         onPageSettings={() => { setShowPageSettings((value) => !value); setShowRevisions(false); setShowHistory(false); setShowCollaboration(false); setShowLocalization(false); }}
+        onToggleSiteSettings={toggleSiteSettings}
+        siteSettingsOpen={showSiteSettings}
         onHistory={() => { setShowHistory((value) => !value); setShowRevisions(false); }}
         revisionsCount={revisionRows.length}
         responsiveBreakpoints={globalStyles}
@@ -1479,7 +1480,7 @@ export default function PageEditor({
         onPreviewWidthChange={(width) => { setPreviewWidth(width); setDeviceMode(breakpointForWidth(globalStyles, width)?.id || deviceMode); }}
         zoom={canvasZoom}
         onZoomChange={setCanvasZoom}
-        onZoomFit={()=>{const available=Math.max(260,window.innerWidth-leftPanelWidth-rightPanelWidth-110);setCanvasZoom(Math.max(.25,Math.min(1,Number((available/Math.max(240,previewWidth)).toFixed(2)))));}}
+        onZoomFit={() => setAutoFit(true)}
         onSaveTemplate={() => { setTemplateName(pageTitle); setShowSaveTemplate(true); }}
         onDeletePage={deleteCurrentPage}
         onHelp={() => window.open("https://help.shopify.com/", "_blank", "noopener,noreferrer")}
@@ -1516,6 +1517,10 @@ export default function PageEditor({
           onRename={handleRename}
           onToggleHidden={(id) => toggleMeta(id, "hidden")}
           onToggleLocked={(id) => toggleMeta(id, "locked")}
+          globalSections={["header", "footer"].includes(page?.template) ? [] : [
+            { key: "header", label: "Header", visible: pageSettings.headerEnabled !== false, onToggle: () => handlePageSettingsChange({ ...pageSettings, headerEnabled: pageSettings.headerEnabled === false }) },
+            { key: "footer", label: "Footer", visible: pageSettings.footerEnabled !== false, onToggle: () => handlePageSettingsChange({ ...pageSettings, footerEnabled: pageSettings.footerEnabled === false }) },
+          ]}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
           width={leftPanelWidth}
@@ -1673,11 +1678,14 @@ export default function PageEditor({
 
         <AiBuilderPanel open={showAI} onClose={()=>setShowAI(false)} fetcher={aiFetcher} page={page} elements={elements} globalStyles={globalStyles} selectedElement={selectedElement} selectedIds={selectedIds.length?selectedIds:(selectedId?[selectedId]:[])} breakpoint={deviceMode} hasUnsavedChanges={!isSaved} commerceContext={{product:previewProduct?{title:previewProduct.title,handle:previewProduct.handle,vendor:previewProduct.vendor,productType:previewProduct.productType,description:previewProduct.description}:null,collection:previewCollection?{title:previewCollection.title,handle:previewCollection.handle,description:previewCollection.description}:null,search:previewSearch?{query:previewSearch.query}:null}} onApply={handleApplyAiResult} onAgentResult={handleAgentResult} />
 
+        {showSiteSettings ? <>
         <PanelResizeHandle side="right" value={rightPanelWidth} onChange={setRightPanelWidth} />
         <EditorPanelBoundary resetKey={`global:${deviceMode}`}>
           <PropertiesPanel selectedElement={null} onUpdate={handleUpdate} onDelete={handleDelete} activeTab="style" onTabChange={() => {}} globalStyles={globalStyles} onGlobalStylesChange={handleGlobalStylesChange} deviceMode={deviceMode} reusableSections={reusableSections} libraryItems={editorLibraryItems} componentDefinitions={componentDefinitions} componentUsage={componentUsage} onApplyLibraryStyle={handleApplyLibraryStyle} onSaveCurrentStyle={handleSaveCurrentStyle} onUnlinkGlobalSection={handleUnlinkGlobalSection} onSaveComponentVariant={handleSaveComponentVariant} onUpdateComponentMaster={handleUpdateComponentMaster} width={rightPanelWidth} hideTabs />
         </EditorPanelBoundary>
+        </> : null}
       </div>
     </div>
+    </GlobalColorsContext.Provider>
   );
 }

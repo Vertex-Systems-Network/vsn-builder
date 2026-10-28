@@ -1,3 +1,5 @@
+import { styleKitCss } from "../../builder/styleKit.js";
+import { hideOnCss } from "../../builder/visibility.js";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { ContentPolarisIcon } from "../ui/PolarisIcon";
 import { globalCssVariables } from '../../builder/globalDesign';
@@ -9,6 +11,7 @@ import { normalizeGalleryWidgetProps, galleryAspectRatio } from "../../builder/g
 import { normalizeVideoWidgetProps, videoEmbedUrl } from "../../builder/videoWidget.js";
 import { normalizeSliderProps } from "../../builder/sliderWidget.js";
 import { isNestedSliderType, normalizeNestedSliderProps } from "../../builder/nestedCarouselWidget.js";
+import { columnsResponsiveCss, normalizeColumnsProps } from "../../builder/columnsWidget.js";
 import { normalizeStructuredItems } from "../../builder/structuredItems.js";
 import { applyDynamicBindings } from "../../builder/dynamicBindings.js";
 import "../../builder/contextMediaWidget.js";
@@ -330,36 +333,13 @@ function RenderNodeCore({
 					data-vsn-id={node.id}
 					style={{
 						display: "flex",
-						flexDirection:
-							style.flexDirection ||
-							style.direction ||
-							"column",
-						alignItems:
-							style.alignItems || "stretch",
-						justifyContent:
-							style.justifyContent || "flex-start",
-						gap: getSize(style.gap, "0px"),
-						width: getSize(
-							style.width,
-							"100%",
-						),
-						minHeight: getSize(
-							style.minHeight,
-							"auto",
-						),
-						maxWidth: getSize(
-							style.maxWidth,
-							"none",
-						),
-						margin: getSpacing(style.margin),
-						padding: getSpacing(style.padding),
-						backgroundColor:
-							style.backgroundColor ||
-							"transparent",
-						borderRadius: getSize(
-							style.borderRadius,
-							"0px",
-						),
+						flexDirection: style.direction || "column",
+						alignItems: "stretch",
+						justifyContent: "flex-start",
+						width: "100%",
+						boxSizing: "border-box",
+						// Full computed style (per-side spacing, gradients, layout keys), same as the canvas.
+						...style,
 					}}
 				>
 					{children.map((child) => (
@@ -379,14 +359,15 @@ function RenderNodeCore({
 
 		case "columns":
 			return (
+				<>
+				<style dangerouslySetInnerHTML={{ __html: columnsResponsiveCss(node.id, settings, children.length) }} />
 				<div
 					data-vsn-id={node.id}
+					className="vsn-columns"
 					style={{
+						...style,
 						display: "grid",
-						gridTemplateColumns: `repeat(${settings.columns ||
-							style.columns ||
-							Math.max(children.length, 2)
-							}, minmax(0, 1fr))`,
+						gridTemplateColumns: `repeat(${normalizeColumnsProps({ ...settings, columns: settings.columns || style.columns }, children.length).columns}, minmax(0, 1fr))`,
 						gap: getSize(style.gap, "20px"),
 						width: "100%",
 					}}
@@ -404,6 +385,7 @@ function RenderNodeCore({
 						/>
 					))}
 				</div>
+				</>
 			);
 
 		case "heading": {
@@ -994,7 +976,7 @@ function RenderNodeCore({
 					width={renderDimensions.width || undefined}
 					height={renderDimensions.height || undefined}
 					loading={imageProps.loading}
-					fetchPriority={imageProps.fetchPriority}
+					{...{ fetchpriority: imageProps.fetchPriority }}
 					decoding="async"
 					className="vsn-image-widget"
 					style={{
@@ -1130,6 +1112,12 @@ function RenderNodeCore({
 }
 
 function RenderNode(props) {
+  const visibilityCss = props.node?.meta?.hidden === true ? "" : hideOnCss(props.node?.id, props.node?.meta);
+  if (visibilityCss) return <><style>{visibilityCss}</style><RenderNodeInner {...props} /></>;
+  return <RenderNodeInner {...props} />;
+}
+
+function RenderNodeInner(props) {
   const templates=useContext(WidgetTemplateContext); const template=templates?.[props.node?.type];
   const base=<RenderNodeCore {...props}/>; if(!template?.enabled||!template?.html)return base;
   try { const descriptor=visualTemplateTreeToDescriptor(parseVisualTemplate(template.html),{props:props.node?.props||{},slot:base,templateKey:props.node.type}); const css=scopeVisualTemplateCss(template.css||"",props.node.type); return <>{css?<style>{css}</style>:null}{renderSdkEditorValue(descriptor,`template-${props.node?.id||props.node?.type}`)}</>; }
@@ -1189,6 +1177,7 @@ export default function PreviewRenderer({
 				minHeight: "100vh",
 			}}
 		>
+			<style dangerouslySetInnerHTML={{ __html: styleKitCss(".vsn-preview-root") }} />
 			{staticPreview ? null : <CustomJsRuntime rootRef={previewRootRef} elements={elements} mode="preview" />}
 			{elements.map((element) => (
 				<RenderNode

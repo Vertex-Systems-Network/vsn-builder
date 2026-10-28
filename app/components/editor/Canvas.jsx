@@ -1,3 +1,5 @@
+import { styleKitCss } from "../../builder/styleKit.js";
+import { isHiddenOnDevice } from "../../builder/visibility.js";
 import { Component, createContext, memo, useContext, useEffect, useRef, useState } from 'react';
 import SectionInserter from './SectionInserter';
 import { acceptsChildren } from '../../builder/widgetRegistry';
@@ -13,6 +15,7 @@ import { normalizeGalleryWidgetProps, galleryAspectRatio, galleryColumnsForDevic
 import { normalizeVideoWidgetProps, videoEmbedUrl } from '../../builder/videoWidget.js';
 import { normalizeSliderProps, sliderSlidesForDevice } from '../../builder/sliderWidget.js';
 import { isNestedSliderType, normalizeNestedSliderProps, nestedItemNoun } from '../../builder/nestedCarouselWidget.js';
+import { columnsForDevice } from '../../builder/columnsWidget.js';
 import { normalizeStructuredItems } from '../../builder/structuredItems.js';
 import { applyDynamicBindings } from '../../builder/dynamicBindings.js';
 import { normalizeContextImageProps, contextImageUrl, contextImageAlt } from '../../builder/contextMediaWidget.js';
@@ -66,7 +69,9 @@ function DropZone({ parentId, beforeId = null, afterId = null, onDrop, onAdd, co
   const [active, setActive] = useState(false);
   return (
     <div
-      className={`${compact ? 'h-6' : 'h-7'} group relative flex items-center justify-center transition-all`}
+      className="vsn-drop-zone group relative flex items-center justify-center"
+      data-active={active ? "1" : undefined}
+      data-compact={compact ? "1" : undefined}
       onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); setActive(true); }}
       onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = event.dataTransfer.getData('vsnNodeId') ? 'move' : 'copy'; setActive(true); }}
       onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setActive(false); }}
@@ -297,7 +302,7 @@ function Phase10CanvasWidget({node,previewProduct}){const p=node.props||{},t=nod
  if(t==="data-table")return <div style={{border:"1px solid #eee",padding:10,borderRadius:8}}>Table · {String(p.headersText||"").replaceAll("|"," · ")}</div>;
  if(t==="menu-anchor")return <div style={{fontSize:11,color:"#777"}}>Anchor #{p.anchorId||"section-anchor"}</div>;
  if(t==="form-builder")return <div style={{display:"grid",gap}}><b>{p.heading}</b>{String(p.fieldsText||"").split(/\r?\n/).filter(Boolean).slice(0,6).map((line,i)=>{const [type,,label,placeholder]=line.split("|");return <label key={i} style={{fontSize:12}}>{label}<input disabled placeholder={placeholder} type={["email","number","date","time"].includes(type)?type:"text"} style={{display:"block",width:"100%",padding:8,border:"1px solid #ddd",borderRadius:7}}/></label>})}<div style={{display:"flex",gap:8}}>{p.multiStep&&<button type="button">{p.previousText||"Back"}</button>}{p.multiStep&&<button type="button">{p.nextText||"Next"}</button>}<button type="button">{p.submitText||"Submit"}</button></div></div>;
- if(t==="product-media"){const mp=normalizeContextImageProps(p);const media=previewProduct?.featuredImage||previewProduct?.media?.nodes?.[0]?.image||{};const src=contextImageUrl(media,mp);return src?<img src={src} alt={contextImageAlt(media,mp,previewProduct?.title||"Product image")} loading={mp.loading} fetchPriority={mp.fetchPriority} style={{width:"100%",aspectRatio:"1",objectFit:"cover",borderRadius:10}}/>:<div style={{aspectRatio:"1",background:"#eee",borderRadius:10}}/>;}
+ if(t==="product-media"){const mp=normalizeContextImageProps(p);const media=previewProduct?.featuredImage||previewProduct?.media?.nodes?.[0]?.image||{};const src=contextImageUrl(media,mp);return src?<img src={src} alt={contextImageAlt(media,mp,previewProduct?.title||"Product image")} loading={mp.loading} {...{ fetchpriority: mp.fetchPriority }} style={{width:"100%",aspectRatio:"1",objectFit:"cover",borderRadius:10}}/>:<div style={{aspectRatio:"1",background:"#eee",borderRadius:10}}/>;}
  if(t==="inventory-status"){const variants=previewProduct?.variants?.nodes||[];const available=variants.some((variant)=>variant?.availableForSale);const qty=variants.reduce((sum,variant)=>sum+(Number.isFinite(Number(variant?.inventoryQuantity))?Math.max(0,Number(variant.inventoryQuantity)):0),0);const threshold=Math.max(1,Number(p.lowThreshold||5));const low=available&&qty>0&&qty<=threshold;return <b>{!available?(p.soldOutText||"Sold out"):low?(p.lowStockText||"Low stock"):(p.inStockText||"In stock")}</b>;}
  if(t==="collection-filters")return <div><button type="button">{p.label||"Filters"}</button> <button type="button">Availability</button> <button type="button">Price</button></div>;
  if(t==="collection-sorting")return <select><option>{p.label||"Sort by"}: Featured</option></select>;
@@ -500,7 +505,7 @@ function RenderNode({
   const [dropPosition, setDropPosition] = useState("");
   const dragFrameRef = useRef(0);
   const pendingDropPositionRef = useRef("");
-  if (node?.meta?.hidden === true) return null;
+  const editorHidden = isHiddenOnDevice(node, previewMode);
   node = applyPreviewDynamicSource(node, { previewCollection, previewProduct, previewBlog, previewArticle, previewSearch });
   node = applyDynamicBindings(node, { loop: loopContext, product: previewProduct, collection: previewCollection, blog: previewBlog, article: previewArticle, search: previewSearch, customer: { name: "Customer", email: "customer@example.com" } });
   node = applyResponsiveNode(node, previewMode, responsiveConfig);
@@ -576,7 +581,7 @@ function RenderNode({
   } else if (node.type === "blog-article-grid") {
     const g=normalizeGridProps("blog-article-grid",node.props); const items=(previewBlog?.articles?.nodes||[]).slice(0,g.limit); const cols=previewMode==="mobile"?g.columnsMobile:previewMode==="tablet"?g.columnsTablet:g.columnsDesktop; content=<div style={{display:"grid",gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:g.gap}}>{items.length?items.map((item)=><article key={item.id} style={{border:"1px solid #e5e5e5",borderRadius:"12px",padding:"14px"}}>{item.image?.url&&<img src={item.image.url} alt={item.image.altText||item.title} style={{width:"100%",aspectRatio:"4/3",objectFit:"cover",borderRadius:"8px"}}/>}<h3>{item.title}</h3><p>{item.excerpt||""}</p></article>):<div>{node.props.emptyText||"No articles found."}</div>}</div>;
   } else if (node.type === "article-title") { content=<h1 style={style}>{previewArticle?.title||node.props.fallbackText||"Article title"}</h1>;
-  } else if (node.type === "article-featured-image") { const mp=normalizeContextImageProps(node.props||{}); const media=previewArticle?.image||{}; const src=contextImageUrl(media,mp); content=src?<img src={src} alt={contextImageAlt(media,mp,previewArticle?.title||"Article")} loading={mp.loading} fetchPriority={mp.fetchPriority} style={{...style,width:"100%",objectFit:"cover"}}/>:<div style={{...style,minHeight:"240px",background:"#f3f3f3"}}/>;
+  } else if (node.type === "article-featured-image") { const mp=normalizeContextImageProps(node.props||{}); const media=previewArticle?.image||{}; const src=contextImageUrl(media,mp); content=src?<img src={src} alt={contextImageAlt(media,mp,previewArticle?.title||"Article")} loading={mp.loading} {...{ fetchpriority: mp.fetchPriority }} style={{...style,width:"100%",objectFit:"cover"}}/>:<div style={{...style,minHeight:"240px",background:"#f3f3f3"}}/>;
   } else if (node.type === "article-content") { content=<div style={style}>{previewArticle?.excerpt||node.props.fallbackText||"Article content will appear here."}</div>;
   } else if (node.type === "article-author") { content=<div style={style}>{node.props.prefix||"By "}{previewArticle?.author?.name||"Author"}</div>;
   } else if (node.type === "article-date") { const d=previewArticle?.publishedAt?new Date(previewArticle.publishedAt):null; const formatted=d?(node.props.format==="iso"?d.toISOString().slice(0,10):d.toLocaleDateString("en-US",node.props.format==="short"?{year:"numeric",month:"numeric",day:"numeric"}:node.props.format==="medium"?{year:"numeric",month:"short",day:"numeric"}:{year:"numeric",month:"long",day:"numeric"})):"Publish date"; content=<div style={style}>{formatted}</div>;
@@ -1048,12 +1053,12 @@ function RenderNode({
     const mp = normalizeContextImageProps(node.props || {});
     const media = previewCollection?.image || {};
     const imageSource = contextImageUrl(media, { ...mp, fallbackSrc: mp.fallbackSrc || SAMPLE_COLLECTION_IMAGE });
-    content = imageSource ? <img src={imageSource} alt={contextImageAlt(media, mp, previewCollection?.title || "Collection preview")} loading={mp.loading} fetchPriority={mp.fetchPriority} className="w-full" style={{ ...style, objectFit: 'cover' }} /> : <div style={{...style,minHeight:220,background:'#f3f3f3'}} />;
+    content = imageSource ? <img src={imageSource} alt={contextImageAlt(media, mp, previewCollection?.title || "Collection preview")} loading={mp.loading} {...{ fetchpriority: mp.fetchPriority }} className="w-full" style={{ ...style, objectFit: 'cover' }} /> : <div style={{...style,minHeight:220,background:'#f3f3f3'}} />;
   } else if (node.type === 'product-image') {
     const mp = normalizeContextImageProps(node.props || {});
     const media = previewProduct?.featuredImage || {};
     const imageSource = contextImageUrl(media, mp);
-    content = imageSource ? <img src={imageSource} alt={contextImageAlt(media, mp, previewProduct?.title || "Product image")} loading={mp.loading} fetchPriority={mp.fetchPriority} className="w-full" style={{...style,objectFit:'cover'}}/> : <div style={{...style,minHeight:220,background:'#f3f3f3'}}/>;
+    content = imageSource ? <img src={imageSource} alt={contextImageAlt(media, mp, previewProduct?.title || "Product image")} loading={mp.loading} {...{ fetchpriority: mp.fetchPriority }} className="w-full" style={{...style,objectFit:'cover'}}/> : <div style={{...style,minHeight:220,background:'#f3f3f3'}}/>;
   } else if (node.type === 'icon') {
     content = <span style={{ ...style, display: 'inline-flex' }}><ContentPolarisIcon name={node.props.name || 'star'} size="base" /></span>;
   } else if (node.type === 'divider') {
@@ -1073,20 +1078,22 @@ function RenderNode({
       ? {
           ...style,
           display: "grid",
-          gridTemplateColumns: node.styles?.gridTemplateColumns || node.styles?.grid?.templateColumns || `repeat(${Number(node.props?.columns || Math.max((node.children || []).length, 1))}, minmax(0, 1fr))`,
-          gap: node.styles?.gap || node.styles?.grid?.gap || "20px",
+          gridTemplateColumns: node.styles?.gridTemplateColumns || node.styles?.grid?.templateColumns || `repeat(${columnsForDevice(node.props, (node.children || []).length, previewMode)}, minmax(0, 1fr))`,
+          gap: node.styles?.gap || node.styles?.grid?.gap || node.styles?.layout?.gap || style.gap || "20px",
         }
       : {
           ...style,
           display: "flex",
-          flexDirection: node.styles?.flexDirection || "column",
-          alignItems: node.styles?.alignItems || "stretch",
-          justifyContent: node.styles?.justifyContent || "flex-start",
-          gap: node.styles?.gap || "12px",
+          // Advanced > Layout stores these under styles.layout; cssFromStyles already resolved them into style.
+          flexDirection: node.styles?.flexDirection || style.flexDirection || "column",
+          flexWrap: style.flexWrap,
+          alignItems: node.styles?.alignItems || style.alignItems || "stretch",
+          justifyContent: node.styles?.justifyContent || style.justifyContent || "flex-start",
+          gap: node.styles?.gap || style.gap || "12px",
         };
     content = (
       <div style={childLayoutStyle} className="min-h-24">
-        <div className={node.type === "columns" ? "contents" : "space-y-3"}>
+        <div className="contents">
           {(node.children ?? []).map((child) => (
             <div key={child.id} data-vsn-column-cell={node.type === "columns" ? "1" : undefined} className={node.type === "columns" ? "min-w-0 self-stretch" : undefined}>
               <DropZone parentId={node.id} beforeId={child.id} onDrop={onDrop} onAdd={onRequestAddChild} compact />
@@ -1131,6 +1138,7 @@ function RenderNode({
   return <div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */
     data-vsn-id={node.id}
     data-vsn-node-type={node.type}
+    data-vsn-editor-hidden={editorHidden ? "1" : undefined}
     data-vsn-component-id={node.type === "component-instance" ? String(node.props?.componentId || "") : undefined}
     data-vsn-component-slot={node.meta?.__vsnComponentSlotName || undefined}
     data-vsn-sticky-element={interactions.sticky ? "1" : undefined}
@@ -1204,7 +1212,7 @@ function RenderNode({
     {dropPosition === 'after' ? <span className="pointer-events-none absolute -bottom-1 left-0 right-0 z-30 h-1 rounded-full bg-[#625BA8] shadow-[0_0_0_3px_rgba(98,91,168,.14)]" /> : null}
     {dropPosition === 'inside' ? <span className="pointer-events-none absolute inset-0 z-30 rounded-[inherit] border-2 border-dashed border-[#625BA8] bg-[#625BA8]/5" /> : null}
     {content}
-    {selected && <span className="pointer-events-none absolute -top-6 left-0 z-20 flex items-center gap-1 rounded-t bg-[#625BA8] px-2 py-1 text-[10px] text-white">{node.label}{node.conditions?.enabled && !conditionMatches ? ' · hidden by condition' : ''}</span>}
+    {selected && <span className="pointer-events-none absolute -top-6 left-0 z-20 flex items-center gap-1 rounded-t bg-[#625BA8] px-2 py-1 text-[10px] text-white">{node.label}{node.conditions?.enabled && !conditionMatches ? ' · hidden by condition' : ''}{editorHidden ? (node.meta?.hidden === true ? ' · hidden' : ` · hidden on ${previewMode}`) : ''}</span>}
   </div>;
 }
 const MemoRenderNode = memo(RenderNode, (prev, next) => prev.node === next.node && prev.selectedId === next.selectedId && prev.previewMode === next.previewMode && prev.previewCollection === next.previewCollection && prev.previewProduct === next.previewProduct && prev.previewBlog === next.previewBlog && prev.previewArticle === next.previewArticle && prev.previewSearch === next.previewSearch && prev.reusableSections === next.reusableSections);
@@ -1428,7 +1436,7 @@ export default function Canvas({
     >
       <style
         dangerouslySetInnerHTML={{
-          __html: `${widgetPlatform.customCss ? `${widgetPlatform.customCss}\n` : ""}.vsn-canvas-page h1,.vsn-canvas-page h2,.vsn-canvas-page h3,.vsn-canvas-page h4,.vsn-canvas-page h5,.vsn-canvas-page h6{font-family:var(--vsn-canvas-heading-font,inherit);}\n${buildStyleBundleCss(
+          __html: `${styleKitCss('[data-vsn-page-boundary="1"]')}\n${widgetPlatform.customCss ? `${widgetPlatform.customCss}\n` : ""}.vsn-canvas-page h1,.vsn-canvas-page h2,.vsn-canvas-page h3,.vsn-canvas-page h4,.vsn-canvas-page h5,.vsn-canvas-page h6{font-family:var(--vsn-canvas-heading-font,inherit);}\n${buildStyleBundleCss(
             [
               applyResponsiveTree(elements, previewMode, globalStyles),
               ...reusableSections.map((section) => applyResponsiveTree(Array.isArray(section?.content) ? section.content : [], previewMode, globalStyles)),

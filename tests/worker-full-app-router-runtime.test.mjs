@@ -32,12 +32,12 @@ function fixture({response}={}){
 
 test("only the exact opt-in Staging Worker uses the full route graph",async()=>{
   const f=fixture();
-  const legacy=await f.worker.fetch(new Request(origin+"/app"),{...stage,VSN_STAGING_REACT_ROUTER_ENABLED:"false"});
+  const legacy=await f.worker.fetch(new Request(origin+"/app?shop=demo.myshopify.com"),{...stage,VSN_STAGING_REACT_ROUTER_ENABLED:"false"});
   assert.equal(await legacy.text(),"legacy");
-  const production=await f.worker.fetch(new Request(origin+"/app"),{...stage,APP_ENV:"production",VSN_WORKER_NAME:"vsn-builder-production"});
+  const production=await f.worker.fetch(new Request(origin+"/app?shop=demo.myshopify.com"),{...stage,APP_ENV:"production",VSN_WORKER_NAME:"vsn-builder-production"});
   assert.equal(await production.text(),"legacy");
   assert.equal(f.calls.filter(x=>x.startsWith("sdk:")).length,0);
-  const enabled=await f.worker.fetch(new Request(origin+"/app"),stage);
+  const enabled=await f.worker.fetch(new Request(origin+"/app?shop=demo.myshopify.com"),stage);
   assert.equal(await enabled.text(),"full-app");
   assert.equal(f.runtime.runtimeTier,"staging");
   assert.equal(f.calls.filter(x=>x.startsWith("sdk:")).length,1);
@@ -86,7 +86,16 @@ test("cancelled and bodyless responses also release request-scoped Neon exactly 
   assert.equal(pending.calls.filter(x=>x==="close").length,1);
 
   const empty=fixture({response:()=>new Response(null,{status:302,headers:{location:"/auth/login"}})});
-  const redirected=await empty.worker.fetch(new Request(origin+"/app"),stage);
+  const redirected=await empty.worker.fetch(new Request(origin+"/app?shop=demo.myshopify.com"),stage);
   assert.equal(redirected.status,302);
   assert.equal(empty.calls.filter(x=>x==="close").length,1);
+});
+
+test("shop-less entry documents go to the legacy login flow, never the embedded SSR",async()=>{
+  const f=fixture();
+  for(const path of ["/","/app","/auth/login"]){
+    const response=await f.worker.fetch(new Request(origin+path),stage);
+    assert.equal(await response.text(),"legacy",path);
+  }
+  assert.equal(f.calls.filter(x=>x.startsWith("sdk:")).length,0);
 });
