@@ -1,5 +1,5 @@
+import PolarisIcon from "../ui/PolarisIcon";
 import { useState } from "react";
-import { VsnButton } from "./EditorUi";
 import {
   AspectRatioControl,
   ColorGradientControl,
@@ -15,9 +15,9 @@ function Group({ title, children, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <section className="vsn-inspector-section">
-      <VsnButton type="button" variant="plain" className="vsn-inspector-section-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-        <span>{title}</span><span className={`vsn-inspector-chevron ${open ? "is-open" : ""}`}>›</span>
-      </VsnButton>
+      <button type="button" className="vsn-inspector-section-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span>{title}</span><span className={`vsn-inspector-chevron ${open ? "is-open" : ""}`}><PolarisIcon type="chevron-right" size="small" /></span>
+      </button>
       {open ? <div className="vsn-inspector-section-body">{children}</div> : null}
     </section>
   );
