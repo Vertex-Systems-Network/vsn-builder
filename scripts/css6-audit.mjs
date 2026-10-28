@@ -113,8 +113,10 @@ assert.equal(validateCustomJs("if (").valid, false, "Invalid Custom JS accepted"
 const groupEntries = collectCustomJsGroups([nested, nested]);
 assert.equal(groupEntries.length, 2, "Custom JS group dedupe failed");
 
-const previewSource = fs.readFileSync("app/components/editor/PreviewRenderer.jsx", "utf8");
-const storefrontSource = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8");
+// Renderers delegate widget families to modules, so the contract spans the route plus its storefront modules.
+const readAll = (files) => files.map((file) => fs.readFileSync(file, "utf8")).join("\n");
+const previewSource = readAll(["app/components/editor/PreviewRenderer.jsx", "app/builder/nestedCarouselWidget.js"]);
+const storefrontSource = readAll(["app/routes/builder-proxy.$.jsx", ...fs.readdirSync("app/storefront").filter((file) => /\.js$/.test(file)).map((file) => `app/storefront/${file}`), "app/builder/nestedCarouselWidget.js"]);
 const nativeTypes = types.filter((type) => !widgetRegistry[type]?.sdk);
 const sdkTypes = types.filter((type) => widgetRegistry[type]?.sdk);
 for (const type of nativeTypes) {

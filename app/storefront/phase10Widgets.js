@@ -1,5 +1,5 @@
 import { buildImageRenderUrl } from "../builder/imageWidget.js";
-import { isNestedSliderType, normalizeNestedSliderProps } from "../builder/nestedCarouselWidget.js";
+import { NESTED_SLIDER_TYPES, isNestedSliderType, normalizeNestedSliderProps } from "../builder/nestedCarouselWidget.js";
 import { normalizeSliderProps } from "../builder/sliderWidget.js";
 import { normalizeVideoWidgetProps, videoEmbedUrl } from "../builder/videoWidget.js";
 import { gridImageRatio, normalizeGridProps } from "../builder/dataGridWidget.js";
@@ -12,7 +12,7 @@ import { renderContentIconSvg, renderFormBuilder } from "./formWidgets.js";
 import { renderProductAvailability, renderProductGallery } from "./productWidgets.js";
 import { escapeAttribute, escapeHtml } from "./safeCss.js";
 
-export const PHASE10_SERVER_WIDGET_TYPES = new Set(["breadcrumbs","icon-list","icon-box","image-box","accordion","toggle","social-icons","map","progress-bar","counter","pricing-table","timeline","data-table","menu-anchor","form-builder","product-media","inventory-status","collection-filters","collection-sorting","collection-pagination","cart-drawer","countdown","video","slider","product-grid","product-card","collection-grid","html","liquid"]);
+export const PHASE10_SERVER_WIDGET_TYPES = new Set(["breadcrumbs","icon-list","icon-box","image-box","accordion","toggle","social-icons","map","progress-bar","counter","pricing-table","timeline","data-table","menu-anchor","form-builder","product-media","inventory-status","collection-filters","collection-sorting","collection-pagination","cart-drawer","countdown","video","slider","product-grid","product-card","collection-grid","html","liquid", ...NESTED_SLIDER_TYPES]);
 
 export function renderPhase10Widget(node, props, styles, renderContext, renderChildNode) {
   const id=escapeAttribute(node.id||""); const type=node.type; const gap=toCssSize(styles?.spacing?.gap||styles?.grid?.gap,"12px");

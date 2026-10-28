@@ -12,7 +12,7 @@ const calls = [];
 const renderChild = (child) => { calls.push(child.id); return `<i data-child="${child.id}"></i>`; };
 const render = (type, props = {}, ctx = {}, extra = {}) => renderPhase10Widget(node(type, extra), props, {}, ctx, renderChild);
 
-ok(PHASE10_SERVER_WIDGET_TYPES instanceof Set && PHASE10_SERVER_WIDGET_TYPES.size === 29, "Phase-10 type registry keeps its 29 server-rendered types");
+ok(PHASE10_SERVER_WIDGET_TYPES instanceof Set && PHASE10_SERVER_WIDGET_TYPES.size === 32 && ["carousel","slides","testimonials-carousel"].every((type) => PHASE10_SERVER_WIDGET_TYPES.has(type)), "Phase-10 type registry keeps its 32 server-rendered types, including nested carousels");
 for (const type of PHASE10_SERVER_WIDGET_TYPES) {
   const html = render(type, {}, { product: { title: "P", variants: [] }, collection: { products: [] } }, { children: [] });
   ok(typeof html === "string", `${type} renders a string`);
