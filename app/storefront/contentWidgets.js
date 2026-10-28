@@ -46,11 +46,22 @@ export function getNodeSpacing(styles = {}) {
 	};
 }
 
-export function sanitizeRichHtml(value) {
-	return String(value || "")
+function sanitizeRichHtmlOnce(value) {
+	return value
 		.replace(/<\/?(?:script|style|iframe|object|embed|form)[^>]*>/gi, "")
 		.replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
 		.replace(/(?:href|src)\s*=\s*(["'])\s*javascript:[\s\S]*?\1/gi, 'href="#"');
+}
+
+// Repeat until stable: removing one tag can splice a new one together (e.g. "<scr<script>ipt>").
+export function sanitizeRichHtml(value) {
+	let current = String(value || "");
+	for (let pass = 0; pass < 10; pass += 1) {
+		const next = sanitizeRichHtmlOnce(current);
+		if (next === current) return next;
+		current = next;
+	}
+	return current.replace(/[<>]/g, "");
 }
 
 export function contentTypography(styles={}, fallback={}) { return productTypographyStyle(styles, fallback); }
