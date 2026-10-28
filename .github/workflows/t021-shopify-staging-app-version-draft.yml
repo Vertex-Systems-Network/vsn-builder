@@ -56,7 +56,6 @@ jobs:
           "$RUNNER_TEMP/shopify-cli/node_modules/.bin/shopify" app config validate --config staging
           "$RUNNER_TEMP/shopify-cli/node_modules/.bin/shopify" app deploy \
             --config staging \
-            --allow-updates \
             --no-release \
             --source-control-url "$SOURCE_CONTROL_URL" \
             --message "Staging app version draft ${GITHUB_SHA}"

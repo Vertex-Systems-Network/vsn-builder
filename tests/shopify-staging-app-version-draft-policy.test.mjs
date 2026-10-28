@@ -19,7 +19,7 @@ test("Shopify draft is scoped to Staging and cannot release or delete app compon
   assert.match(workflow, /SHOPIFY_API_KEY/);
   assert.match(workflow, /SHOPIFY_APP_AUTOMATION_TOKEN/);
   assert.match(workflow, /--config staging/);
-  assert.match(workflow, /--allow-updates/);
+  assert.doesNotMatch(workflow, /--allow-updates/);
   assert.match(workflow, /--no-release/);
   assert.doesNotMatch(workflow, /--allow-deletes|SHOPIFY_FLAG_ALLOW_DELETES|shopify" app release/);
   assert.doesNotMatch(workerDeploy, /@shopify\/cli|shopify" app deploy/);
