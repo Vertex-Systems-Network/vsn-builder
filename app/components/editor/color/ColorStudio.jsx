@@ -41,7 +41,7 @@ export default function ColorStudio({
       : { type: "color", color: value.color || stops[0]?.color || "#ffffff" });
   };
   const updateStop = (index, next) => { const list = stops.map((s, i) => i === index ? { ...s, ...next } : s); patch({ type: "gradient", stops: list, from: list[0]?.color, to: list[list.length - 1]?.color }); };
-  const addStop = () => { const list = [...stops, { id: `stop-${Date.now()}`, color: "#95bf47", position: 50, opacity: 1 }].sort((a, b) => a.position - b.position); patch({ type: "gradient", stops: list }); setSelected(list.findIndex((x) => x.id?.startsWith("stop-"))); };
+  const addStop = () => { const list = [...stops, { id: `stop-${Date.now()}`, color: "#625BA8", position: 50, opacity: 1 }].sort((a, b) => a.position - b.position); patch({ type: "gradient", stops: list }); setSelected(list.findIndex((x) => x.id?.startsWith("stop-"))); };
   const removeStop = () => { if (stops.length <= 2) return; patch({ type: "gradient", stops: stops.filter((_, i) => i !== selected) }); setSelected(0); };
   const normalizedValue = type === "gradient" ? { ...value, type: "gradient", stops, from: stops[0]?.color, to: stops[stops.length - 1]?.color } : { ...value, type: "color" };
   const preview = gradientToCss(normalizedValue);

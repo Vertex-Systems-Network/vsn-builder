@@ -126,7 +126,7 @@ export function DynamicBindingsPanel({ element, onUpdate, context = {} }) {
         const binding = bindings[field.path] || {};
         const enabled = binding.enabled === true;
         const sources = [{value:"",label:`Select ${field.type} source`}, ...dynamicSourcesForType(field.type)];
-        return <div key={field.path} className={`rounded-lg border p-2.5 ${focusedPath===field.path?'border-[#95BF47] bg-[#f7fbef]':'border-[#e3e3e3] bg-[#fafafa]'}`}>
+        return <div key={field.path} className={`rounded-lg border p-2.5 ${focusedPath===field.path?'border-[#625BA8] bg-[#f7fbef]':'border-[#e3e3e3] bg-[#fafafa]'}`}>
           <div className="mb-2 flex items-center justify-between gap-2"><div><strong className="text-[11px] text-[#303030]">⚡ {field.label}</strong><div className="text-[9px] text-[#8c9196]">{field.path} · {field.type}</div></div><SwitcherControl label="" checked={enabled} onChange={(value)=>patchBinding(field.path,{enabled:value,type:field.type})}/></div>
           {enabled ? <div className="space-y-2">
             <SelectControl label="Source" value={binding.source || ""} onChange={(source)=>patchBinding(field.path,{source,type:field.type})} options={sources}/>
@@ -341,7 +341,7 @@ export function AdvancedLayoutPanel({ element, onUpdate, capabilities }) {
         <SelectControl label="Touch action" value={interaction.touchAction || "auto"} onChange={(touchAction)=>patchSection("interaction",{touchAction})} options={["auto","none","pan-x","pan-y","manipulation","pinch-zoom"]}/>
         <SelectControl label="Appearance" value={interaction.appearance || "auto"} onChange={(appearance)=>patchSection("interaction",{appearance})} options={["auto","none","menulist-button","textfield"]}/>
         <SelectControl label="Resize" value={interaction.resize || "none"} onChange={(resize)=>patchSection("interaction",{resize})} options={["none","both","horizontal","vertical","block","inline"]}/>
-        <ColorGradientControl solidOnly label="Accent color" value={{type:"color",color:interaction.accentColor || "#95BF47"}} onChange={(next)=>patchSection("interaction",{accentColor:next.color})}/>
+        <ColorGradientControl solidOnly label="Accent color" value={{type:"color",color:interaction.accentColor || "#625BA8"}} onChange={(next)=>patchSection("interaction",{accentColor:next.color})}/>
         <ColorGradientControl solidOnly label="Caret color" value={{type:"color",color:interaction.caretColor || "#111111"}} onChange={(next)=>patchSection("interaction",{caretColor:next.color})}/>
       </div>
     </Panel> : null}

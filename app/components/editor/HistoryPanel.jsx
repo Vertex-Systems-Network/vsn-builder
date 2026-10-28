@@ -41,9 +41,9 @@ export default function HistoryPanel({ isOpen, onClose, entries = [], currentInd
               onClick={() => onRestore?.(index)}
               className={`flex w-full items-center gap-3 border-b border-[#f7f7f7] px-4 py-2.5 text-left transition-colors hover:bg-[#f6f6f7] ${current ? "bg-emerald-50/60" : ""}`}
             >
-              <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md ${current ? "bg-[#95BF47] text-white" : "bg-[#f6f6f7] text-[#6d6d6d]"}`}><PolarisIcon type={historyIcon(entry)} size="small" /></div>
+              <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md ${current ? "bg-[#625BA8] text-white" : "bg-[#f6f6f7] text-[#6d6d6d]"}`}><PolarisIcon type={historyIcon(entry)} size="small" /></div>
               <div className="min-w-0 flex-1">
-                <p className={`truncate text-xs font-medium ${current ? "text-[#95BF47]" : "text-[#4a4a4a]"}`}>{entry.label || "Change"}</p>
+                <p className={`truncate text-xs font-medium ${current ? "text-[#625BA8]" : "text-[#4a4a4a]"}`}>{entry.label || "Change"}</p>
                 <p className="text-[10px] text-[#a8a8a8]">{relativeTime(entry.time)}</p>
               </div>
               {current && <PolarisIcon type="check" tone="success" size="small" />}

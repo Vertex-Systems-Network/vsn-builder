@@ -62,7 +62,7 @@ function Stat({label,value,icon:Icon}) {
 }
 
 function TokenInput({label,value,onChange,darkMode,color=false,disabled=false}) {
-  return <label className="block"><span className={`mb-1 block text-[11px] font-medium ${darkMode?'text-[#cbd5e1]':'text-[#4b5563]'}`}>{label}</span><div className="flex items-center gap-2">{color?<input type="color" value={/^#[0-9a-f]{6}$/i.test(String(value||''))?String(value):'#000000'} disabled={disabled} onChange={(e)=>onChange(e.target.value)} className="h-9 w-11 rounded border border-[#d1d5db] bg-transparent p-1"/>:null}<input value={value ?? ''} disabled={disabled} onChange={(e)=>onChange(e.target.value)} className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-xs outline-none focus:border-[#95BF47] ${darkMode?'border-[#374151] bg-[#0f172a] text-[#f8fafc]':'border-[#d1d5db] bg-white text-[#202223]'} disabled:opacity-50`}/></div></label>;
+  return <label className="block"><span className={`mb-1 block text-[11px] font-medium ${darkMode?'text-[#cbd5e1]':'text-[#4b5563]'}`}>{label}</span><div className="flex items-center gap-2">{color?<input type="color" value={/^#[0-9a-f]{6}$/i.test(String(value||''))?String(value):'#000000'} disabled={disabled} onChange={(e)=>onChange(e.target.value)} className="h-9 w-11 rounded border border-[#d1d5db] bg-transparent p-1"/>:null}<input value={value ?? ''} disabled={disabled} onChange={(e)=>onChange(e.target.value)} className={`min-w-0 flex-1 rounded-lg border px-3 py-2 text-xs outline-none focus:border-[#625BA8] ${darkMode?'border-[#374151] bg-[#0f172a] text-[#f8fafc]':'border-[#d1d5db] bg-white text-[#202223]'} disabled:opacity-50`}/></div></label>;
 }
 
 export default function PlatformIntelligence() {

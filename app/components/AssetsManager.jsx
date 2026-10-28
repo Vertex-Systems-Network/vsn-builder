@@ -41,10 +41,10 @@ export default function AssetsManager() {
           <p className="text-xs font-semibold text-[#6d6d6d] uppercase tracking-wide mb-2 px-2">Categories</p>
           <div className="space-y-0.5">
             {ASSET_CATEGORIES.map(cat => (<s-button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${activeCategory === cat.id
-                ? 'bg-emerald-50 text-[#95BF47] font-medium'
+                ? 'bg-emerald-50 text-[#625BA8] font-medium'
                 : 'text-[#4a4a4a] hover:bg-[#f6f6f7]'}`}>
                 <span>{cat.label}</span>
-                <span className={`text-xs rounded-full px-1.5 py-0.5 ${activeCategory === cat.id ? 'bg-[#95BF47]/10 text-[#95BF47]' : 'bg-[#f1f1f1] text-[#6d6d6d]'}`}>
+                <span className={`text-xs rounded-full px-1.5 py-0.5 ${activeCategory === cat.id ? 'bg-[#625BA8]/10 text-[#625BA8]' : 'bg-[#f1f1f1] text-[#6d6d6d]'}`}>
                   {cat.count}
                 </span>
               </s-button>))}
@@ -54,7 +54,7 @@ export default function AssetsManager() {
           <div className="mt-6 bg-white rounded-xl border border-[#e3e3e3] p-4 shadow-sm">
             <p className="text-xs font-semibold text-[#4a4a4a] mb-2">Storage</p>
             <div className="w-full h-1.5 bg-[#f1f1f1] rounded-full overflow-hidden">
-              <div className="h-full w-[38%] bg-gradient-to-r from-[#95BF47] to-[#6AAB1F] rounded-full"/>
+              <div className="h-full w-[38%] bg-gradient-to-r from-[#625BA8] to-[#4E4890] rounded-full"/>
             </div>
             <p className="text-[10px] text-[#6d6d6d] mt-1.5">3.8 GB of 10 GB used</p>
           </div>
@@ -64,14 +64,14 @@ export default function AssetsManager() {
         <div className="flex-1 min-w-0">
           {/* Toolbar */}
           <div className="flex items-center gap-3 mb-4">
-            {selectedIds.length > 0 && (<span className="text-xs font-medium text-[#95BF47] bg-emerald-50 px-2.5 py-1 rounded-full">
+            {selectedIds.length > 0 && (<span className="text-xs font-medium text-[#625BA8] bg-emerald-50 px-2.5 py-1 rounded-full">
                 {selectedIds.length} selected
               </span>)}
             <div className="ml-auto flex items-center gap-1 bg-white border border-[#e3e3e3] rounded-lg p-1">
-              <s-button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-[#f6f6f7] text-[#95BF47]' : 'text-[#6d6d6d]'}`}>
+              <s-button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-[#f6f6f7] text-[#625BA8]' : 'text-[#6d6d6d]'}`}>
                 <PolarisIcon type="grid" size="small" />
               </s-button>
-              <s-button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-[#f6f6f7] text-[#95BF47]' : 'text-[#6d6d6d]'}`}>
+              <s-button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-[#f6f6f7] text-[#625BA8]' : 'text-[#6d6d6d]'}`}>
                 <PolarisIcon type="list-bulleted" size="small" />
               </s-button>
             </div>
@@ -81,11 +81,11 @@ export default function AssetsManager() {
               {/* Upload drop zone */}
               <div className="aspect-square"><s-drop-zone label="Upload" accessibilityLabel="Upload images" labelAccessibilityVisibility="exclusive" multiple accept="image/*" /></div>
 
-              {SAMPLE_IMAGES.map(asset => (<div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */ key={asset.id} className={`relative rounded-xl overflow-hidden border-2 transition-all cursor-pointer group ${selectedIds.includes(asset.id) ? 'border-[#95BF47]' : 'border-transparent hover:border-[#95BF47]/40'}`} onClick={() => toggleSelect(asset.id)}>
+              {SAMPLE_IMAGES.map(asset => (<div /* eslint-disable-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer-driven editor/selection surface; keyboard support out of scope for lint cleanup */ key={asset.id} className={`relative rounded-xl overflow-hidden border-2 transition-all cursor-pointer group ${selectedIds.includes(asset.id) ? 'border-[#625BA8]' : 'border-transparent hover:border-[#625BA8]/40'}`} onClick={() => toggleSelect(asset.id)}>
                   <div className="aspect-square bg-[#f6f6f7]">
                     <img src={asset.src} alt={asset.name} className="w-full h-full object-cover"/>
                   </div>
-                  {selectedIds.includes(asset.id) && (<div className="absolute top-2 right-2 w-5 h-5 bg-[#95BF47] rounded-full flex items-center justify-center">
+                  {selectedIds.includes(asset.id) && (<div className="absolute top-2 right-2 w-5 h-5 bg-[#625BA8] rounded-full flex items-center justify-center">
                       <PolarisIcon type="check" size="small" />
                     </div>)}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -315,7 +315,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         <p className="text-[10px] text-[#8a8a8a] mt-1">Page-wide defaults. Select an element to edit that element instead.</p>
       </div>
       <SectionHeader title="Colors">
-        <div><Label>Primary</Label><ColorInput value={globalStyles.primaryColor || "#95BF47"} onChange={(value) => onGlobalStylesChange?.({ primaryColor: value })} /></div>
+        <div><Label>Primary</Label><ColorInput value={globalStyles.primaryColor || "#625BA8"} onChange={(value) => onGlobalStylesChange?.({ primaryColor: value })} /></div>
         <div><Label>Text</Label><ColorInput value={globalStyles.textColor || "#1a1a1a"} onChange={(value) => onGlobalStylesChange?.({ textColor: value })} /></div>
         <div><Label>Background</Label><ColorInput value={globalStyles.backgroundColor || "#ffffff"} onChange={(value) => onGlobalStylesChange?.({ backgroundColor: value })} /></div>
       </SectionHeader>
@@ -330,7 +330,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         <div><Label>Radius</Label><VsnTextField label="Button radius" labelAccessibilityVisibility="exclusive" value={globalStyles.buttonRadius || "8px"} onInput={(e) => onGlobalStylesChange?.({ buttonRadius: e.currentTarget.value })} /></div>
       </SectionHeader>
       <SectionHeader title="Design Tokens">
-        <div className="grid grid-cols-2 gap-2"><div><Label>Secondary</Label><ColorInput value={globalStyles.secondaryColor || "#6d7175"} onChange={(value)=>onGlobalStylesChange?.({secondaryColor:value})}/></div><div><Label>Accent</Label><ColorInput value={globalStyles.accentColor || "#95BF47"} onChange={(value)=>onGlobalStylesChange?.({accentColor:value})}/></div></div>
+        <div className="grid grid-cols-2 gap-2"><div><Label>Secondary</Label><ColorInput value={globalStyles.secondaryColor || "#6d7175"} onChange={(value)=>onGlobalStylesChange?.({secondaryColor:value})}/></div><div><Label>Accent</Label><ColorInput value={globalStyles.accentColor || "#625BA8"} onChange={(value)=>onGlobalStylesChange?.({accentColor:value})}/></div></div>
         <div className="grid grid-cols-2 gap-2"><div><Label>Surface</Label><ColorInput value={globalStyles.surfaceColor || "#ffffff"} onChange={(value)=>onGlobalStylesChange?.({surfaceColor:value})}/></div><div><Label>Muted</Label><ColorInput value={globalStyles.mutedSurfaceColor || "#f6f6f7"} onChange={(value)=>onGlobalStylesChange?.({mutedSurfaceColor:value})}/></div></div>
         <div><Label>Border</Label><ColorInput value={globalStyles.borderColor || "#e3e3e3"} onChange={(value)=>onGlobalStylesChange?.({borderColor:value})}/></div>
         <div className="grid grid-cols-3 gap-2"><div><Label>Radius S</Label><VsnTextField label="Value" labelAccessibilityVisibility="exclusive" value={globalStyles.radiusSm || "6px"} onInput={(e)=>onGlobalStylesChange?.({radiusSm:e.currentTarget.value})} className="w-full px-2 py-1.5 text-xs border rounded-lg"/></div><div><Label>Radius M</Label><VsnTextField label="Value" labelAccessibilityVisibility="exclusive" value={globalStyles.radiusMd || "12px"} onInput={(e)=>onGlobalStylesChange?.({radiusMd:e.currentTarget.value})} className="w-full px-2 py-1.5 text-xs border rounded-lg"/></div><div><Label>Radius L</Label><VsnTextField label="Value" labelAccessibilityVisibility="exclusive" value={globalStyles.radiusLg || "20px"} onInput={(e)=>onGlobalStylesChange?.({radiusLg:e.currentTarget.value})} className="w-full px-2 py-1.5 text-xs border rounded-lg"/></div></div>
@@ -362,8 +362,8 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
       {/* Element info */}
       <div className="px-4 py-3 border-b border-[#f1f1f1] bg-[#fafafa]">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#95BF47]/10 rounded-lg flex items-center justify-center">
-            <span className="text-[#95BF47] text-xs font-bold">{selectedElement.type[0].toUpperCase()}</span>
+          <div className="w-7 h-7 bg-[#625BA8]/10 rounded-lg flex items-center justify-center">
+            <span className="text-[#625BA8] text-xs font-bold">{selectedElement.type[0].toUpperCase()}</span>
           </div>
           <div>
             <p className="text-xs font-semibold text-[#1a1a1a]">{selectedElement.label}</p>
@@ -1131,9 +1131,9 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         </div>
         <div>
           <Label>Label</Label>
-          <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={selectedElement.label} onInput={e => onUpdate(selectedElement.id, { label: e.currentTarget.value })} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]" />
+          <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={selectedElement.label} onInput={e => onUpdate(selectedElement.id, { label: e.currentTarget.value })} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]" />
         </div>
-        {capabilities.dynamicSource ? <VsnButton type="button" onClick={() => onTabChange('advanced')} className={`flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-[10px] font-semibold ${selectedElement.dynamicSource?.enabled && selectedElement.dynamicSource?.source ? "border-emerald-200 bg-emerald-50 text-[#6AAB1F]" : "border-[#e3e3e3] bg-white text-[#6d7175] hover:border-[#95BF47]/40 hover:text-[#6AAB1F]"}`}><span>{selectedElement.dynamicSource?.enabled && selectedElement.dynamicSource?.source ? `Dynamic: ${selectedElement.dynamicSource.source}` : "Add dynamic source"}</span><PolarisIcon type={selectedElement.dynamicSource?.enabled ? "edit" : "plus"} size="small" /></VsnButton> : null}
+        {capabilities.dynamicSource ? <VsnButton type="button" onClick={() => onTabChange('advanced')} className={`flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-[10px] font-semibold ${selectedElement.dynamicSource?.enabled && selectedElement.dynamicSource?.source ? "border-emerald-200 bg-emerald-50 text-[#4E4890]" : "border-[#e3e3e3] bg-white text-[#6d7175] hover:border-[#625BA8]/40 hover:text-[#4E4890]"}`}><span>{selectedElement.dynamicSource?.enabled && selectedElement.dynamicSource?.source ? `Dynamic: ${selectedElement.dynamicSource.source}` : "Add dynamic source"}</span><PolarisIcon type={selectedElement.dynamicSource?.enabled ? "edit" : "plus"} size="small" /></VsnButton> : null}
         {selectedElement.type === "image" && (() => {
           const imageProps = normalizeImageWidgetProps(props);
           const mediaValue = imageProps.media?.url ? imageProps.media : (imageProps.sourceType === "shopify" && imageProps.src ? { url: imageProps.src, alt: imageProps.alt || "" } : {});
@@ -1292,12 +1292,12 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
 
                 <div>
                   <Label>Filter Heading</Label>
-                  <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={props.filterLabel ?? "Filter products"} onInput={(event) => updateProp("filterLabel", event.currentTarget.value)} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]" />
+                  <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={props.filterLabel ?? "Filter products"} onInput={(event) => updateProp("filterLabel", event.currentTarget.value)} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]" />
                 </div>
 
                 <div>
                   <Label>Clear Button Text</Label>
-                  <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={props.clearFiltersText ?? "Clear filters"} onInput={(event) => updateProp("clearFiltersText", event.currentTarget.value)} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]" />
+                  <VsnTextField label="Value" labelAccessibilityVisibility="exclusive"  value={props.clearFiltersText ?? "Clear filters"} onInput={(event) => updateProp("clearFiltersText", event.currentTarget.value)} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]" />
                 </div>
               </>
             )}
@@ -1324,7 +1324,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     ),
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1352,7 +1352,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     ),
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1380,7 +1380,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     ),
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1408,7 +1408,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     ),
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1501,7 +1501,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     event.currentTarget.value,
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1519,7 +1519,7 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
                     event.currentTarget.value,
                   )
                 }
-                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47]"
+                className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8]"
               />
             </div>
 
@@ -1608,8 +1608,8 @@ export default function PropertiesPanel({ selectedElement, onUpdate, onDelete, a
         )}
         {selectedElement.type === 'heading' || selectedElement.type === 'text' ? (<div>
           <Label>Text Content</Label>
-          <VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={selectedElement.props.text ?? ''} onInput={e => onUpdate(selectedElement.id, { props: { text: e.currentTarget.value } })} rows={4} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#95BF47] resize-none" />
-          {dynamicFieldsForWidget(selectedElement.type).some((field)=>field.path==='props.text') ? <VsnButton type="button" onClick={() => { onUpdate(selectedElement.id,{meta:{...(selectedElement.meta||{}),dynamicFocusPath:'props.text'}}); onTabChange('advanced'); }} className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#6AAB1F]"><span aria-hidden="true">⚡</span> Dynamic content</VsnButton> : null}
+          <VsnTextArea label="Value" labelAccessibilityVisibility="exclusive" value={selectedElement.props.text ?? ''} onInput={e => onUpdate(selectedElement.id, { props: { text: e.currentTarget.value } })} rows={4} className="w-full px-2.5 py-1.5 text-xs bg-[#f6f6f7] border border-[#e3e3e3] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#625BA8] resize-none" />
+          {dynamicFieldsForWidget(selectedElement.type).some((field)=>field.path==='props.text') ? <VsnButton type="button" onClick={() => { onUpdate(selectedElement.id,{meta:{...(selectedElement.meta||{}),dynamicFocusPath:'props.text'}}); onTabChange('advanced'); }} className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-[#4E4890]"><span aria-hidden="true">⚡</span> Dynamic content</VsnButton> : null}
         </div>) : null}
       </div>)}
 

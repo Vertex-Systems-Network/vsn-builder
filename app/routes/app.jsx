@@ -219,15 +219,15 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [themePreference, setThemePreferenceState] = useState("system");
   const [systemDark, setSystemDark] = useState(false);
-  const [colorSchemePreference, setColorSchemePreferenceState] = useState("lime");
-  const [customAccent, setCustomAccentState] = useState("#95BF47");
+  const [colorSchemePreference, setColorSchemePreferenceState] = useState("vsn");
+  const [customAccent, setCustomAccentState] = useState("#625BA8");
   useEffect(() => {
-    let savedTheme="system",savedScheme="lime",savedAccent="#95BF47";
+    let savedTheme="system",savedScheme="vsn",savedAccent="#625BA8";
     try {
       const theme = localStorage.getItem("vsn:appearance");
       if (["light","dark","system"].includes(theme)) savedTheme=theme;
-      savedScheme=normalizeUiColorScheme(localStorage.getItem("vsn:color-scheme")||"lime");
-      savedAccent=normalizeUiHex(localStorage.getItem("vsn:custom-accent")||"#95BF47");
+      savedScheme=normalizeUiColorScheme(localStorage.getItem("vsn:color-scheme")||"vsn");
+      savedAccent=normalizeUiHex(localStorage.getItem("vsn:custom-accent")||"#625BA8");
     } catch { /* best-effort */ }
     const media = window.matchMedia?.("(prefers-color-scheme: dark)");
     startTransition(()=>{
@@ -242,8 +242,8 @@ export default function App() {
       if (["light", "dark", "system"].includes(next)) startTransition(()=>setThemePreferenceState(next));
     };
     const syncColor = (event) => {
-      const scheme=normalizeUiColorScheme(event?.detail?.scheme||"lime");
-      const accent=normalizeUiHex(event?.detail?.customAccent||"#95BF47");
+      const scheme=normalizeUiColorScheme(event?.detail?.scheme||"vsn");
+      const accent=normalizeUiHex(event?.detail?.customAccent||"#625BA8");
       startTransition(()=>{setColorSchemePreferenceState(scheme);setCustomAccentState(accent);});
     };
     media?.addEventListener?.("change", update);

@@ -59,13 +59,13 @@ export default function RevisionsPanel({
               variant="plain"
               key={revision.id}
               onClick={() => onSelect?.(revision)}
-              className={`mb-1 flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition ${active ? "border-[#95BF47] bg-emerald-50" : "border-transparent hover:border-[#e6e6e6] hover:bg-[#f7f7f7]"}`}
+              className={`mb-1 flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition ${active ? "border-[#625BA8] bg-emerald-50" : "border-transparent hover:border-[#e6e6e6] hover:bg-[#f7f7f7]"}`}
             >
-              <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${active ? "bg-[#95BF47] text-white" : "bg-[#f1f1f1] text-[#666]"}`}>
+              <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${active ? "bg-[#625BA8] text-white" : "bg-[#f1f1f1] text-[#666]"}`}>
                 <PolarisIcon type={revision.kind === "publish" ? "check-circle" : "clock"} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className={`block truncate text-xs font-semibold ${active ? "text-[#6AAB1F]" : "text-[#303030]"}`}>{revision.label || revision.title || "Untitled revision"}</span>
+                <span className={`block truncate text-xs font-semibold ${active ? "text-[#4E4890]" : "text-[#303030]"}`}>{revision.label || revision.title || "Untitled revision"}</span>
                 <span className="mt-0.5 block text-[10px] text-[#888]">{revision.kind || "save"} · {formatRevisionDate(revision.createdAt)}</span>
                 {revision.label ? <span className="mt-0.5 block truncate text-[9px] text-[#aaa]">{revision.title}</span> : null}
                 {revision.createdBy ? <span className="mt-0.5 block truncate text-[9px] text-[#aaa]">{revision.createdBy}</span> : null}
@@ -88,7 +88,7 @@ export default function RevisionsPanel({
           loading={applying}
           disabled={!selected || applying}
           onClick={() => selected && onApply?.(selected)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#95BF47] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#6AAB1F] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#625BA8] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#4E4890] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <PolarisIcon type="check" />
           {applying ? "Applying…" : "Apply revision"}
