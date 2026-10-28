@@ -7,7 +7,7 @@
 	const nativeFetch = window.fetch.bind(window);
 	function takePrerendered(input, init) {
 		const holder = document.getElementById("vsn-prerendered");
-		if (!holder || holder.dataset.vsnUsed === "1") return null;
+		if (!holder || holder.dataset.vsnUsed === "1" || holder.dataset.vsnMode === "swr") return null;
 		if (init && init.method && String(init.method).toUpperCase() !== "GET") return null;
 		let url;
 		try { url = new URL(typeof input === "string" ? input : input.url, window.location.origin); } catch { return null; }
@@ -22,6 +22,20 @@
 		if (html) return Promise.resolve(new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "x-vsn-prerendered": "1" } }));
 		return nativeFetch(input, init);
 	}
+	// Stale-while-revalidate (product/collection): paint the inline copy at once so there
+	// is no loader, then let the normal live fetch replace it with fresh price/stock.
+	// prerendered=1 tells the proxy the copy exists, so it does not rewrite it per visit.
+	function paintSwrPrerender() {
+		const holder = document.getElementById("vsn-prerendered");
+		if (!holder || holder.dataset.vsnMode !== "swr" || holder.dataset.vsnPainted === "1") return false;
+		const main = document.querySelector('main[id="MainContent"]') || document.querySelector("main");
+		if (!main) return false;
+		holder.dataset.vsnPainted = "1";
+		main.innerHTML = holder.innerHTML;
+		main.dataset.vsnPrerendered = "swr";
+		return true;
+	}
+	paintSwrPrerender();
 
 	function getContext() {
 		const context =
@@ -278,6 +292,7 @@
 		const pageContext=window.VSN_PAGE_CONTEXT||{}; if(pageContext.language)url.searchParams.set("language",String(pageContext.language)); if(pageContext.country)url.searchParams.set("country",String(pageContext.country)); if(pageContext.market)url.searchParams.set("market",String(pageContext.market)); if(pageContext.cartItemCount!=null)url.searchParams.set("cartItemCount",String(pageContext.cartItemCount));
 		const current=new URL(window.location.href); if(current.searchParams.get("vsn_exp_preview"))url.searchParams.set("vsnExpPreview",current.searchParams.get("vsn_exp_preview")); if(current.searchParams.get("vsn_variant"))url.searchParams.set("vsnVariant",current.searchParams.get("vsn_variant"));
 		if (window.VSN_ASSET_PIPELINE_READY === true) url.searchParams.set("vsnAssetPipeline", "1");
+		if (url.searchParams.get("fragment") === "1" && typeof document !== "undefined" && document.getElementById("vsn-prerendered")?.dataset.vsnMode === "swr") url.searchParams.set("prerendered", "1");
 		return `${url.pathname}${url.search}`;
 	}
 

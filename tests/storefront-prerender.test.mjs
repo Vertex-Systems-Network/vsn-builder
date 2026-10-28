@@ -15,12 +15,18 @@ test("prerender key matches the Liquid embed key", () => {
   assert.equal(prerenderKey("article", "news/hello-world"), "p_article__news-hello-world");
   assert.equal(prerenderKey("blog", "news"), "p_blog__news");
   assert.match(liquid, /'p_article__' \| append: blog\.handle \| append: '-' \| append: article\.handle/);
+  assert.match(liquid, /'p_product__' \| append: product\.handle/);
+  assert.match(liquid, /data-vsn-mode="\{\{ vsn_pr_mode \| default: 'exact' \}\}"/);
 });
 
 test("only static, non-personalised home fragments are cached", () => {
   assert.equal(isPrerenderCacheable(base), true);
-  assert.equal(isPrerenderCacheable({ ...base, template: "product" }), false);
-  assert.equal(isPrerenderCacheable({ ...base, template: "collection" }), false);
+  // Product/collection are stale-while-revalidate: cached (even with dynamic data) but
+  // always replaced by the live fetch on the storefront.
+  assert.equal(isPrerenderCacheable({ ...base, template: "product", dynamicData: [{ grid: [1] }] }), true);
+  assert.equal(isPrerenderCacheable({ ...base, template: "collection" }), true);
+  assert.equal(isPrerenderCacheable({ ...base, template: "product", experiment: { id: "e" } }), false);
+  assert.equal(isPrerenderCacheable({ ...base, template: "search" }), false);
   assert.equal(isPrerenderCacheable({ ...base, template: "article" }), true);
   assert.equal(isPrerenderCacheable({ ...base, experiment: { id: "e" } }), false);
   assert.equal(isPrerenderCacheable({ ...base, localizationEnabled: true }), false);
