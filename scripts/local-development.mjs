@@ -35,7 +35,7 @@ function main() {
   if (!secret || secret === "replace-with-dev-app-secret") fail("Set a real dedicated Dev SHOPIFY_API_SECRET.");
   const expectedDevId = "f6156da0bd799053f2f0bd0f9e10983c"; // Existing Shopify Partner Development app: public Client ID
   if (key.toLowerCase() !== expectedDevId)
-    fail("Local SHOPIFY_API_KEY must match the existing VSN Builder Development app.");
+    fail("Local SHOPIFY_API_KEY must match the existing "VSN | Builder (Development)" app.");
   const defaultId = configField(read("shopify.app.toml"), "client_id");
   if (key === defaultId) fail("Do not reuse the existing default/unclassified Shopify Client ID for Dev.");
   const template = read("shopify.app.local.template.toml");

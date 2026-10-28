@@ -52,9 +52,10 @@ test("Production generator emits exact Live name without suggesting blocked depl
 
 test("protected source branches alone can run hosted secret inventory",()=>{
  const wf=fs.readFileSync(".github/workflows/hosted-environment-secret-inventory.yml","utf8");
- assert.match(wf,/github\.event_name == 'workflow_dispatch' && \(github\.ref == 'refs\/heads\/development' \|\| github\.ref == 'refs\/heads\/main'\)/);
- assert.match(wf,/github\.event_name == 'workflow_dispatch' && github\.ref == 'refs\/heads\/main'/);
- assert.doesNotMatch(wf,/pull_request:/);
+ // One job per tier, each pinned to its protected source branch and manual dispatch only.
+ assert.match(wf,/github\.event_name == 'workflow_dispatch' && github\.ref_protected == true && github\.ref == 'refs\/heads\/development'/);
+ assert.match(wf,/github\.event_name == 'workflow_dispatch' && github\.ref_protected == true && github\.ref == 'refs\/heads\/main'/);
+ assert.doesNotMatch(wf,/pull_request|push:/);
 });
 test("Production app generator enforces exact app name",()=>{
  const gen=fs.readFileSync("scripts/prepare-shopify-production-config.mjs","utf8");
