@@ -69,6 +69,10 @@ export function createStagingFullAppRouterWorker({
       if(request.method==="GET"&&!url.searchParams.has("shop")&&
          (url.pathname==="/"||url.pathname==="/app"||url.pathname==="/auth/login"))
         return legacyWorker.fetch(request,env,ctx);
+      // A preview link without its shop cannot be rendered either; answer it plainly.
+      if(request.method==="GET"&&url.pathname==="/preview"&&!url.searchParams.has("shop"))
+        return new Response("<!doctype html><title>VSN Preview</title><p style=\"font-family:system-ui,sans-serif;color:#616161;text-align:center;margin-top:40vh\">Open the preview from the VSN editor to see your page.</p>",
+          {status:400,headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store","x-robots-tag":"noindex, nofollow","content-security-policy":"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'"}});
       if(isStaticAsset(url.pathname)){
         if(!env?.ASSETS||typeof env.ASSETS.fetch!=="function")return locked(404);
         try{return await env.ASSETS.fetch(request)}catch{return locked()}
