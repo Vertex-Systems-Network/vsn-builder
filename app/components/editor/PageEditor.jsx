@@ -327,7 +327,11 @@ export default function PageEditor({
   const [deviceMode, setDeviceMode] =
     useState("desktop");
   const [previewWidth, setPreviewWidth] = useState(() => breakpointById(globalStyles, "desktop")?.previewWidth || 1440);
-  const [canvasZoom, setCanvasZoom] = useState(1);
+  const [canvasZoom, setCanvasZoomState] = useState(1);
+  // Auto-fit is the default: the design scales to the visible canvas until the
+  // merchant zooms manually; switching device or pressing Fit re-enables it.
+  const [autoFit, setAutoFit] = useState(true);
+  const setCanvasZoom = useCallback((value) => { setAutoFit(false); setCanvasZoomState(value); }, []);
 
   const [isSaved, setIsSaved] =
     useState(true);
@@ -344,8 +348,8 @@ export default function PageEditor({
   const [revisionRows, setRevisionRows] = useState(serverRevisions || []);
   const [revisionDiff, setRevisionDiff] = useState(null);
   const [stagedRevisionId, setStagedRevisionId] = useState("");
-  const [leftPanelWidth, setLeftPanelWidth] = useState(384);
-  const [rightPanelWidth, setRightPanelWidth] = useState(384);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(340);
+  const [rightPanelWidth, setRightPanelWidth] = useState(340);
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const [editorReady, setEditorReady] = useState(false);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
@@ -498,8 +502,10 @@ export default function PageEditor({
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("vsn-builder:panel-widths") || "{}");
-      if (Number(saved.left) >= 320 && Number(saved.left) <= 768) setLeftPanelWidth(Number(saved.left));
-      if (Number(saved.right) >= 320 && Number(saved.right) <= 768) setRightPanelWidth(Number(saved.right));
+      // Narrower default panels on laptop widths so the canvas keeps a usable scale.
+      const fallback = window.innerWidth < 1600 ? 288 : 340;
+      setLeftPanelWidth(Number(saved.left) >= 280 && Number(saved.left) <= 768 ? Number(saved.left) : fallback);
+      setRightPanelWidth(Number(saved.right) >= 280 && Number(saved.right) <= 768 ? Number(saved.right) : fallback);
     } catch { /* ignore: best-effort */ }
   }, []);
   useEffect(() => { try { localStorage.setItem("vsn-builder:panel-widths", JSON.stringify({ left:leftPanelWidth, right:rightPanelWidth })); } catch { /* ignore: best-effort */ } }, [leftPanelWidth, rightPanelWidth]);
@@ -517,13 +523,13 @@ export default function PageEditor({
       if (target?.closest?.("input,textarea,select,[contenteditable='true']")) return;
       if (!["+","=","-","0"].includes(event.key)) return;
       event.preventDefault();
-      if (event.key === "0") setCanvasZoom(1);
+      if (event.key === "0") { setAutoFit(true); return; }
       else if (event.key === "-" ) setCanvasZoom((value)=>Math.max(.25,Number((value-.1).toFixed(2))));
       else setCanvasZoom((value)=>Math.min(2,Number((value+.1).toFixed(2))));
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [setCanvasZoom]);
 
   useEffect(() => {
     setEditorReady(false);
@@ -1326,6 +1332,22 @@ export default function PageEditor({
     ? (pageSettings.footerId ? footers.find((item) => item.id === pageSettings.footerId) : footers.find((item) => item.isDefault) || footers[0])
     : null;
 
+  useEffect(() => { setAutoFit(true); }, [deviceMode]);
+  useEffect(() => {
+    if (!autoFit || isPreview || typeof window === "undefined") return undefined;
+    const surface = document.querySelector(".vsn-canvas-pan-surface");
+    const fit = () => {
+      const available = (surface?.clientWidth || (window.innerWidth - leftPanelWidth - rightPanelWidth)) - 48;
+      const next = Math.max(.25, Math.min(1, Number((Math.max(240, available) / Math.max(240, Number(previewWidth) || 1440)).toFixed(3))));
+      setCanvasZoomState((value) => (Math.abs(value - next) < .002 ? value : next));
+    };
+    fit();
+    const observer = typeof ResizeObserver !== "undefined" && surface ? new ResizeObserver(fit) : null;
+    observer?.observe(surface);
+    window.addEventListener("resize", fit);
+    return () => { observer?.disconnect(); window.removeEventListener("resize", fit); };
+  }, [autoFit, isPreview, previewWidth, leftPanelWidth, rightPanelWidth]);
+
   const previewWindowRef = useRef(null);
   const previewPayload = {
     title: pageTitle,
@@ -1478,7 +1500,7 @@ export default function PageEditor({
         onPreviewWidthChange={(width) => { setPreviewWidth(width); setDeviceMode(breakpointForWidth(globalStyles, width)?.id || deviceMode); }}
         zoom={canvasZoom}
         onZoomChange={setCanvasZoom}
-        onZoomFit={()=>{const available=Math.max(260,window.innerWidth-leftPanelWidth-rightPanelWidth-110);setCanvasZoom(Math.max(.25,Math.min(1,Number((available/Math.max(240,previewWidth)).toFixed(2)))));}}
+        onZoomFit={() => setAutoFit(true)}
         onSaveTemplate={() => { setTemplateName(pageTitle); setShowSaveTemplate(true); }}
         onDeletePage={deleteCurrentPage}
         onHelp={() => window.open("https://help.shopify.com/", "_blank", "noopener,noreferrer")}

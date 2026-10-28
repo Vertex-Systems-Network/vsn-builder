@@ -39,7 +39,7 @@ QA method:
 - SSR sweep `sweep.jsx`: renders every widget × Content/Style/Advanced.
 - Compare `node --test tests/*.test.mjs tests/**/*.test.mjs` against the baseline failures before pushing. No new failures are allowed.
 
-1. **Canvas auto-fit.** The page design fits the visible canvas on load, on window resize and on device switch (desktop/tablet/mobile).
+1. DONE: **Canvas auto-fit.** The page design fits the visible canvas on load, on window resize and on device switch (desktop/tablet/mobile).
    - Files: `app/components/editor/Canvas.jsx`, `PageEditor.jsx` (zoom/Fit).
    - Done when: no horizontal scroll at 1280, 1440 or 1920 width; Fit is the default zoom; manual zoom is kept until the device changes.
 2. **Show/hide toggles.**
