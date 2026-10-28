@@ -1,3 +1,4 @@
+import { absolutizeAppAssetUrls, appBaseUrl } from "../storefront/appAssetUrls.js";
 import { styleKitCss, styleKitVariables } from "../builder/styleKit.js";
 import { clearPrerenders } from "./storefront-prerender.server.js";
 import { createHash } from "node:crypto";
@@ -275,7 +276,7 @@ export function compileThemeAssets(pages = [], { designTokens = {}, customFonts 
       templateBaseCss(page.id, globals),
       buildStyleBundleCss(groups, globals, { includeBase: true, importantBase: true, includeHidden: true, includeResponsive: true, importantResponsive: true }),
     ].filter(Boolean);
-    const rawCss = cssParts.join("\n");
+    const rawCss = absolutizeAppAssetUrls(cssParts.join("\n"), enterprise.appUrl || appBaseUrl());
     const css = enterprise.cssDeduplication === false ? rawCss : dedupeCssLines(rawCss);
     const criticalRaw = enterprise.criticalCss === false ? "" : [font.css, cssVariables(page.id, globals, designTokens), templateBaseCss(page.id, globals), criticalStyleCss(groups, globals)].filter(Boolean).join("\n");
     const criticalCss = (enterprise.cssDeduplication === false ? criticalRaw : dedupeCssLines(criticalRaw)).slice(0, 12000);

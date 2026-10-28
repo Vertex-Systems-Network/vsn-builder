@@ -111,9 +111,13 @@ function buttonRow(node, copy, theme, align = "left") {
   return node("container", "Buttons", {}, { layout: { display: "flex", flexDirection: "row", flexWrap: "wrap", gap: "12px", justifyContent: align === "center" ? "center" : "flex-start" }, spacing: { paddingTop: "0px", paddingRight: "0px", paddingBottom: "0px", paddingLeft: "0px" }, border: { width: "0px" } }, [primary, secondary]);
 }
 
-function mediaBlock(node, theme, label = "Media") {
-  // Decorative brand gradient block; merchants set a background image on it.
-  return node("container", label, {}, { background: { type: "gradient", color: theme.surface, gradientAngle: 135, from: theme.brand, to: theme.surface }, size: { minHeight: "380px" }, border: { width: "0px", radius: "20px" }, spacing: { paddingTop: "0px", paddingRight: "0px", paddingBottom: "0px", paddingLeft: "0px" } });
+const STOCK_IMAGES = ["/vsn-stock/fashion.svg", "/vsn-stock/skincare.svg", "/vsn-stock/watch.svg", "/vsn-stock/seasonal.svg", "/vsn-stock/office.svg", "/vsn-stock/interior.svg", "/vsn-stock/sale.svg", "/vsn-stock/arrivals.svg", "/vsn-stock/contact.svg"];
+
+function mediaBlock(node, theme, label = "Media", image = "") {
+  // Built-in stock artwork (app-hosted; made absolute on the storefront). Merchants
+  // replace it from the container's Style > Background.
+  const url = image || STOCK_IMAGES[0];
+  return node("container", label, {}, { background: { type: "media", color: theme.surface, media: { url, alt: label }, size: "cover", position: "center center", repeat: "no-repeat" }, size: { minHeight: "380px" }, border: { width: "0px", radius: "20px" }, spacing: { paddingTop: "0px", paddingRight: "0px", paddingBottom: "0px", paddingLeft: "0px" } });
 }
 
 function plainContainer(node, label, children, extra = {}) {
@@ -163,10 +167,10 @@ function makeSection({ prefix, industry, pattern, palette, compact = false, dark
   } else if (key === "timeline" || key === "story") {
     children = [node("columns", "Story columns", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "48px" } }, [
       plainContainer(node, "Story text", headingStack(node, copy, theme, { title: key === "story" ? `The story behind ${industry.label.toLowerCase()} done right` : "How we got here", compact: true, eyebrow: "Our story" })),
-      key === "timeline" ? node("timeline", "Timeline", { items: [], itemsText: "2019|Founded|Started in a small studio with one idea.\n2022|10,000 customers|Grew through word of mouth.\n2025|Going further|New products, same standards." }, { typography: { color: theme.text } }) : mediaBlock(node, theme),
+      key === "timeline" ? node("timeline", "Timeline", { items: [], itemsText: "2019|Founded|Started in a small studio with one idea.\n2022|10,000 customers|Grew through word of mouth.\n2025|Going further|New products, same standards." }, { typography: { color: theme.text } }) : mediaBlock(node, theme, "Story image", industry.image),
     ])];
   } else if (key === "gallery") {
-    children = [...centered(headingStack(node, copy, theme, { title: "In the wild", align: "center", compact: true, eyebrow: "Gallery" })), node("columns", "Gallery", { columns: 3, columnsTablet: 2, columnsMobile: 1 }, { layout: { gap: "16px" } }, [0, 1, 2].map((index) => mediaBlock(node, theme, `Gallery image ${index + 1}`)))];
+    children = [...centered(headingStack(node, copy, theme, { title: "In the wild", align: "center", compact: true, eyebrow: "Gallery" })), node("columns", "Gallery", { columns: 3, columnsTablet: 2, columnsMobile: 1 }, { layout: { gap: "16px" } }, [0, 1, 2].map((index) => mediaBlock(node, theme, `Gallery image ${index + 1}`, STOCK_IMAGES[(STOCK_IMAGES.indexOf(industry.image) + index + 1) % STOCK_IMAGES.length])))];
   } else if (["contact", "lead-form"].includes(key)) {
     children = [node("columns", "Contact columns", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "48px" } }, [
       plainContainer(node, "Contact text", headingStack(node, copy, theme, { title: key === "contact" ? "Talk to our team" : "Get a tailored proposal", compact: true, eyebrow: "Contact", body: "Tell us what you need and we will get back to you within one business day." })),
@@ -183,7 +187,7 @@ function makeSection({ prefix, industry, pattern, palette, compact = false, dark
   } else if (layout === "split" || ["media-split", "collection-intro"].includes(key)) {
     const reverse = key === "media-split" || key === "premium";
     const text = plainContainer(node, "Text column", [...headingStack(node, copy, theme, { title, compact, eyebrow: industry.label }), buttonRow(node, copy, theme)], { layout: { display: "flex", flexDirection: "column", justifyContent: "center" } });
-    const media = mediaBlock(node, theme);
+    const media = mediaBlock(node, theme, "Media", industry.image);
     children = [node("columns", "Split layout", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "56px", alignItems: "center" } }, reverse ? [media, text] : [text, media])];
   } else if (["grid", "product-first"].includes(layout) || ["product-grid", "category-grid", "comparison"].includes(key)) {
     children = [...centered(headingStack(node, copy, theme, { title: layout === "product-first" ? "Bestsellers" : title, align: "center", compact: true, eyebrow: industry.label }), [buttonRow(node, copy, theme, "center")]), node(key === "category-grid" ? "collection-grid" : "product-grid", key === "category-grid" ? "Collection grid" : "Product grid", { title: "", limit: compact ? 4 : 8, columnsDesktop: 4, columnsTablet: 2, columnsMobile: 1, gap: 20, showImage: true, showTitle: true, showPrice: true }, { spacing: { marginTop: "40px" } })];

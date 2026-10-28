@@ -1,3 +1,4 @@
+import { absolutizeAppAssetUrls, appBaseUrl } from "../storefront/appAssetUrls.js";
 import { hideOnCss } from "../builder/visibility.js";
 import { isPrerenderCacheable, prerenderKey, PRERENDER_ALL_TEMPLATES, storePrerender } from "../services/storefront-prerender.server.js";
 import { authenticate } from "../shopify.server";
@@ -70,7 +71,7 @@ import {
 	normalizeProductSort,
 } from "../storefront/productPagination.js";
 ensureBuiltinSdkPlugins();
-export async function loader({ request, params }) {
+export async function loader({ request, params, context }) {
 	const { admin, session } =
 		await authenticate.public.appProxy(request);
 
@@ -607,7 +608,7 @@ export async function loader({ request, params }) {
 		);
 	}
 
-	const html = fragmentMode
+	let html = fragmentMode
 		? renderBuilderFragment({
 			page,
 			elements: resolvedElements,
@@ -651,6 +652,8 @@ export async function loader({ request, params }) {
 		} catch (error) { console.warn("VSN prerender cache skipped:", error?.message || error); }
 	}
 
+	// Built-in template media is served from the app origin, not the shop domain.
+	html = absolutizeAppAssetUrls(html, appBaseUrl(context));
 	if (hasLiquidPlaceholders(html)) {
 		const liquid = buildLiquidBody(html, { enabled: !enterpriseSettings.safeMode });
 		return liquid.liquid ? liquidResponse(liquid.body, 200) : htmlResponse(liquid.body, 200);
