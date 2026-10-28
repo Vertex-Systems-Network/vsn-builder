@@ -752,3 +752,9 @@ html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] .vsn-drop-zone > * { o
 [data-vsn-editor-root="true"] .vsn-kit-preset-sample{padding:10px;border:1px dashed #e3e3e3;border-radius:8px;margin-bottom:8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 [data-vsn-editor-root="true"] .vsn-kit-field{display:grid;gap:4px;font-size:11px;color:#5c5f62}
 [data-vsn-editor-root="true"] .vsn-kit-field select{height:32px;border:1px solid #d9d9d9;border-radius:8px;padding:0 8px;background:#fff}
+
+/* Empty-container "Add Widget" hint: subtle so decorative media blocks stay visible; full on hover/drag. */
+[data-vsn-editor-root="true"] [data-vsn-empty-child-drop="1"] { background: rgba(255,255,255,.55) !important; opacity: .55; transition: opacity .12s ease; }
+[data-vsn-editor-root="true"] .canvas-element:hover > * > [data-vsn-empty-child-drop="1"],
+[data-vsn-editor-root="true"] .canvas-element.selected > * > [data-vsn-empty-child-drop="1"],
+html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] [data-vsn-empty-child-drop="1"] { opacity: 1; }
