@@ -12,7 +12,8 @@ const canvas=read('app/components/editor/Canvas.jsx');
 const preview=read('app/components/editor/PreviewRenderer.jsx');
 const propsPanel=read('app/components/editor/PropertiesPanel.jsx');
 const advanced=read('app/components/editor/AdvancedBuilderControls.jsx');
-const storefront=read('app/routes/builder-proxy.$.jsx');
+// Nested slider rendering moved from the proxy route into app/storefront/phase10Widgets.js.
+const storefront=['app/routes/builder-proxy.$.jsx','app/builder/dynamicBindings.js',...fs.readdirSync('app/storefront').filter(f=>f.endsWith('.js')).map(f=>'app/storefront/'+f)].map(read).join('\n');
 const runtime=read('extensions/vsn-page-builder-theme/assets/vsn-page-renderer.js');
 
 assert.equal(Object.keys(widgetRegistry).length,117,'registry must preserve platform widgets plus M.2 Wishlist widgets (117 total)');

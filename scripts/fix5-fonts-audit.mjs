@@ -61,7 +61,10 @@ const canvas = fs.readFileSync("app/components/editor/Canvas.jsx", "utf8");
 assert.match(canvas, /--vsn-canvas-heading-font/);
 assert.match(canvas, /vsn-canvas-page h1/);
 
-const proxy = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8");
+// Storefront font runtime moved out of the proxy route into app/storefront/fontRuntime.js.
+const proxyRoute = fs.readFileSync("app/routes/builder-proxy.$.jsx", "utf8");
+assert.match(proxyRoute, /vsnFontRuntime\(/);
+const proxy = proxyRoute + fs.readFileSync("app/storefront/fontRuntime.js", "utf8");
 assert.match(proxy, /collectFontUsages\(\{ elements, globals \}\)/);
 assert.match(proxy, /buildGoogleFontHref\(googleUsages, FALLBACK_GOOGLE_FONTS\)/);
 assert.match(proxy, /\/apps\/vsn-builder\/font\/\$\{encodeURIComponent\(custom\.id\)\}/);
