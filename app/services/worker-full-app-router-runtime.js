@@ -3,6 +3,7 @@
 // closed only after the response stream finishes or is cancelled.
 import { runWithWorkerRequestContext } from "./worker-request-context.server.js";
 import { logStagingFailure, logStagingRequest } from "./worker-diagnostics.js";
+import { isHostedWorker } from "./worker-hosted-tier.js";
 
 const SAFE_HEADERS=Object.freeze({
   "cache-control":"no-store",
@@ -58,7 +59,7 @@ export function createStagingFullAppRouterWorker({
       if(!(request instanceof Request))return locked();
       let url;
       try{url=new URL(request.url)}catch{return locked(400)}
-      if(env?.APP_ENV!=="staging"||env?.VSN_WORKER_NAME!=="vsn-builder-staging"||
+      if(!isHostedWorker(env)||
          env?.VSN_STAGING_REACT_ROUTER_ENABLED!=="true")
         return legacyWorker.fetch(request,env,ctx);
       if(bypassToLegacy(url.pathname))return legacyWorker.fetch(request,env,ctx);

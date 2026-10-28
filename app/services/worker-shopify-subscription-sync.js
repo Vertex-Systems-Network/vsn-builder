@@ -1,3 +1,4 @@
+import { isHostedWorker } from "./worker-hosted-tier.js";
 // Shopify App Pricing verification for the protected Staging Worker.
 // Credentials and tier identity are passed through Cloudflare bindings; this
 // module never reads process.env, logs Partner payloads, or trusts URL claims.
@@ -38,7 +39,7 @@ function validConfig(env){
   const org=text(env?.SHOPIFY_PARTNER_ORGANIZATION_ID);
   const token=text(env?.SHOPIFY_PARTNER_API_TOKEN);
   const version=text(env?.SHOPIFY_PARTNER_API_VERSION||"2026-10");
-  if(env?.APP_ENV!=="staging"||env?.VSN_WORKER_NAME!=="vsn-builder-staging"||
+  if(!isHostedWorker(env)||
      env?.VSN_STAGING_BILLING_SYNC_ENABLED!=="true"||
      env?.SHOPIFY_BILLING_TEST_MODE!=="true"||
      !ORG.test(org)||!token||!VERSION.test(version))return null;

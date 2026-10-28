@@ -1,0 +1,41 @@
+{
+  // Full React Router merchant app for Production. Deployed ONLY by the protected
+  // T041 workflow from protected main after owner approval. Secret VALUES live only
+  // in the cloudflare-production GitHub environment; never copy Staging credentials here.
+  "name": "vsn-builder-production",
+  "main": "./workers/staging-full-app.js",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "send_metrics": false,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1, "persist": true },
+    "traces": { "enabled": true, "head_sampling_rate": 1, "persist": true },
+    "issues": { "enabled": true }
+  },
+  "secrets": {
+    "required": ["DATABASE_URL", "SHOPIFY_API_KEY", "SHOPIFY_API_SECRET", "SHOPIFY_PARTNER_API_TOKEN"]
+  },
+  "vars": {
+    "APP_ENV": "production",
+    "VSN_WORKER_NAME": "vsn-builder-production",
+    "NEON_PROJECT_ID": "nameless-violet-68750490",
+    "SHOPIFY_BILLING_TEST_MODE": "false",
+    "SHOPIFY_APP_HANDLE": "vsn-builder",
+    "SHOPIFY_APP_URL": "https://vsn-builder-production.vertexsystemsnetwork.workers.dev",
+    "SHOPIFY_PRODUCTION_CLIENT_ID": "997eae5a9961f21d131e5f31bbbe31d3",
+    "SCOPES": "read_files,read_locales,read_markets,read_metaobject_definitions,read_metaobjects,read_online_store_pages,read_orders,read_products,read_themes,read_translations,write_files,write_app_proxy,write_metaobject_definitions,write_metaobjects,write_online_store_pages,write_products,write_themes,write_translations",
+    "SHOPIFY_PARTNER_ORGANIZATION_ID": "4859256",
+    "SHOPIFY_PARTNER_API_VERSION": "2026-10",
+    // Owner-approved Production release opt-in (2026-10-28). The hosted runtime
+    // flags keep their historical VSN_STAGING_* names.
+    "VSN_PRODUCTION_ENABLED": "true",
+    "VSN_STAGING_BILLING_SYNC_ENABLED": "true",
+    "VSN_STAGING_OAUTH_ENABLED": "true",
+    "VSN_STAGING_DASHBOARD_ENABLED": "true",
+    "VSN_STAGING_DRAFT_SAVE_ENABLED": "true",
+    "VSN_STAGING_REACT_ROUTER_ENABLED": "true"
+  }
+}

@@ -13,6 +13,7 @@ const CSP="default-src 'none'; script-src https://cdn.shopify.com; "+
   "form-action 'none'; frame-ancestors https://admin.shopify.com https://*.myshopify.com";
 import { renderStagingBillingRequired } from "./worker-shopify-staging-billing-notice.js";
 import { buildStagingPricingUrl } from "./worker-shopify-staging-plans.js";
+import { isHostedWorker } from "./worker-hosted-tier.js";
 export { renderStagingBillingRequired };
 
 const SHOP=/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
@@ -119,8 +120,7 @@ export function handleVerifiedStagingMerchantDashboard(request,env,{
   createSdkContext,
 }={}) {
   if(!(request instanceof Request) ||
-     env?.APP_ENV!=="staging" ||
-     env?.VSN_WORKER_NAME!=="vsn-builder-staging" ||
+     !isHostedWorker(env) ||
      env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")return restricted();
   const url=new URL(request.url);
   if(url.pathname!=="/app" || request.method!=="GET")return restricted();
@@ -219,8 +219,7 @@ export function renderVerifiedStagingPageInspection({
 export function handleVerifiedStagingPageInspection(request,env,{
   createSdkContext,
 }={}) {
-  if(!(request instanceof Request) || env?.APP_ENV!=="staging" ||
-     env?.VSN_WORKER_NAME!=="vsn-builder-staging" ||
+  if(!(request instanceof Request) || !isHostedWorker(env) ||
      env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")
     return restricted();
   const url=new URL(request.url);

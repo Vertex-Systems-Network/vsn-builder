@@ -16,6 +16,7 @@ import { handleVerifiedStagingShopifyLogin } from "../app/services/worker-shopif
 import { acceptWorkerShopifyUninstallWebhook, normalizeWorkerWebhookFailure } from "../app/services/worker-shopify-webhook-gate.js";
 import { revokeVerifiedWorkerShopifySessions } from "../app/services/worker-shopify-uninstall-session-revoke.js";
 import { logStagingRequest } from "../app/services/worker-diagnostics.js";
+import { isHostedTier } from "../app/services/worker-hosted-tier.js";
 
 const LOCKED = Object.freeze({
   "cache-control": "no-store",
@@ -72,7 +73,7 @@ async function databaseHealth(request,env) {
 // persistent Neon session schema are actually available. This is a protected,
 // read-only check; it does not authenticate a merchant or inspect their data.
 async function merchantReadiness(request,env) {
-  if(env?.APP_ENV!=="staging" ||
+  if(!isHostedTier(env) ||
      env?.VSN_STAGING_OAUTH_ENABLED!=="true" ||
      env?.VSN_STAGING_DASHBOARD_ENABLED!=="true")return locked();
   const database=await databaseHealth(request,env);
@@ -111,7 +112,7 @@ async function route(request,env) {
     // Static first-party client logic contains NO merchant/session secrets.
     // It is exposed only in opted-in Staging, never as a Production route.
     if(url.pathname==="/__vsn/staging-editor-ui.js") {
-      if(env.APP_ENV!=="staging" ||
+      if(!isHostedTier(env) ||
          env.VSN_STAGING_DASHBOARD_ENABLED!=="true" ||
          env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
       if(request.method!=="GET")return locked(405);
@@ -125,7 +126,7 @@ async function route(request,env) {
     // signed launch query to the authenticated /app route so the official SDK
     // can perform embedded token exchange and App Bridge reauthorization.
     // /auth/login is only for standalone browser visits without a shop.
-    if(url.pathname==="/" && request.method==="GET" && env.APP_ENV==="staging") {
+    if(url.pathname==="/" && request.method==="GET" && isHostedTier(env)) {
       const shop=url.searchParams.get("shop");
       const embedded=shop && /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop);
       const location=embedded?"/app"+url.search:"/auth/login";
@@ -192,7 +193,7 @@ async function route(request,env) {
       // MVP blank-draft create is exposed ONLY after an explicit Staging
       // enablement; paid-page quotas and pages.create RBAC execute in the
       // same uninstall-serialized Shopify SDK mutation transaction.
-      if(env.APP_ENV!=="staging" ||
+      if(!isHostedTier(env) ||
          env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
       if([...url.searchParams.keys()].some(key=>key!=="shop") ||
          url.searchParams.getAll("shop").length>1)return locked(404);
@@ -207,7 +208,7 @@ async function route(request,env) {
       // Source-integrated save contract is intentionally unavailable without
       // an EXPLICIT Staging-only activation. Never enable for Production.
       // The current Staging Worker has no secret/binding for this switch.
-      if(env.APP_ENV!=="staging" ||
+      if(!isHostedTier(env) ||
          env.VSN_STAGING_DRAFT_SAVE_ENABLED!=="true")return locked();
       const match=/^\/app\/__vsn\/pages\/([a-zA-Z0-9_-]{1,64})\/content$/.exec(url.pathname);
       if(!match || [...url.searchParams.keys()].some(key=>key!=="shop") ||
