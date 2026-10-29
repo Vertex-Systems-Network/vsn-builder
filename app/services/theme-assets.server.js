@@ -1,3 +1,4 @@
+import { expandShopifyScopes } from "../utils/shopify-scopes.js";
 import { absolutizeAppAssetUrls, appBaseUrl } from "../storefront/appAssetUrls.js";
 import { styleKitCss, styleKitVariables } from "../builder/styleKit.js";
 import { clearPrerenders } from "./storefront-prerender.server.js";
@@ -332,7 +333,7 @@ export function compileThemeAssets(pages = [], { designTokens = {}, customFonts 
 }
 
 function scopes(session) {
-  return new Set(String(session?.scope || "").split(",").map((item) => item.trim()).filter(Boolean));
+  return expandShopifyScopes(session?.scope);
 }
 
 async function mainTheme(admin) {

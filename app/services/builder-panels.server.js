@@ -51,7 +51,9 @@ export async function unwrapPanelResult(result,panel=""){
   }
   return result;
 }
-const LAZY_PANEL_KEYS=new Set(["marketplace","brand-kits","campaigns","email-builder","experiments","floating-elements","fonts","svg-assets","animations","form-submissions","form-settings","control-center","developer-sdk","widget-studio"]);
+// Every panel loads on demand: preloading them all inside /app/pages pushed that
+// request past the Worker read deadline (7s) and surfaced as a 503.
+const LAZY_PANEL_KEYS=new Set(["library","onboarding","backups","plans","role-manager","marketplace","brand-kits","campaigns","email-builder","experiments","floating-elements","fonts","svg-assets","animations","form-submissions","form-settings","control-center","developer-sdk","widget-studio"]);
 export async function loadBuilderPanel(panel, request){
   const loader=PANEL_LOADERS[panel];
   if(!loader) return {error:"Unknown builder panel.",code:"PANEL_NOT_FOUND",status:404};

@@ -1,3 +1,4 @@
+import { expandShopifyScopes } from "../utils/shopify-scopes.js";
 const EMBED_HANDLE = "vsn-page-renderer";
 
 // Shopify writes a /* ... */ banner at the top of config/settings_data.json,
@@ -28,7 +29,7 @@ export function themeEmbedActivationUrl({ shop, apiKey, handle = EMBED_HANDLE } 
 export async function inspectThemeEmbedStatus(admin, session, { apiKey = process.env.SHOPIFY_API_KEY || "" } = {}) {
   const shop = session?.shop || "";
   const editorUrl = themeEmbedActivationUrl({ shop, apiKey });
-  const scopes = new Set(String(session?.scope || "").split(",").map((value) => value.trim()).filter(Boolean));
+  const scopes = expandShopifyScopes(session?.scope);
   if (!scopes.has("read_themes")) return { status:"unknown", active:null, themeName:"", editorUrl, reason:"READ_THEMES_REQUIRED" };
   try {
     const themesResponse = await admin.graphql(`#graphql

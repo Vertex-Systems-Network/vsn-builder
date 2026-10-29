@@ -124,48 +124,24 @@ async function loadPagesRoute({ request }) {
 
 	// Shopify resource lookups must never take the whole Templates screen down.
 	// Missing scopes / transient Admin API errors now degrade to empty pickers.
-	let collections = [];
-	let products = [];
-	let blogs = [];
-
-	try {
-		const collectionsResponse = await admin.graphql(
-			COLLECTIONS_QUERY,
-			{ variables: { first: 100 } },
-		);
-		const collectionsJson = await collectionsResponse.json();
-		if (collectionsJson.errors?.length) {
-			console.error("VSN collections picker GraphQL errors:", collectionsJson.errors);
-		} else {
-			collections = collectionsJson.data?.collections?.nodes || [];
+	// Run the three picker lookups in parallel: sequential calls pushed this loader
+	// toward the Worker read deadline. Each degrades to an empty list on error.
+	const picker = async (label, query, select) => {
+		try {
+			const response = await admin.graphql(query, { variables: { first: 100 } });
+			const json = await response.json();
+			if (json.errors?.length) { console.error(`VSN ${label} picker GraphQL errors:`, json.errors); return []; }
+			return select(json.data) || [];
+		} catch (error) {
+			console.error(`VSN ${label} picker failed:`, error);
+			return [];
 		}
-	} catch (error) {
-		console.error("VSN collections picker failed:", error);
-	}
-
-	try {
-		const blogsResponse = await admin.graphql(BLOGS_QUERY, { variables: { first: 100 } });
-		const blogsJson = await blogsResponse.json();
-		if (blogsJson.errors?.length) console.error("VSN blogs picker GraphQL errors:", blogsJson.errors);
-		else blogs = blogsJson.data?.blogs?.nodes || [];
-	} catch (error) {
-		console.error("VSN blogs picker failed:", error);
-	}
-
-	try {
-		const productsResponse = await admin.graphql(
-			PRODUCTS_QUERY,
-			{ variables: { first: 100 } },
-		);
-		const productsJson = await productsResponse.json();
-		if (productsJson.errors?.length) {
-			console.error("VSN products picker GraphQL errors:", productsJson.errors);
-		} else {
-			products = productsJson.data?.products?.nodes || [];
-		}
-	} catch (error) {
-		console.error("VSN products picker failed:", error);
-	}
+	};
+	const [collections, blogs, products] = await Promise.all([
+		picker("collections", COLLECTIONS_QUERY, (data) => data?.collections?.nodes),
+		picker("blogs", BLOGS_QUERY, (data) => data?.blogs?.nodes),
+		picker("products", PRODUCTS_QUERY, (data) => data?.products?.nodes),
+	]);
 
 	const [panelData, templatesViewSettings] = await Promise.all([preloadBuilderPanels(request), loadTemplatesViewSettings(db, session.shop)]);
 

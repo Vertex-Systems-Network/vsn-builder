@@ -8,7 +8,9 @@ export const BUILDER_WORKER_MIGRATIONS=Object.freeze([
   "20261013_builder_shop_installation_fence",
 ]);
 const validCount=n=>Number.isSafeInteger(n)&&n>=0;
-const validDate=n=>n instanceof Date&&Number.isFinite(n.getTime());
+// Driver adapters may return timestamps as ISO strings instead of Date objects.
+const asDate=n=>n instanceof Date?n:typeof n==="string"&&n?new Date(n):null;
+const validDate=n=>{const d=asDate(n);return Boolean(d)&&Number.isFinite(d.getTime());};
 export function isVerifiedWorkerSchemaMetadata({summary,records}={}) {
   if(!summary||summary.database!=="neondb" ||
      !validCount(summary.tables)||summary.tables<53 ||
@@ -23,8 +25,8 @@ export function isVerifiedWorkerSchemaMetadata({summary,records}={}) {
        typeof row.checksum!=="string" ||
        !/^[a-f0-9]{64}$/.test(row.checksum) ||
        !validDate(row.started_at)||!validDate(row.finished_at)||
-       row.finished_at.getTime()<row.started_at.getTime()||
-       row.rolled_back_at!==null)
+       asDate(row.finished_at).getTime()<asDate(row.started_at).getTime()||
+       (row.rolled_back_at!==null&&row.rolled_back_at!==undefined))
       return false;
     names.add(row.migration_name);
   }
