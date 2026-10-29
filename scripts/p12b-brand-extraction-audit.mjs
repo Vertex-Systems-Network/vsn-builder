@@ -140,7 +140,7 @@ for(const marker of ["Analyze an owned website","I confirm that I own, control, 
 }
 ok(!ui.includes('intent:"save"'),"Brand extraction UI component must not trigger Brand Kit persistence directly");
 
-const host=read("app/components/BuilderPanelHost.jsx");
+const host=["app/components/BuilderPanelHost.jsx","app/components/builder-panel/BrandKitsPanel.jsx","app/components/builder-panel/CampaignManagerPanel.jsx"].map((file)=>read(file)).join("\n");
 ok(host.includes('intent:"extract-profile"')&&host.includes("passivePreview"),"Builder host must route extraction as a passive preview without panel refresh mutation semantics");
 
 const behaviors=read("app/ai/behaviors.js");

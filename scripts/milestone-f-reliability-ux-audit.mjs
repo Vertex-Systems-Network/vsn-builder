@@ -4,7 +4,7 @@ let pass=0,fail=0;const check=(name,ok)=>{if(ok){pass++;console.log(`PASS  ${nam
 const pkg=JSON.parse(read("package.json"));
 const baseline=JSON.parse(read("BASELINE.json"));
 const baselineJs=read("app/config/baseline.js");
-const host=read("app/components/BuilderPanelHost.jsx");
+const host=["app/components/BuilderPanelHost.jsx","app/components/builder-panel/BrandKitsPanel.jsx","app/components/builder-panel/CampaignManagerPanel.jsx"].map((file)=>read(file)).join("\n");
 const toolkit=read("app/components/ui/VsnToolkit.jsx");
 const confirm=read("app/components/ui/VsnConfirmProvider.jsx");
 const app=read("app/routes/app.jsx");

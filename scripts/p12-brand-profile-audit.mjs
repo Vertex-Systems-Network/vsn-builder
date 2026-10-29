@@ -95,7 +95,7 @@ const route=read("app/routes/app.brand-kits.jsx");
 for(const token of ["brandToneVoice","brandImageryDirection","brandMerchandisingRules","brandCtaRules","brandDoRules","brandDontRules"]){
   ok(route.includes(token),`Brand Kit route missing profile field: ${token}`);
 }
-const host=read("app/components/BuilderPanelHost.jsx");
+const host=["app/components/BuilderPanelHost.jsx","app/components/builder-panel/BrandKitsPanel.jsx","app/components/builder-panel/CampaignManagerPanel.jsx"].map((file)=>read(file)).join("\n");
 ok(host.includes("BrandProfileFields")&&host.includes("brandProfileForm"),"Builder host must delegate Brand Intelligence UI to the extracted component");
 const fields=read("app/components/builder-panel/BrandProfileFields.jsx");
 for(const token of ["Tone & voice","Imagery direction","Merchandising rules","CTA rules","Reusable component guidance","Do rules","Don't rules"]){

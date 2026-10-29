@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WidgetPolarisIcon } from "../ui/PolarisIcon";
 import { ColorGradientControl, DateControl, DateTimeControl, IconControl, TimeControl, TypographyControl } from "../editor/EditorControls.jsx";
-import { VsnColorPicker } from "../editor/color/ColorStudio.jsx";
 import { Copy, Edit3, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import {
   VsnButton,
@@ -164,7 +163,7 @@ function FieldConfiguration({ field, baseType, onPatch }) {
     {baseType === "time" ? <div className="vsn-field-control"><TimeControl label="Default time" value={defaultString} onChange={(next)=>onPatch({default:next})} /></div> : null}
     {baseType === "multi-select" ? <VsnInput label="Default selected values" value={Array.isArray(defaultValue)?defaultValue.join(", "):""} onChange={(event)=>onPatch({default:splitList(event.target.value)})}/> : null}
     {numberRules ? <><VsnInput label="Default number" type="number" value={Number.isFinite(Number(defaultValue))?defaultValue:0} onChange={(event)=>onPatch({default:Number(event.target.value)||0})}/><VsnInput label="Minimum" type="number" value={field.min ?? ""} onChange={(event)=>onPatch({min:event.target.value===""?undefined:Number(event.target.value)})}/><VsnInput label="Maximum" type="number" value={field.max ?? ""} onChange={(event)=>onPatch({max:event.target.value===""?undefined:Number(event.target.value)})}/><VsnInput label="Step" type="number" value={field.step ?? (baseType === "range" ? 1 : "")} onChange={(event)=>onPatch({step:event.target.value===""?undefined:Number(event.target.value)})}/></> : null}
-    {baseType === "color" ? <div className="vsn-field-control"><span>Default color</span><VsnColorPicker value={String(defaultValue || "#000000")} onChange={(next)=>onPatch({default:next})} compact /></div> : null}
+    {baseType === "color" ? <div className="vsn-field-control"><ColorGradientControl label="Default color" solidOnly value={{type:"color",color:String(defaultValue || "#000000")}} onChange={(next)=>onPatch({default:next?.color || defaultValue})} /></div> : null}
     {baseType === "color-gradient" ? <div className="vsn-field-control"><ColorGradientControl label="Default fill" value={objectDefault} onChange={(next)=>onPatch({default:next})} /></div> : null}
     {["range","css-length","dimensions","border-radius"].includes(baseType) ? <VsnSelect label="Default unit" value={field.unit || "px"} onChange={(event)=>onPatch({unit:event.target.value})}>{unitOptions}</VsnSelect> : null}
     {baseType === "css-length" ? <><VsnInput label="Default CSS length" value={defaultString || "0px"} onChange={(event)=>onPatch({default:event.target.value})}/><VsnInput label="Allowed keywords" value={(field.keywords || []).join(", ")} placeholder="auto, inherit, fit-content" onChange={(event)=>onPatch({keywords:splitList(event.target.value)})}/></> : null}

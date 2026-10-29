@@ -5,7 +5,7 @@ const check=(name,ok)=>{if(ok){pass++;console.log(`PASS  ${name}`)}else{fail++;c
 const appNav=read("app/routes/app.jsx");
 const sidebar=read("app/components/AppSidebar.jsx");
 const pages=read("app/routes/app.pages.jsx");
-const host=read("app/components/BuilderPanelHost.jsx");
+const host=["app/components/BuilderPanelHost.jsx","app/components/builder-panel/BrandKitsPanel.jsx","app/components/builder-panel/CampaignManagerPanel.jsx"].map((file)=>read(file)).join("\n");
 const toolkit=read("app/components/ui/VsnToolkit.jsx");
 const dashCss=read("app/styles/dashboard.css");
 const builderCss=read("app/styles/builder.css");
