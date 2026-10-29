@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { attachDragPreview, markDragType } from "./dnd/dragPreview.js";
 import { ELEMENTS, ELEMENT_CATEGORIES } from "../../data/elements";
 import NavigatorPanel from "./NavigatorPanel";
 import PropertiesPanel from "./PropertiesPanel";
@@ -6,11 +7,11 @@ import EditorRecoveryBoundary from "./EditorRecoveryBoundary";
 import { normalizeElementInteractions } from "../../builder/interactionSchema.js";
 import PolarisIcon, { WidgetPolarisIcon } from "../ui/PolarisIcon";
 
-function attachDragPreview(event,label){if(typeof document==="undefined"||!event?.dataTransfer)return;document.querySelectorAll("[data-vsn-drag-preview]").forEach(n=>n.remove());const p=document.createElement("div");p.dataset.vsnDragPreview="true";p.textContent=label||"Widget";Object.assign(p.style,{position:"fixed",left:"-10000px",top:"-10000px",zIndex:"99999",padding:"8px 12px",borderRadius:"8px",background:"#1A1F36",color:"#fff",font:"600 12px Inter, system-ui, sans-serif",boxShadow:"0 8px 24px rgba(0,0,0,.22)"});document.body.appendChild(p);event.dataTransfer.setDragImage(p,18,14);setTimeout(()=>p.remove(),0)}
+
 
 function TipButton({ label, active = false, children, ...props }){return <button type="button" {...props} data-tooltip={label} className={`vsn-editor-icon-button ${active?"is-active":""}`} aria-label={label}>{children}</button>}
 
-function WidgetCard({element,onDragStart,onClick}){return <div role="button" tabIndex={0} draggable onClick={()=>onClick?.(element.type)} onKeyDown={(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onClick?.(element.type)}}} onDragStart={e=>{e.dataTransfer.clearData();e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("elementType",element.type);e.dataTransfer.setData("vsnDragKind","new-widget");e.dataTransfer.setData("text/plain",`vsn-widget:${element.type}`);attachDragPreview(e,element.label);document.documentElement.dataset.vsnDragging="1";onDragStart?.(element.type)}} onDragEnd={()=>{delete document.documentElement.dataset.vsnDragging}} className="vsn-home-widget-card"><span className="vsn-home-widget-icon"><WidgetPolarisIcon widgetType={element.type} size={19}/></span><span>{element.label}</span></div>}
+function WidgetCard({element,onDragStart,onClick}){return <div role="button" tabIndex={0} draggable onClick={()=>onClick?.(element.type)} onKeyDown={(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onClick?.(element.type)}}} onDragStart={e=>{e.dataTransfer.clearData();e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("elementType",element.type);e.dataTransfer.setData("vsnDragKind","new-widget");e.dataTransfer.setData("text/plain",`vsn-widget:${element.type}`);markDragType(e,element.type);attachDragPreview(e,element.label);document.documentElement.dataset.vsnDragging="1";onDragStart?.(element.type)}} onDragEnd={()=>{delete document.documentElement.dataset.vsnDragging}} className="vsn-home-widget-card"><span className="vsn-home-widget-icon"><WidgetPolarisIcon widgetType={element.type} size={19}/></span><span>{element.label}</span></div>}
 
 export default function ElementsSidebar({onDragStart,onWidgetClick,insertTarget=null,onCancelInsertTarget,activeTab,onTabChange,elements=[],selectedId=null,selectedElement=null,onSelect,onMove,onMoveNode,onRename,onToggleHidden,onToggleLocked,onDuplicate,onDelete,globalSections=[],width=384,enabledWidgetIds=null,inspectorTab="content",onInspectorTabChange,onUpdate,globalStyles,onGlobalStylesChange,deviceMode,reusableSections=[],libraryItems=[],componentDefinitions=[],componentUsage={},bindingContext={},onApplyLibraryStyle,onSaveCurrentStyle,onUnlinkGlobalSection,onSaveComponentVariant,onUpdateComponentMaster}){
  const [search,setSearch]=useState("");const [openCategories,setOpenCategories]=useState(()=>new Set(ELEMENT_CATEGORIES.map(i=>i.id)));const normalized=search.trim().toLowerCase();
