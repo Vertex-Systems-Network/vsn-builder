@@ -367,3 +367,11 @@ button,input,select,textarea { font-family:inherit; }
 .vsn-widgets-search { flex: 1 1 240px; max-width: 360px; }
 .dashboard-search-input { width: 100%; min-height: 32px; padding: 0 12px; border: 1px solid var(--p-color-border, #8a8a8a); border-radius: 8px; background: var(--p-color-bg-surface, #fff); color: inherit; font: inherit; font-size: 13px; }
 .dashboard-search-input:focus { outline: 2px solid var(--p-color-border-focus, #005bd3); outline-offset: 1px; }
+
+/* Templates table: the actions column stays visible while the wide table scrolls, and the list clears the floating settings button. */
+.vsn-pages-table th:last-child,.vsn-pages-table td:last-child{position:sticky;right:0;z-index:1;background:#fff;box-shadow:-10px 0 12px -12px rgba(0,0,0,.25)}
+.vsn-pages-table th:last-child{background:var(--vsn-bg-soft)}
+.dashboard-root.dark .vsn-pages-table th:last-child{background:#111827}
+.vsn-pages-table tr.is-selected td:last-child{background:inherit}
+.dashboard-root.dark .vsn-pages-table td:last-child{background:#1A1F2E}
+.vsn-pages-screen{padding-bottom:72px}
