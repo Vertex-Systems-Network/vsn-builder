@@ -12,6 +12,10 @@ export function brandKitForm(kit) {
   return { id: kit.id, name: kit.name || "Brand Kit", logoUrl: kit.logoUrl || "", primary: kit.colors?.primary || "#008060", secondary: kit.colors?.secondary || "#6d7175", accent: kit.colors?.accent || "#008060", text: kit.colors?.text || "#1a1a1a", background: kit.colors?.background || "#ffffff", surface: kit.colors?.surface || "#ffffff", bodyFont: kit.typography?.bodyFont || "Inter, system-ui, sans-serif", headingFont: kit.typography?.headingFont || "inherit", headingScale: String(kit.typography?.headingScale || 1.25), spacingBase: String(kit.spacing?.base || 4), containerMaxWidth: kit.spacing?.containerMaxWidth || "1200px", radiusSm: kit.radius?.sm || "6px", radiusMd: kit.radius?.md || "12px", radiusLg: kit.radius?.lg || "20px", buttonRadius: kit.radius?.button || "8px", shadowSm: kit.shadows?.sm || EMPTY_BRAND_KIT.shadowSm, shadowMd: kit.shadows?.md || EMPTY_BRAND_KIT.shadowMd, shadowLg: kit.shadows?.lg || EMPTY_BRAND_KIT.shadowLg, ...brandProfileForm(kit.profile) };
 }
 
+function isShopifyCdn(url) {
+  try { return new URL(String(url || "")).hostname === "cdn.shopify.com"; } catch { return false; }
+}
+
 const COLOR_FIELDS = [["primary", "Primary"], ["secondary", "Secondary"], ["accent", "Accent"], ["text", "Text"], ["background", "Background"], ["surface", "Surface"]];
 
 // Two screens: the kit list (All / Trash, search, edit, trash) and a full-page
@@ -31,7 +35,7 @@ export default function BrandKitsPanel({ data, actionData, submit, busy, confirm
     if (actionData?.ok && actionData.intent === "save") { setView("list"); setTab("active"); }
   }, [actionData]);
 
-  const openForm = (kit) => { setForm(brandKitForm(kit)); setLogoSource(kit?.logoUrl && /cdn\.shopify\.com/.test(kit.logoUrl) ? "shopify" : "url"); setView("form"); };
+  const openForm = (kit) => { setForm(brandKitForm(kit)); setLogoSource(isShopifyCdn(kit?.logoUrl) ? "shopify" : "url"); setView("form"); };
   const fonts = data.fontFamilies || [];
   const fontOptions = (value, allowInherit) => <>
     {allowInherit ? <option value="inherit">Inherit body font</option> : null}
