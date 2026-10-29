@@ -768,3 +768,13 @@ html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] [data-vsn-empty-child-
 .vsn-ai-provider-grid button{min-height:34px;padding:6px 8px;border:1px solid #d9dce1;border-radius:8px;background:#fff;color:#303030;font:600 12px/1.2 inherit;cursor:pointer;text-align:center}
 .vsn-ai-provider-grid button.is-active{border-color:#625BA8;background:#f1f0fa;color:#3f3a7a;box-shadow:0 0 0 1px #625BA8 inset}
 .vsn-ai-providers code{word-break:break-all;font-size:11px}
+.vsn-template-starters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0}
+.vsn-template-starters>span,.vsn-template-tokens>span{font-size:12px;font-weight:600;color:#4b5563;margin-right:4px}
+.vsn-template-starters button,.vsn-template-tokens button{height:28px;padding:0 10px;border-radius:8px;border:1px solid #dde1ea;background:#fff;font-size:12px;cursor:pointer;color:#111827}
+.vsn-template-starters button:hover,.vsn-template-tokens button:hover{border-color:#6366f1;color:#4f46e5}
+.vsn-template-tokens{display:grid;gap:6px;margin:0 0 12px;padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #eef0f4}
+.vsn-template-tokens>div{display:flex;flex-wrap:wrap;gap:6px}
+.vsn-template-tokens button{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.vsn-template-tokens button small{font-family:inherit;color:#6b7280;margin-left:4px}
+.vsn-template-tokens>small{font-size:11px;color:#6b7280;line-height:1.5}
+.vsn-widget-studio-grid>:last-child{position:sticky;top:16px;align-self:start}

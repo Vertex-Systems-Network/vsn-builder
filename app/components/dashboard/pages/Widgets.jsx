@@ -82,6 +82,9 @@ export default function WidgetsPage({ widgetsFeatcher, onToast, onSettingsSaved,
     }
   }, [fetcher.state, fetcher.data, saving, onSettingsSaved, onToast]);
 
+  const savedWidgets = fetcher.data?.settings?.widgets || widgetLoadedData?.widgets || [];
+  const savedEnabled = new Map(savedWidgets.map((w) => [w.id, w.enabled]));
+  const dirty = widgets.some((w) => savedEnabled.get(w.id) !== w.enabled);
   const activeCount = widgets.filter((w) => w.enabled).length;
   const totalCount = widgets.length;
   const disabledCount = widgets.filter((w) => !w.enabled).length;
@@ -94,13 +97,14 @@ export default function WidgetsPage({ widgetsFeatcher, onToast, onSettingsSaved,
   ];
 
   return (<s-page heading="Widgets" inlineSize="large">
-    <s-button slot="primary-action" variant="primary" icon="save" loading={saving || undefined} disabled={saving} onClick={handleSave}>{saving ? 'Saving...' : 'Save Changes'}</s-button>
+    <s-button slot="primary-action" variant="primary" icon="save" loading={saving || undefined} disabled={saving || !dirty} onClick={handleSave}>{saving ? 'Saving...' : 'Save Changes'}</s-button>
     <s-stack direction="block" gap="base">
     <s-paragraph color="subdued">Enable or disable widgets for your store. {activeCount} of {totalCount} active.</s-paragraph>
 
-    <s-grid gridTemplateColumns="@container (inline-size > 800px) repeat(4, 1fr), 1fr 1fr" gap="base">
-      {stats.map((stat)=><s-section key={stat.label} padding="base"><s-stack direction="block" gap="small-100"><s-text color="subdued">{stat.label}</s-text><s-heading>{stat.value}</s-heading>{stat.detail?<s-text color="subdued">{stat.detail}</s-text>:null}</s-stack></s-section>)}
-    </s-grid>
+    <div className="vsn-widgets-stats">
+      {stats.map((stat)=><div key={stat.label} className="vsn-widgets-stat"><span>{stat.label}</span><strong>{stat.value}</strong>{stat.detail?<small>{stat.detail}</small>:null}</div>)}
+    </div>
+    {dirty ? <s-banner tone="warning">You have unsaved widget changes. Save to update the editor element library.</s-banner> : null}
 
     <s-section>
       <s-stack direction="block" gap="base">
@@ -115,17 +119,17 @@ export default function WidgetsPage({ widgetsFeatcher, onToast, onSettingsSaved,
             </s-button-group>
           </s-stack>
         </s-stack>
-        <s-stack direction="inline" gap="small-200">
-          {categories.map(cat => (<s-button key={cat} variant={category === cat ? 'primary' : 'secondary'} onClick={() => setCategory(cat)}>{cat} ({widgetLoadedData?.categoryCounts?.[cat] || 0})</s-button>))}
-        </s-stack>
+        <div className="vsn-widgets-chips" role="tablist" aria-label="Widget categories">
+          {categories.map(cat => (<button key={cat} type="button" role="tab" aria-selected={category === cat} className={category === cat ? 'is-active' : ''} onClick={() => setCategory(cat)}>{cat}<span>{cat === 'All' ? widgets.length : widgets.filter((w) => w.category === cat).length}</span></button>))}
+        </div>
       </s-stack>
     </s-section>
 
-    {viewMode === 'grid' ? (<s-grid gridTemplateColumns="@container (inline-size > 1100px) repeat(4, 1fr), @container (inline-size > 700px) repeat(3, 1fr), @container (inline-size > 450px) 1fr 1fr, 1fr" gap="base">
+    {viewMode === 'grid' ? (<div className="vsn-widgets-grid">
       {filtered.map(widget => (<WidgetCard key={widget.id} comp={widget} onToggle={toggleWidget} />))}
-    </s-grid>) : (<s-section padding="none"><s-stack direction="block">
+    </div>) : (<div className="vsn-widgets-list">
       {filtered.map(widget => (<WidgetListRow key={widget.id} comp={widget} onToggle={toggleWidget} />))}
-    </s-stack></s-section>)}
+    </div>)}
 
     {filtered.length === 0 && (<s-section><s-stack direction="block" alignItems="center" gap="small-200"><s-heading>No widgets found</s-heading><s-text color="subdued">Try adjusting your search or filter.</s-text></s-stack></s-section>)}
     </s-stack>
@@ -137,18 +141,15 @@ const WidgetToggle = ({ comp, onToggle }) => <label /* eslint-disable-line jsx-a
   <span className="toggle-slider" />
 </label>;
 
-const WidgetCard = ({ comp, onToggle }) => <s-section>
-  <s-stack direction="block" gap="small-200">
-    <s-stack direction="inline" justifyContent="space-between" alignItems="center">{iconMap[comp.icon] || <Box size={18} />}<WidgetToggle comp={comp} onToggle={onToggle}/></s-stack>
-    <s-text type="strong">{comp.name}</s-text>
-    <s-text color="subdued">{comp.description}</s-text>
-    <s-stack direction="inline" justifyContent="space-between"><s-badge>{comp.category}</s-badge><s-badge tone={comp.enabled ? 'success' : 'neutral'}>{comp.enabled ? 'Active' : 'Disabled'}</s-badge></s-stack>
-  </s-stack>
-</s-section>;
+const WidgetCard = ({ comp, onToggle }) => <div className={`vsn-widget-card${comp.enabled ? '' : ' is-off'}`}>
+  <div className="vsn-widget-card__top"><span className="vsn-widget-card__icon">{iconMap[comp.icon] || <Box size={18} />}</span><WidgetToggle comp={comp} onToggle={onToggle}/></div>
+  <strong className="vsn-widget-card__name">{comp.name}</strong>
+  <p className="vsn-widget-card__desc">{comp.description}</p>
+  <div className="vsn-widget-card__foot"><s-badge>{comp.category}</s-badge><s-badge tone={comp.enabled ? 'success' : 'neutral'}>{comp.enabled ? 'Active' : 'Disabled'}</s-badge></div>
+</div>;
 
-const WidgetListRow = ({ comp, onToggle }) => <s-box padding="small-200 base" borderWidth="none none base none">
-  <s-stack direction="inline" alignItems="center" gap="base" justifyContent="space-between">
-    <s-stack direction="inline" alignItems="center" gap="base">{iconMap[comp.icon] || <Box size={16} />}<s-stack direction="block"><s-text type="strong">{comp.name}</s-text><s-text color="subdued">{comp.description}</s-text></s-stack></s-stack>
-    <s-stack direction="inline" alignItems="center" gap="small-200"><s-badge>{comp.category}</s-badge><s-badge tone={comp.enabled ? 'success' : 'neutral'}>{comp.enabled ? 'Active' : 'Disabled'}</s-badge><WidgetToggle comp={comp} onToggle={onToggle}/></s-stack>
-  </s-stack>
-</s-box>;
+const WidgetListRow = ({ comp, onToggle }) => <div className={`vsn-widget-row${comp.enabled ? '' : ' is-off'}`}>
+  <span className="vsn-widget-card__icon">{iconMap[comp.icon] || <Box size={16} />}</span>
+  <div className="vsn-widget-row__text"><strong>{comp.name}</strong><span>{comp.description}</span></div>
+  <s-badge>{comp.category}</s-badge><s-badge tone={comp.enabled ? 'success' : 'neutral'}>{comp.enabled ? 'Active' : 'Disabled'}</s-badge><WidgetToggle comp={comp} onToggle={onToggle}/>
+</div>;

@@ -10,18 +10,19 @@ import { extractOwnedSiteBrandProfile } from "../services/brand-extraction.serve
 import { getServerFeatureFlags } from "../services/feature-flags.server.js";
 import { assertTrustedMutationRequest, safeClientErrorMessage } from "../utils/request-security.server.js";
 
+function extractionEnabled(){try{return getServerFeatureFlags().brandIntelligenceExtractionV1===true;}catch{return false;}}
 function safe(value){return String(value||"").trim();}
 export async function loader({request}){
   const {session}=await authenticate.admin(request);if(!(await canAccessBuilderEditor(db,session)))throw new Response("Brand Kit access denied.",{status:403});
   const [kits,trash,library,setting,customFonts]=await Promise.all([
     db.builderBrandKit.findMany({where:{shop:session.shop,deletedAt:null},orderBy:[{isDefault:"desc"},{updatedAt:"desc"}]}).catch(()=>[]),
     db.builderBrandKit.findMany({where:{shop:session.shop,deletedAt:{not:null}},orderBy:{deletedAt:"desc"}}).catch(()=>[]),
-    db.builderLibraryItem.findMany({where:{shop:session.shop,deletedAt:null,kind:{in:["page","section"]}},select:{id:true,title:true,kind:true,category:true},orderBy:{updatedAt:"desc"},take:300}),
-    db.builderShopSetting.findUnique({where:{shop:session.shop},select:{designTokensJson:true}}),
+    db.builderLibraryItem.findMany({where:{shop:session.shop,deletedAt:null,kind:{in:["page","section"]}},select:{id:true,title:true,kind:true,category:true},orderBy:{updatedAt:"desc"},take:300}).catch(()=>[]),
+    db.builderShopSetting.findUnique({where:{shop:session.shop},select:{designTokensJson:true}}).catch(()=>null),
     db.builderCustomFont.findMany({where:{shop:session.shop,deletedAt:null},select:{family:true},orderBy:{family:"asc"}}).catch(()=>[]),
   ]);
   const fontFamilies=[...SYSTEM_FONTS,...FALLBACK_GOOGLE_FONTS,...customFonts.map((font)=>({family:font.family,value:`'${font.family}', sans-serif`,provider:"Custom"}))];
-  return {fontFamilies,kits:kits.map(serializeBrandKit),trash:trash.map(serializeBrandKit),library,designTokensJson:setting?.designTokensJson||"{}",aiBrandExtractionEnabled:getServerFeatureFlags().brandIntelligenceExtractionV1===true};
+  return {fontFamilies,kits:kits.map(serializeBrandKit),trash:trash.map(serializeBrandKit),library,designTokensJson:setting?.designTokensJson||"{}",aiBrandExtractionEnabled:extractionEnabled()};
 }
 
 export async function action({request}){

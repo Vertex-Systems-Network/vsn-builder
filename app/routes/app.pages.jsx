@@ -56,7 +56,17 @@ const BUILDER_PANEL_ACTION_PATHS = new Set([
 	"/app/form-settings", "/app/control-center", "/app/plugins",
 ]);
 
-export function shouldRevalidate({ formAction, defaultShouldRevalidate }) {
+// Switching Builder panels only changes ?panel=. Panels load their own data from
+// /app/builder-panel/:panel, so re-running this heavy loader (all preloaded
+// panels + Shopify queries) on every panel click is wasted work.
+function onlyPanelParamChanged(currentUrl, nextUrl) {
+	if (!currentUrl || !nextUrl || currentUrl.pathname !== nextUrl.pathname) return false;
+	const strip = (url) => { const params = new URLSearchParams(url.search); params.delete("panel"); params.sort(); return params.toString(); };
+	return strip(currentUrl) === strip(nextUrl);
+}
+
+export function shouldRevalidate({ formAction, currentUrl, nextUrl, defaultShouldRevalidate }) {
+	if (!formAction && onlyPanelParamChanged(currentUrl, nextUrl)) return false;
 	if (formAction) {
 		try {
 			const path = new URL(formAction, "https://vsn.local").pathname;
