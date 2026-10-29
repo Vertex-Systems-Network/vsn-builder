@@ -54,7 +54,7 @@ import useAgentEditorSync from "./hooks/useAgentEditorSync.js";
 import useCanvasAutoFit from "./hooks/useCanvasAutoFit.js";
 import { GlobalColorsContext } from "./color/globalColorsContext.js";
 import { listGlobalColors } from "../../builder/styleKit.js";
-import usePreviewWindow from "./hooks/usePreviewWindow.js";
+import { navigatePreviewTab, openPreviewTab } from "../../utils/storefrontPreviewClient.js";
 
 
 const DEFAULT_GLOBAL_STYLES = {
@@ -224,8 +224,6 @@ export default function PageEditor({
   initialCollaboration = {},
   collaborationActor = null,
   initialLocalization = {},
-  shop = "",
-  previewToken = "",
   designTokens = {},
   serverRevisions = [],
   collections = [],
@@ -1341,19 +1339,27 @@ export default function PageEditor({
     : null;
 
 
-  const previewPayload = {
-    title: pageTitle,
-    elements: displayElements,
-    globalStyles,
-    previewWidth: deviceMode === "desktop" ? 0 : previewWidth,
-    direction: localizationPreview?.direction,
-    header: !["header", "footer"].includes(page?.template) && selectedHeader ? { content: selectedHeader.content || [], globalStyles: readGlobalStyles(selectedHeader.content || []), sticky: Boolean(readPageSettings(selectedHeader.content).sticky) } : null,
-    footer: !["header", "footer"].includes(page?.template) && selectedFooter ? { content: selectedFooter.content || [], globalStyles: readGlobalStyles(selectedFooter.content || []) } : null,
-    reusableSections, componentDefinitions, widgetPlatform,
-    previewCollection, previewProduct, previewBlog, previewArticle, previewSearch,
-  };
   const globalColorList = useMemo(() => listGlobalColors(globalStyles), [globalStyles]);
-  const openPreviewWindow = usePreviewWindow(previewPayload, [displayElements, globalStyles, pageTitle, deviceMode, previewWidth, selectedHeader?.id, selectedFooter?.id], { shop, pageId: page?.id, token: previewToken });
+  // Storefront preview: a new tab on the shop domain shows the saved draft, so unsaved
+  // edits are saved first and the tab is sent there once that save settles.
+  const previewTabRef = useRef(null);
+  const previewSavingRef = useRef(false);
+  const previewHandle = { product: previewProductHandle, collection: previewCollectionHandle }[page?.template] || "";
+  const sendPreviewTab = useCallback((tab) => navigatePreviewTab(tab, { page: page.id, ...(previewHandle ? { handle: previewHandle } : {}) }), [page.id, previewHandle]);
+  useEffect(() => {
+    if (saving) { previewSavingRef.current = true; return; }
+    if (!previewSavingRef.current || !previewTabRef.current) return;
+    previewSavingRef.current = false;
+    const tab = previewTabRef.current; previewTabRef.current = null;
+    sendPreviewTab(tab);
+  }, [saving, sendPreviewTab]);
+  const openStorefrontPreviewTab = () => {
+    const tab = openPreviewTab();
+    if (!tab) return;
+    if (isSaved && !saving) { sendPreviewTab(tab); return; }
+    previewTabRef.current = tab;
+    if (!saving) handleSave();
+  };
 
   /*
    * Dedicated preview route:
@@ -1452,10 +1458,7 @@ export default function PageEditor({
         onSave={handleSave}
         onPublish={handlePublish}
         onPreview={() => {
-          // Standalone tab outside the Shopify admin shell: live state via postMessage when the
-          // opener link survives; otherwise it loads the saved draft, so save unsaved edits first.
-          openPreviewWindow();
-          if (!isSaved && !saving) handleSave();
+          openStorefrontPreviewTab();
         }}
         onUndo={handleUndo}
         onRedo={handleRedo}

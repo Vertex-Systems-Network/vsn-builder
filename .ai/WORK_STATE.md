@@ -79,11 +79,16 @@ QA method:
      - The Staging offline token refreshes itself on the next app-proxy request (SDK `ensureValidOfflineSession`).
      - Template media stays a gradient block. App-hosted stock images do not load on the shop domain, so merchants set their own image.
 
+## Issue triage — 2026-10-28
+
+- Closed with evidence: #26, #76, #95, #156, #158, #160, #161, #167 (Production live via T041 runs 1-6, Neon backup branch + migrate deploy, protected development/main workflows, Staging and Production Workers healthy).
+- Still open, need the owner or real Shopify accounts (cannot be done from the repo): #159 Partner app ownership, #162 real OAuth E2E, #163 real APP_UNINSTALLED E2E, #164/#154 Partner pricing + live test billing, #165/#166 real merchant E2E, #168 App Store listing/submission, #184 Staging billing E2E.
+
 ## Owner queue — 2026-10-28 (strict FIFO, one item finished before the next)
 
 0. DONE when merged: `/readyz` reported tier "staging" on Production (hardcoded label).
-1. Editor dark mode styling.
-2. Grid layouts on pages no longer render as grids.
+1. DONE (PR #412, browser-verified dark screenshots): Editor dark mode styling.
+2. DONE (PR #412): Columns/grid layouts render as grids in canvas, preview and storefront.
 3. DONE (PR #412): Preview opens `/preview` in its own tab outside the Shopify admin shell; the editor streams live (unsaved) state to it via same-origin postMessage.
 4. DONE (PR #412): 134/138 module audits pass; ecosystem manifest regenerated; remaining 4 are stale source-marker checks (fonts, Trash now in table filter, carousel markers) with working behaviour. Audit every module: options, systems, behaviour, logic.
 5. DONE (PR #412): editor loader runs 9 independent DB/Admin reads in parallel instead of serially; client bundles measured (editor 163 KB gzip). App and page load time.
