@@ -182,10 +182,10 @@ function makeSection({ prefix, industry, pattern, palette, compact = false, dark
   } else if (key === "timeline" || key === "story") {
     children = [node("columns", "Story columns", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "48px" } }, [
       plainContainer(node, "Story text", headingStack(node, copy, theme, { title: key === "story" ? `The story behind ${industry.label.toLowerCase()} done right` : "How we got here", compact: true, eyebrow: "Our story" })),
-      key === "timeline" ? node("timeline", "Timeline", { items: [], itemsText: "2019|Founded|Started in a small studio with one idea.\n2022|10,000 customers|Grew through word of mouth.\n2025|Going further|New products, same standards." }, { typography: { color: theme.text } }) : mediaBlock(node, theme, "Story image", industry.image),
+      key === "timeline" ? node("timeline", "Timeline", { items: [], itemsText: "2019|Founded|Started in a small studio with one idea.\n2022|10,000 customers|Grew through word of mouth.\n2025|Going further|New products, same standards." }, { typography: { color: theme.text } }) : mediaBlock(node, theme, "Story image", "/vsn-stock/placeholder-image.svg"),
     ])];
   } else if (key === "gallery") {
-    children = [...centered(headingStack(node, copy, theme, { title: "In the wild", align: "center", compact: true, eyebrow: "Gallery" })), node("columns", "Gallery", { columns: 3, columnsTablet: 2, columnsMobile: 1 }, { layout: { gap: "16px" } }, [0, 1, 2].map((index) => mediaBlock(node, theme, `Gallery image ${index + 1}`, STOCK_IMAGES[(STOCK_IMAGES.indexOf(industry.image) + index + 1) % STOCK_IMAGES.length])))];
+    children = [...centered(headingStack(node, copy, theme, { title: "In the wild", align: "center", compact: true, eyebrow: "Gallery" })), node("columns", "Gallery", { columns: 3, columnsTablet: 2, columnsMobile: 1 }, { layout: { gap: "16px" } }, [0, 1, 2].map((index) => mediaBlock(node, theme, `Gallery image ${index + 1}`, ["/vsn-stock/placeholder-lifestyle.svg", "/vsn-stock/placeholder-image.svg", "/vsn-stock/placeholder-collection-1.svg"][index % 3])))];
   } else if (["contact", "lead-form"].includes(key)) {
     children = [node("columns", "Contact columns", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "48px" } }, [
       plainContainer(node, "Contact text", headingStack(node, copy, theme, { title: key === "contact" ? "Talk to our team" : "Get a tailored proposal", compact: true, eyebrow: "Contact", body: "Tell us what you need and we will get back to you within one business day." })),
@@ -202,7 +202,7 @@ function makeSection({ prefix, industry, pattern, palette, compact = false, dark
   } else if (layout === "split" || ["media-split", "collection-intro"].includes(key)) {
     const reverse = key === "media-split" || key === "premium";
     const text = plainContainer(node, "Text column", [...headingStack(node, copy, theme, { title, compact, eyebrow: industry.label }), buttonRow(node, copy, theme)], { layout: { display: "flex", flexDirection: "column", justifyContent: "center" } });
-    const media = mediaBlock(node, theme, "Media", industry.image);
+    const media = mediaBlock(node, theme, "Media", "/vsn-stock/placeholder-lifestyle.svg");
     children = [node("columns", "Split layout", { columns: 2, columnsTablet: 1, columnsMobile: 1 }, { layout: { gap: "56px", alignItems: "center" } }, reverse ? [media, text] : [text, media])];
   } else if (["grid", "product-first"].includes(layout) || ["product-grid", "category-grid", "comparison"].includes(key)) {
     children = [...centered(headingStack(node, copy, theme, { title: layout === "product-first" ? "Bestsellers" : title, align: "center", compact: true, eyebrow: industry.label }), [buttonRow(node, copy, theme, "center")]), node(key === "category-grid" ? "collection-grid" : "product-grid", key === "category-grid" ? "Collection grid" : "Product grid", { title: "", limit: compact ? 4 : 8, columnsDesktop: 4, columnsTablet: 2, columnsMobile: 1, gap: 20, showImage: true, showTitle: true, showPrice: true }, { spacing: { marginTop: "40px" } })];
