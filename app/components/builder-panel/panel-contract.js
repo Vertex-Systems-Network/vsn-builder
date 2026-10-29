@@ -3,6 +3,11 @@
  * UI panels must use resource routes for data/mutations and may not depend on document-route HTML.
  */
 export const LAZY_PANEL_ROUTES = Object.freeze({
+  library:"/app/library",
+  onboarding:"/app/onboarding",
+  backups:"/app/backups",
+  plans:"/app/plans",
+  "role-manager":"/app/role-manager",
   marketplace:"/app/marketplace",
   "brand-kits":"/app/brand-kits",
   campaigns:"/app/campaigns",

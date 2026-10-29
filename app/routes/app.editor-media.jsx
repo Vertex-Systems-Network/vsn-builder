@@ -1,3 +1,4 @@
+import { expandShopifyScopes } from "../utils/shopify-scopes.js";
 import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server";
 import db from "../db.server.js";
@@ -251,7 +252,7 @@ async function getSvgFiles(admin, { maxPages = 30 } = {}) {
 }
 
 function sessionScopes(session) {
-  return new Set(String(session?.scope || "").split(",").map((item) => item.trim()).filter(Boolean));
+  return expandShopifyScopes(session?.scope);
 }
 
 function hasFilesReadCapability(session) {

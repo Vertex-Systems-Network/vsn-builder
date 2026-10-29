@@ -10,7 +10,7 @@ function check(name,ok){if(ok){pass++;console.log(`PASS  ${name}`);}else{fail++;
 function has(file,...tokens){if(!exists(file))return false;const text=read(file);return tokens.every((token)=>text.includes(token));}
 
 const schema=read("prisma/schema.prisma");
-const host=read("app/components/BuilderPanelHost.jsx");
+const host=["app/components/BuilderPanelHost.jsx","app/components/builder-panel/BrandKitsPanel.jsx","app/components/builder-panel/CampaignManagerPanel.jsx"].map((file)=>read(file)).join("\n");
 const sidebar=read("app/components/AppSidebar.jsx");
 const market=read("app/services/marketplace.server.js");
 const brand=read("app/services/brand-kits.server.js");

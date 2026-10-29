@@ -1,3 +1,4 @@
+import { expandShopifyScopes } from "../utils/shopify-scopes.js";
 import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { isRouteErrorResponse, useFetcher, useLoaderData, useRouteError } from "react-router";
 import { authenticate } from "../shopify.server";
@@ -47,7 +48,7 @@ const DEFAULT_TOKENS = {
 
 function parse(value, fallback) { try { return JSON.parse(value || ""); } catch { return fallback; } }
 
-function scopeList(value) { return [...new Set(String(value||"").split(",").map((item)=>item.trim()).filter(Boolean))]; }
+function scopeList(value) { return [...expandShopifyScopes(value)]; }
 async function checkShopifyFilesAccess(admin, session) {
   const currentScopes=scopeList(session?.scope);
   const configuredScopes=scopeList(process.env.SCOPES);
@@ -286,7 +287,7 @@ async function buildSystemInfo(shop, session, admin, diagnostics, widgetSummary,
   const coreChecks=[
     {key:"database",label:"Database connection",status:database.status==="ok"?"pass":"fail",detail:database.status==="ok"?`${database.latencyMs} ms response`:database.error||"Database unavailable"},
     {key:"identity",label:"Shopify staff identity",status:session?.isOnline&&onlineUser?"pass":"warning",detail:session?.isOnline&&onlineUser?(onlineUser?.account_owner||onlineUser?.accountOwner?"Store owner detected":"Authenticated staff member detected"):"Online staff session is not available yet; refresh/re-authorize the embedded app."},
-    {key:"migrations",label:"Database migrations",status:schemaHealth.ready&&schemaHealth.expectedMigrationApplied?"pass":schemaHealth.databaseError?"fail":"warning",detail:schemaHealth.ready&&schemaHealth.expectedMigrationApplied?`${schemaHealth.latestMigration||migrations.latest?.name||"Latest migration applied"}`:`${schemaHealth.expectedMigration||"Packaged migration"} required${schemaHealth.missingTables?.length?` · missing ${schemaHealth.missingTables.join(", ")}`:""}`},
+    {key:"migrations",label:"Database migrations",status:schemaHealth.ready&&schemaHealth.expectedMigrationApplied?"pass":schemaHealth.databaseError?"fail":"warning",detail:schemaHealth.ready&&schemaHealth.expectedMigrationApplied?`${schemaHealth.latestMigration||migrations.latest?.name||"Latest migration applied"}`:`${schemaHealth.expectedMigration||"Packaged migration"} required${schemaHealth.missingTables?.length?` · missing ${schemaHealth.missingTables.join(", ")}`:""}${schemaHealth.databaseErrorDetail?` · ${schemaHealth.databaseErrorDetail}`:""}`},
     {key:"renderer",label:"Shared renderer architecture",status:"pass",detail:"Canvas, Preview and Storefront share the VSN schema/renderer pipeline."},
     {key:"widgets",label:"Widget registry",status:(widgetSummary?.totalCount||0)>0?"pass":"fail",detail:`${widgetSummary?.activeCount??0} active of ${widgetSummary?.totalCount??0} registered widgets`},
     {key:"builderData",label:"Builder data stores",status:dataStoreHealthy?"pass":"fail",detail:dataStoreHealthy?"Pages, Library, Fonts, SVGs, Campaigns, CRO, Forms and Marketplace tables are readable.":`These Builder data stores could not be read: ${failedDataStores.map((key)=>key.replace(/([a-z])([A-Z])/g,"$1 $2")).join(", ")}. Apply the packaged Prisma migrations and restart the app.`},
