@@ -79,6 +79,11 @@ QA method:
      - The Staging offline token refreshes itself on the next app-proxy request (SDK `ensureValidOfflineSession`).
      - Template media stays a gradient block. App-hosted stock images do not load on the shop domain, so merchants set their own image.
 
+## Releases — 2026-10-29
+
+- Production now runs #426 (storefront previews), #428 (editor audit: canvas styling, drag-and-drop, expired offline token refresh), #429 (7 pro widgets, overlay/video/shape dividers), #430 (AI providers + MCP). Release PR #431, T041 success; /healthz, /readyz 200, /app 302, /auth/login 200, /mcp 401 without token.
+- Follow-up PR: AI image generation into Shopify Files; templates table keeps actions visible (sticky column) and clears the floating settings button.
+
 ## AI providers + MCP — 2026-10-29
 
 - See `docs/ai-providers-plan.md`. Done: Claude/Gemini/GPT API adapters with encrypted per-shop keys, Shopify default (Sidekick launch), Cursor/Claude/Gemini/GPT over the VSN MCP server (`/mcp`, bearer tokens). Next: Sidekick tools extension (needs owner approval for app deploy), AI image generation, then the all-systems audit (admin pages: options, spacing/overlap, behaviour).
