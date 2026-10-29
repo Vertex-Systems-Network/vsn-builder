@@ -1,4 +1,5 @@
 import { styleKitCss } from "../../builder/styleKit.js";
+import EmptyChildDrop from "./EmptyChildDrop.jsx";
 import { isHiddenOnDevice } from "../../builder/visibility.js";
 import { Component, createContext, memo, useContext, useEffect, useRef, useState } from 'react';
 import SectionInserter from './SectionInserter';
@@ -1116,7 +1117,7 @@ function RenderNode({
             </div>
           ))}
           <DropZone parentId={node.id} beforeId={null} onDrop={onDrop} onAdd={onRequestAddChild} compact />
-          {!(node.children ?? []).length ? <div data-vsn-empty-child-drop="1" style={{minHeight:120,display:"grid",placeItems:"center",textAlign:"center",border:"1px dashed #b7bdc1",borderRadius:10,background:"#fafbfb",color:"#6d7175",pointerEvents:"none"}}><div><div aria-hidden="true" style={{fontSize:34,lineHeight:1}}>＋</div><strong style={{display:"block",fontSize:12,marginTop:6}}>Add Widget</strong><span style={{fontSize:10}}>Drag any widget here</span></div></div> : null}
+          {!(node.children ?? []).length ? <EmptyChildDrop overMedia={Boolean(style.backgroundImage && style.backgroundImage !== "none")} /> : null}
         </div>
       </div>
     );
@@ -1455,7 +1456,7 @@ export default function Canvas({
         <button type="button" aria-label="Resize canvas" className="vsn-canvas-resize-handle" onPointerDown={(event)=>{event.preventDefault();event.stopPropagation();const handle=event.currentTarget;const pointerId=event.pointerId;const startX=event.clientX;const startWidth=Math.max(240,Number(previewWidth)||1440);const scale=Math.max(.25,Number(zoom)||1);try{handle.setPointerCapture(pointerId);}catch{ /* ignore: best-effort */ }const move=(e)=>{if(e.pointerId!==pointerId)return;const delta=(e.clientX-startX)/scale;onPreviewWidthChange?.(Math.max(240,Math.min(2560,startWidth+delta*2)));};const up=(e)=>{if(e.pointerId!==pointerId)return;handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',up);handle.removeEventListener('pointercancel',up);try{handle.releasePointerCapture(pointerId);}catch{ /* ignore: best-effort */ }};handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',up);handle.addEventListener('pointercancel',up);}}><span>↔</span></button>
         <div
           data-vsn-page-boundary="1"
-          className="vsn-canvas-page rounded-xl shadow-lg min-h-[650px] p-6 space-y-4"
+          className="vsn-canvas-page rounded-xl shadow-lg min-h-[650px] overflow-x-clip"
           style={{
             background: globalStyles.backgroundColor || "#ffffff",
             color: globalStyles.textColor || "#1a1a1a",
@@ -1487,7 +1488,7 @@ export default function Canvas({
               />
             </div>
           ))}
-          <DropZone parentId={null} beforeId={null} onDrop={onDrop} onAdd={onRequestAddChild} />
+          <div className="p-6">{/* sections stack edge to edge; only the inserter is inset */}<DropZone parentId={null} beforeId={null} onDrop={onDrop} onAdd={onRequestAddChild} />
           <SectionInserter
             reusableSections={reusableSections}
             onAddStructure={onAddStructure}
@@ -1501,9 +1502,8 @@ export default function Canvas({
             onOpenWidgets={onOpenWidgets}
             onOpenAI={onOpenAI}
             openLibrarySignal={libraryOpenSignal}
-            pageTemplate={pageTemplate}
-            libraryLoading={libraryLoading}
-          />
+            pageTemplate={pageTemplate} libraryLoading={libraryLoading}
+          /></div>
         </div>
         </div>
       </div>

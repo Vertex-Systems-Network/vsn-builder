@@ -2,6 +2,8 @@ import { absolutizeAppAssetUrls, appBaseUrl } from "../storefront/appAssetUrls.j
 import { hideOnCss } from "../builder/visibility.js";
 import { isPrerenderCacheable, prerenderKey, PRERENDER_ALL_TEMPLATES, storePrerender } from "../services/storefront-prerender.server.js";
 import { authenticate } from "../shopify.server";
+import { isStorefrontPreviewRequest, privatePreviewResponse, resolveStorefrontPreview } from "../storefront/storefrontPreview.server.js";
+import { previewSecret } from "../services/preview-token.server.js";
 import db from "../db.server.js";
 import { buildNodeStyle } from "../builder/styleEngine.js";
 import { buildStyleBundleCss } from "../builder/stylePipeline.js";
@@ -71,7 +73,13 @@ import {
 	normalizeProductSort,
 } from "../storefront/productPagination.js";
 ensureBuiltinSdkPlugins();
-export async function loader({ request, params, context }) {
+export async function loader(args) {
+	const response = await proxyLoader(args);
+	if (!isStorefrontPreviewRequest(new URL(args.request.url))) return response;
+	try { return privatePreviewResponse(response); } catch { return response; }
+}
+
+async function proxyLoader({ request, params, context }) {
 	const { admin, session } =
 		await authenticate.public.appProxy(request);
 
@@ -424,6 +432,12 @@ export async function loader({ request, params, context }) {
 				if (ruledPage?.publishedJson) { page = ruledPage; break; }
 			}
 		} catch (error) { console.error("VSN template assignment rules failed:", error); }
+	}
+
+	if (!fragmentMode && isStorefrontPreviewRequest(url)) {
+		const preview = await resolveStorefrontPreview({ db, url, shop: session.shop, secret: previewSecret(context) });
+		if (preview?.error) return htmlResponse(renderMessagePage(preview.error), 404);
+		if (preview?.page) page = preview.page;
 	}
 
 	if (!page || !page.publishedJson) {

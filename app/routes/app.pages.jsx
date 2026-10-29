@@ -31,6 +31,7 @@ import { makePagePackage } from "../utils/page-transfer.js";
 import { assertTrustedMutationRequest } from "../utils/request-security.server.js";
 import { loadTemplatesViewSettings, saveTemplatesViewSettings } from "../services/templates-view-settings.server.js";
 import { logCurrentStagingRouteError } from "../services/worker-route-error-diagnostics.server.js";
+import { openStorefrontPreview } from "../utils/storefrontPreviewClient.js";
 
 const PRODUCTS_QUERY = `#graphql
 	query GetBuilderProducts($first: Int!) {
@@ -1006,30 +1007,10 @@ export default function PagesRoute() {
 	}, [fetcher.data]); // eslint-disable-line react-hooks/exhaustive-deps -- react only to new fetcher.data; editPage identity is not stable
 
 	function previewPage(page) {
-		const params = new URLSearchParams(window.location.search);
-		params.set("preview", "true");
-		params.delete("embedded");
-		if (shop) params.set("shop", shop);
-
-		if (page.template === "collection") {
-			const handle = page.resourceHandle || collections[0]?.handle || "";
-			if (handle) params.set("collection", handle);
-		}
-		if (page.template === "product") {
-			const handle = page.resourceHandle || products[0]?.handle || "";
-			if (handle) params.set("product", handle);
-		}
-		if (page.template === "blog") {
-			const handle = page.resourceHandle || blogs[0]?.handle || "";
-			if (handle) params.set("blog", handle);
-		}
-		if (page.template === "article" && page.resourceHandle) params.set("article", page.resourceHandle);
-		if (page.template === "search") params.set("query", "shirt");
-
-		window.open(
-			`/app/builder/${page.id}?${params.toString()}`,
-			"_blank",
-		);
+		// Storefront preview of the saved draft in a new tab, outside the admin.
+		const handles = { collection: collections[0]?.handle, product: products[0]?.handle, blog: blogs[0]?.handle };
+		const handle = page.resourceHandle || handles[page.template] || "";
+		openStorefrontPreview({ page: page.id, ...(handle ? { handle } : {}) });
 	}
 
 	function visitPage(page) {
