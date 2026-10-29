@@ -195,11 +195,11 @@ assert.ok(!propertiesSource.includes('parseFloat(String(styles.effects?.opacity 
 
 // 5) Existing complete registry/profile contracts remain intact.
 const types = Object.keys(widgetRegistry);
-assert.equal(types.length, 117, `Expected 117 widgets, found ${types.length}`);
+assert.equal(types.length, 124, `Expected 124 widgets, found ${types.length}`);
 const capabilityAudit = auditWidgetCapabilityCoverage(types);
 const profileAudit = auditWidgetStyleProfiles(types);
-assert.equal(capabilityAudit.covered, 117, "Widget capability coverage regressed");
-assert.equal(profileAudit.profiled, 117, "Widget style profile coverage regressed");
+assert.equal(capabilityAudit.covered, 124, "Widget capability coverage regressed");
+assert.equal(profileAudit.profiled, 124, "Widget style profile coverage regressed");
 
 console.log(`FIX-7 global CSS properties asserted: ${Object.keys(expected).length}`);
 console.log(`FIX-7 widget-specific control bindings linked: ${widgetPairs.length}`);

@@ -19,7 +19,7 @@ import {
 } from "../app/builder/customCode.js";
 
 const types = Object.keys(widgetRegistry);
-assert.equal(types.length, 117, `Expected 117 registered widgets, found ${types.length}`);
+assert.equal(types.length, 124, `Expected 124 registered widgets, found ${types.length}`);
 
 const capabilityAudit = auditWidgetCapabilityCoverage(types);
 assert.equal(capabilityAudit.covered, types.length, `Capability coverage ${capabilityAudit.covered}/${types.length}`);

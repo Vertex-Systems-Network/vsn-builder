@@ -15,10 +15,10 @@ import {
 } from "../app/builder/widgetStyleProfiles.js";
 
 const types = Object.keys(widgetRegistry);
-assert.equal(types.length, 117, `Expected 117 widgets, found ${types.length}`);
+assert.equal(types.length, 124, `Expected 124 widgets, found ${types.length}`);
 
 const coverage = auditWidgetCapabilityCoverage(types);
-assert.equal(coverage.covered, 117, `Capability coverage ${coverage.covered}/117`);
+assert.equal(coverage.covered, 124, `Capability coverage ${coverage.covered}/124`);
 assert.deepEqual(coverage.missing, [], `Missing capability mappings: ${coverage.missing.join(", ")}`);
 assert.deepEqual(coverage.unexpected, [], `Stale capability mappings: ${coverage.unexpected.join(", ")}`);
 const staticTypes=types.filter((type)=>Boolean(widgetCapabilityMatrix[type]));
@@ -55,7 +55,7 @@ const genericLinkTypes = types.filter((type) => getWidgetCapabilities(type).elem
 assert.deepEqual(genericLinkTypes, ["heading", "icon", "image", "text"], "Generic Element Link must not wrap commerce/article/rich-data widgets");
 
 const profileAudit = auditWidgetStyleProfiles(types);
-assert.equal(profileAudit.profiled, 117, `Style profile coverage ${profileAudit.profiled}/117`);
+assert.equal(profileAudit.profiled, 124, `Style profile coverage ${profileAudit.profiled}/124`);
 assert.equal(profileAudit.valid, true, profileAudit.errors.join("\n"));
 
 const controlSource = fs.readFileSync("app/components/editor/WidgetSpecificStyleControls.jsx", "utf8");
