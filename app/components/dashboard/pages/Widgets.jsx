@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useFetcher } from "react-router";
+import { WidgetPolarisIcon } from "../../ui/PolarisIcon";
 import { Heading, AlignLeft, MousePointerClick, Minus, Image, Star, AlertCircle, FileText, ChevronDown, Layout, Hash, BarChart2, Clock, RefreshCw, Images, ImagePlus, GalleryHorizontal, Film, Layers, Play, Anchor, ChevronRight, Share2, List as ListIcon, Sparkles, UserCircle, Quote, Megaphone, MapPin, Code, Box, Grid as GridIcon } from 'lucide-react';
 
 const iconMap = {
@@ -142,14 +143,14 @@ const WidgetToggle = ({ comp, onToggle }) => <label /* eslint-disable-line jsx-a
 </label>;
 
 const WidgetCard = ({ comp, onToggle }) => <div className={`vsn-widget-card${comp.enabled ? '' : ' is-off'}`}>
-  <div className="vsn-widget-card__top"><span className="vsn-widget-card__icon">{iconMap[comp.icon] || <Box size={18} />}</span><WidgetToggle comp={comp} onToggle={onToggle}/></div>
+  <div className="vsn-widget-card__top"><span className="vsn-widget-card__icon">{iconMap[comp.icon] || <WidgetPolarisIcon widgetType={comp.id} size={18} />}</span><WidgetToggle comp={comp} onToggle={onToggle}/></div>
   <strong className="vsn-widget-card__name">{comp.name}</strong>
   <p className="vsn-widget-card__desc">{comp.description}</p>
   <div className="vsn-widget-card__foot"><s-badge>{comp.category}</s-badge><s-badge tone={comp.enabled ? 'success' : 'neutral'}>{comp.enabled ? 'Active' : 'Disabled'}</s-badge></div>
 </div>;
 
 const WidgetListRow = ({ comp, onToggle }) => <div className={`vsn-widget-row${comp.enabled ? '' : ' is-off'}`}>
-  <span className="vsn-widget-card__icon">{iconMap[comp.icon] || <Box size={16} />}</span>
+  <span className="vsn-widget-card__icon">{iconMap[comp.icon] || <WidgetPolarisIcon widgetType={comp.id} size={16} />}</span>
   <div className="vsn-widget-row__text"><strong>{comp.name}</strong><span>{comp.description}</span></div>
   <s-badge>{comp.category}</s-badge><s-badge tone={comp.enabled ? 'success' : 'neutral'}>{comp.enabled ? 'Active' : 'Disabled'}</s-badge><WidgetToggle comp={comp} onToggle={onToggle}/>
 </div>;

@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { Copy, Edit3, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { WidgetPolarisIcon } from "../ui/PolarisIcon";
+import { ColorGradientControl, DateControl, DateTimeControl, IconControl, TimeControl, TypographyControl } from "../editor/EditorControls.jsx";
+import { VsnColorPicker } from "../editor/color/ColorStudio.jsx";
+import { Copy, Edit3, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import {
   VsnButton,
   VsnCard,
@@ -63,6 +66,32 @@ function fullOverrideHtml(tokens) {
   const keys = Object.keys(tokens);
   const lines = keys.slice(0, 6).map((key) => `  <p class="vsn-custom-${key.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}">{{${key}}}</p>`);
   return `<div {{vsn.root}} class="vsn-custom-markup">\n${lines.join("\n") || "  <p>Custom markup</p>"}\n</div>`;
+}
+
+// Searchable widget list with the same icons the editor sidebar uses.
+function WidgetPicker({ widgets, value, onChange, overridden }) {
+  const [query, setQuery] = useState("");
+  const listRef = useRef(null);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? widgets.filter((row) => `${row.name} ${row.id} ${row.category}`.toLowerCase().includes(q)) : widgets;
+  }, [widgets, query]);
+  const groups = useMemo(() => filtered.reduce((map, row) => { (map[row.category] ||= []).push(row); return map; }, {}), [filtered]);
+  useEffect(() => { listRef.current?.querySelector(".is-selected")?.scrollIntoView?.({ block: "nearest" }); }, [value]);
+  return <div className="vsn-widget-picker">
+    <div className="vsn-widget-picker__search"><Search size={14} /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${widgets.length} widgets`} aria-label="Search widgets" /></div>
+    <div ref={listRef} className="vsn-widget-picker__list" role="listbox" aria-label="Widgets">
+      {Object.entries(groups).map(([category, rows]) => <div key={category} className="vsn-widget-picker__group">
+        <span className="vsn-widget-picker__heading">{category}</span>
+        {rows.map((row) => <button key={row.id} type="button" role="option" aria-selected={row.id === value} className={row.id === value ? "is-selected" : ""} onClick={() => onChange(row.id)}>
+          <span className="vsn-widget-picker__icon"><WidgetPolarisIcon widgetType={row.id} size={16} /></span>
+          <span className="vsn-widget-picker__name">{row.name}</span>
+          {overridden?.has(row.id) ? <span className="vsn-widget-picker__badge">Custom</span> : null}
+        </button>)}
+      </div>)}
+      {!filtered.length ? <p className="vsn-widget-picker__empty">No widget matches “{query}”.</p> : null}
+    </div>
+  </div>;
 }
 
 function templateFor(rows, widgetType) {
@@ -129,18 +158,21 @@ function FieldConfiguration({ field, baseType, onPatch }) {
     <VsnInput label="Help text" value={field.help || ""} onChange={(event)=>onPatch({help:event.target.value})}/>
     {optionTypes ? <VsnTextarea label="Options" rows={3} value={(field.options || []).join("\n")} onChange={(event)=>onPatch({options:splitList(event.target.value)})}/> : null}
     {baseType === "toggle" ? <VsnSelect label="Default state" value={String(Boolean(defaultValue))} onChange={(event)=>onPatch({default:event.target.value === "true"})}><option value="false">Off</option><option value="true">On</option></VsnSelect> : null}
-    {["text","textarea","url","date","datetime","time","select","radio","button-set"].includes(baseType) ? <VsnInput label="Default value" value={defaultString} onChange={(event)=>onPatch({default:event.target.value})}/> : null}
+    {["text","textarea","url","select","radio","button-set"].includes(baseType) ? <VsnInput label="Default value" value={defaultString} onChange={(event)=>onPatch({default:event.target.value})}/> : null}
+    {baseType === "date" ? <div className="vsn-field-control"><DateControl label="Default date" value={defaultString} onChange={(next)=>onPatch({default:next})} /></div> : null}
+    {baseType === "datetime" ? <div className="vsn-field-control"><DateTimeControl label="Default date & time" value={defaultString} onChange={(next)=>onPatch({default:next})} /></div> : null}
+    {baseType === "time" ? <div className="vsn-field-control"><TimeControl label="Default time" value={defaultString} onChange={(next)=>onPatch({default:next})} /></div> : null}
     {baseType === "multi-select" ? <VsnInput label="Default selected values" value={Array.isArray(defaultValue)?defaultValue.join(", "):""} onChange={(event)=>onPatch({default:splitList(event.target.value)})}/> : null}
     {numberRules ? <><VsnInput label="Default number" type="number" value={Number.isFinite(Number(defaultValue))?defaultValue:0} onChange={(event)=>onPatch({default:Number(event.target.value)||0})}/><VsnInput label="Minimum" type="number" value={field.min ?? ""} onChange={(event)=>onPatch({min:event.target.value===""?undefined:Number(event.target.value)})}/><VsnInput label="Maximum" type="number" value={field.max ?? ""} onChange={(event)=>onPatch({max:event.target.value===""?undefined:Number(event.target.value)})}/><VsnInput label="Step" type="number" value={field.step ?? (baseType === "range" ? 1 : "")} onChange={(event)=>onPatch({step:event.target.value===""?undefined:Number(event.target.value)})}/></> : null}
-    {baseType === "color" ? <VsnInput label="Default color" type="color" value={String(defaultValue || "#000000")} onChange={(event)=>onPatch({default:event.target.value})}/> : null}
-    {baseType === "color-gradient" ? <><VsnSelect label="Default fill type" value={objectDefault.type || "color"} onChange={(event)=>onPatch({default:event.target.value === "gradient" ? {type:"gradient",gradientType:"linear",from:"#ffffff",to:"#000000",angle:135} : {type:"color",color:objectDefault.color || "#000000"}})}><option value="color">Solid color</option><option value="gradient">Gradient</option></VsnSelect>{(objectDefault.type || "color") === "gradient" ? <><VsnSelect label="Gradient type" value={objectDefault.gradientType || "linear"} onChange={(event)=>patchDefault({type:"gradient",gradientType:event.target.value})}><option value="linear">Linear</option><option value="radial">Radial</option></VsnSelect><VsnInput label="Start color" type="color" value={objectDefault.from || "#ffffff"} onChange={(event)=>patchDefault({type:"gradient",from:event.target.value})}/><VsnInput label="End color" type="color" value={objectDefault.to || "#000000"} onChange={(event)=>patchDefault({type:"gradient",to:event.target.value})}/>{(objectDefault.gradientType || "linear") === "linear" ? <VsnInput label="Angle" type="number" min="0" max="360" value={objectDefault.angle ?? 135} onChange={(event)=>patchDefault({type:"gradient",angle:Number(event.target.value)||0})}/> : null}</> : <VsnInput label="Default solid color" type="color" value={objectDefault.color || "#000000"} onChange={(event)=>patchDefault({type:"color",color:event.target.value})}/>}</> : null}
+    {baseType === "color" ? <div className="vsn-field-control"><span>Default color</span><VsnColorPicker value={String(defaultValue || "#000000")} onChange={(next)=>onPatch({default:next})} compact /></div> : null}
+    {baseType === "color-gradient" ? <div className="vsn-field-control"><ColorGradientControl label="Default fill" value={objectDefault} onChange={(next)=>onPatch({default:next})} /></div> : null}
     {["range","css-length","dimensions","border-radius"].includes(baseType) ? <VsnSelect label="Default unit" value={field.unit || "px"} onChange={(event)=>onPatch({unit:event.target.value})}>{unitOptions}</VsnSelect> : null}
     {baseType === "css-length" ? <><VsnInput label="Default CSS length" value={defaultString || "0px"} onChange={(event)=>onPatch({default:event.target.value})}/><VsnInput label="Allowed keywords" value={(field.keywords || []).join(", ")} placeholder="auto, inherit, fit-content" onChange={(event)=>onPatch({keywords:splitList(event.target.value)})}/></> : null}
     {baseType === "dimensions" ? <>{["top","right","bottom","left"].map((side)=><VsnInput key={side} label={`Default ${side}`} value={objectDefault[side] ?? ""} placeholder={`0${field.unit || "px"}`} onChange={(event)=>patchDefault({[side]:event.target.value})}/>)}</> : null}
     {baseType === "border-radius" ? <><VsnSelect label="Radius mode" value={objectDefault.mode || "all"} onChange={(event)=>patchDefault({mode:event.target.value})}><option value="all">Linked corners</option><option value="individual">Per corner</option></VsnSelect>{(objectDefault.mode || "all") === "individual" ? <>{[["topLeft","Top left"],["topRight","Top right"],["bottomRight","Bottom right"],["bottomLeft","Bottom left"]].map(([key,label])=><VsnInput key={key} label={label} value={objectDefault[key] ?? objectDefault.all ?? ""} placeholder={`0${field.unit || "px"}`} onChange={(event)=>patchDefault({[key]:event.target.value,mode:"individual"})}/>)}</> : <VsnInput label="Default radius" value={objectDefault.all ?? ""} placeholder={`0${field.unit || "px"}`} onChange={(event)=>patchDefault({all:event.target.value,mode:"all"})}/>}</> : null}
-    {baseType === "typography" ? <><VsnInput label="Default font family" value={objectDefault.fontFamily || ""} placeholder="Inter, system-ui, sans-serif" onChange={(event)=>patchDefault({fontFamily:event.target.value})}/><VsnInput label="Default font size" value={objectDefault.fontSize || ""} placeholder="16px" onChange={(event)=>patchDefault({fontSize:event.target.value})}/><VsnSelect label="Default font weight" value={String(objectDefault.fontWeight || "400")} onChange={(event)=>patchDefault({fontWeight:event.target.value})}>{[100,200,300,400,500,600,700,800,900].map((weight)=><option key={weight} value={weight}>{weight}</option>)}</VsnSelect><VsnInput label="Default line height" value={objectDefault.lineHeight || ""} placeholder="1.5" onChange={(event)=>patchDefault({lineHeight:event.target.value})}/><VsnInput label="Default letter spacing" value={objectDefault.letterSpacing || ""} placeholder="0px" onChange={(event)=>patchDefault({letterSpacing:event.target.value})}/><VsnInput label="Default text color" type="color" value={objectDefault.color || "#1a1a1a"} onChange={(event)=>patchDefault({color:event.target.value})}/></> : null}
+    {baseType === "typography" ? <div className="vsn-field-control"><span>Default typography</span><TypographyControl value={objectDefault} onChange={(next)=>onPatch({default:next})} /></div> : null}
     {baseType === "media" ? <><VsnInput label="Accepted file types" value={field.accept || "image/*"} placeholder="image/*,video/*" onChange={(event)=>onPatch({accept:event.target.value})}/><VsnInput label="Shopify media types" value={(field.mediaTypes || ["MediaImage"]).join(", ")} placeholder="MediaImage, Video" onChange={(event)=>onPatch({mediaTypes:splitList(event.target.value)})}/><VsnInput label="Default media URL" value={objectDefault.url || ""} placeholder="Optional fallback URL" onChange={(event)=>patchDefault({url:event.target.value})}/><VsnInput label="Default alt text" value={objectDefault.altText || ""} onChange={(event)=>patchDefault({altText:event.target.value})}/></> : null}
-    {baseType === "icon" ? <><VsnInput label="Default icon name" value={objectDefault.polarisType || "star"} placeholder="star" onChange={(event)=>patchDefault({polarisType:event.target.value})}/><VsnInput label="Default icon size" type="number" min="6" max="200" value={objectDefault.size ?? 20} onChange={(event)=>patchDefault({size:Number(event.target.value)||20})}/><VsnInput label="Default icon color" value={objectDefault.color || "currentColor"} placeholder="currentColor or #000000" onChange={(event)=>patchDefault({color:event.target.value})}/></> : null}
+    {baseType === "icon" ? <div className="vsn-field-control"><IconControl label="Default icon" value={objectDefault} onChange={(next)=>onPatch({default:next})} /></div> : null}
   </div>;
 }
 
@@ -155,6 +187,7 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
 
   const current = templateFor(templates, widgetType);
   const tokens = useMemo(() => widgetTokens(widgetType), [widgetType]);
+  const templateTokenList = useMemo(() => [{ name: "vsn.root", detail: "required on root" }, { name: "vsn.content", detail: "built-in output" }, ...Object.keys(tokens).map((name) => ({ name, detail: "widget field" }))], [tokens]);
   const [html, setHtml] = useState(current?.html || DEFAULT_WIDGET_TEMPLATE);
   const [css, setCss] = useState(current?.css || "");
   const [enabled, setEnabled] = useState(current?.enabled !== false);
@@ -266,11 +299,7 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
             title="Widget Template Lab"
             subtitle="Change any widget's HTML and CSS. Wrap the built-in output, or replace the markup completely using the widget's own fields."
           >
-            <VsnSelect label="Widget" value={widgetType} onChange={(event) => setWidgetType(event.target.value)}>
-              {(data.widgets || []).map((row) => (
-                <option key={row.id} value={row.id}>{row.category} · {row.name}</option>
-              ))}
-            </VsnSelect>
+            <WidgetPicker widgets={data.widgets || []} value={widgetType} onChange={setWidgetType} overridden={new Set(templates.map((row) => row.widgetType))} />
             <div className="vsn-template-starters">
               <span>Start from</span>
               {TEMPLATE_STARTERS.map((starter) => (
@@ -290,7 +319,7 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
               </div>
               <small>Keep <code>{"{{vsn.root}}"}</code> on the root element. Leave out <code>{"{{vsn.content}}"}</code> to replace the widget HTML completely. Scripts are not allowed.</small>
             </div>
-            <VsnCodeEditor label="Template HTML" language="html" rows={15} value={html} onChange={setHtml} />
+            <VsnCodeEditor label="Template HTML" language="html" rows={15} value={html} onChange={setHtml} tokens={templateTokenList} />
             <VsnCodeEditor label="Scoped CSS" language="css" rows={10} value={css} onChange={setCss} />
             <label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-switch-row">
               <span><b>Enable override</b><small>Fallback remains the native VSN renderer.</small></span>
@@ -460,7 +489,7 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
                 </div>;
               })}
             </VsnCard>
-            <VsnCodeEditor label="Widget HTML" language="html" rows={12} value={custom.templateHtml} onChange={(value) => setCustom({...custom,templateHtml:value})} />
+            <VsnCodeEditor label="Widget HTML" language="html" rows={12} tokens={[{ name: "vsn.root", detail: "required on root" }, ...(custom.fields || []).filter((field) => field.key).map((field) => ({ name: field.key, detail: field.label || field.type }))]} value={custom.templateHtml} onChange={(value) => setCustom({...custom,templateHtml:value})} />
             <VsnCodeEditor label="Scoped CSS" language="css" rows={8} value={custom.templateCss} onChange={(value) => setCustom({...custom,templateCss:value})} />
           </div>
           <VsnCard title="Live widget preview"><Preview html={custom.templateHtml} css={custom.templateCss} props={customProps} /></VsnCard>

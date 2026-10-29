@@ -28,7 +28,9 @@ async function assetPipelineReady(admin) {
   } catch { return false; }
 }
 
-async function loadSteps(admin, session) {
+const REQUIRED_STEPS = ["plan", "embed", "assets"];
+
+async function loadSteps(admin, session, state = {}) {
   const [embed, assetsReady, subscription, pageCount] = await Promise.all([
     inspectThemeEmbedStatus(admin, session),
     assetPipelineReady(admin),
@@ -39,13 +41,17 @@ async function loadSteps(admin, session) {
     { key: "plan", title: "Choose a plan", done: Boolean(subscription), description: "Plan limits decide how many published templates and premium widgets you can use. Free works to get started.", detail: subscription ? `Current plan: ${subscription.planKey}` : "", actionHref: "/app?view=pricing", actionLabel: "View plans" },
     { key: "embed", title: "Turn on the VSN app embed", done: embed.active === true, description: "Builder pages, Liquid widgets and inline prerendered content load through the VSN Page Renderer app embed in your live theme.", detail: embed.themeName ? `Live theme: ${embed.themeName}` : "", actionUrl: embed.editorUrl, actionLabel: "Open theme editor" },
     { key: "assets", title: "Install theme files", done: assetsReady, description: "Writes the compiled CSS/JS for your published templates into the live theme so content renders with the Shopify page.", intent: "build-assets", actionLabel: "Install theme files" },
-    { key: "page", title: "Create your first page", done: pageCount > 0, description: "Start from a template or a blank canvas, then publish when it is ready.", actionHref: "/app/pages", actionLabel: "Create a page" },
+    { key: "page", title: "Create your first page", optional: true, done: pageCount > 0 || state.pageStepDone === true, description: "Start from a template or a blank canvas, then publish when it is ready.", actionHref: "/app/pages", actionLabel: "Create a page" },
   ];
 }
 
 export async function loader({ request }) {
   const { admin, session } = await authenticate.admin(request);
-  const [state, steps] = await Promise.all([loadState(session.shop), loadSteps(admin, session)]);
+  let state = await loadState(session.shop);
+  const steps = await loadSteps(admin, session, state);
+  // Remember once the required steps are done so the app stops sending the merchant here.
+  const requiredDone = steps.filter((step) => REQUIRED_STEPS.includes(step.key)).every((step) => step.done);
+  if (requiredDone !== (state.requiredStepsComplete === true)) state = await saveState(session.shop, { ...state, requiredStepsComplete: requiredDone });
   return { state, steps };
 }
 
@@ -60,8 +66,13 @@ export async function action({ request }) {
     const result = await rebuildThemeAssets({ admin, session, db }).catch((error) => ({ success: false, error: error instanceof Error ? error.message : "Theme file install failed." }));
     return Response.json({ ok: result?.success === true, intent, message: result?.success ? "Theme files installed." : "", error: result?.success ? "" : result?.error || "Theme file install failed." });
   }
-  if (intent === "finish" || intent === "skip") {
-    const next = await saveState(session.shop, { ...state, [intent === "finish" ? "setupCompleted" : "setupSkipped"]: true, setupFinishedAt: new Date().toISOString() });
+  if (intent === "mark-page") {
+    const next = await saveState(session.shop, { ...state, pageStepDone: true });
+    return Response.json({ ok: true, intent, state: next });
+  }
+  if (intent === "skip") return Response.json({ ok: true, intent, redirect: "/app?setup=later" });
+  if (intent === "finish") {
+    const next = await saveState(session.shop, { ...state, setupCompleted: true, setupFinishedAt: new Date().toISOString() });
     return Response.json({ ok: true, intent, state: next, redirect: "/app" });
   }
   return Response.json({ ok: false, error: "Unsupported setup action." }, { status: 400 });
@@ -72,10 +83,22 @@ export default function Setup() {
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
   const currentIndex = steps.findIndex((step) => !step.done);
-  const allDone = currentIndex === -1;
+  const allDone = steps.every((step) => step.done || step.optional);
   const doneCount = steps.filter((step) => step.done).length;
-  useEffect(() => { if (fetcher.data?.redirect) window.location.assign(fetcher.data.redirect + window.location.search); }, [fetcher.data]);
-  useEffect(() => { if (fetcher.data?.intent === "build-assets") revalidator.revalidate(); }, [fetcher.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!fetcher.data?.redirect) return;
+    const target = new URL(fetcher.data.redirect, window.location.origin);
+    new URLSearchParams(window.location.search).forEach((value, key) => { if (!target.searchParams.has(key)) target.searchParams.set(key, value); });
+    window.location.assign(target.pathname + target.search);
+  }, [fetcher.data]);
+  useEffect(() => { if (["build-assets", "mark-page"].includes(fetcher.data?.intent)) revalidator.revalidate(); }, [fetcher.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Coming back from the theme editor (another tab or the same window) re-checks the store.
+  useEffect(() => {
+    const recheck = () => { if (document.visibilityState === "visible" && revalidator.state === "idle") revalidator.revalidate(); };
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", recheck);
+    return () => { window.removeEventListener("focus", recheck); document.removeEventListener("visibilitychange", recheck); };
+  }, [revalidator]);
 
   return <s-page heading="Set up VSN Builder">
     <s-stack direction="block" gap="base">
@@ -95,6 +118,7 @@ export default function Setup() {
           <s-stack direction="block" gap="small-200">
             <s-stack direction="inline" gap="small-200" alignItems="center">
               <s-badge tone={step.done ? "success" : current ? "info" : "neutral"}>{step.done ? "Done" : current ? "Current step" : "Up next"}</s-badge>
+              {step.optional ? <s-badge>Optional</s-badge> : null}
               {step.detail ? <s-text color="subdued">{step.detail}</s-text> : null}
             </s-stack>
             {current ? <>
@@ -103,7 +127,9 @@ export default function Setup() {
                 {step.intent ? <s-button variant="primary" disabled={fetcher.state !== "idle"} onClick={() => fetcher.submit({ intent: step.intent }, { method: "post" })}>{fetcher.state !== "idle" ? "Working…" : step.actionLabel}</s-button> : null}
                 {step.actionUrl ? <s-button variant="primary" href={step.actionUrl} target="_top">{step.actionLabel}</s-button> : null}
                 {step.actionHref ? <s-button variant="primary" href={step.actionHref}>{step.actionLabel}</s-button> : null}
-                <s-button onClick={() => revalidator.revalidate()}>I have done this</s-button>
+                {step.optional
+                  ? <s-button onClick={() => fetcher.submit({ intent: "mark-page" }, { method: "post" })}>Mark as complete</s-button>
+                  : <s-button onClick={() => revalidator.revalidate()} disabled={revalidator.state !== "idle"}>{revalidator.state !== "idle" ? "Checking…" : "Check again"}</s-button>}
               </s-stack>
             </> : locked ? <s-text color="subdued">Complete the previous step first.</s-text> : null}
           </s-stack>
