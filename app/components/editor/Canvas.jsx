@@ -1,4 +1,5 @@
 import { styleKitCss } from "../../builder/styleKit.js";
+import EmptyChildDrop from "./EmptyChildDrop.jsx";
 import { isHiddenOnDevice } from "../../builder/visibility.js";
 import { Component, createContext, memo, useContext, useEffect, useRef, useState } from 'react';
 import SectionInserter from './SectionInserter';
@@ -34,10 +35,6 @@ const ResponsiveConfigContext = createContext({});
 const WidgetTemplateContext = createContext({});
 
 const cssFromStyles = buildNodeStyle;
-// An empty image/media container keeps its artwork visible: the drop hint floats
-// centred over it instead of painting an opaque box across the top.
-const EMPTY_DROP_OVER_MEDIA = { flex: 1, minHeight: 0, alignSelf: "stretch", background: "transparent", border: "1px dashed rgba(255,255,255,.75)", color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,.45)" };
-
 function sampleLoopItems(query, context = {}) {
   const q = normalizeQueryDefinition(query);
   let raw = [];
@@ -1120,7 +1117,7 @@ function RenderNode({
             </div>
           ))}
           <DropZone parentId={node.id} beforeId={null} onDrop={onDrop} onAdd={onRequestAddChild} compact />
-          {!(node.children ?? []).length ? <div data-vsn-empty-child-drop="1" style={{minHeight:120,display:"grid",placeItems:"center",textAlign:"center",border:"1px dashed #b7bdc1",borderRadius:10,background:"#fafbfb",color:"#6d7175",pointerEvents:"none",...(style.backgroundImage && style.backgroundImage !== "none" ? EMPTY_DROP_OVER_MEDIA : null)}}><div><div aria-hidden="true" style={{fontSize:34,lineHeight:1}}>＋</div><strong style={{display:"block",fontSize:12,marginTop:6}}>Add Widget</strong><span style={{fontSize:10}}>Drag any widget here</span></div></div> : null}
+          {!(node.children ?? []).length ? <EmptyChildDrop overMedia={Boolean(style.backgroundImage && style.backgroundImage !== "none")} /> : null}
         </div>
       </div>
     );
@@ -1491,9 +1488,7 @@ export default function Canvas({
               />
             </div>
           ))}
-          {/* Sections stack edge to edge, as on the storefront; only the inserter is inset. */}
-          <div className="p-6">
-          <DropZone parentId={null} beforeId={null} onDrop={onDrop} onAdd={onRequestAddChild} />
+          <div className="p-6">{/* sections stack edge to edge; only the inserter is inset */}<DropZone parentId={null} beforeId={null} onDrop={onDrop} onAdd={onRequestAddChild} />
           <SectionInserter
             reusableSections={reusableSections}
             onAddStructure={onAddStructure}
@@ -1507,10 +1502,8 @@ export default function Canvas({
             onOpenWidgets={onOpenWidgets}
             onOpenAI={onOpenAI}
             openLibrarySignal={libraryOpenSignal}
-            pageTemplate={pageTemplate}
-            libraryLoading={libraryLoading}
-          />
-          </div>
+            pageTemplate={pageTemplate} libraryLoading={libraryLoading}
+          /></div>
         </div>
         </div>
       </div>
