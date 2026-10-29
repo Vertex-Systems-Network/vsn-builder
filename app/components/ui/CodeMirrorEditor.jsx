@@ -16,10 +16,10 @@ const theme = EditorView.theme({
   ".cm-gutters": { backgroundColor: "#0b1222", color: "#64748b", border: "none" },
   ".cm-activeLine": { backgroundColor: "rgba(148,163,184,.08)" },
   ".cm-activeLineGutter": { backgroundColor: "rgba(148,163,184,.12)", color: "#cbd5e1" },
-  "&.cm-focused": { outline: "2px solid #6366f1", outlineOffset: "-2px" },
+  "&.cm-focused": { outline: "2px solid var(--vsn-green, #625BA8)", outlineOffset: "-2px" },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": { backgroundColor: "rgba(99,102,241,.35) !important" },
   ".cm-tooltip-autocomplete": { backgroundColor: "#111827", border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" },
-  ".cm-tooltip-autocomplete ul li[aria-selected]": { backgroundColor: "#4f46e5", color: "#fff" },
+  ".cm-tooltip-autocomplete ul li[aria-selected]": { backgroundColor: "var(--vsn-green, #625BA8)", color: "#fff" },
   ".cm-completionDetail": { color: "#94a3b8", fontStyle: "normal", marginLeft: "8px" },
 }, { dark: true });
 
