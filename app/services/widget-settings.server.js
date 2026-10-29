@@ -1,4 +1,5 @@
 import { widgetRegistry } from "../builder/widgetRegistry.js";
+import { widgetDescription } from "../data/widgetDescriptions.js";
 
 export const WIDGET_NAMESPACE = "vsn_page_builder";
 export const WIDGET_SETTINGS_KEY = "widget_settings";
@@ -35,7 +36,7 @@ export function getWidgetDefinitions() {
     id,
     name: config.label || id,
     category: categoryFor(id, config),
-    description: `Enable or disable the ${config.label || id} widget in the VSN Builder element library.`,
+    description: widgetDescription(id, categoryFor(id, config), config.label),
     enabled: true,
   }));
 }
