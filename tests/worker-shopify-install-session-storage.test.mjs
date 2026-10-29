@@ -370,3 +370,19 @@ test("Worker SDK read query errors are sanitized and never expose Neon or tokens
   return true;
  });
 });
+test("an expired offline token with a live refresh token still loads so the SDK can refresh it",async()=>{
+ const fx=database();await persist(offline(),fx);
+ const row=fx.sessions.get("offline_"+shop);
+ row.expires=date("2020-01-01T00:00:00.000Z");
+ const session={...offline(),expires:row.expires};
+ const base={
+  async loadSession(){return session},async findSessionsByShop(){return [session]},
+  async deleteSession(){return true},async deleteSessions(){return true},async isReady(){return true},
+ };
+ const safe=createWorkerGenerationSessionStorage(fx.client,base,{SessionStorage:PrismaSessionStorage,clock:()=>baseTime});
+ assert.equal(await safe.loadSession(session.id),undefined,"no refresh token: stays rejected");
+ row.refreshToken="synthetic-refresh";row.refreshTokenExpires=date("2999-01-01T00:00:00.000Z");
+ assert.equal((await safe.loadSession(session.id))?.accessToken,"synthetic-token-1");
+ row.refreshTokenExpires=date("2020-01-02T00:00:00.000Z");
+ assert.equal(await safe.loadSession(session.id),undefined,"expired refresh token: rejected");
+});

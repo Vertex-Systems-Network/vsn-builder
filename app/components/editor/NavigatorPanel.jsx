@@ -1,4 +1,5 @@
 import { VsnButton, VsnTextField, VsnSearchField } from "./EditorUi";
+import { attachDragPreview } from "./dnd/dragPreview.js";
 import { useMemo, useState } from "react";
 import PolarisIcon, { WidgetPolarisIcon } from "../ui/PolarisIcon";
 import { acceptsChildren } from "../../builder/widgetRegistry";
@@ -62,6 +63,7 @@ function TreeRow({
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("vsnNodeId", node.id);
     event.dataTransfer.setData("vsnDragKind", "existing-node");
+    attachDragPreview(event, node.label || node.type);
   };
 
   const resolveDropMode = (event) => {

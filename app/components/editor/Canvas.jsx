@@ -1,5 +1,5 @@
 import { styleKitCss } from "../../builder/styleKit.js";
-import EmptyChildDrop from "./EmptyChildDrop.jsx";
+import EmptyChildDrop from "./EmptyChildDrop.jsx"; import ContentGridPreview from "./ContentGridPreview.jsx"; import { attachDragPreview, dragDropEffect, draggingSection, markDragType } from "./dnd/dragPreview.js";
 import { isHiddenOnDevice } from "../../builder/visibility.js";
 import { Component, createContext, memo, useContext, useEffect, useRef, useState } from 'react';
 import SectionInserter from './SectionInserter';
@@ -74,12 +74,11 @@ function DropZone({ parentId, beforeId = null, afterId = null, onDrop, onAdd, co
       data-active={active ? "1" : undefined}
       data-compact={compact ? "1" : undefined}
       onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); setActive(true); }}
-      onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = event.dataTransfer.getData('vsnNodeId') ? 'move' : 'copy'; setActive(true); }}
+      onDragOver={(event) => { if (parentId && draggingSection(event)) return; event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = dragDropEffect(event); setActive(true); }}
       onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setActive(false); }}
       onDrop={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        setActive(false);
+        if (parentId && draggingSection(event)) return;
+        event.preventDefault(); event.stopPropagation(); setActive(false);
         const type = event.dataTransfer.getData('elementType');
         const nodeId = event.dataTransfer.getData('vsnNodeId');
         if (nodeId) onDrop?.({ nodeId, parentId, beforeId, afterId, mode: 'move' });
@@ -532,17 +531,17 @@ function RenderNode({
       content = resolved?.root ? <ComponentStackContext.Provider value={[...componentStack, componentId]}><div data-vsn-component-master-version={resolved.masterVersion} style={{...style,border:selected?"1px solid #008060":"1px dashed transparent",borderRadius:"8px"}}><RenderNode node={resolved.root} parentId={node.id} selectedId={selectedId} onSelect={(id,event)=>onSelect(node.id,event)} onDrop={onDrop} onRequestAddChild={onRequestAddChild} onMoveNode={onMoveNode} previewCollection={previewCollection} previewProduct={previewProduct} previewBlog={previewBlog} previewArticle={previewArticle} previewSearch={previewSearch} reusableSections={reusableSections} previewMode={previewMode}/><DropZone parentId={node.id} beforeId={null} onDrop={onDrop} onAdd={onRequestAddChild}/></div></ComponentStackContext.Provider> : <div className="rounded-lg border border-dashed border-[#c9cccf] bg-[#fafbfb] p-6 text-center text-xs text-[#6d7175]">Choose a component in Properties.</div>;
     }
   } else if (node.type === "loop") {
-    content = <LoopCanvasWidget node={node} selectedId={selectedId} onSelect={onSelect} onDrop={onDrop} onRequestAddChild={onRequestAddChild} onMoveNode={onMoveNode} previewCollection={previewCollection} previewProduct={previewProduct} previewBlog={previewBlog} previewArticle={previewArticle} previewSearch={previewSearch} reusableSections={reusableSections} previewMode={previewMode} />;
+    content = <div style={style}><LoopCanvasWidget node={node} selectedId={selectedId} onSelect={onSelect} onDrop={onDrop} onRequestAddChild={onRequestAddChild} onMoveNode={onMoveNode} previewCollection={previewCollection} previewProduct={previewProduct} previewBlog={previewBlog} previewArticle={previewArticle} previewSearch={previewSearch} reusableSections={reusableSections} previewMode={previewMode} /></div>;
   } else if (node.type === "gallery-grid") {
-    content = <GalleryCanvasWidget node={node} previewMode={previewMode} />;
+    content = <div style={style}><GalleryCanvasWidget node={node} previewMode={previewMode} /></div>;
   } else if (node.type === "video") {
-    content = <VideoCanvasWidget node={node} />;
+    content = <div style={style}><VideoCanvasWidget node={node} /></div>;
   } else if (node.type === "slider" || isNestedSliderType(node.type)) {
-    content = <SliderCanvasWidget node={node} selectedId={selectedId} onSelect={onSelect} onDrop={onDrop} onRequestAddChild={onRequestAddChild} onMoveNode={onMoveNode} previewCollection={previewCollection} previewProduct={previewProduct} previewBlog={previewBlog} previewArticle={previewArticle} previewSearch={previewSearch} reusableSections={reusableSections} previewMode={previewMode} />;
+    content = <div style={style}><SliderCanvasWidget node={node} selectedId={selectedId} onSelect={onSelect} onDrop={onDrop} onRequestAddChild={onRequestAddChild} onMoveNode={onMoveNode} previewCollection={previewCollection} previewProduct={previewProduct} previewBlog={previewBlog} previewArticle={previewArticle} previewSearch={previewSearch} reusableSections={reusableSections} previewMode={previewMode} /></div>;
   } else if (PHASE10_CANVAS_TYPES.has(node.type)) {
-    content = <Phase10CanvasWidget node={node} previewProduct={previewProduct} />;
+    content = <div style={style}><Phase10CanvasWidget node={node} previewProduct={previewProduct} /></div>;
   } else if (EXTENDED_CANVAS_TYPES.has(node.type)) {
-    content = <ExtendedCanvasWidget node={node} previewProduct={previewProduct} />;
+    content = <div style={style}><ExtendedCanvasWidget node={node} previewProduct={previewProduct} /></div>;
   } else if (node.type === "global-section") {
     const section = reusableSections.find((item) => item.id === node.props?.sectionId);
     const sectionNodes = Array.isArray(section?.content) ? section.content.filter((item) => !["global-styles", "template-settings"].includes(item?.type)) : [];
@@ -576,11 +575,11 @@ function RenderNode({
   } else if (node.type === "search-result-count") {
     const count = previewSearch?.products?.length || 0; content = <div style={style}>{count} {count === 1 ? (node.props.singularText || "result") : (node.props.pluralText || "results")}</div>;
   } else if (node.type === "search-results-grid") {
-    const items = (previewSearch?.products || []).slice(0,normalizeGridProps("search-results-grid",node.props).limit); const g=normalizeGridProps("search-results-grid",node.props); const cols=previewMode==="mobile"?g.columnsMobile:previewMode==="tablet"?g.columnsTablet:g.columnsDesktop; content = <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:g.gap}}>{items.length?items.map((item)=><div key={item.id} style={{border:"1px solid #e5e5e5",borderRadius:"12px",padding:"14px"}}>{item.featuredImage?.url&&<img src={item.featuredImage.url} alt={item.featuredImage.altText||item.title} style={{width:"100%",aspectRatio:"1",objectFit:"cover",borderRadius:"8px"}}/>}<strong>{item.title}</strong></div>):<div>{node.props.emptyText||"No results found."}</div>}</div>;
+    const g=normalizeGridProps("search-results-grid",node.props); const cols=previewMode==="mobile"?g.columnsMobile:previewMode==="tablet"?g.columnsTablet:g.columnsDesktop; content = <ContentGridPreview style={style} grid={g} columns={cols} items={(previewSearch?.products||[]).slice(0,g.limit).map((item)=>({id:item.id,title:item.title,imageUrl:item.featuredImage?.url,imageAlt:item.featuredImage?.altText}))}/>;
   } else if (node.type === "blog-title") { content = <h1 style={style}>{previewBlog?.title || node.props.fallbackText || "Blog"}</h1>;
   } else if (node.type === "blog-description") { content = <p style={style}>{node.props.fallbackText || "Latest stories and updates."}</p>;
   } else if (node.type === "blog-article-grid") {
-    const g=normalizeGridProps("blog-article-grid",node.props); const items=(previewBlog?.articles?.nodes||[]).slice(0,g.limit); const cols=previewMode==="mobile"?g.columnsMobile:previewMode==="tablet"?g.columnsTablet:g.columnsDesktop; content=<div style={{display:"grid",gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:g.gap}}>{items.length?items.map((item)=><article key={item.id} style={{border:"1px solid #e5e5e5",borderRadius:"12px",padding:"14px"}}>{item.image?.url&&<img src={item.image.url} alt={item.image.altText||item.title} style={{width:"100%",aspectRatio:"4/3",objectFit:"cover",borderRadius:"8px"}}/>}<h3>{item.title}</h3><p>{item.excerpt||""}</p></article>):<div>{node.props.emptyText||"No articles found."}</div>}</div>;
+    const g=normalizeGridProps("blog-article-grid",node.props); const cols=previewMode==="mobile"?g.columnsMobile:previewMode==="tablet"?g.columnsTablet:g.columnsDesktop; content=<ContentGridPreview style={style} grid={g} columns={cols} items={(previewBlog?.articles?.nodes||[]).slice(0,g.limit).map((item)=>({id:item.id,title:item.title,imageUrl:item.image?.url,imageAlt:item.image?.altText,excerpt:item.excerpt,author:item.author?.name,date:item.publishedAt?new Date(item.publishedAt).toLocaleDateString():""}))}/>;
   } else if (node.type === "article-title") { content=<h1 style={style}>{previewArticle?.title||node.props.fallbackText||"Article title"}</h1>;
   } else if (node.type === "article-featured-image") { const mp=normalizeContextImageProps(node.props||{}); const media=previewArticle?.image||{}; const src=contextImageUrl(media,mp); content=src?<img src={src} alt={contextImageAlt(media,mp,previewArticle?.title||"Article")} loading={mp.loading} {...{ fetchpriority: mp.fetchPriority }} style={{...style,width:"100%",objectFit:"cover"}}/>:<div style={{...style,minHeight:"240px",background:"#f3f3f3"}}/>;
   } else if (node.type === "article-content") { content=<div style={style}>{previewArticle?.excerpt||node.props.fallbackText||"Article content will appear here."}</div>;
@@ -588,7 +587,7 @@ function RenderNode({
   } else if (node.type === "article-date") { const d=previewArticle?.publishedAt?new Date(previewArticle.publishedAt):null; const formatted=d?(node.props.format==="iso"?d.toISOString().slice(0,10):d.toLocaleDateString("en-US",node.props.format==="short"?{year:"numeric",month:"numeric",day:"numeric"}:node.props.format==="medium"?{year:"numeric",month:"short",day:"numeric"}:{year:"numeric",month:"long",day:"numeric"})):"Publish date"; content=<div style={style}>{formatted}</div>;
   } else if (node.type === "article-tags") { content=<div style={style}>{node.props.prefix||""}{(previewArticle?.tags||["Tag"]).join(node.props.separator||" · ")}</div>;
   } else if (node.type === "article-navigation") { content=<div style={{display:"flex",justifyContent:"space-between",...style}}><span>← {node.props.previousText||"Previous article"}</span><span>{node.props.nextText||"Next article"} →</span></div>;
-  } else if (node.type === "related-articles") { content=<section style={style}><h2>{node.props.heading||"Related articles"}</h2><div className="text-sm text-[#777]">Related article cards appear on the storefront.</div></section>;
+  } else if (node.type === "related-articles") { const g=normalizeGridProps("related-articles",node.props); content=<ContentGridPreview style={style} grid={g} columns={previewMode==="mobile"?g.columnsMobile:previewMode==="tablet"?g.columnsTablet:g.columnsDesktop} heading={node.props.heading||"Related articles"}/>;
   } else if (node.type === 'text') {
     content = <p style={style}>{node.props.text || 'Add your text content here.'}</p>;
   } else if (
@@ -693,7 +692,7 @@ function RenderNode({
     const previewTypes = Array.from(new Set(products.map((product) => product.productType || "").filter(Boolean))).sort();
 
     content = (
-      <>
+      <div style={style}>
       {node.props.filtersEnabled === true && (
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: "12px", marginBottom: "18px", width: "100%" }}>
           <div style={{ width: "100%", fontWeight: 600 }}>{node.props.filterLabel || "Filter products"}</div>
@@ -978,7 +977,7 @@ function RenderNode({
           </button>
         </div>
       )}
-      </>
+      </div>
     );
   } else if (node.type === "product-title") {
     const Tag = node.props.tag || "h1";
@@ -1162,7 +1161,7 @@ function RenderNode({
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('vsnNodeId', node.id);
       event.dataTransfer.setData('vsnDragKind', 'existing-node');
-      event.dataTransfer.setData('text/plain', `vsn-node:${node.id}`);
+      event.dataTransfer.setData('text/plain', `vsn-node:${node.id}`); markDragType(event, node.type); attachDragPreview(event, node.label || node.type);
       document.documentElement.dataset.vsnDragging = "1";
       event.currentTarget?.setAttribute?.("data-vsn-dragging-node", "1");
     }}
@@ -1175,13 +1174,13 @@ function RenderNode({
       setDropPosition("");
     }}
     onDragOver={(event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      event.dataTransfer.dropEffect = event.dataTransfer.getData('vsnNodeId') ? 'move' : 'copy';
+      if (parentId && draggingSection(event)) return; // sections land beside top-level sections only
+      event.preventDefault(); event.stopPropagation();
+      event.dataTransfer.dropEffect = dragDropEffect(event);
       const rect = event.currentTarget.getBoundingClientRect();
       const y = event.clientY - rect.top;
       let position = y < rect.height * 0.24 ? 'before' : y > rect.height * 0.76 ? 'after' : 'inside';
-      if (position === 'inside' && !acceptsChildren(node.type)) position = y < rect.height / 2 ? 'before' : 'after';
+      if (position === 'inside' && (!acceptsChildren(node.type) || draggingSection(event))) position = y < rect.height / 2 ? 'before' : 'after';
       pendingDropPositionRef.current = position;
       if (!dragFrameRef.current) {
         dragFrameRef.current = requestAnimationFrame(() => {
@@ -1194,9 +1193,9 @@ function RenderNode({
       if (!event.currentTarget.contains(event.relatedTarget)) setDropPosition('');
     }}
     onDrop={(event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      const position = dropPosition || 'after';
+      if (parentId && draggingSection(event)) return;
+      event.preventDefault(); event.stopPropagation();
+      const position = pendingDropPositionRef.current || dropPosition || 'after'; pendingDropPositionRef.current = '';
       setDropPosition('');
       const type = event.dataTransfer.getData('elementType');
       const nodeId = event.dataTransfer.getData('vsnNodeId');
@@ -1213,7 +1212,7 @@ function RenderNode({
     {dropPosition === 'after' ? <span className="pointer-events-none absolute -bottom-1 left-0 right-0 z-30 h-1 rounded-full bg-[#625BA8] shadow-[0_0_0_3px_rgba(98,91,168,.14)]" /> : null}
     {dropPosition === 'inside' ? <span className="pointer-events-none absolute inset-0 z-30 rounded-[inherit] border-2 border-dashed border-[#625BA8] bg-[#625BA8]/5" /> : null}
     {content}
-    {selected && <span className="pointer-events-none absolute -top-6 left-0 z-20 flex items-center gap-1 rounded-t bg-[#625BA8] px-2 py-1 text-[10px] text-white">{node.label}{node.conditions?.enabled && !conditionMatches ? ' · hidden by condition' : ''}{editorHidden ? (node.meta?.hidden === true ? ' · hidden' : ` · hidden on ${previewMode}`) : ''}</span>}
+    {selected && <span title="Drag to move" className="absolute -top-6 left-0 z-20 flex cursor-grab items-center gap-1 rounded-t bg-[#625BA8] px-2 py-1 text-[10px] text-white active:cursor-grabbing"><span aria-hidden="true">⠿</span>{node.label}{node.conditions?.enabled && !conditionMatches ? ' · hidden by condition' : ''}{editorHidden ? (node.meta?.hidden === true ? ' · hidden' : ` · hidden on ${previewMode}`) : ''}</span>}
   </div>;
 }
 const MemoRenderNode = memo(RenderNode, (prev, next) => prev.node === next.node && prev.selectedId === next.selectedId && prev.previewMode === next.previewMode && prev.previewCollection === next.previewCollection && prev.previewProduct === next.previewProduct && prev.previewBlog === next.previewBlog && prev.previewArticle === next.previewArticle && prev.previewSearch === next.previewSearch && prev.reusableSections === next.reusableSections);
@@ -1412,7 +1411,7 @@ export default function Canvas({
       onClick={() => { if (!isPanning) onSelect(null); }}
       onDragOver={(event) => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = event.dataTransfer.getData("vsnNodeId") ? "move" : "copy";
+        event.dataTransfer.dropEffect = dragDropEffect(event);
         const rect = event.currentTarget.getBoundingClientRect();
         const edge = 72;
         const distance = event.clientY - rect.top < edge ? -18 : rect.bottom - event.clientY < edge ? 18 : 0;

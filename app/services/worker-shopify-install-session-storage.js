@@ -158,7 +158,16 @@ const validPersisted=(row,id,shop)=>{
      typeof row.accessToken!=="string" || !row.accessToken ||
      typeof row.isOnline!=="boolean")return false;
   const expiry=expiresAt(row);
-  return expiry===null || (Number.isFinite(expiry)&&expiry>Date.now());
+  if(expiry===null || (Number.isFinite(expiry)&&expiry>Date.now()))return true;
+  // An expired *offline* token that still has a live refresh token must load, so
+  // the SDK (expiringOfflineAccessTokens) can refresh it. Rejecting it broke every
+  // app-proxy request an hour after the merchant last opened the admin.
+  return refreshable(row);
+};
+const refreshable=row=>{
+  if(row.isOnline!==false || typeof row.refreshToken!=="string" || !row.refreshToken)return false;
+  if(row.refreshTokenExpires==null)return true;
+  return isDate(row.refreshTokenExpires) && row.refreshTokenExpires.getTime()>Date.now();
 };
 const samePersisted=(a,b)=>
   a.id===b.id && a.shop===b.shop && a.accessToken===b.accessToken &&
