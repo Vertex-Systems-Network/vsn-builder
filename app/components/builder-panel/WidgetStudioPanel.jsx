@@ -19,6 +19,7 @@ import {
   scopeVisualTemplateCss,
   validateVisualTemplate,
 } from "../../builder/visualTemplate.js";
+import { createWidget } from "../../builder/widgetRegistry.js";
 import { VSN_WIDGET_FIELD_TYPES, VSN_WIDGET_FIELD_BASE_IDS, widgetFieldDefault, widgetFieldUsesNumberRules, widgetFieldUsesOptions } from "../../config/widget-field-types.js";
 
 const DEFAULT_WIDGET_TEMPLATE = `<div {{vsn.root}} class="vsn-widget-template">
@@ -42,6 +43,28 @@ function emptyCustomWidget() {
   };
 }
 
+// Scalar default props of a built-in widget become template tokens ({{key}}).
+function widgetTokens(widgetType) {
+  try {
+    const props = createWidget(widgetType)?.props || {};
+    return Object.fromEntries(Object.entries(props).filter(([, value]) => ["string", "number", "boolean"].includes(typeof value)).slice(0, 40));
+  } catch {
+    return {};
+  }
+}
+
+const TEMPLATE_STARTERS = [
+  { id: "wrap", label: "Wrap in a card", html: `<div {{vsn.root}} class="vsn-card-wrap">\n  {{vsn.content}}\n</div>`, css: ".vsn-card-wrap { padding: 24px; border-radius: 16px; background: #ffffff; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }" },
+  { id: "label", label: "Add a label", html: `<section {{vsn.root}} class="vsn-labelled">\n  <small class="vsn-labelled__tag">Featured</small>\n  {{vsn.content}}\n</section>`, css: ".vsn-labelled { position: relative; padding-top: 28px; }\n.vsn-labelled__tag { position: absolute; top: 0; left: 0; padding: 2px 10px; border-radius: 999px; background: #111827; color: #fff; font-size: 11px; }" },
+  { id: "full", label: "Replace HTML", full: true },
+];
+
+function fullOverrideHtml(tokens) {
+  const keys = Object.keys(tokens);
+  const lines = keys.slice(0, 6).map((key) => `  <p class="vsn-custom-${key.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}">{{${key}}}</p>`);
+  return `<div {{vsn.root}} class="vsn-custom-markup">\n${lines.join("\n") || "  <p>Custom markup</p>"}\n</div>`;
+}
+
 function templateFor(rows, widgetType) {
   return rows.find((row) => row.widgetType === widgetType) || null;
 }
@@ -51,7 +74,7 @@ function replaceById(rows, item) {
   return [item, ...next];
 }
 
-function Preview({ html, css, props = {}, requireContent = false }) {
+function Preview({ html, css, props = {}, requireContent = false, slotLabel = "" }) {
   const result = useMemo(() => {
     try {
       const checked = validateVisualTemplate(html, css, {
@@ -63,7 +86,7 @@ function Preview({ html, css, props = {}, requireContent = false }) {
       return {
         html: renderVisualTemplateHtml(tree, {
           props,
-          slotHtml: '<div class="vsn-template-preview-slot">Current VSN widget renderer</div>',
+          slotHtml: `<div class="vsn-template-preview-slot">${String(slotLabel || "Built-in widget").replace(/[<>&"]/g, "")} — built-in output</div>`,
           templateKey: "studio-preview",
         }),
         css: scopeVisualTemplateCss(css, "studio-preview"),
@@ -72,7 +95,7 @@ function Preview({ html, css, props = {}, requireContent = false }) {
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
-  }, [html, css, props, requireContent]);
+  }, [html, css, props, requireContent, slotLabel]);
 
   return (
     <div className="vsn-widget-studio-preview">
@@ -131,6 +154,7 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
   const [custom, setCustom] = useState(emptyCustomWidget());
 
   const current = templateFor(templates, widgetType);
+  const tokens = useMemo(() => widgetTokens(widgetType), [widgetType]);
   const [html, setHtml] = useState(current?.html || DEFAULT_WIDGET_TEMPLATE);
   const [css, setCss] = useState(current?.css || "");
   const [enabled, setEnabled] = useState(current?.enabled !== false);
@@ -240,16 +264,32 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
         <div className="vsn-widget-studio-grid">
           <VsnCard
             title="Widget Template Lab"
-            subtitle="Override presentation without replacing the widget's data, controls, or business logic."
+            subtitle="Change any widget's HTML and CSS. Wrap the built-in output, or replace the markup completely using the widget's own fields."
           >
             <VsnSelect label="Widget" value={widgetType} onChange={(event) => setWidgetType(event.target.value)}>
               {(data.widgets || []).map((row) => (
                 <option key={row.id} value={row.id}>{row.category} · {row.name}</option>
               ))}
             </VsnSelect>
-            <VsnNotice tone="info">
-              <b>Protected:</b> keep <code>{"{{vsn.root}}"}</code> on the root and <code>{"{{vsn.content}}"}</code> where the current renderer must appear. JavaScript is not allowed here.
-            </VsnNotice>
+            <div className="vsn-template-starters">
+              <span>Start from</span>
+              {TEMPLATE_STARTERS.map((starter) => (
+                <button key={starter.id} type="button" onClick={() => {
+                  if (starter.full) { setHtml(fullOverrideHtml(tokens)); setCss(".vsn-custom-markup { display: grid; gap: 8px; }"); }
+                  else { setHtml(starter.html); setCss(starter.css); }
+                }}>{starter.label}</button>
+              ))}
+            </div>
+            <div className="vsn-template-tokens">
+              <span>Widget fields (click to insert)</span>
+              <div>
+                <button type="button" onClick={() => setHtml((value) => value.replace(/\n<\/[a-z]+>\s*$/i, (end) => `\n  {{vsn.content}}${end}`))}>{"{{vsn.content}}"} <small>built-in output</small></button>
+                {Object.keys(tokens).map((key) => (
+                  <button key={key} type="button" onClick={() => setHtml((value) => value.replace(/\n<\/[a-z]+>\s*$/i, (end) => `\n  <span>{{${key}}}</span>${end}`))}>{`{{${key}}}`}</button>
+                ))}
+              </div>
+              <small>Keep <code>{"{{vsn.root}}"}</code> on the root element. Leave out <code>{"{{vsn.content}}"}</code> to replace the widget HTML completely. Scripts are not allowed.</small>
+            </div>
             <VsnCodeEditor label="Template HTML" language="html" rows={15} value={html} onChange={setHtml} />
             <VsnCodeEditor label="Scoped CSS" language="css" rows={10} value={css} onChange={setCss} />
             <label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-switch-row">
@@ -278,7 +318,7 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
             </div>
           </VsnCard>
           <VsnCard title="Live preview" subtitle="Validated with the same safe template parser used in the editor and storefront.">
-            <Preview html={html} css={css} requireContent />
+            <Preview html={html} css={css} props={tokens} slotLabel={(data.widgets || []).find((row) => row.id === widgetType)?.name} />
           </VsnCard>
         </div>
       ) : null}
