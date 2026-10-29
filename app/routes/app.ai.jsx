@@ -1,3 +1,4 @@
+import { resolveShopAiConfig } from "../services/ai-credentials.server.js";
 import { paidMutationDenied } from "../services/paid-mutation-guard.server.js";
 import { authenticate } from "../shopify.server.js";
 import db from "../db.server.js";
@@ -78,7 +79,7 @@ export async function action({ request }) {
   const { session } = await authenticate.admin(request);
   if (!(await canAccessBuilderEditor(db, session))) return Response.json({ ok: false, error: "Your role cannot use AI Builder." }, { status: 403 });
   const paidDenial=await paidMutationDenied(db,session.shop);if(paidDenial)return paidDenial;
-  if (!process.env.OPENAI_API_KEY) return Response.json({ ok: false, code: "AI_NOT_CONFIGURED", error: "AI Builder is not configured for this developer environment. Add OPENAI_API_KEY to your .env file and restart Shopify CLI." }, { status: 503 });
+  if (!(await resolveShopAiConfig({ db, shop: session.shop })).apiKey) return Response.json({ ok: false, code: "AI_NOT_CONFIGURED", error: "No AI key is set for this store or developer environment. Open AI settings in the editor and add a Claude, Gemini or OpenAI key." }, { status: 503 });
 
   try {
     const form = await boundedFormData(request);

@@ -1,3 +1,4 @@
+import { resolveShopAiConfig } from "./ai-credentials.server.js";
 import { migrateBuilderContent } from "../builder/schemaMigrations.js";
 import { scanBuilderPage } from "../builder/healthScanner.js";
 import { serializePageForAi } from "../builder/aiBuilder.js";
@@ -241,7 +242,8 @@ export async function runEditorAgentTurn({
   const policy = getAiRuntimePolicy({ env });
   const behaviorVersion = contextToolsEnabled ? policy.behaviorVersions.agentContext : policy.behaviorVersions.agent;
   const behavior = resolveAiBehavior({ surface: "agent", operation: "edit", version: behaviorVersion });
-  const execution = createAiExecution({ behavior, env });
+  const shopConfig = await resolveShopAiConfig({ db: db, shop: session.shop, env });
+  const execution = createAiExecution({ behavior, env, shopConfig });
   if (!providerConfigured({ execution, env })) {
     const error = new Error("AI Agent is not configured on the VSN server.");
     error.code = "AI_NOT_CONFIGURED";

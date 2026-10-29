@@ -1,3 +1,4 @@
+import { resolveShopAiConfig } from "./ai-credentials.server.js";
 import dbDefault from "../db.server.js";
 import { createEmailBlock, normalizeEmailDocument } from "../email/emailSchema.js";
 import { EMAIL_BINDING_TOKENS } from "../email/emailBindings.js";
@@ -48,7 +49,7 @@ export async function runEmailAi({ db = dbDefault, shop, operation = "email", pr
 
   const policy = getAiRuntimePolicy();
   const behavior = resolveAiBehavior({ surface: "email", operation, version: policy.behaviorVersions.email });
-  const execution = createAiExecution({ behavior });
+  const execution = createAiExecution({ behavior, shopConfig: await resolveShopAiConfig({ db, shop }) });
   const status = await aiUsageStatus({ db, shop });
   const started = Date.now();
   const usageRow = await reserveAiUsage({ db, shop, pageId: null, operation: `email-${operation}`, execution });
