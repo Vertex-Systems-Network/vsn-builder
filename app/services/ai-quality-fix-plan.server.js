@@ -1,3 +1,4 @@
+import { resolveShopAiConfig } from "./ai-credentials.server.js";
 import { buildQualityReport } from "../ai/qualityAgent.js";
 import {
   QUALITY_FIX_PLAN_OUTPUT_SCHEMA,
@@ -145,7 +146,8 @@ export async function runAiQualityFixPlan({
     operation: "fix-plan",
     version: policy.behaviorVersions.quality,
   });
-  const execution = createAiExecution({ behavior, env });
+  const shopConfig = await resolveShopAiConfig({ db: db, shop: shop, env });
+  const execution = createAiExecution({ behavior, env, shopConfig });
   if (!providerConfigured({ execution, env })) {
     throw qualityPlanError("AI_NOT_CONFIGURED", "AI Quality planning is not configured on the VSN server.", 503);
   }

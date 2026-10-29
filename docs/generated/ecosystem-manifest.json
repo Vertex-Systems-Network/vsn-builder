@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T01:09:55.865Z",
+  "generatedAt": "2026-10-29T12:38:42.585Z",
   "version": "2.5.107",
   "milestone": "Q.6.4",
   "baselineName": "Hydration, UI Theme, Maps & Form Security — Q.6.4",
@@ -102,7 +102,7 @@
     "privacyLifecycle": 2
   },
   "counts": {
-    "widgets": 117,
+    "widgets": 124,
     "motionBuiltins": 1347,
     "motionReferenceLibraries": 12,
     "motionReferenceCandidates": 306,
@@ -116,7 +116,7 @@
     "permissionResources": 10,
     "permissionActions": 41,
     "migrations": 37,
-    "routeModules": 56,
+    "routeModules": 58,
     "userDocs": 25,
     "developerDocs": 38,
     "engineeringDocs": 17

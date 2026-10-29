@@ -1,5 +1,6 @@
 import { normalizeElementInteractions } from "../builder/interactionSchema.js";
 import { escapeAttribute } from "./safeCss.js";
+import { backgroundVideoUrl } from "../builder/sectionDecorations.js";
 
 export function injectNodeBehavior(html, node) {
 	if (!html || typeof html !== "string") return html;
@@ -32,6 +33,8 @@ export function injectNodeBehavior(html, node) {
 		if (stickyBoundary === "custom" && typeof i.stickyCustomTarget === "string" && i.stickyCustomTarget.trim()) attrs.push(`data-vsn-sticky-target="${escapeAttribute(i.stickyCustomTarget.trim().slice(0, 256))}"`);
 	}
 	if (i.parallax) attrs.push('data-vsn-parallax="1"');
+	const bgVideo = backgroundVideoUrl(node?.styles);
+	if (bgVideo) attrs.push(`data-vsn-bg-video="${escapeAttribute(bgVideo)}"`);
 	if (Array.isArray(i.timelines) && i.timelines.length) attrs.push(`data-vsn-motion="${escapeAttribute(JSON.stringify({ schemaVersion:i.schemaVersion || 3, timelines:i.timelines }))}"`);
 	if (d.enabled && d.source === "query.search") {
 		attrs.push(`data-vsn-dynamic-query="${escapeAttribute(d.key || "")}"`);

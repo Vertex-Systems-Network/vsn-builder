@@ -8,7 +8,7 @@ import { normalizeGridProps } from '../app/builder/dataGridWidget.js';
 import { normalizeContextImageProps } from '../app/builder/contextMediaWidget.js';
 
 const read=(p)=>fs.readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
-const canvas=read('app/components/editor/Canvas.jsx');
+const canvas=read('app/components/editor/Canvas.jsx')+read('app/components/editor/EmptyChildDrop.jsx');
 const preview=read('app/components/editor/PreviewRenderer.jsx');
 const propsPanel=read('app/components/editor/PropertiesPanel.jsx');
 const advanced=read('app/components/editor/AdvancedBuilderControls.jsx');
@@ -16,7 +16,7 @@ const advanced=read('app/components/editor/AdvancedBuilderControls.jsx');
 const storefront=['app/routes/builder-proxy.$.jsx','app/builder/dynamicBindings.js',...fs.readdirSync('app/storefront').filter(f=>f.endsWith('.js')).map(f=>'app/storefront/'+f)].map(read).join('\n');
 const runtime=read('extensions/vsn-page-builder-theme/assets/vsn-page-renderer.js');
 
-assert.equal(Object.keys(widgetRegistry).length,117,'registry must preserve platform widgets plus M.2 Wishlist widgets (117 total)');
+assert.equal(Object.keys(widgetRegistry).length,124,'registry must preserve platform widgets plus M.2 Wishlist and pro widgets (124 total)');
 
 // W5 nested carousel family
 for(const type of ['carousel','slides','testimonials-carousel']){
@@ -78,7 +78,7 @@ assert.match(runtime,/vsnRecommendationIntent/);
 assert.match(runtime,/vsn-recent-products/);
 
 console.log('W5-W9 PLATFORM AUDIT: PASS');
-console.log('widgets: 117/117');
+console.log('widgets: 124/124');
 console.log('nested family: carousel, slides, testimonials-carousel');
 console.log('structured repeaters:',structured.length);
 console.log('data/grid widgets: 9');

@@ -15,6 +15,7 @@ export const ELEMENTS = [
     { id: 'icon', type: 'icon', label: 'Icon', icon: '★', category: 'basic' },
     { id: 'divider', type: 'divider', label: 'Divider', icon: '―', category: 'basic' },
     { id: 'spacer', type: 'spacer', label: 'Spacer', icon: '↕', category: 'basic' },
+    { id: 'animated-headline', type: 'animated-headline', label: 'Animated Headline', icon: 'AH', category: 'basic' },
     // Layout
     { id: 'container', type: 'container', label: 'Container', icon: '⬜', category: 'layout' },
     { id: 'columns', type: 'columns', label: 'Columns', icon: '⬚', category: 'layout' },
@@ -25,8 +26,14 @@ export const ELEMENTS = [
     { id: 'image', type: 'image', label: 'Image', icon: '🖼', category: 'media' },
     { id: 'video', type: 'video', label: 'Video', icon: '▶', category: 'media' },
     { id: 'slider', type: 'slider', label: 'Slider', icon: '⟷', category: 'media' },
+    { id: 'before-after', type: 'before-after', label: 'Before / After', icon: '◧', category: 'media' },
+    { id: 'image-hotspots', type: 'image-hotspots', label: 'Image Hotspots', icon: '◎', category: 'media' },
     // Expanded content library
     { id: 'breadcrumbs', type: 'breadcrumbs', label: 'Breadcrumbs', icon: 'BR', category: 'content' },
+    { id: 'star-rating', type: 'star-rating', label: 'Star Rating', icon: '★', category: 'content' },
+    { id: 'flip-box', type: 'flip-box', label: 'Flip Box', icon: 'FB', category: 'content' },
+    { id: 'table-of-contents', type: 'table-of-contents', label: 'Table of Contents', icon: 'TOC', category: 'content' },
+    { id: 'alert', type: 'alert', label: 'Alert', icon: '!', category: 'content' },
     { id: 'icon-list', type: 'icon-list', label: 'Icon List', icon: 'IL', category: 'content' },
     { id: 'icon-box', type: 'icon-box', label: 'Icon Box', icon: 'IB', category: 'content' },
     { id: 'image-box', type: 'image-box', label: 'Image Box', icon: 'IM', category: 'content' },
@@ -159,6 +166,10 @@ export const ELEMENTS = [
     { id: 'customer-addresses-link', type: 'customer-addresses-link', label: 'Customer Addresses', icon: '⌂', category: 'content' },
     { id: 'localization-switcher', type: 'localization-switcher', label: 'Markets / Localization', icon: '◎', category: 'content' },
     { id: 'countdown', type: 'countdown', label: 'Countdown', icon: '⏱', category: 'commerce' },
+    { id: 'wishlist-button', type: 'wishlist-button', label: 'Wishlist Button', icon: '♡', category: 'commerce' },
+    { id: 'wishlist-count', type: 'wishlist-count', label: 'Wishlist Count', icon: '♡#', category: 'commerce' },
+    { id: 'wishlist-grid', type: 'wishlist-grid', label: 'Wishlist Grid', icon: '♡▦', category: 'commerce' },
+    { id: 'wishlist-empty-state', type: 'wishlist-empty-state', label: 'Wishlist Empty State', icon: '♡○', category: 'commerce' },
     // Advanced
     { id: 'html', type: 'html', label: 'Custom HTML', icon: '</>', category: 'advanced' },
     { id: 'liquid', type: 'liquid', label: 'Liquid', icon: '{%}', category: 'advanced' },

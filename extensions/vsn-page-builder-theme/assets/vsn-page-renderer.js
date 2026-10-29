@@ -610,7 +610,67 @@
 	}
 
 
+	// Before/after compare, rotating headline, table of contents and dismissible alerts.
+	function initializeProWidgets(root = document) {
+		root.querySelectorAll("[data-vsn-compare]").forEach((box) => {
+			if (box.dataset.vsnCompareReady === "1") return;
+			box.dataset.vsnCompareReady = "1";
+			const after = box.querySelector(".vsn-compare-after"), handle = box.querySelector(".vsn-compare-handle");
+			const set = (value) => { const pct = Math.max(0, Math.min(100, value)); if (after) after.style.clipPath = `inset(0 0 0 ${pct}%)`; if (handle) { handle.style.left = `${pct}%`; handle.setAttribute("aria-valuenow", String(Math.round(pct))); } };
+			const fromEvent = (event) => { const rect = box.getBoundingClientRect(); if (rect.width) set(((event.clientX - rect.left) / rect.width) * 100); };
+			let dragging = false;
+			box.addEventListener("pointerdown", (event) => { dragging = true; try { box.setPointerCapture(event.pointerId); } catch { /* ignore */ } fromEvent(event); });
+			box.addEventListener("pointermove", (event) => { if (dragging) fromEvent(event); });
+			for (const type of ["pointerup", "pointercancel"]) box.addEventListener(type, () => { dragging = false; });
+			handle?.addEventListener("keydown", (event) => { const now = Number(handle.getAttribute("aria-valuenow") || 50); if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); set(now + (event.key === "ArrowLeft" ? -5 : 5)); } });
+		});
+		root.querySelectorAll("[data-vsn-rotate-words]").forEach((el) => {
+			if (el.dataset.vsnRotateReady === "1") return;
+			el.dataset.vsnRotateReady = "1";
+			let words = []; try { words = JSON.parse(el.dataset.vsnRotateWords || "[]"); } catch { words = []; }
+			const target = el.querySelector(".vsn-rotate-word");
+			if (!target || words.length < 2 || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+			const typing = el.dataset.vsnRotateMode !== "fade", hold = Math.max(800, Number(el.dataset.vsnRotateSpeed || 2500));
+			let index = 0;
+			const next = () => {
+				index = (index + 1) % words.length; const word = String(words[index]);
+				if (!typing) { target.style.transition = "opacity .3s"; target.style.opacity = "0"; setTimeout(() => { target.textContent = word; target.style.opacity = "1"; }, 300); setTimeout(next, hold); return; }
+				let i = 0; const step = () => { target.textContent = word.slice(0, ++i); if (i < word.length) setTimeout(step, 70); else setTimeout(next, hold); }; step();
+			};
+			setTimeout(next, hold);
+		});
+		root.querySelectorAll("[data-vsn-toc]").forEach((nav) => {
+			if (nav.dataset.vsnTocReady === "1") return;
+			nav.dataset.vsnTocReady = "1";
+			const list = nav.querySelector(".vsn-toc-list"); if (!list) return;
+			const selector = (nav.dataset.vsnToc || "h2,h3").split(",").filter((tag) => /^h[1-6]$/i.test(tag)).join(",") || "h2,h3";
+			const heads = [...document.querySelectorAll(selector)].filter((head) => !nav.contains(head) && head.textContent.trim()).slice(0, 40);
+			list.textContent = "";
+			heads.forEach((head, i) => { if (!head.id) head.id = `vsn-toc-${i + 1}`; const item = document.createElement("li"); item.style.marginLeft = `${Math.max(0, Number(head.tagName[1]) - 2) * 14}px`; const link = document.createElement("a"); link.href = `#${head.id}`; link.textContent = head.textContent.trim().slice(0, 120); link.style.color = "inherit"; item.appendChild(link); list.appendChild(item); });
+			if (!heads.length) { nav.hidden = true; nav.style.display = "none"; }
+		});
+		root.querySelectorAll("[data-vsn-bg-video]").forEach((host) => {
+			const url = host.dataset.vsnBgVideo || "";
+			if (host.dataset.vsnBgVideoReady === "1" || !/^https:\/\//.test(url) || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+			host.dataset.vsnBgVideoReady = "1";
+			const video = document.createElement("video");
+			Object.assign(video, { src: url, muted: true, loop: true, autoplay: true, playsInline: true });
+			video.setAttribute("aria-hidden", "true");
+			Object.assign(video.style, { position: "absolute", inset: "0", width: "100%", height: "100%", objectFit: "cover", zIndex: "0", pointerEvents: "none" });
+			if (getComputedStyle(host).position === "static") host.style.position = "relative";
+			host.prepend(video);
+			for (const child of host.children) if (child !== video && getComputedStyle(child).position === "static") { child.style.position = "relative"; child.style.zIndex = "1"; }
+			video.play?.().catch(() => {});
+		});
+		root.querySelectorAll("[data-vsn-alert-dismiss]").forEach((button) => {
+			if (button.dataset.vsnReady === "1") return;
+			button.dataset.vsnReady = "1";
+			button.addEventListener("click", () => { const box = button.closest(".vsn-alert"); if (box) { box.hidden = true; box.style.display = "none"; } });
+		});
+	}
+
 	function initializeAdvancedWidgets(root = document) {
+		initializeProWidgets(root);
 		root.querySelectorAll(".vsn-counter").forEach((counter) => {
 			if (counter.dataset.vsnCounterReady === "1") return;
 			counter.dataset.vsnCounterReady = "1";

@@ -65,8 +65,10 @@ function escapeText(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 }
 
+// Numbers mean px, as in React inline styles; "border-radius:8" is invalid CSS.
+const UNITLESS = new Set(["opacity","zIndex","fontWeight","lineHeight","flex","flexGrow","flexShrink","order","zoom","aspectRatio","gridRow","gridColumn","columnCount"]);
 function styleToString(style = {}) {
-  return Object.entries(style).map(([key, value]) => `${String(key).replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)}:${safeStyleValue(value)}`).filter((row) => !row.endsWith(":")) .join(";");
+  return Object.entries(style).map(([key, value]) => `${String(key).replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`)}:${typeof value === "number" && value !== 0 && !UNITLESS.has(key) ? `${value}px` : safeStyleValue(value)}`).filter((row) => !row.endsWith(":")) .join(";");
 }
 
 export function serializeVsnDescriptor(value) {

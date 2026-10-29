@@ -1,3 +1,4 @@
+import { resolveShopAiConfig } from "./ai-credentials.server.js";
 import http from "node:http";
 import https from "node:https";
 import { lookup } from "node:dns/promises";
@@ -8,7 +9,7 @@ import { getQuotaDecision, withShopQuotaLock } from "./entitlements.server.js";
 import { COMMERCIAL_PLANS } from "../config/commercialPlans.js";
 import { resolveAiBehavior } from "../ai/behaviors.js";
 import { scoreReferencePlanFidelity } from "../ai/referenceFidelity.js";
-import { createAiExecution, generateStructuredAi, getAiRuntimePolicy, isAiProviderConfigured } from "./ai-provider.server.js";
+import { createAiExecution, generateStructuredAi, getAiRuntimePolicy } from "./ai-provider.server.js";
 const URL_FETCH_TIMEOUT_MS = 8000;
 const URL_FETCH_MAX_BYTES = 512000;
 const URL_FETCH_MAX_REDIRECTS = 4;
@@ -232,15 +233,18 @@ export async function reserveAiUsage({ db, shop, pageId, operation, execution })
 export async function aiUsageStatus({ db = dbDefault, shop }) {
   const decision = await getQuotaDecision(db, shop, "aiGenerations", { extra: 0 });
   const policy = getAiRuntimePolicy();
+  const shopConfig = await resolveShopAiConfig({ db, shop });
   return {
     plan: decision.planKey,
     used: decision.used,
     quota: decision.limit,
     remaining: decision.unlimited ? Number.MAX_SAFE_INTEGER : decision.remaining,
     resetAt: decision.resetAt,
-    configured: isAiProviderConfigured({ execution: { provider: policy.provider } }),
-    provider: policy.provider,
-    model: policy.model,
+    configured: Boolean(shopConfig.apiKey),
+    provider: shopConfig.provider,
+    model: shopConfig.model,
+    keySource: shopConfig.keySource,
+    chosenProvider: shopConfig.chosen,
     behaviorVersions: policy.behaviorVersions,
     entitlement: { allowed: decision.allowed, code: decision.code, source: decision.source, verified: decision.verified },
   };
@@ -250,7 +254,7 @@ export async function runAiBuilder({ db = dbDefault, shop, pageId, operation, pr
   const started = Date.now();
   const policy = getAiRuntimePolicy();
   const behavior = resolveAiBehavior({ surface: "page", operation, version: policy.behaviorVersions.page });
-  const execution = createAiExecution({ behavior });
+  const execution = createAiExecution({ behavior, shopConfig: await resolveShopAiConfig({ db, shop }) });
   const usageRow = await reserveAiUsage({ db, shop, pageId, operation, execution });
   const status = await aiUsageStatus({ db, shop });
   let providerResult = null;

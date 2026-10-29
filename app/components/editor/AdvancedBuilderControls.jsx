@@ -28,6 +28,7 @@ import {
   TransitionControl,
 } from "./EditorControls";
 import FilterEffectsControl from "./FilterEffectsControl";
+import SectionDecorationsPanel from "./SectionDecorationsPanel";
 import { normalizeHideOn, VISIBILITY_DEVICES } from "../../builder/visibility.js";
 import FontFamilyControl from "./fonts/FontFamilyControl";
 import { getWidgetCapabilities } from "../../builder/widgetCapabilities";
@@ -312,6 +313,7 @@ export function AdvancedLayoutPanel({ element, onUpdate, capabilities }) {
       </> : null}
       {caps.border ? <BorderControl value={border} onChange={(next)=>patchStyles({border:next})}/> : null}
     </Panel> : null}
+    {caps.background ? <SectionDecorationsPanel element={element} styles={styles} patchStyles={patchStyles} Panel={Panel}/> : null}
 
     {caps.effects ? <Panel title="Effects" defaultOpen={false}>
       <SliderControl label="Opacity" value={Number.isFinite(parseFloat(String(effects.opacity ?? "100").replace("%",""))) ? parseFloat(String(effects.opacity ?? "100").replace("%","")) : 100} min={0} max={100} suffix="%" onChange={(opacity)=>patchSection("effects",{opacity:`${opacity}%`})}/>
