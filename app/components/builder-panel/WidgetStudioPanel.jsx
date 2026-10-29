@@ -93,6 +93,23 @@ function WidgetPicker({ widgets, value, onChange, overridden }) {
   </div>;
 }
 
+const CUSTOM_STEPS = [
+  { label: "Basics", hint: "Name and category" },
+  { label: "Fields", hint: "What merchants can edit" },
+  { label: "Design", hint: "HTML and CSS" },
+];
+
+// Starter markup that prints every field, so a new widget renders right away.
+function htmlFromFields(fields = []) {
+  const lines = fields.filter((field) => field.key).map((field) => {
+    const key = field.key;
+    if (field.type === "url") return `  <a href="{{${key}}}">{{${key}}}</a>`;
+    if (["media", "image"].includes(field.type)) return `  <img src="{{${key}}}" alt="" />`;
+    return `  <p class="vsn-custom-${key.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}">{{${key}}}</p>`;
+  });
+  return `<div {{vsn.root}} class="vsn-custom-card">\n${lines.join("\n") || "  <p>Custom widget</p>"}\n</div>`;
+}
+
 function templateFor(rows, widgetType) {
   return rows.find((row) => row.widgetType === widgetType) || null;
 }
@@ -182,6 +199,8 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
   const [trash, setTrash] = useState(data.trash || []);
   const [widgetType, setWidgetType] = useState(data.widgets?.[0]?.id || "");
   const [customOpen, setCustomOpen] = useState(false);
+  const [customStep, setCustomStep] = useState(0);
+  useEffect(() => { if (customOpen) setCustomStep(0); }, [customOpen]);
   const [custom, setCustom] = useState(emptyCustomWidget());
 
   const current = templateFor(templates, widgetType);
@@ -448,17 +467,26 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
         size="xl"
         footer={(
           <>
-            <VsnButton onClick={() => setCustomOpen(false)}>Cancel</VsnButton>
-            <VsnButton variant="primary" loading={busy} disabled={!custom.name.trim()} onClick={saveCustom}>Save widget</VsnButton>
+            <VsnButton onClick={() => (customStep ? setCustomStep(customStep - 1) : setCustomOpen(false))}>{customStep ? "Back" : "Cancel"}</VsnButton>
+            {customStep < CUSTOM_STEPS.length - 1
+              ? <VsnButton variant="primary" disabled={customStep === 0 && !custom.name.trim()} onClick={() => setCustomStep(customStep + 1)}>Next: {CUSTOM_STEPS[customStep + 1].label}</VsnButton>
+              : <VsnButton variant="primary" loading={busy} disabled={!custom.name.trim()} onClick={saveCustom}>Save widget</VsnButton>}
           </>
         )}
       >
+        <ol className="vsn-stepper" aria-label="Steps">
+          {CUSTOM_STEPS.map((step, index) => <li key={step.label} className={index === customStep ? "is-current" : index < customStep ? "is-done" : ""}>
+            <button type="button" disabled={index > 0 && !custom.name.trim()} onClick={() => setCustomStep(index)}><span>{index + 1}</span><b>{step.label}</b><small>{step.hint}</small></button>
+          </li>)}
+        </ol>
         <div className="vsn-widget-studio-grid">
           <div className="vsn-widget-studio-form">
+            {customStep === 0 ? <>
             <VsnInput label="Widget name" value={custom.name} onChange={(event) => setCustom({ ...custom, name:event.target.value })} />
             <VsnInput label="Category" value={custom.category} onChange={(event) => setCustom({ ...custom, category:event.target.value })} />
             <VsnTextarea label="Description" rows={3} value={custom.description} onChange={(event) => setCustom({ ...custom, description:event.target.value })} />
-            <VsnCard
+            </> : null}
+            {customStep === 1 ? <VsnCard
               title="Fields"
               actions={(
                 <VsnButton onClick={() => setCustom({
@@ -487,9 +515,12 @@ export function WidgetStudioPanel({ data = {}, actionData, submit, busy = false,
                   <FieldConfiguration field={field} baseType={baseType} onPatch={patchField}/>
                 </div>;
               })}
-            </VsnCard>
+            </VsnCard> : null}
+            {customStep === 2 ? <>
+            <div className="vsn-template-starters"><span>Quick start</span><button type="button" onClick={() => setCustom({ ...custom, templateHtml: htmlFromFields(custom.fields), templateCss: custom.templateCss || ".vsn-custom-card { display: grid; gap: 8px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; }" })}>Build HTML from my fields</button></div>
             <VsnCodeEditor label="Widget HTML" language="html" rows={12} tokens={[{ name: "vsn.root", detail: "required on root" }, ...(custom.fields || []).filter((field) => field.key).map((field) => ({ name: field.key, detail: field.label || field.type }))]} value={custom.templateHtml} onChange={(value) => setCustom({...custom,templateHtml:value})} />
             <VsnCodeEditor label="Scoped CSS" language="css" rows={8} value={custom.templateCss} onChange={(value) => setCustom({...custom,templateCss:value})} />
+            </> : null}
           </div>
           <VsnCard title="Live widget preview"><Preview html={custom.templateHtml} css={custom.templateCss} props={customProps} /></VsnCard>
         </div>
