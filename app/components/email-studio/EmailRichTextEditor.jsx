@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Link2, List, ListOrdered, RemoveFormatting, Strikethrough, Underline } from "lucide-react";
 import { EMAIL_BINDING_GROUPS } from "../../email/emailBindings.js";
 import { richTextFromPlainText, sanitizeEmailRichText } from "../../email/emailRichText.js";
+import SearchableSelect from "../ui/SearchableSelect.jsx";
 
 function command(name,value=null){try{window.document.execCommand(name,false,value);return true}catch{return false}}
 
@@ -25,6 +26,6 @@ export function EmailRichTextEditor({label="Rich text",value="",plainFallback=""
     <button type="button" title="Align center" onMouseDown={(e)=>e.preventDefault()} onClick={()=>run("justifyCenter")}><AlignCenter size={13}/></button>
     <button type="button" title="Align right" onMouseDown={(e)=>e.preventDefault()} onClick={()=>run("justifyRight")}><AlignRight size={13}/></button>
     <button type="button" title="Clear formatting" onMouseDown={(e)=>e.preventDefault()} onClick={()=>run("removeFormat")}><RemoveFormatting size={13}/></button>
-    <select aria-label="Insert dynamic data" value="" onChange={(e)=>{if(e.target.value)insertToken(`{{ ${e.target.value} }}`)}}><option value="">+ Data</option>{EMAIL_BINDING_GROUPS.map(group=><optgroup key={group.key} label={group.label}>{group.tokens.map(([path,label])=><option key={path} value={path}>{label}</option>)}</optgroup>)}<optgroup label="Loop"><option value="item.title">Item title</option><option value="item.price">Item price</option><option value="item.url">Item URL</option><option value="loop.index">Loop index</option></optgroup></select>
+    <SearchableSelect aria-label="Insert dynamic data" value="" onChange={(e)=>{if(e.target.value)insertToken(`{{ ${e.target.value} }}`)}}><option value="">+ Data</option>{EMAIL_BINDING_GROUPS.map(group=><optgroup key={group.key} label={group.label}>{group.tokens.map(([path,label])=><option key={path} value={path}>{label}</option>)}</optgroup>)}<optgroup label="Loop"><option value="item.title">Item title</option><option value="item.price">Item price</option><option value="item.url">Item URL</option><option value="loop.index">Loop index</option></optgroup></SearchableSelect>
   </div><div ref={editorRef} className="vsn-email-rte-editor" contentEditable suppressContentEditableWarning spellCheck onInput={commit} onBlur={commit} dangerouslySetInnerHTML={{__html:html}}/></div>;
 }

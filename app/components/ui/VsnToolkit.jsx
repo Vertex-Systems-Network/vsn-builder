@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useId, useMemo, useRef, useState } from "rea
 import { createPortal } from "react-dom";
 import { Loader2, Search, Settings2, UploadCloud, X, AlertTriangle, RotateCcw } from "lucide-react";
 import Button from "./Button";
+import SearchableSelect from "./SearchableSelect.jsx";
 import { useFocusTrap } from "../../hooks/useFocusTrap.js";
 
 export function VsnPage({ title, subtitle = "", actions = null, children, compact = false, profile = "workspace" }) {
@@ -43,7 +44,8 @@ export function VsnInput({ label = "", hideLabel = false, icon = null, className
 export function VsnSearchInput(props) { return <VsnInput icon={<Search size={15}/>} {...props}/>; }
 
 export function VsnSelect({ label = "", hideLabel = false, children, className = "", ...props }) {
-  return <label className={`vsn-tool-field ${className}`}>{label && !hideLabel ? <span>{label}</span> : null}<select aria-label={hideLabel ? label : undefined} className="vsn-tool-select" {...props}>{children}</select></label>;
+  if (props.multiple) return <label className={`vsn-tool-field ${className}`}>{label && !hideLabel ? <span>{label}</span> : null}<select aria-label={hideLabel ? label : undefined} className="vsn-tool-select" {...props}>{children}</select></label>;
+  return <div className={`vsn-tool-field ${className}`}>{label && !hideLabel ? <span>{label}</span> : null}<SearchableSelect aria-label={label || undefined} className="vsn-tool-select" {...props}>{children}</SearchableSelect></div>;
 }
 
 export function VsnTextarea({ label = "", hideLabel = false, className = "", ...props }) {

@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight, Grid2X2, List, MoreVertical, SlidersHorizontal } from "lucide-react";
 import { VsnAnchoredPopover, VsnFloatingSettingsButton, VsnSettingsPopover } from "./VsnToolkit";
+import SearchableSelect from "./SearchableSelect.jsx";
 
 export const VSN_DATA_VIEW_DEFAULT_CONFIG = Object.freeze({
   list: true,
@@ -52,12 +53,12 @@ export function VsnDataViewToggle({ value = "list", onChange, config = VSN_DATA_
 
 export function VsnDataViewSortControls({ fields = [], field, direction = "desc", onFieldChange, onDirectionChange, disabled = false }) {
   return <div className="vsn-data-view-sort-controls">
-    <select className="vsn-pages-select" value={field} disabled={disabled} onChange={(event) => onFieldChange?.(event.target.value)} aria-label="Sort field">
+    <SearchableSelect className="vsn-pages-select" value={field} disabled={disabled} onChange={(event) => onFieldChange?.(event.target.value)} aria-label="Sort field">
       {fields.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-    </select>
-    <select className="vsn-pages-select is-direction" value={direction} disabled={disabled} onChange={(event) => onDirectionChange?.(event.target.value)} aria-label="Sort direction">
+    </SearchableSelect>
+    <SearchableSelect className="vsn-pages-select is-direction" value={direction} disabled={disabled} onChange={(event) => onDirectionChange?.(event.target.value)} aria-label="Sort direction">
       <option value="asc">ASC</option><option value="desc">DESC</option>
-    </select>
+    </SearchableSelect>
   </div>;
 }
 
