@@ -53,7 +53,7 @@ await check("Invalid custom hex safely falls back",()=>assert.equal(normalizeUiH
 await check("Resolved theme derives usable CSS values",()=>{const value=resolveUiTheme("custom","#2563eb");assert.equal(value.accent,"#2563EB");assert.match(value.accentRgb,/^\d+,\d+,\d+$/);assert.ok(value.accentDark.startsWith("#"));assert.ok(value.accentSoft.startsWith("#"))});
 await check("Color preference keys persist in localStorage",()=>{assert.ok(appShell.includes('localStorage.setItem("vsn:color-scheme"'));assert.ok(appShell.includes('localStorage.setItem("vsn:custom-accent"'))});
 await check("App shell publishes shared accent CSS variables",()=>{for(const key of ["--vsn-green","--vsn-green-dark","--vsn-accent-soft","--vsn-accent-rgb","--vsn-accent-foreground"])assert.ok(appShell.includes(key),key)});
-await check("Settings renders presets and custom color input",()=>{assert.ok(settings.includes("UI_COLOR_SCHEMES"));assert.ok(settings.includes('type="color"'));assert.ok(settings.includes("onCustomAccentChange"))});
+await check("Settings renders presets and custom color input",()=>{assert.ok(settings.includes("UI_COLOR_SCHEMES"));assert.ok(settings.includes('<ColorField'));assert.ok(settings.includes("onCustomAccentChange"))});
 await check("Dashboard accent rgba uses dynamic RGB variable",()=>assert.ok(dashboardCss.includes("rgba(var(--vsn-accent-rgb)")));
 await check("Editor core green derives from management accent",()=>{assert.ok(builderCss.includes("--vsn-editor-green:var(--vsn-green"));assert.ok(builderCss.includes("--vsn-e-green:var(--vsn-green"))});
 

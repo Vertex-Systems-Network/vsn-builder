@@ -53,7 +53,7 @@ module.exports = {
         // The codebase does not use PropTypes; props are validated by schemas/TypeScript.
         "react/prop-types": "off",
         // SearchableSelect is the app-wide replacement for <select>.
-        "jsx-a11y/label-has-associated-control": ["error", { controlComponents: ["SearchableSelect"], depth: 3 }],
+        "jsx-a11y/label-has-associated-control": ["error", { controlComponents: ["SearchableSelect", "VsnDateTimePicker", "ColorField"], depth: 3 }],
       },
     },
 

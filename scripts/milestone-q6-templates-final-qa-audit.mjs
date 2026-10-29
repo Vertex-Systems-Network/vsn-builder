@@ -74,8 +74,8 @@ await check("Bulk action is disabled until selection",()=>assert.ok(dashboard.in
 await check("Bulk server authorization is enforced",()=>assert.ok(bulkService.includes("canAccessBuilderAction")&&bulkService.includes("requiredPermission")));
 
 await check("Scheduled action uses custom modal",()=>assert.ok(dashboard.includes('title="Schedule selected templates"')));
-await check("Scheduled modal has date picker",()=>assert.ok(dashboard.includes('type="date" value={scheduleDate}')));
-await check("Scheduled modal has time picker",()=>assert.ok(dashboard.includes('type="time" value={scheduleTime}')));
+await check("Scheduled modal has date picker",()=>assert.ok(dashboard.includes('mode="date" value={scheduleDate}')));
+await check("Scheduled modal has time picker",()=>assert.ok(dashboard.includes('mode="time" value={scheduleTime}')));
 await check("Server rejects past schedules",()=>assert.ok(bulkService.includes("Scheduled date/time must be in the future.")));
 await check("ScheduledAt persists in BuilderPage schema",()=>assert.match(schema,/scheduledAt\s+DateTime\?/));
 

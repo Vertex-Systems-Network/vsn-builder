@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { Loader2, Search, Settings2, UploadCloud, X, AlertTriangle, RotateCcw } from "lucide-react";
 import Button from "./Button";
 import SearchableSelect from "./SearchableSelect.jsx";
+import ColorField from "./ColorField.jsx";
+import VsnDateTimePicker from "./DateTimePicker.jsx";
 import { useFocusTrap } from "../../hooks/useFocusTrap.js";
 
 export function VsnPage({ title, subtitle = "", actions = null, children, compact = false, profile = "workspace" }) {
@@ -34,7 +36,17 @@ export function VsnIconButton({ label, children, active = false, danger = false,
   return <button type="button" title={label} aria-label={label} className={`vsn-tool-icon-button ${active ? "is-active" : ""} ${danger ? "is-danger" : ""} ${className}`} {...props}>{children}</button>;
 }
 
+const PICKER_MODE = { date: "date", time: "time", "datetime-local": "datetime" };
+
 export function VsnInput({ label = "", hideLabel = false, icon = null, className = "", ...props }) {
+  // Colour, date and time use the editor's pickers instead of the browser's.
+  if (props.type === "color" || PICKER_MODE[props.type]) {
+    const { type, ...rest } = props;
+    return <div className={`vsn-tool-field ${className}`}>
+      {label && !hideLabel ? <span>{label}</span> : null}
+      {type === "color" ? <ColorField aria-label={label || undefined} {...rest} /> : <VsnDateTimePicker mode={PICKER_MODE[type]} aria-label={label || undefined} {...rest} />}
+    </div>;
+  }
   return <label className={`vsn-tool-field ${className}`}>
     {label && !hideLabel ? <span>{label}</span> : null}
     <div className={`vsn-tool-input-wrap ${icon ? "has-icon" : ""}`}>{icon ? <span className="vsn-tool-leading-icon">{icon}</span> : null}<input aria-label={hideLabel ? label : undefined} className="vsn-tool-input" {...props}/></div>

@@ -1,4 +1,4 @@
-import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnSearchField, VsnUrlField, VsnDateField, VsnUnitField } from "./EditorUi";
+import { VsnButton, VsnTextField, VsnNumberField, VsnTextArea, VsnSelect, VsnOption, VsnCheckbox, VsnSearchField, VsnUrlField, VsnUnitField } from "./EditorUi";
 import ColorStudio, { gradientToCss } from "./color/ColorStudio";
 import FontFamilyControl from "./fonts/FontFamilyControl";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -6,6 +6,7 @@ import PolarisIcon from "../ui/PolarisIcon";
 import { AnchoredOverlay, ModalPortal } from "./OverlayManager";
 import { normalizeColorCapabilities, normalizeControlOptions, resolveColorMode } from "../../builder/controlSchema";
 import EditorSuggestionMenu from "./EditorSuggestionMenu";
+import VsnDateTimePicker from "../ui/DateTimePicker.jsx";
 
 const CSS_LENGTH_UNITS = [
   "px", "%", "em", "rem", "vw", "vh", "vmin", "vmax",
@@ -607,9 +608,9 @@ export function TypographyControl({ value = {}, onChange }) {
   );
 }
 
-export function DateControl({ label, value = "", onChange }) { return <VsnDateField label={label || "Date"} labelAccessibilityVisibility={label ? undefined : "exclusive"} value={value || ""} onInput={(event) => onChange?.(event.currentTarget.value || "")} />; }
-export function DateTimeControl({ label, value = "", onChange }) { return <VsnTextField type="datetime-local" label={label || "Date & time"} labelAccessibilityVisibility={label ? undefined : "exclusive"} value={value || ""} onInput={(event) => onChange?.(event.currentTarget.value || "")} />; }
-export function TimeControl({ label, value = "", onChange }) { return <VsnTextField type="time" label={label || "Time"} labelAccessibilityVisibility={label ? undefined : "exclusive"} value={value || ""} onInput={(event) => onChange?.(event.currentTarget.value || "")} />; }
+export function DateControl({ label, value = "", onChange }) { return <div className="vsn-control-block">{label ? <FieldLabel>{label}</FieldLabel> : null}<VsnDateTimePicker mode="date" aria-label={label || "Date"} value={value || ""} onChange={(event) => onChange?.(event.currentTarget.value || "")} /></div>; }
+export function DateTimeControl({ label, value = "", onChange }) { return <div className="vsn-control-block">{label ? <FieldLabel>{label}</FieldLabel> : null}<VsnDateTimePicker mode="datetime" aria-label={label || "Date & time"} value={value || ""} onChange={(event) => onChange?.(event.currentTarget.value || "")} /></div>; }
+export function TimeControl({ label, value = "", onChange }) { return <div className="vsn-control-block">{label ? <FieldLabel>{label}</FieldLabel> : null}<VsnDateTimePicker mode="time" aria-label={label || "Time"} value={value || ""} onChange={(event) => onChange?.(event.currentTarget.value || "")} /></div>; }
 
 const CSS_COMPLETIONS = [
   "align-content", "align-items", "align-self", "animation", "animation-delay", "animation-duration", "animation-fill-mode",
