@@ -9,6 +9,7 @@ import { EmailSavedPane } from "./EmailSavedPane.jsx";
 import { EmailCommerceBrowser } from "./EmailCommerceBrowser.jsx";
 import { EmailVersionHistory } from "./EmailVersionHistory.jsx";
 import { EmailAiAssistant } from "./EmailAiAssistant.jsx";
+import SearchableSelect from "../ui/SearchableSelect.jsx";
 
 const human=(value)=>String(value||"").replaceAll("-"," ").replace(/\b\w/g,(c)=>c.toUpperCase());
 
@@ -31,7 +32,7 @@ function DataPane({bindings,onCopyToken}){
 }
 
 function SettingsPane({meta,setMeta}){
-  return <div className="vsn-email-studio-side-scroll"><div className="vsn-email-side-form"><VsnInput label="Template name" value={meta.name} onChange={(e)=>setMeta(v=>({...v,name:e.target.value}))}/><VsnInput label="Category" value={meta.category} onChange={(e)=>setMeta(v=>({...v,category:e.target.value}))}/><VsnInput label="Subject" value={meta.subject} onChange={(e)=>setMeta(v=>({...v,subject:e.target.value}))}/><label className="vsn-tool-field"><span>Preheader</span><textarea rows={4} value={meta.preheader||""} onChange={(e)=>setMeta(v=>({...v,preheader:e.target.value}))}/></label><label className="vsn-tool-field"><span>Status</span><select value={meta.status||"draft"} onChange={(e)=>setMeta(v=>({...v,status:e.target.value}))}><option value="draft">Draft</option><option value="ready">Ready</option></select></label></div></div>;
+  return <div className="vsn-email-studio-side-scroll"><div className="vsn-email-side-form"><VsnInput label="Template name" value={meta.name} onChange={(e)=>setMeta(v=>({...v,name:e.target.value}))}/><VsnInput label="Category" value={meta.category} onChange={(e)=>setMeta(v=>({...v,category:e.target.value}))}/><VsnInput label="Subject" value={meta.subject} onChange={(e)=>setMeta(v=>({...v,subject:e.target.value}))}/><label className="vsn-tool-field"><span>Preheader</span><textarea rows={4} value={meta.preheader||""} onChange={(e)=>setMeta(v=>({...v,preheader:e.target.value}))}/></label><label className="vsn-tool-field"><span>Status</span><SearchableSelect value={meta.status||"draft"} onChange={(e)=>setMeta(v=>({...v,status:e.target.value}))}><option value="draft">Draft</option><option value="ready">Ready</option></SearchableSelect></label></div></div>;
 }
 
 export function EmailStudioSidebar({active,setActive,document,onDocumentChange,meta,setMeta,bindings,selected,selectedId,onSelect,onAdd,onMove,onDuplicate,onRemove,onCopyToken,onUseAsset,selectedCanUseAsset,savedBlocks=[],commerceCatalog={},aiStatus={},versions=[],onCreateSymbol,onInsertSymbol,onDetachSymbol,onDeleteSymbol,onSaveBlock,onInsertSavedBlock,onDeleteSavedBlock,onUseProduct,onUseCollection,onRestoreVersion,onReplaceAiEmail,onInsertAiBlocks,onApplyAiMeta,busy=false}){

@@ -5,9 +5,10 @@ import { plainTextFromEmailRichText } from "../../email/emailRichText.js";
 import { VsnButton, VsnCard, VsnInput, VsnSelect, VsnTextarea } from "../ui/VsnToolkit.jsx";
 import { EmailLogicInspector } from "./EmailLogicInspector.jsx";
 import { EmailRichTextEditor } from "./EmailRichTextEditor.jsx";
+import SearchableSelect from "../ui/SearchableSelect.jsx";
 
 const human=(value)=>String(value||"").replaceAll("-"," ").replace(/\b\w/g,(c)=>c.toUpperCase());
-function TokenPicker({onInsert}){return <select className="vsn-email-token-inline" value="" onChange={(e)=>{if(e.target.value)onInsert(`{{ ${e.target.value} }}`)}}><option value="">+ Dynamic data</option>{EMAIL_BINDING_GROUPS.map(group=><optgroup key={group.key} label={group.label}>{group.tokens.map(([path,label])=><option key={path} value={path}>{label}</option>)}</optgroup>)}</select>}
+function TokenPicker({onInsert}){return <SearchableSelect className="vsn-email-token-inline" value="" onChange={(e)=>{if(e.target.value)onInsert(`{{ ${e.target.value} }}`)}}><option value="">+ Dynamic data</option>{EMAIL_BINDING_GROUPS.map(group=><optgroup key={group.key} label={group.label}>{group.tokens.map(([path,label])=><option key={path} value={path}>{label}</option>)}</optgroup>)}</SearchableSelect>}
 function BoundInput({label,value,onChange,textarea=false,rows=3,type="text"}){const append=(token)=>onChange(`${String(value||"")}${value?" ":""}${token}`);return <div className="vsn-email-bound-field">{textarea?<VsnTextarea label={label} rows={rows} value={value||""} onChange={(e)=>onChange(e.target.value)}/>:<VsnInput type={type} label={label} value={value||""} onChange={(e)=>onChange(e.target.value)}/>}<TokenPicker onInsert={append}/></div>}
 function AlignControl({value="left",onChange}){return <div className="vsn-email-align-control"><button type="button" className={value==="left"?"active":""} onClick={()=>onChange("left")}><AlignLeft size={14}/></button><button type="button" className={value==="center"?"active":""} onClick={()=>onChange("center")}><AlignCenter size={14}/></button><button type="button" className={value==="right"?"active":""} onClick={()=>onChange("right")}><AlignRight size={14}/></button></div>}
 

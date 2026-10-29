@@ -78,7 +78,7 @@ test("MCP: token auth, initialize, tools and revocation", async () => {
   assert.doesNotMatch(JSON.stringify(await listMcpTokens({ db, shop })), new RegExp(token));
   const session = await authenticateMcpToken({ db, token });
   assert.equal(session.shop, shop);
-  assert.equal(await authenticateMcpToken({ db, token: token.slice(0, -1) + "0" }), null);
+  assert.equal(await authenticateMcpToken({ db, token: token.slice(0, -1) + (token.endsWith("0") ? "1" : "0") }), null);
   const init = await handleMcpMessage({ db, session, message: { jsonrpc: "2.0", id: 1, method: "initialize", params: {} } });
   assert.equal(init.result.serverInfo.name, "vsn-builder");
   const tools = (await handleMcpMessage({ db, session, message: { jsonrpc: "2.0", id: 2, method: "tools/list" } })).result.tools.map((t) => t.name);

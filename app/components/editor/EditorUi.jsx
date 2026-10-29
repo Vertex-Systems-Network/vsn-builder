@@ -1,4 +1,5 @@
 import PolarisIcon from "../ui/PolarisIcon";
+import SearchableSelect from "../ui/SearchableSelect.jsx";
 
 const cx = (...items) => items.filter(Boolean).join(" ");
 
@@ -72,7 +73,7 @@ export function VsnTextArea({ label, labelAccessibilityVisibility, helpText, err
   return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"} helpText={helpText} error={error}><textarea ref={inputRef} {...props} className={cx("vsn-ui-textarea", className)} aria-label={inputAria(label, labelAccessibilityVisibility, props)} /></FieldShell>;
 }
 export function VsnSelect({ label, labelAccessibilityVisibility, helpText, error, className = "", children, ...props }) {
-  return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"} helpText={helpText} error={error}><span className="vsn-ui-select-wrap"><select {...props} className={cx("vsn-ui-select", className)} aria-label={inputAria(label, labelAccessibilityVisibility, props)}>{children}</select><PolarisIcon type="chevron-down" size={14}/></span></FieldShell>;
+  return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"} helpText={helpText} error={error}><span className="vsn-ui-select-wrap is-searchable">{props.multiple ? <select {...props} className={cx("vsn-ui-select", className)} aria-label={inputAria(label, labelAccessibilityVisibility, props)}>{children}</select> : <SearchableSelect {...props} className={cx("vsn-ui-select", className)} aria-label={inputAria(label, labelAccessibilityVisibility, props)}>{children}</SearchableSelect>}</span></FieldShell>;
 }
 export function VsnOption({ children, ...props }) { return <option {...props}>{children}</option>; }
 export function VsnCheckbox({ children, className = "", checked = false, onChange, disabled = false, ...props }) {

@@ -498,3 +498,29 @@ button,input,select,textarea { font-family:inherit; }
 .dashboard-root.dark .vsn-tool-tabs>button>span{background:#1f2937;color:#cbd5e1}
 /* Let the app's main area be the single scroll container so sticky panels (previews) stay in view. */
 .vsn-workspace-page{height:auto;min-height:100%;overflow:visible}
+/* Searchable select (all admin + editor dropdowns) */
+.vsn-sselect{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:36px;padding:0 10px 0 12px;border:1px solid var(--vsn-border,#dde1ea);border-radius:8px;background:#fff;color:#111827;font:inherit;font-size:13px;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}
+.vsn-sselect:hover{border-color:#b9bec8}
+.vsn-sselect:focus-visible,.vsn-sselect[aria-expanded="true"]{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.vsn-sselect:disabled{opacity:.55;cursor:not-allowed}
+.vsn-sselect__value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vsn-sselect__value.is-placeholder{color:#9ca3af}
+.vsn-sselect svg{flex:0 0 auto;color:#6b7280}
+.vsn-sselect-pop{position:fixed;z-index:2147483600;display:flex;flex-direction:column;max-height:300px;background:#fff;border:1px solid #dde1ea;border-radius:10px;box-shadow:0 14px 36px rgba(15,23,42,.18);overflow:hidden;font-size:13px;outline:none}
+.vsn-sselect-pop__search{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #eef0f4;color:#6b7280}
+.vsn-sselect-pop__search input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;color:#111827}
+.vsn-sselect-pop__list{overflow:auto;padding:4px}
+.vsn-sselect-pop__list button{display:block;width:100%;padding:7px 10px;border:0;border-radius:6px;background:transparent;color:#111827;font:inherit;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vsn-sselect-pop__list button.is-active{background:#f3f4f6}
+.vsn-sselect-pop__list button.is-selected{color:#4338ca;font-weight:600;background:#eef2ff}
+.vsn-sselect-pop__list button:disabled{opacity:.45;cursor:not-allowed}
+.vsn-sselect-pop__group{padding:8px 10px 4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af}
+.vsn-sselect-pop__empty{padding:12px;color:#6b7280}
+.dashboard-root.dark .vsn-sselect,.vsn-editor-dark .vsn-sselect{background:#111827;border-color:#374151;color:#e5e7eb}
+html.vsn-dark .vsn-sselect-pop,.dashboard-root.dark~.vsn-sselect-pop{background:#111827;border-color:#374151;color:#e5e7eb}
+.vsn-ui-select-wrap.is-searchable{display:block}
+.vsn-ui-select-wrap.is-searchable .vsn-sselect{min-height:32px;font-size:12px}
+/* Every admin table: horizontal scroll when columns overflow, actions column (last) stays in view. */
+.dashboard-root div:has(> table:not(.plan-comparison-table)){overflow-x:auto;max-width:100%}
+.dashboard-root table:not(.plan-comparison-table) :is(th,td):last-child{position:sticky;right:0;z-index:1;background:var(--vsn-surface,#fff);box-shadow:-8px 0 12px -10px rgba(15,23,42,.25)}
+.dashboard-root.dark table:not(.plan-comparison-table) :is(th,td):last-child{background:#111827}

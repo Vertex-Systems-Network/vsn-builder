@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { VsnButton, VsnTextField } from "./EditorUi";
 import { normalizeStyleKit, slugColorId, SYSTEM_COLORS, TYPOGRAPHY_PRESETS } from "../../builder/styleKit.js";
+import SearchableSelect from "../ui/SearchableSelect.jsx";
 
 const FIELDS = [["fontSize", "Size", "48px"], ["fontWeight", "Weight", "700"], ["lineHeight", "Line height", "1.2"], ["letterSpacing", "Letter spacing", "0px"]];
 
@@ -41,7 +42,7 @@ export default function StyleKitPanel({ globalStyles = {}, onChange, Section, Co
       <div className="vsn-kit-preset-tabs" role="tablist">{Object.entries(TYPOGRAPHY_PRESETS).map(([key, row]) => <button key={key} type="button" role="tab" aria-selected={openPreset === key} className={openPreset === key ? "is-active" : ""} onClick={() => setOpenPreset(key)}>{row.label}</button>)}</div>
       <div className="vsn-kit-preset-sample" style={{ fontSize: kit.typography[openPreset].fontSize, fontWeight: kit.typography[openPreset].fontWeight, lineHeight: kit.typography[openPreset].lineHeight, letterSpacing: kit.typography[openPreset].letterSpacing || undefined, textTransform: kit.typography[openPreset].textTransform || undefined }}>{TYPOGRAPHY_PRESETS[openPreset].label} sample</div>
       <div className="grid grid-cols-2 gap-2">{FIELDS.map(([field, label, placeholder]) => <Field key={field} label={label} placeholder={placeholder} value={globalStyles.typographyPresets?.[openPreset]?.[field] ?? kit.typography[openPreset][field]} onChange={(value) => setPreset(openPreset, { [field]: value })} />)}</div>
-      <label className="vsn-kit-field"><span>Transform</span><select value={kit.typography[openPreset].textTransform || ""} onChange={(event) => setPreset(openPreset, { textTransform: event.currentTarget.value })}><option value="">None</option><option value="uppercase">Uppercase</option><option value="capitalize">Capitalize</option><option value="lowercase">Lowercase</option></select></label>
+      <label className="vsn-kit-field"><span>Transform</span><SearchableSelect value={kit.typography[openPreset].textTransform || ""} onChange={(event) => setPreset(openPreset, { textTransform: event.currentTarget.value })}><option value="">None</option><option value="uppercase">Uppercase</option><option value="capitalize">Capitalize</option><option value="lowercase">Lowercase</option></SearchableSelect></label>
     </Section>
     <Section title="Button & Image Defaults">
       <div className="grid grid-cols-2 gap-2">

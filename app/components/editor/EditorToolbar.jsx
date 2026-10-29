@@ -3,6 +3,7 @@ import { Moon, Sun } from "lucide-react";
 import PolarisIcon from "../ui/PolarisIcon";
 import { AnchoredOverlay } from "./OverlayManager";
 import { normalizeResponsiveBreakpoints } from "../../builder/responsiveEngine.js";
+import SearchableSelect from "../ui/SearchableSelect.jsx";
 
 function deviceModes(breakpoints = {}) {
   return normalizeResponsiveBreakpoints(breakpoints).map((bp) => ({
@@ -72,8 +73,8 @@ export default function EditorToolbar({
         </div>
       </div>
 
-      {pageTemplate === "collection" ? <label className="vsn-editor-inline-field"><span>Collection</span><span className="vsn-editor-inline-select"><select value={previewCollectionHandle} onChange={(e)=>onPreviewCollectionChange?.(e.target.value)}>{collections.length===0?<option value="">No collections</option>:collections.map(c=><option key={c.id} value={c.handle}>{c.title}</option>)}</select><PolarisIcon type="chevron-down" size={13}/></span></label> : null}
-      {pageTemplate === "product" ? <label className="vsn-editor-inline-field"><span>Product</span><span className="vsn-editor-inline-select"><select value={previewProductHandle} onChange={(e)=>onPreviewProductChange?.(e.target.value)}>{products.length===0?<option value="">No products</option>:products.map(p=><option key={p.id} value={p.handle}>{p.title}</option>)}</select><PolarisIcon type="chevron-down" size={13}/></span></label> : null}
+      {pageTemplate === "collection" ? <label className="vsn-editor-inline-field"><span>Collection</span><span className="vsn-editor-inline-select"><SearchableSelect value={previewCollectionHandle} onChange={(e)=>onPreviewCollectionChange?.(e.target.value)}>{collections.length===0?<option value="">No collections</option>:collections.map(c=><option key={c.id} value={c.handle}>{c.title}</option>)}</SearchableSelect><PolarisIcon type="chevron-down" size={13}/></span></label> : null}
+      {pageTemplate === "product" ? <label className="vsn-editor-inline-field"><span>Product</span><span className="vsn-editor-inline-select"><SearchableSelect value={previewProductHandle} onChange={(e)=>onPreviewProductChange?.(e.target.value)}>{products.length===0?<option value="">No products</option>:products.map(p=><option key={p.id} value={p.handle}>{p.title}</option>)}</SearchableSelect><PolarisIcon type="chevron-down" size={13}/></span></label> : null}
 
       <div className="vsn-editor-toolbar-spacer" />
 
