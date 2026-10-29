@@ -280,6 +280,11 @@ export function buildNodeStyle(styles = {}) {
     else if (advanced.backgroundGallery?.[0]?.url) backgroundImage = `url(${advanced.backgroundGallery[0].url})`;
     else backgroundImage = out.backgroundImage;
     if (background.type === "color" && present(background.color)) out.backgroundColor = background.color;
+    // Overlay: a flat colour layer painted above the image/gradient, below the content.
+    if (background.overlay?.enabled && present(background.overlay.color)) {
+      const tint = alphaColor(background.overlay.color, numberOr(background.overlay.opacity, 50) / 100);
+      backgroundImage = `linear-gradient(${tint}, ${tint})${present(backgroundImage) && backgroundImage !== "none" ? `, ${backgroundImage}` : ""}`;
+    }
     if (present(backgroundImage)) out.backgroundImage = backgroundImage;
     if (present(background.size) || backgroundImage) out.backgroundSize = background.size || out.backgroundSize || "cover";
     if (present(background.position) || backgroundImage) out.backgroundPosition = background.position || out.backgroundPosition || "center center";

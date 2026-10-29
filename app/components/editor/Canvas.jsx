@@ -1,5 +1,5 @@
 import { styleKitCss } from "../../builder/styleKit.js";
-import EmptyChildDrop from "./EmptyChildDrop.jsx"; import ContentGridPreview from "./ContentGridPreview.jsx"; import { attachDragPreview, dragDropEffect, draggingSection, markDragType } from "./dnd/dragPreview.js";
+import EmptyChildDrop from "./EmptyChildDrop.jsx"; import useBackgroundVideos from "./useBackgroundVideos.js"; import { backgroundVideoUrl } from "../../builder/sectionDecorations.js"; import ContentGridPreview from "./ContentGridPreview.jsx"; import { attachDragPreview, dragDropEffect, draggingSection, markDragType } from "./dnd/dragPreview.js";
 import { isHiddenOnDevice } from "../../builder/visibility.js";
 import { Component, createContext, memo, useContext, useEffect, useRef, useState } from 'react';
 import SectionInserter from './SectionInserter';
@@ -1150,7 +1150,7 @@ function RenderNode({
     data-vsn-sticky-target={interactions.sticky && interactions.stickyBoundary === "custom" ? interactions.stickyCustomTarget : undefined}
     data-vsn-parallax={interactions.parallax ? "1" : undefined}
     data-vsn-motion={interactions.timelines?.length ? JSON.stringify({schemaVersion:interactions.schemaVersion||4,timelines:interactions.timelines}) : undefined}
-    style={interactionStyle}
+    style={interactionStyle} data-vsn-bg-video={backgroundVideoUrl(node.styles) || undefined}
     className={`${className} ${node.meta?.locked ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
     onClick={select}
     draggable={!node.meta?.locked}
@@ -1299,7 +1299,7 @@ export default function Canvas({
 }) {
   const resetKey = `${elements?.length || 0}:${canvasInteractionResetKey(elements)}`;
   const canvasRootRef = useRef(null);
-  const autoScrollFrameRef = useRef(0);
+  const autoScrollFrameRef = useRef(0); useBackgroundVideos();
   const spacePressedRef = useRef(false);
   const panSessionRef = useRef(null);
   const [isPanning, setIsPanning] = useState(false);

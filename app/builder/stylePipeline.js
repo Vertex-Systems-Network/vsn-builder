@@ -1,3 +1,4 @@
+import { shapeDividerCss } from "./sectionDecorations.js";
 import { buildNodeStyle, stateStyleDeclarations, styleObjectToCssDeclarations } from "./styleEngine.js";
 import { buildWidgetSpecificCss } from "./widgetSpecificStyleEngine.js";
 import { breakpointMediaQuery, containerQueryCondition, normalizeContainerQuery, normalizeResponsiveBreakpoints, responsiveInheritanceOrder } from "./responsiveEngine.js";
@@ -131,6 +132,9 @@ export function buildNodeScopedCss(node, options = {}) {
 
   const widgetCss = buildWidgetSpecificCss(node.type, id, styles.widget || {});
   if (widgetCss) rules.push(widgetCss);
+
+  const dividerCss = shapeDividerCss(selector, styles);
+  if (dividerCss) rules.push(dividerCss);
 
   const custom = sanitizeCustomCss(advanced.customCss || "");
   if (custom.trim()) rules.push(custom.replace(/\bselector\b/g, selector));

@@ -109,3 +109,6 @@
 	.vsn-gallery-grid.is-masonry { column-count: var(--vsn-gallery-cols-mobile, 1) !important; }
 	.vsn-slider-slide { flex-basis: calc((100% - (var(--vsn-slider-mobile, 1) - 1) * var(--vsn-slider-gap, 16px)) / var(--vsn-slider-mobile, 1)); }
 }
+
+/* Pro widgets: hotspots, flip box, before/after */
+.vsn-hotspot-card{opacity:0;visibility:hidden;transition:opacity .15s}.vsn-hotspot:hover .vsn-hotspot-card,.vsn-hotspot:focus .vsn-hotspot-card,.vsn-hotspot:focus-within .vsn-hotspot-card{opacity:1;visibility:visible}.vsn-hotspot{cursor:pointer;z-index:2}.vsn-flip-box:hover .vsn-flip-inner,.vsn-flip-box:focus-within .vsn-flip-inner{transform:rotateY(180deg)}.vsn-flip-box[data-vsn-flip=vertical]:hover .vsn-flip-inner,.vsn-flip-box[data-vsn-flip=vertical]:focus-within .vsn-flip-inner{transform:rotateX(180deg)}.vsn-flip-box[data-vsn-flip=vertical] .vsn-flip-back{transform:rotateX(180deg)!important}.vsn-compare{touch-action:pan-y;cursor:ew-resize}.vsn-rotate-word{display:inline-block}@media (prefers-reduced-motion:reduce){.vsn-flip-inner{transition:none!important}}

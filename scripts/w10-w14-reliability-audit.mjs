@@ -27,7 +27,7 @@ function allSource(dir) {
   return out;
 }
 
-check('Registry count', Object.keys(widgetRegistry).length === 117, `${Object.keys(widgetRegistry).length}/117`);
+check('Registry count', Object.keys(widgetRegistry).length === 124, `${Object.keys(widgetRegistry).length}/124`);
 
 // W14: every registered default prop must have an editor-side control/reference.
 const editorSource = allSource('app/components/editor');

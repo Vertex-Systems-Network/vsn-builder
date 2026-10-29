@@ -14,7 +14,7 @@ check('Wishlist database model exists',()=>{const s=read('prisma/schema.prisma')
 check('Wishlist migration exists',()=>assert.equal(exists('prisma/migrations/20260808234530_milestone_m2_wishlist/migration.sql'),true));
 check('Wishlist Grid is registered',()=>assert.equal(widgetRegistry['wishlist-grid']?.label,'Wishlist Grid'));
 check('Wishlist Empty State is registered',()=>assert.equal(widgetRegistry['wishlist-empty-state']?.label,'Wishlist Empty State'));
-check('Registry contains 117 widgets after M.2',()=>assert.equal(Object.keys(widgetRegistry).length,117));
+check('Registry contains 124 widgets after M.2 + pro widgets',()=>assert.equal(Object.keys(widgetRegistry).length,124));
 check('Wishlist storefront has four runtime widgets',()=>{const s=read('app/sdk/builtinPlugins.js');for(const token of ['data-vsn-wishlist-button','data-vsn-wishlist-count','data-vsn-wishlist-grid','data-vsn-wishlist-empty-state'])assert.ok(s.includes(token),token);});
 check('Wishlist server supports get save merge and live resolution',()=>{const s=read('app/services/wishlist.server.js');for(const token of ['getCustomerWishlist','saveCustomerWishlist','mergeWishlistItems','resolveWishlistLive','wishlistResponse'])assert.ok(s.includes(token),token);});
 check('App proxy uses signed customer identity',()=>{const route=read('app/routes/builder-proxy.$.jsx');const secureRoute=read('app/routes/builder-proxy-secure.$.jsx');const service=read('app/services/wishlist-proxy.server.js');assert.match(secureRoute,/handleWishlistProxyAction/);assert.match(route,/handleWishlistProxyLoader/);assert.doesNotMatch(route,/handleWishlistProxyAction/);assert.match(service,/logged_in_customer_id/);assert.match(service,/wishlist-sync/);assert.match(service,/wishlistResponse/);});

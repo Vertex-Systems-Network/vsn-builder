@@ -1,5 +1,6 @@
 import { registerVsnPlugin } from "./registry.js";
 import { vsnElement } from "./renderDescriptor.js";
+import { PRO_WIDGET_DEFINITIONS } from "./proWidgets.js";
 
 let ready = false;
 function spacerDefinition() {
@@ -371,7 +372,7 @@ export function ensureBuiltinSdkPlugins() {
       permissions: ["editor:controls", "editor:preview", "storefront:render"],
       widgets: [],
     },
-    setup(api) { api.registerWidget(spacerDefinition()); api.registerWidget(wishlistButtonDefinition()); api.registerWidget(wishlistCountDefinition()); api.registerWidget(wishlistGridDefinition()); api.registerWidget(wishlistEmptyStateDefinition()); },
+    setup(api) { api.registerWidget(spacerDefinition()); api.registerWidget(wishlistButtonDefinition()); api.registerWidget(wishlistCountDefinition()); api.registerWidget(wishlistGridDefinition()); api.registerWidget(wishlistEmptyStateDefinition()); for (const definition of PRO_WIDGET_DEFINITIONS) api.registerWidget(definition()); },
   });
   registerVsnPlugin({
     manifest: {
