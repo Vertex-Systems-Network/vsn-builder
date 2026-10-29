@@ -3,6 +3,7 @@ import { ModalPortal } from "./OverlayManager";
 import { VsnButton, VsnSelect, VsnOption, VsnTextArea, VsnTextField, VsnSpinner } from "./EditorUi";
 import PolarisIcon from "../ui/PolarisIcon";
 import LibraryDesignPreview from "./LibraryDesignPreview";
+import AiProviderSettings from "./AiProviderSettings";
 
 const MODES=[
   ["agent","Agent · Multi-step Edit"],
@@ -139,6 +140,7 @@ export default function AiBuilderPanel({
     <header className="vsn-ai-header"><div><strong>{isAgent?"VSN Editor Agent":"VSN AI Builder"}</strong><span>{isAgent?"Bounded, reversible draft commands. Publish is never automatic.":"Structured AI output → existing editable VSN widgets only."}</span></div><VsnButton variant="icon" accessibilityLabel="Close AI Builder" data-tooltip="Close AI Builder" disabled={busy} onClick={onClose}><PolarisIcon type="x"/></VsnButton></header>
     <div className="vsn-ai-body">
       <aside className="vsn-ai-controls">
+        <AiProviderSettings prompt={prompt}/>
         <label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-ai-label">Task</label><VsnSelect label="AI task" labelAccessibilityVisibility="exclusive" value={operation} onChange={(e)=>setOperation(e.currentTarget.value)}>{MODES.map(([v,l])=><VsnOption key={v} value={v}>{l}</VsnOption>)}</VsnSelect>
         {operation!=="accessibility"&&operation!=="responsive"?<><label className="vsn-ai-label">{isAgent?"What should the Agent change?":"Prompt"}</label><VsnTextArea label="Prompt" labelAccessibilityVisibility="exclusive" rows={6} value={prompt} onInput={(e)=>setPrompt(e.currentTarget.value)} placeholder={isAgent?"Example: tighten this hero, move the CTA below the copy, and improve mobile spacing.":operation==="rewrite"?"Rewrite this copy to be clearer and more conversion-focused.":"Describe the layout, content, audience and objective..."}/></>:null}
         {operation==="url"?<><label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-ai-label">Public inspiration URL</label><VsnTextField label="Public inspiration URL" labelAccessibilityVisibility="exclusive" value={sourceUrl} onInput={(e)=>setSourceUrl(e.currentTarget.value)} placeholder="https://example.com/page"/><p className="vsn-ai-help">VSN extracts limited public text for structure inspiration; it does not copy source HTML/CSS.</p></>:null}

@@ -1,3 +1,4 @@
+import { resolveShopAiConfig } from "./ai-credentials.server.js";
 import {
   REFERENCE_ANALYSIS_SCHEMA,
   normalizeReferenceAnalysis,
@@ -116,7 +117,8 @@ export async function analyzeReferenceSource({
   const input = providerInput({ type, prompt, imageData, sourceText, structuredData });
   const policy = getAiRuntimePolicy({ env });
   const behavior = resolveAiBehavior({ surface: "reference", operation: "analyze", version: policy.behaviorVersions.reference });
-  const execution = createAiExecution({ behavior, env });
+  const shopConfig = await resolveShopAiConfig({ db: db, shop: shop, env });
+  const execution = createAiExecution({ behavior, env, shopConfig });
   if (!providerConfigured({ execution, env })) {
     throw referenceError("AI_NOT_CONFIGURED", "Reference analysis is not configured on the VSN server.", 503);
   }

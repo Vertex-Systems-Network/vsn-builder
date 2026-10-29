@@ -1,3 +1,4 @@
+import { resolveShopAiConfig } from "./ai-credentials.server.js";
 import { normalizeBrandProfile } from "../brand/brandProfile.js";
 import {
   BRAND_EXTRACTION_OUTPUT_SCHEMA,
@@ -138,7 +139,8 @@ export async function extractOwnedSiteBrandProfile({
   const source = await readOwnedBrandSource(sourceUrl, { request });
   const policy = getAiRuntimePolicy({ env });
   const behavior = resolveAiBehavior({ surface: "brand", operation: "extract", version: policy.behaviorVersions.brand });
-  const execution = createAiExecution({ behavior, env });
+  const shopConfig = await resolveShopAiConfig({ db: db, shop: shop, env });
+  const execution = createAiExecution({ behavior, env, shopConfig });
   if (!providerConfigured({ execution, env })) {
     throw extractionError("AI_NOT_CONFIGURED", "AI Brand Intelligence is not configured on the VSN server.", 503);
   }
