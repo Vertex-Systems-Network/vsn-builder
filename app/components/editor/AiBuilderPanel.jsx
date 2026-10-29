@@ -7,7 +7,7 @@ import AiProviderSettings from "./AiProviderSettings";
 
 const MODES=[
   ["agent","Agent · Multi-step Edit"],
-  ["section","Prompt → Section"],["page","Prompt → Full Page"],["screenshot","Screenshot/Image → Layout"],["url","URL → Inspiration Layout"],
+  ["section","Prompt → Section"],["page","Prompt → Full Page"],["image","Prompt → Image (saved to Shopify Files)"],["screenshot","Screenshot/Image → Layout"],["url","URL → Inspiration Layout"],
   ["rewrite","Rewrite Selected Copy"],["responsive","Responsive Repair"],["accessibility","Accessibility Suggestions"],["alternatives","Layout Alternative"],
 ];
 const MAX_AGENT_CONVERSATION=8;
@@ -26,6 +26,7 @@ export default function AiBuilderPanel({
   const [prompt,setPrompt]=useState("");
   const [sourceUrl,setSourceUrl]=useState("");
   const [imageData,setImageData]=useState("");
+  const [imageSize,setImageSize]=useState("landscape");
   const fileRef=useRef(null);
   const [result,setResult]=useState(null);
   const [agentResult,setAgentResult]=useState(null);
@@ -121,6 +122,7 @@ export default function AiBuilderPanel({
   const generate=()=>{
     if(isAgent){void runAgent();return;}
     setResult(null);
+    if(operation==="image"){const body=new FormData();body.set("prompt",prompt);body.set("size",imageSize);fetcher.submit(body,{method:"post",action:"/app/ai-image"});return;}
     const fd=new FormData();
     fd.set("operation",operation);fd.set("prompt",prompt);fd.set("sourceUrl",sourceUrl);fd.set("imageData",imageData);
     fd.set("pageId",page?.id||"");fd.set("pageTemplate",page?.template||"page");fd.set("currentPage",JSON.stringify(elements||[]));
@@ -145,6 +147,7 @@ export default function AiBuilderPanel({
         {operation!=="accessibility"&&operation!=="responsive"?<><label className="vsn-ai-label">{isAgent?"What should the Agent change?":"Prompt"}</label><VsnTextArea label="Prompt" labelAccessibilityVisibility="exclusive" rows={6} value={prompt} onInput={(e)=>setPrompt(e.currentTarget.value)} placeholder={isAgent?"Example: tighten this hero, move the CTA below the copy, and improve mobile spacing.":operation==="rewrite"?"Rewrite this copy to be clearer and more conversion-focused.":"Describe the layout, content, audience and objective..."}/></>:null}
         {operation==="url"?<><label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-ai-label">Public inspiration URL</label><VsnTextField label="Public inspiration URL" labelAccessibilityVisibility="exclusive" value={sourceUrl} onInput={(e)=>setSourceUrl(e.currentTarget.value)} placeholder="https://example.com/page"/><p className="vsn-ai-help">VSN extracts limited public text for structure inspiration; it does not copy source HTML/CSS.</p></>:null}
         {operation==="screenshot"?<><label /* eslint-disable-line jsx-a11y/label-has-associated-control -- label wraps its own input; accessible text comes from nested content */ className="vsn-ai-label">Reference image</label><input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(e)=>readFile(e.currentTarget.files?.[0])} className="vsn-ai-file"/>{imageData?<img className="vsn-ai-thumb" src={imageData} alt="AI reference preview"/>:null}</>:null}
+        {operation==="image"?<><label className="vsn-ai-label" htmlFor="vsn-ai-image-size">Image shape</label><VsnSelect id="vsn-ai-image-size" label="Image shape" labelAccessibilityVisibility="exclusive" value={imageSize} onChange={(e)=>setImageSize(e.currentTarget.value)}><VsnOption value="landscape">Landscape 3:2</VsnOption><VsnOption value="square">Square 1:1</VsnOption><VsnOption value="portrait">Portrait 2:3</VsnOption></VsnSelect><div className="vsn-ai-context">Uses your OpenAI or Gemini key. The image is saved to Shopify Files and added as an Image widget.</div></>:null}
         {operation==="rewrite"?<div className="vsn-ai-context"><b>Selected:</b> {selectedElement?.label||selectedElement?.type||"No supported text element selected"}</div>:null}
         {isAgent?<>
           <div className="vsn-ai-context"><b>Context:</b> current saved page, {selectedIds.length||0} selected node(s), {breakpoint} breakpoint, recent revisions/commands and quality findings.</div>
@@ -170,6 +173,7 @@ export default function AiBuilderPanel({
         {!busy&&!isAgent&&data?.ok?<>
           <div className="vsn-ai-result-head"><div><strong>{data.plan?.title||"AI result"}</strong><span>{data.plan?.summary||"Review before applying."}</span></div>{data.usage?.model?<small>{data.usage.model}</small>:null}</div>
           {data.plan?.replacementText?<div className="vsn-ai-copy-preview"><span>Replacement copy</span><p>{data.plan.replacementText}</p></div>:null}
+          {data.file?.url?<img src={data.file.url} alt="AI generated" style={{maxWidth:"100%",borderRadius:12,marginBottom:12}}/>:null}
           {previewNodes.length?<div className="vsn-ai-design-preview"><LibraryDesignPreview content={previewNodes} title="AI generated VSN layout preview"/></div>:null}
           {issues.length?<div className="vsn-ai-issues"><strong>Post-generation checks</strong>{issues.slice(0,12).map((issue,i)=><div key={`${issue.kind}-${i}`} className={`vsn-ai-issue is-${issue.severity||"info"}`}><b>{issue.kind}</b><span>{issue.message}</span></div>)}</div>:<div className="vsn-ai-good"><PolarisIcon type="check"/>Responsive/accessibility quick checks found no obvious issues.</div>}
           <div className="vsn-ai-actions"><VsnButton onClick={()=>setResult(null)}>Discard</VsnButton>{operation!=="accessibility"?<VsnButton variant="primary" onClick={()=>onApply?.({operation,data})}><PolarisIcon type="check"/>Apply to editor</VsnButton>:null}</div>

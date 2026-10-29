@@ -61,10 +61,10 @@ export async function saveShopAiSettings({ db, shop, env = process.env, provider
 // Which API backs a generation for this shop: the shop's own key first, then the
 // app-level key. Shopify (Sidekick) and MCP clients have no generation API, so the
 // in-editor generator falls back to the first API with a key.
-export async function resolveShopAiConfig({ db, shop, env = process.env }) {
+export async function resolveShopAiConfig({ db, shop, env = process.env, only = null }) {
   const raw = db && shop ? (await readRaw(db, shop)).ai || {} : {};
   const chosen = AI_PROVIDERS[raw.provider] ? raw.provider : DEFAULT_SHOP_AI_PROVIDER;
-  const order = [apiProviderFor(chosen), "anthropic", "openai", "gemini"].filter((id, index, list) => id && list.indexOf(id) === index);
+  const order = [apiProviderFor(chosen), "anthropic", "openai", "gemini"].filter((id, index, list) => id && list.indexOf(id) === index && (!only || only.includes(id)));
   for (const id of order) {
     const shopKey = raw.keys?.[id] ? await decryptSecret(raw.keys[id], appSecret(env)) : "";
     const apiKey = shopKey || String(env?.[ENV_KEYS[id]] || "");

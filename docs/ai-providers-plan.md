@@ -28,4 +28,5 @@ Editor AI panel offers five providers. **Shopify is the default.**
 4. Deploy a draft app version on Staging (`t021-shopify-staging-app-version-draft`), test in Sidekick, then release. Requires the owner's approval because it creates a new app version.
 
 ## Image generation
-- No provider's image model is wired yet. Plan: Gemini image / OpenAI image generation → upload with `stagedUploadsCreate` + `fileCreate` into Shopify Files → insert as image widget. Shopify's own image AI (Magic) is admin-only, not an app API.
+- Done: AI panel task "Prompt → Image". OpenAI `gpt-image-1` or Gemini `gemini-2.5-flash-image` (shop key, else app key; Claude has no image model) → staged upload → `fileCreate` in Shopify Files → inserted as an Image widget. Counts toward the AI quota (`operation: "image"`).
+- Shopify's own image AI (Shopify Magic) is admin-only, not an app API.
