@@ -771,7 +771,7 @@ html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] [data-vsn-empty-child-
 .vsn-template-starters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:12px 0}
 .vsn-template-starters>span,.vsn-template-tokens>span{font-size:12px;font-weight:600;color:#4b5563;margin-right:4px}
 .vsn-template-starters button,.vsn-template-tokens button{height:28px;padding:0 10px;border-radius:8px;border:1px solid #dde1ea;background:#fff;font-size:12px;cursor:pointer;color:#111827}
-.vsn-template-starters button:hover,.vsn-template-tokens button:hover{border-color:#6366f1;color:#4f46e5}
+.vsn-template-starters button:hover,.vsn-template-tokens button:hover{border-color:var(--vsn-green);color:var(--vsn-green)}
 .vsn-template-tokens{display:grid;gap:6px;margin:0 0 12px;padding:12px;border-radius:10px;background:#f8fafc;border:1px solid #eef0f4}
 .vsn-template-tokens>div{display:flex;flex-wrap:wrap;gap:6px}
 .vsn-template-tokens button{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
@@ -789,9 +789,9 @@ html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] [data-vsn-empty-child-
 .vsn-widget-picker__heading{display:block;padding:8px 8px 4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af}
 .vsn-widget-picker__list button{display:flex;align-items:center;gap:10px;width:100%;padding:6px 8px;border:0;border-radius:8px;background:transparent;font-size:13px;color:#111827;text-align:left;cursor:pointer}
 .vsn-widget-picker__list button:hover{background:#f3f4f6}
-.vsn-widget-picker__list button.is-selected{background:#eef2ff;color:#3730a3;font-weight:600}
+.vsn-widget-picker__list button.is-selected{background:var(--vsn-accent-soft);color:var(--vsn-green-dark);font-weight:600}
 .vsn-widget-picker__icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#f3f4f6;flex:0 0 28px}
-.vsn-widget-picker__list button.is-selected .vsn-widget-picker__icon{background:#c7d2fe}
+.vsn-widget-picker__list button.is-selected .vsn-widget-picker__icon{background:rgba(var(--vsn-accent-rgb),.35)}
 .vsn-widget-picker__name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vsn-widget-picker__badge{font-size:10px;padding:1px 6px;border-radius:999px;background:#dcfce7;color:#166534}
 .vsn-widget-picker__empty{padding:12px;font-size:12px;color:#6b7280}
@@ -801,7 +801,7 @@ html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] [data-vsn-empty-child-
 .vsn-brandkit-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .vsn-brandkit-card{display:flex;flex-direction:column;border:1px solid #dde1ea;border-radius:14px;overflow:hidden;background:#fff;transition:box-shadow .15s,border-color .15s}
 .vsn-brandkit-card:hover{border-color:#c7cbd4;box-shadow:0 6px 18px rgba(15,23,42,.07)}
-.vsn-brandkit-card.is-default{border-color:#6366f1;box-shadow:0 0 0 1px #6366f1}
+.vsn-brandkit-card.is-default{border-color:var(--vsn-green);box-shadow:0 0 0 1px var(--vsn-green)}
 .vsn-brandkit-card__preview{position:relative;display:flex;align-items:center;justify-content:center;height:120px;border:0;border-bottom:1px solid #eef0f4;cursor:pointer}
 .vsn-brandkit-card__preview img{max-height:48px;max-width:70%;object-fit:contain}
 .vsn-brandkit-card__preview strong{font-size:34px}
@@ -858,7 +858,7 @@ html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] [data-vsn-empty-child-
 .vsn-stepper span{grid-row:1/3;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#f3f4f6;color:#4b5563;font-size:12px;font-weight:700}
 .vsn-stepper b{font-size:13px;color:#111827}
 .vsn-stepper small{font-size:11px;color:#6b7280}
-.vsn-stepper li.is-current button{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
-.vsn-stepper li.is-current span{background:#4f46e5;color:#fff}
+.vsn-stepper li.is-current button{border-color:var(--vsn-green);box-shadow:0 0 0 3px rgba(var(--vsn-accent-rgb),.12)}
+.vsn-stepper li.is-current span{background:var(--vsn-green);color:#fff}
 .vsn-stepper li.is-done span{background:#dcfce7;color:#166534}
 .vsn-modal .vsn-widget-studio-grid>:last-child{position:sticky;top:0}

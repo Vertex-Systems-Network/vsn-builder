@@ -407,11 +407,11 @@ button,input,select,textarea { font-family:inherit; }
 /* Shared panel tabs: one underline style for every Builder panel. */
 .dashboard-root .vsn-tool-tabs,.vsn-tool-tabs{display:flex;gap:4px;padding:0 4px;margin:0 0 16px;border:0;border-bottom:1px solid var(--vsn-border,#dde1ea);border-radius:0;background:transparent;box-shadow:none;overflow-x:auto;scrollbar-width:none}
 .dashboard-root .vsn-tool-tabs>button,.vsn-tool-tabs>button{position:relative;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;margin:0;border:0;border-radius:8px 8px 0 0;background:transparent;box-shadow:none;color:var(--vsn-text-muted,#6b7280);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;transition:color .15s,background .15s}
-.dashboard-root .vsn-tool-tabs>button:hover,.vsn-tool-tabs>button:hover{color:var(--vsn-text,#111827);background:rgba(99,102,241,.06)}
-.dashboard-root .vsn-tool-tabs>button.active,.vsn-tool-tabs>button.active{color:#4f46e5;background:transparent}
-.dashboard-root .vsn-tool-tabs>button.active::after,.vsn-tool-tabs>button.active::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:#4f46e5}
+.dashboard-root .vsn-tool-tabs>button:hover,.vsn-tool-tabs>button:hover{color:var(--vsn-text,#111827);background:rgba(var(--vsn-accent-rgb),.06)}
+.dashboard-root .vsn-tool-tabs>button.active,.vsn-tool-tabs>button.active{color:var(--vsn-green);background:transparent}
+.dashboard-root .vsn-tool-tabs>button.active::after,.vsn-tool-tabs>button.active::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:var(--vsn-green)}
 .dashboard-root .vsn-tool-tabs>button>span,.vsn-tool-tabs>button>span{min-width:20px;height:18px;padding:0 6px;border-radius:999px;background:#eef0f4;color:#4b5563;font-size:11px;line-height:18px;text-align:center}
-.dashboard-root .vsn-tool-tabs>button.active>span,.vsn-tool-tabs>button.active>span{background:#e0e7ff;color:#3730a3}
+.dashboard-root .vsn-tool-tabs>button.active>span,.vsn-tool-tabs>button.active>span{background:var(--vsn-accent-soft);color:var(--vsn-green-dark)}
 .dashboard-root.dark .vsn-tool-tabs{border-bottom-color:#2d3748}
 .dashboard-root.dark .vsn-tool-tabs>button{color:#94a3b8}
 .dashboard-root.dark .vsn-tool-tabs>button.active{color:#a5b4fc}
@@ -422,7 +422,7 @@ button,input,select,textarea { font-family:inherit; }
 /* Searchable select (all admin + editor dropdowns) */
 .vsn-sselect{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:36px;padding:0 10px 0 12px;border:1px solid var(--vsn-border,#dde1ea);border-radius:8px;background:#fff;color:#111827;font:inherit;font-size:13px;text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none}
 .vsn-sselect:hover{border-color:#b9bec8}
-.vsn-sselect:focus-visible,.vsn-sselect[aria-expanded="true"]{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.vsn-sselect:focus-visible,.vsn-sselect[aria-expanded="true"]{outline:none;border-color:var(--vsn-green);box-shadow:0 0 0 3px rgba(var(--vsn-accent-rgb),.15)}
 .vsn-sselect:disabled{opacity:.55;cursor:not-allowed}
 .vsn-sselect__value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vsn-sselect__value.is-placeholder{color:#9ca3af}
@@ -433,7 +433,7 @@ button,input,select,textarea { font-family:inherit; }
 .vsn-sselect-pop__list{overflow:auto;padding:4px}
 .vsn-sselect-pop__list button{display:block;width:100%;padding:7px 10px;border:0;border-radius:6px;background:transparent;color:#111827;font:inherit;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vsn-sselect-pop__list button.is-active{background:#f3f4f6}
-.vsn-sselect-pop__list button.is-selected{color:#4338ca;font-weight:600;background:#eef2ff}
+.vsn-sselect-pop__list button.is-selected{color:var(--vsn-green-dark);font-weight:600;background:var(--vsn-accent-soft)}
 .vsn-sselect-pop__list button:disabled{opacity:.45;cursor:not-allowed}
 .vsn-sselect-pop__group{padding:8px 10px 4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af}
 .vsn-sselect-pop__empty{padding:12px;color:#6b7280}
@@ -445,3 +445,25 @@ html.vsn-dark .vsn-sselect-pop,.dashboard-root.dark~.vsn-sselect-pop{background:
 .dashboard-root div:has(> table:not(.plan-comparison-table)){overflow-x:auto;max-width:100%}
 .dashboard-root table:not(.plan-comparison-table) :is(th,td):last-child{position:sticky;right:0;z-index:1;background:var(--vsn-surface,#fff);box-shadow:-8px 0 12px -10px rgba(15,23,42,.25)}
 .dashboard-root.dark table:not(.plan-comparison-table) :is(th,td):last-child{background:#111827}
+/* VSN date/time picker + colour field */
+.vsn-dtp{gap:8px}.vsn-dtp>svg:first-child{color:#6b7280}
+.vsn-dtp__clear{margin-left:auto;padding:0 4px;font-size:16px;line-height:1;color:#9ca3af;cursor:pointer}.vsn-dtp__clear:hover{color:#111827}
+.vsn-dtp-pop{width:280px;max-height:none;padding:10px}
+.vsn-cal__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.vsn-cal__head strong{font-size:13px}
+.vsn-cal__head button{width:28px;height:28px;border:0;border-radius:6px;background:transparent;font-size:18px;cursor:pointer;color:#374151}
+.vsn-cal__head button:hover{background:#f3f4f6}
+.vsn-cal__grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.vsn-cal__dow{font-size:10px;font-weight:700;color:#9ca3af;text-align:center;padding:4px 0}
+.vsn-cal__grid button{height:32px;border:0;border-radius:8px;background:transparent;font-size:12px;color:#111827;cursor:pointer}
+.vsn-cal__grid button:hover{background:#f3f4f6}
+.vsn-cal__grid button.is-today{box-shadow:inset 0 0 0 1px rgba(var(--vsn-accent-rgb),.35)}
+.vsn-cal__grid button.is-selected{background:var(--vsn-green);color:#fff}
+.vsn-cal__grid button:disabled{opacity:.3;cursor:not-allowed}
+.vsn-cal__foot{display:flex;justify-content:flex-end;margin-top:8px}
+.vsn-cal__foot button{height:28px;padding:0 10px;border:1px solid #dde1ea;border-radius:7px;background:#fff;font-size:12px;cursor:pointer}
+.vsn-timefields{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid #eef0f4}
+.vsn-dtp-pop .vsn-cal+.vsn-timefields{margin-top:10px}
+.vsn-dtp-pop>.vsn-timefields:first-child{margin-top:0;padding-top:0;border-top:0}
+.vsn-timefields select{height:32px;padding:0 6px;border:1px solid #dde1ea;border-radius:7px;background:#fff;font-size:13px}
+.vsn-colorfield{gap:10px}.vsn-colorfield__swatch{width:20px;height:20px;flex:0 0 20px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}

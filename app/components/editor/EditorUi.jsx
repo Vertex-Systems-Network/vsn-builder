@@ -1,5 +1,6 @@
 import PolarisIcon from "../ui/PolarisIcon";
 import SearchableSelect from "../ui/SearchableSelect.jsx";
+import VsnDateTimePicker from "../ui/DateTimePicker.jsx";
 
 const cx = (...items) => items.filter(Boolean).join(" ");
 
@@ -57,7 +58,9 @@ function inputAria(label, labelAccessibilityVisibility, props) {
   return labelAccessibilityVisibility === "exclusive" ? label : props["aria-label"];
 }
 
+const PICKER_MODE = { date: "date", time: "time", "datetime-local": "datetime" };
 export function VsnTextField({ label, labelAccessibilityVisibility, helpText, error, className = "", ...props }) {
+  if (PICKER_MODE[props.type]) { const { type, ...rest } = props; return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"} helpText={helpText} error={error}><VsnDateTimePicker mode={PICKER_MODE[type]} {...rest} className={className} aria-label={inputAria(label, labelAccessibilityVisibility, props)} /></FieldShell>; }
   return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"} helpText={helpText} error={error}><input type="text" {...props} className={cx("vsn-ui-input", className)} aria-label={inputAria(label, labelAccessibilityVisibility, props)} /></FieldShell>;
 }
 export function VsnUrlField({ label, labelAccessibilityVisibility, helpText, error, className = "", ...props }) {
@@ -87,7 +90,7 @@ export function VsnColorField({ label, labelAccessibilityVisibility, className =
   return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"}><span className="vsn-ui-color-wrap"><span className="vsn-ui-color-chip" style={{background:value || "#000000"}}/><input type="text" value={value || "#000000"} {...props} onInput={onInput} className={cx("vsn-ui-input", className)} aria-label={inputAria(label, labelAccessibilityVisibility, props)} /></span></FieldShell>;
 }
 export function VsnDateField({ label, labelAccessibilityVisibility, helpText, error, className = "", ...props }) {
-  return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"} helpText={helpText} error={error}><input type="date" {...props} className={cx("vsn-ui-input", className)} aria-label={inputAria(label, labelAccessibilityVisibility, props)} /></FieldShell>;
+  return <FieldShell label={label} hidden={labelAccessibilityVisibility === "exclusive"} helpText={helpText} error={error}><VsnDateTimePicker mode="date" {...props} className={className} aria-label={inputAria(label, labelAccessibilityVisibility, props)} /></FieldShell>;
 }
 export function VsnUnitField({ label, value = "", unit = "px", onInput, placeholder = "0", className = "" }) {
   return <FieldShell label={label} hidden={!label}><span className={cx("vsn-ui-unit-wrap", !unit && "has-no-unit")}><input type="text" inputMode="decimal" value={value ?? ""} placeholder={placeholder} onInput={onInput} className={cx("vsn-ui-input", className)} />{unit ? <span>{unit}</span> : null}</span></FieldShell>;
