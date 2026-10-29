@@ -69,6 +69,20 @@ const COPY = {
   b2b: { hero: "Wholesale supply your business can rely on", body: "Volume pricing, net terms and a dedicated account manager.", cta: "Book a consultation", features: [["▤", "Volume pricing", "Tiered discounts from 50 units."], ["⧉", "Net 30 terms", "Flexible payment for approved buyers."], ["☏", "Account manager", "One contact for every order."], ["⛟", "Reliable logistics", "98% on-time delivery."]], stats: "2,000+|Business clients\n98%|On-time delivery\nNet 30|Payment terms\n24h|Quote turnaround", quotes: "Our reorders are effortless now.|Procurement, Northline\nPricing and terms that scale with us.|Ops, Bramble Co.\nResponsive account management.|Buyer, Halden" },
   "landing-cro": { hero: "Get results in your first 30 days", body: "A proven system with clear steps, real support and a money-back guarantee.", cta: "Claim your offer", features: [["①", "Simple start", "Set up in under ten minutes."], ["②", "Guided plan", "Daily steps that build momentum."], ["③", "Real support", "Coaches answer within an hour."], ["✓", "Risk free", "Full refund within 30 days."]], stats: "50K+|Customers\n30 days|Money-back guarantee\n4.8/5|Rating\n1h|Support response", quotes: "Saw results in the first two weeks.|Jess W.\nThe guided plan kept me consistent.|Omar K.\nBest decision I made this year.|Clara P." },
 };
+// Each page style gets its own hero line so templates in one industry don't all read the same.
+const HERO_BY_STYLE = {
+  "Minimal Commerce": (l) => `Less, but better: ${l} essentials`,
+  "Bold Launch": (l) => `${l[0].toUpperCase()}${l.slice(1)} that refuses to blend in`,
+  "Conversion First": (l) => `Save 20% on your first ${l} order`,
+  "Brand Story": (l) => `Our story starts with better ${l}`,
+  "Premium Showcase": (l) => `The premium ${l} edit`,
+  "Modern Storefront": (l) => `Modern ${l}, delivered fast`,
+  "Soft Collection": (l) => `Gentle, everyday ${l}`,
+  "Dark Campaign": (l) => `After dark: the new ${l} drop`,
+  "Catalogue": (l) => `Browse the full ${l} catalogue`,
+  "Product Launch": (l) => `Introducing our newest ${l} release`,
+  "Seasonal Campaign": (l) => `This season's ${l} favourites`,
+};
 const FAQ = "How long does shipping take?|Most orders arrive in 2–5 business days.\nCan I return my order?|Yes, returns are free within 30 days.\nDo you ship internationally?|We ship to over 40 countries.\nHow can I contact support?|Use the contact form and we reply within one business day.";
 
 function luminance(hex) {
@@ -145,7 +159,8 @@ function makeSection({ prefix, industry, pattern, palette, compact = false, dark
   const key = pattern[0];
   const layout = pattern[2];
   const label = `${industry.label} ${pattern[1]}`;
-  const title = key.startsWith("hero") || key === "editorial" ? copy.hero : pattern[1].replace(/ · .*/, "").replace(/ Intro$/, "");
+  const heroVariant = HERO_BY_STYLE[pattern[1]];
+  const title = key.startsWith("hero") || key === "editorial" ? (heroVariant ? heroVariant(industry.label.toLowerCase()) : copy.hero) : pattern[1].replace(/ · .*/, "").replace(/ Intro$/, "");
   let children;
   const centered = (stack, extra = []) => [plainContainer(node, "Content", [...stack, ...extra], { size: { maxWidth: "760px" }, spacing: { marginLeft: "auto", marginRight: "auto" } })];
 
