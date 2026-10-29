@@ -85,6 +85,12 @@
   scrollbar-gutter: stable;
 }
 
+/* The inspector nests its real scroller inside .vsn-properties-panel; reserving a
+ * gutter on both levels stole ~20px and left a blank strip beside the controls. */
+.vsn-properties-panel:has(.overflow-y-auto) {
+  scrollbar-gutter: auto;
+}
+
 /* Optional compact variant for very dense lists; still visible and accessible. */
 .vsn-scrollbar-compact {
   --vsn-scrollbar-size: 6px;
