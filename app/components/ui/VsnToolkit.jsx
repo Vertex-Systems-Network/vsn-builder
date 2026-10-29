@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, Search, Settings2, UploadCloud, X, AlertTriangle, RotateCcw } from "lucide-react";
 import Button from "./Button";
@@ -223,7 +223,26 @@ function VsnCodeSuggestionPortal({ open, anchorRef, children, onClose }) {
   const dark = Boolean(document.querySelector(".dashboard-root.dark"));
   return createPortal(<div ref={popupRef} className={`vsn-code-suggestions vsn-code-suggestions--portal ${dark ? "is-dark" : ""}`} style={{ left: position.left, top: position.top, width: position.width, maxHeight: position.maxHeight, visibility: position.ready ? "visible" : "hidden" }}>{children}</div>, document.body);
 }
-export function VsnCodeEditor({ label = "Code", value = "", onChange, language = "html", rows = 18, help = "Ctrl/Cmd + Space opens suggestions.", readOnly = false }) {
+const CodeMirrorEditor = lazy(() => import("./CodeMirrorEditor.jsx"));
+const RICH_LANGUAGES = new Set(["html", "css"]);
+
+export function VsnCodeEditor(props) {
+  const { label = "Code", language = "html", value = "", onChange, rows = 18, readOnly = false, tokens = [] } = props;
+  const [client, setClient] = useState(false);
+  useEffect(() => setClient(true), []);
+  if (!client || !RICH_LANGUAGES.has(language)) return <VsnPlainCodeEditor {...props} />;
+  return <div className="vsn-code-editor-field">
+    <span className="vsn-code-editor-label"><b>{label}</b><small>{language.toUpperCase()} · Suggestions as you type · Tab indent · Ctrl/Cmd+/ comment · Shift+Alt+F format · Ctrl/Cmd+Z undo</small></span>
+    <div className="vsn-code-editor-shell">
+      <div className="vsn-code-editor-toolbar"><span>{language.toUpperCase()}</span>{readOnly ? <span>Read only</span> : null}</div>
+      <Suspense fallback={<VsnPlainCodeEditor {...props} label="" />}>
+        <CodeMirrorEditor value={value} onChange={onChange} language={language} rows={rows} readOnly={readOnly} tokens={tokens} label={label} />
+      </Suspense>
+    </div>
+  </div>;
+}
+
+function VsnPlainCodeEditor({ label = "Code", value = "", onChange, language = "html", rows = 18, help = "Ctrl/Cmd + Space opens suggestions.", readOnly = false }) {
   const inputRef = useRef(null);
   const shellRef = useRef(null);
   const [open, setOpen] = useState(false);

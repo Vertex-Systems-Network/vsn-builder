@@ -168,7 +168,7 @@ export async function loader({ request }) {
     // First activation: walk the merchant through required setup before the dashboard.
     const setting = await db.builderShopSetting.findUnique({ where: { shop: session.shop }, select: { onboardingJson: true } }).catch(() => null);
     let onboarding = {}; try { onboarding = JSON.parse(setting?.onboardingJson || "{}") || {}; } catch { onboarding = {}; }
-    if (setupIsPending(onboarding)) throw redirect(`/app/setup${new URL(request.url).search}`);
+    if (setupIsPending(onboarding) && new URL(request.url).searchParams.get("setup") !== "later") throw redirect(`/app/setup${new URL(request.url).search}`);
   }
   const ownerInfo = loadOwnerInfo(session);
   const defaultWidgets = () => summarizeWidgets(getWidgetDefinitions());

@@ -1,8 +1,12 @@
 const EMBED_HANDLE = "vsn-page-renderer";
 
+// Shopify writes a /* ... */ banner at the top of config/settings_data.json,
+// which JSON.parse rejects; strip block comments before parsing.
 function parseSettingsData(raw) {
-  try { return JSON.parse(String(raw || "{}")); } catch { return null; }
+  const text = String(raw || "{}").replace(/^\uFEFF/, "").replace(/\/\*[\s\S]*?\*\//g, "").trim();
+  try { return JSON.parse(text || "{}"); } catch { return null; }
 }
+export { parseSettingsData as parseThemeSettingsData, findEmbedBlock };
 
 function findEmbedBlock(settings) {
   const blocks = settings?.current?.blocks;

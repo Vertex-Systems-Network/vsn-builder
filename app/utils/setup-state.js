@@ -1,4 +1,5 @@
 // Setup wizard gate shared by the dashboard redirect and the setup route.
 export function setupIsPending(state = {}) {
-  return state?.setupCompleted !== true && state?.setupSkipped !== true;
+  // Required steps (plan, app embed, theme files) gate the app; "skip" only lasts one visit.
+  return state?.requiredStepsComplete !== true;
 }

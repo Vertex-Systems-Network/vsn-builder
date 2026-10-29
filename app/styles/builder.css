@@ -778,3 +778,21 @@ html[data-vsn-dragging="1"] [data-vsn-editor-root="true"] [data-vsn-empty-child-
 .vsn-template-tokens button small{font-family:inherit;color:#6b7280;margin-left:4px}
 .vsn-template-tokens>small{font-size:11px;color:#6b7280;line-height:1.5}
 .vsn-widget-studio-grid>:last-child{position:sticky;top:16px;align-self:start}
+.vsn-cm-host{position:relative}
+.vsn-cm-host .cm-editor{border-radius:0 0 10px 10px}
+.vsn-cm-format{position:absolute;top:-30px;right:10px;height:22px;padding:0 10px;border-radius:6px;border:1px solid #334155;background:#1e293b;color:#cbd5e1;font-size:11px;cursor:pointer}
+.vsn-cm-format:hover{background:#334155;color:#fff}
+.vsn-widget-picker{display:grid;gap:6px;margin-bottom:12px;border:1px solid #dde1ea;border-radius:12px;overflow:hidden;background:#fff}
+.vsn-widget-picker__search{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #eef0f4;color:#6b7280}
+.vsn-widget-picker__search input{flex:1;border:0;outline:0;font-size:13px;background:transparent;color:#111827}
+.vsn-widget-picker__list{max-height:260px;overflow:auto;padding:4px 6px 8px}
+.vsn-widget-picker__heading{display:block;padding:8px 8px 4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af}
+.vsn-widget-picker__list button{display:flex;align-items:center;gap:10px;width:100%;padding:6px 8px;border:0;border-radius:8px;background:transparent;font-size:13px;color:#111827;text-align:left;cursor:pointer}
+.vsn-widget-picker__list button:hover{background:#f3f4f6}
+.vsn-widget-picker__list button.is-selected{background:#eef2ff;color:#3730a3;font-weight:600}
+.vsn-widget-picker__icon{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#f3f4f6;flex:0 0 28px}
+.vsn-widget-picker__list button.is-selected .vsn-widget-picker__icon{background:#c7d2fe}
+.vsn-widget-picker__name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vsn-widget-picker__badge{font-size:10px;padding:1px 6px;border-radius:999px;background:#dcfce7;color:#166534}
+.vsn-widget-picker__empty{padding:12px;font-size:12px;color:#6b7280}
+.vsn-field-control{display:grid;gap:6px;grid-column:1/-1}.vsn-field-control>span{font-size:12px;font-weight:600;color:#4b5563}
